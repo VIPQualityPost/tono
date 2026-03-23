@@ -1,0 +1,509 @@
+/* ── Reset & base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────── */
+#toolbar {
+  height: 44px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  z-index: 100;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#app-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #e94560;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+.btn {
+  padding: 5px 12px;
+  border: 1px solid #0f3460;
+  border-radius: 5px;
+  background: #0f3460;
+  color: #e0e0e0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: #1a4a8a;
+  border-color: #3a7abf;
+}
+.btn:active {
+  background: #0a2040;
+}
+.btn-primary {
+  background: #e94560;
+  border-color: #e94560;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: #ff6b81;
+  border-color: #ff6b81;
+}
+
+/* ── Status bar ────────────────────────────────────────────────────── */
+.status-bar {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+.status-bar.info  { color: #90caf9; }
+.status-bar.error { color: #ef9a9a; background: rgba(183,28,28,0.2); }
+
+/* ── React Flow container ──────────────────────────────────────────── */
+.flow-container {
+  flex: 1;
+  position: relative;
+}
+
+/* ── React Flow dark overrides ─────────────────────────────────────── */
+.react-flow {
+  background: #0d1117 !important;
+}
+
+/* ── Custom node ───────────────────────────────────────────────────── */
+.custom-node {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #e0e0e0;
+  width: 200px;
+  min-width: 160px;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+/* Let React Flow node wrapper fit to the custom-node's size */
+.react-flow__node-custom {
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Title bar is the drag handle for moving the node */
+.drag-handle {
+  cursor: grab;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.custom-node.selected {
+  border-color: #90caf9;
+}
+
+.node-title {
+  padding: 5px 10px;
+  font-weight: 600;
+  font-size: 12px;
+  color: white;
+  border-radius: 5px 5px 0 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.node-body {
+  padding: 4px 0;
+}
+
+/* ── I/O rows ──────────────────────────────────────────────────────── */
+.io-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 12px;
+  min-height: 22px;
+  position: relative;
+}
+
+.io-left, .io-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.io-label {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ── Handles ───────────────────────────────────────────────────────── */
+.typed-handle {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid #1e293b !important;
+  border-radius: 50% !important;
+}
+
+/* ── Widget rows ───────────────────────────────────────────────────── */
+.widget-row {
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.widget-row label {
+  font-size: 10px;
+  color: #64748b;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.widget-row input[type="text"],
+.widget-row input[type="number"],
+.widget-row select {
+  background: #0f172a;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+}
+
+.widget-row input[type="checkbox"] {
+  accent-color: #3a7abf;
+}
+
+.widget-row input:focus,
+.widget-row select:focus {
+  outline: none;
+  border-color: #3a7abf;
+}
+
+.file-picker-row {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-picker-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Draggable number ──────────────────────────────────────────────── */
+.drag-number {
+  flex: 1;
+  min-width: 0;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: ew-resize;
+  user-select: none;
+  text-align: center;
+  font-size: 11px;
+  color: #e0e0e0;
+  touch-action: none;
+}
+.drag-number:hover {
+  border-color: #3a7abf;
+}
+.drag-number-val {
+  pointer-events: none;
+}
+.drag-number-edit {
+  flex: 1;
+  min-width: 0;
+  background: #0f172a;
+  border: 1px solid #3a7abf;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 11px;
+  color: #e0e0e0;
+  text-align: center;
+  outline: none;
+}
+
+.browse-btn {
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.browse-btn:hover {
+  background: #1a4a8a;
+}
+
+/* ── Collapsible section ───────────────────────────────────────────── */
+.collapsible {
+  border-top: 1px solid #334155;
+  margin-top: 4px;
+}
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 10px;
+  padding: 3px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.collapsible-toggle:hover {
+  color: #94a3b8;
+}
+.collapsible-arrow {
+  font-size: 9px;
+}
+
+/* ── Node preview ──────────────────────────────────────────────────── */
+.node-preview {
+  overflow: hidden;
+}
+
+.node-preview img {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Cross-section overlay ────────────────────────────────────────── */
+.cs-overlay {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+}
+.cs-image {
+  width: 100%;
+  display: block;
+}
+.cs-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.cs-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffd700;
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  box-shadow: 0 0 4px rgba(0,0,0,0.6);
+  z-index: 1;
+}
+.cs-marker:active:not(.cs-marker-locked) {
+  cursor: grabbing;
+  background: #ffeb3b;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+.cs-marker-locked {
+  background: #e91e63;
+  border-color: #e91e63;
+  cursor: default;
+  opacity: 0.9;
+}
+
+/* ── 3D surface view ──────────────────────────────────────────────── */
+.surface-view-container {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  cursor: grab;
+  overflow: hidden;
+}
+.surface-view-container:active {
+  cursor: grabbing;
+}
+.surface-view-container canvas {
+  display: block;
+}
+
+/* ── Node table ────────────────────────────────────────────────────── */
+.node-table {
+  padding: 4px 10px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
+.table-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
+/* ── Node resize handles ───────────────────────────────────────────── */
+.node-resize-line {
+  border-color: #90caf9 !important;
+}
+.node-resize-handle {
+  background: #90caf9 !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+/* ── Context menu ──────────────────────────────────────────────────── */
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  min-width: 180px;
+  max-height: 60vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  padding: 4px 0;
+}
+
+.context-category {
+  padding: 6px 12px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  border-top: 1px solid #0f3460;
+}
+.context-category:first-child {
+  border-top: none;
+}
+
+.context-item {
+  padding: 5px 20px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #e0e0e0;
+}
+.context-item:hover {
+  background: #0f3460;
+}
+
+/* ── File browser dialog ──────────────────────────────────────────── */
+.fb-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fb-dialog {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  width: 520px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.fb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #0f3460;
+}
+.fb-path {
+  font-size: 12px;
+  color: #90caf9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 10px;
+}
+.fb-close {
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.fb-close:hover { color: #e94560; }
+.fb-list {
+  overflow-y: auto;
+  padding: 6px 0;
+  flex: 1;
+}
+.fb-entry {
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fb-entry:hover { background: #0f3460; }
+.fb-dir  { color: #90caf9; }
+.fb-file { color: #e0e0e0; }
+.fb-loading {
+  padding: 16px;
+  text-align: center;
+  color: #607d8b;
+}
+
+/* ── Scrollbar styling ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a7abf; }
+
+/* ── React Flow MiniMap ────────────────────────────────────────────── */
+.react-flow__minimap {
+  background: #16213e !important;
+  border: 1px solid #0f3460 !important;
+  border-radius: 4px !important;
+}
