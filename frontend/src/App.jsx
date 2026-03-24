@@ -661,7 +661,6 @@ function Flow() {
             nodeTypes={NODE_TYPES}
             onPaneContextMenu={onPaneContextMenu}
             colorMode="dark"
-            fitView
             deleteKeyCode={['Backspace', 'Delete']}
             defaultEdgeOptions={{ type: 'default' }}
           >
