@@ -181,6 +181,18 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
 
         return web.Response(text=_dumps({"filename": filename}), content_type="application/json")
 
+    async def download_file(request: web.Request) -> web.Response:
+        """Accept a blob POST and return it with Content-Disposition: attachment."""
+        body = await request.read()
+        filename = request.query.get("filename", "workflow.png")
+        return web.Response(
+            body=body,
+            content_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
+        )
+
     async def submit_prompt(request: web.Request) -> web.Response:
         body = await request.json()
         prompt = body.get("prompt")
@@ -249,6 +261,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     app.router.add_get("/files", list_files)
     app.router.add_get("/browse", browse_dir)
     app.router.add_post("/upload", upload_file)
+    app.router.add_post("/download", download_file)
     app.router.add_post("/prompt", submit_prompt)
     app.router.add_get("/ws", websocket_handler)
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 import socket
 import threading
 import time
 import urllib.request
+from pathlib import Path
 
 import webview
 from aiohttp import web
@@ -42,6 +44,34 @@ class _Api:
         if result and len(result) > 0:
             return result[0]
         return None
+
+    def save_workflow_png(self, data_url: str, default_filename: str = "workflow.png") -> str | None:
+        """Open a native save dialog, write the PNG bytes, and return the saved path."""
+        win = self._window_ref[0]
+        if win is None:
+            return None
+
+        result = win.create_file_dialog(
+            webview.SAVE_DIALOG,
+            save_filename=default_filename,
+            file_types=(
+                "PNG image (*.png)",
+                "All files (*.*)",
+            ),
+        )
+        if not result:
+            return None
+
+        path = Path(result[0] if isinstance(result, (list, tuple)) else result).expanduser()
+        if path.suffix.lower() != ".png":
+            path = path.with_suffix(".png")
+
+        _, _, encoded = data_url.partition(",")
+        if not encoded:
+            raise ValueError("Invalid data URL payload")
+
+        path.write_bytes(base64.b64decode(encoded))
+        return str(path)
 
 
 def _pick_free_port() -> int:

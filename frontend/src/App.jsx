@@ -42,6 +42,40 @@ function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function serializeWorkflowState(nodes, edges) {
+  return {
+    version: 1,
+    nodes: nodes.map((node) => ({
+      id: node.id,
+      type: node.type || 'custom',
+      position: node.position,
+      dragHandle: node.dragHandle || '.drag-handle',
+      data: {
+        label: node.data?.label || node.data?.className || 'Node',
+        className: node.data?.className || '',
+        widgetValues: node.data?.widgetValues || {},
+      },
+    })),
+    edges: edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      sourceHandle: edge.sourceHandle,
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+      style: edge.style,
+    })),
+  };
+}
+
 // ── Graph serialisation → backend prompt format ───────────────────────
 
 function serializeGraph(nodes, edges) {
@@ -442,8 +476,12 @@ function Flow() {
     const defs = nodeDefsRef.current;
     const hydrated = loadedNodes.map((n) => ({
       ...n,
+      type: n.type || 'custom',
+      dragHandle: n.dragHandle || '.drag-handle',
       data: {
         ...n.data,
+        label: n.data?.label || n.data?.className || 'Node',
+        widgetValues: n.data?.widgetValues || {},
         definition: defs[n.data.className] || n.data.definition,
         previewImage: null, tableRows: null, meshData: null, overlay: null,
       },
@@ -479,11 +517,7 @@ function Flow() {
     });
     if (!blob) throw new Error('Capture returned empty');
 
-    const currentNodes = allNodes.map((n) => ({
-      ...n,
-      data: { ...n.data, previewImage: null, tableRows: null, meshData: null, overlay: null },
-    }));
-    const workflow = { version: 1, nodes: currentNodes, edges: reactFlow.getEdges() };
+    const workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
     return embedWorkflow(blob, workflow);
   }, [reactFlow]);
 
@@ -492,32 +526,62 @@ function Flow() {
     try {
       const finalBlob = await getWorkflowBlob();
 
-      if (window.showSaveFilePicker) {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: 'workflow.png',
-          types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(finalBlob);
-        await writable.close();
-      } else {
-        // Fallback: programmatic download
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(finalBlob);
-        a.download = 'workflow.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
+      if (window.pywebview?.api?.save_workflow_png) {
+        const dataUrl = await blobToDataUrl(finalBlob);
+        const savedPath = await window.pywebview.api.save_workflow_png(dataUrl, 'workflow.png');
+        if (!savedPath) {
+          setStatus({ text: 'Save cancelled.', level: 'info' });
+          return;
+        }
+        setStatus({ text: `Workflow saved to ${savedPath}.`, level: 'info' });
+        return;
       }
 
-      setStatus({ text: 'Workflow saved.', level: 'info' });
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        setStatus({ text: 'Save cancelled.', level: 'info' });
-      } else {
-        setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: 'workflow.png',
+            types: [
+              {
+                description: 'PNG image',
+                accept: { 'image/png': ['.png'] },
+              },
+            ],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(finalBlob);
+          await writable.close();
+          setStatus({ text: 'Workflow saved as workflow.png.', level: 'info' });
+          return;
+        } catch (err) {
+          if (err?.name === 'AbortError') {
+            setStatus({ text: 'Save cancelled.', level: 'info' });
+            return;
+          }
+          throw err;
+        }
       }
+
+      // Final fallback: trigger a browser download and tell the user where it went.
+      const resp = await fetch('/download?filename=workflow.png', {
+        method: 'POST',
+        body: finalBlob,
+      });
+      const dlBlob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(dlBlob);
+      a.download = 'workflow.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
+      setStatus({
+        text: 'Workflow downloaded as workflow.png to your browser default downloads folder.',
+        level: 'info',
+      });
+    } catch (err) {
+      setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
     }
   }, [getWorkflowBlob]);
 
@@ -545,7 +609,8 @@ function Flow() {
       if (!file) return;
       try {
         let data;
-        if (file.name.endsWith('.png') || file.type === 'image/png') {
+        const lowerName = file.name.toLowerCase();
+        if (lowerName.endsWith('.png') || file.type === 'image/png') {
           data = await extractWorkflow(file);
           if (!data) {
             setStatus({ text: 'No workflow data found in image.', level: 'error' });
@@ -571,7 +636,8 @@ function Flow() {
     event.preventDefault();
 
     const file = files[0];
-    if (file.type !== 'image/png') return;
+    const lowerName = file.name.toLowerCase();
+    if (file.type !== 'image/png' && !lowerName.endsWith('.png')) return;
 
     try {
       const data = await extractWorkflow(file);
