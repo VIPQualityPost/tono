@@ -53,23 +53,7 @@ $PYTHON -m PyInstaller \
     --collect-all scipy \
     --collect-all skimage \
     --collect-all webview \
-    --icon resources/icon.icns 2>/dev/null || \
-$PYTHON -m PyInstaller \
-    desktop.py \
-    --noconfirm \
-    --clean \
-    --name argonode \
-    --windowed \
-    $MODE \
-    --distpath desktop-dist \
-    --workpath desktop-build \
-    --specpath desktop-build \
-    --add-data "${FRONTEND_DIST}:frontend/dist" \
-    --add-data "${DEMO_DIR}:demo" \
-    --collect-all matplotlib \
-    --collect-all scipy \
-    --collect-all skimage \
-    --collect-all webview
+    --icon ../resources/icon.icns
 
 APP_BUNDLE="desktop-dist/argonode.app"
 
