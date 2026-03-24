@@ -24,17 +24,23 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import uuid
 from pathlib import Path
 
 from aiohttp import web, WSMsgType
+from backend.runtime_paths import (
+    ensure_runtime_dirs,
+    frontend_dir,
+    frontend_dist_dir,
+    input_dir,
+    output_dir,
+)
 
 log = logging.getLogger(__name__)
 
-FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
-DIST_DIR     = FRONTEND_DIR / "dist"
-INPUT_DIR    = Path(__file__).parent.parent / "input"
-OUTPUT_DIR   = Path(__file__).parent.parent / "output"
+FRONTEND_DIR = frontend_dir()
+DIST_DIR = frontend_dist_dir()
+INPUT_DIR = input_dir()
+OUTPUT_DIR = output_dir()
 
 
 # ---------------------------------------------------------------------------
@@ -67,8 +73,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     from backend.node_registry import get_all_node_info
     from backend.execution import ExecutionEngine, new_prompt_id
 
-    INPUT_DIR.mkdir(exist_ok=True)
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    ensure_runtime_dirs()
 
     engine = ExecutionEngine()
     websockets: set[web.WebSocketResponse] = set()
@@ -104,7 +109,11 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
         # Serve Vite build output if available, else raw frontend
         if (DIST_DIR / "index.html").exists():
             return web.FileResponse(DIST_DIR / "index.html")
-        return web.FileResponse(FRONTEND_DIR / "index.html")
+        if (FRONTEND_DIR / "index.html").exists():
+            return web.FileResponse(FRONTEND_DIR / "index.html")
+        raise web.HTTPInternalServerError(
+            reason="Frontend build not found. Run `npm run build` before launching the packaged app."
+        )
 
     async def get_nodes(request: web.Request) -> web.Response:
         info = get_all_node_info()
@@ -244,9 +253,10 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     app.router.add_get("/ws", websocket_handler)
 
     # Serve frontend static files (Vite build or raw)
-    if DIST_DIR.exists():
+    if (DIST_DIR / "assets").exists():
         app.router.add_static("/assets", DIST_DIR / "assets")
-    app.router.add_static("/static", FRONTEND_DIR)
+    if FRONTEND_DIR.exists():
+        app.router.add_static("/static", FRONTEND_DIR)
 
     # CORS — allow any origin (local dev only)
     async def _cors_middleware(app_, handler):

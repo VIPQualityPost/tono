@@ -9,10 +9,11 @@ from pathlib import Path
 
 from backend.node_registry import register_node
 from backend.data_types import DataField, encode_preview, image_to_uint8
+from backend.runtime_paths import input_dir, output_dir
 
 # Resolved at server startup so nodes know where to look
-INPUT_DIR = Path(__file__).parent.parent.parent / "input"
-OUTPUT_DIR = Path(__file__).parent.parent.parent / "output"
+INPUT_DIR = input_dir()
+OUTPUT_DIR = output_dir()
 
 
 # ---------------------------------------------------------------------------

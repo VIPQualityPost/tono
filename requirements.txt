@@ -1,0 +1,4 @@
+# Core runtime dependencies are defined in pyproject.toml.
+# Install them from the repo root with:
+#   python -m pip install -r requirements.txt
+-e .
