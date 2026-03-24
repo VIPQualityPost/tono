@@ -12,6 +12,8 @@
     "preview": "npm --prefix frontend run preview",
     "backend": "python -m backend.main",
     "desktop": "python desktop.py",
-    "build:desktop": "powershell -ExecutionPolicy Bypass -File scripts\\build-desktop.ps1"
+    "build:windows": "powershell -ExecutionPolicy Bypass -File scripts\\build-windows.ps1",
+    "build:mac": "bash scripts/build-mac.sh",
+    "build:linux": "bash scripts/build-linux.sh"
   }
 }

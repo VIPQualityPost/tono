@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-APP_NAME = "Argonode"
+APP_NAME = "argonode"
 
 
 def project_root() -> Path:
@@ -34,11 +34,24 @@ def app_data_dir() -> Path:
         return Path(override).expanduser().resolve()
 
     if getattr(sys, "frozen", False):
-        local_appdata = os.getenv("LOCALAPPDATA")
-        base_dir = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
+        if sys.platform == "darwin":
+            base_dir = Path.home() / "Library" / "Application Support"
+        elif sys.platform == "linux":
+            xdg = os.getenv("XDG_DATA_HOME")
+            base_dir = Path(xdg) if xdg else Path.home() / ".local" / "share"
+        else:
+            local_appdata = os.getenv("LOCALAPPDATA")
+            base_dir = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
         return (base_dir / APP_NAME).resolve()
 
     return project_root()
+
+
+def demo_dir() -> Path:
+    bundled = resource_root() / "demo"
+    if bundled.exists():
+        return bundled
+    return project_root() / "demo"
 
 
 def input_dir() -> Path:

@@ -14,6 +14,7 @@ $pythonExe = if (Test-Path ".\.venv\Scripts\python.exe") {
     "python"
 }
 $frontendDist = Join-Path $repoRoot "frontend\dist"
+$demoDir = Join-Path $repoRoot "demo"
 
 Write-Host "Building frontend bundle..."
 npm run build
@@ -28,13 +29,14 @@ $pyInstallerArgs = @(
     "desktop.py",
     "--noconfirm",
     "--clean",
-    "--name", "Argonode",
+    "--name", "argonode",
     "--windowed",
     $mode,
     "--distpath", "desktop-dist",
     "--workpath", "desktop-build",
     "--specpath", "desktop-build",
     "--add-data", "${frontendDist};frontend/dist",
+    "--add-data", "${demoDir};demo",
     "--collect-all", "matplotlib",
     "--collect-all", "scipy",
     "--collect-all", "skimage",
@@ -45,4 +47,4 @@ Write-Host "Packaging desktop app..."
 & $pythonExe @pyInstallerArgs
 
 Write-Host "Desktop build complete."
-Write-Host "Output folder: $repoRoot\desktop-dist\Argonode"
+Write-Host "Output folder: $repoRoot\desktop-dist\argonode"

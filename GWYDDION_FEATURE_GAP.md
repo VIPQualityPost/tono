@@ -1,4 +1,4 @@
-# Gwyddion Features Not Yet in Argonode
+# Gwyddion Features Not Yet in argonode
 
 Reference for future implementation. Grouped by value to typical SPM workflows.
 
@@ -11,9 +11,9 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 | 1 | Line Correction | linecorrect.c, linematch.c | Row-by-row median/polynomial alignment. Essential for raw SPM data with scan-line artifacts. |
 | 2 | Scar Removal | scars.c | Detect and interpolate scan-line defects (horizontal streaks). |
 | 3 | Facet Leveling | facet-level.c | Orient the dominant surface facet to horizontal. Better than plane level for terraced/stepped surfaces. |
-| 4 | Morphological Mask Ops | mask_morph.c | Erode, dilate, open, close on grain masks. Needed to clean up thresholded masks. |
-| 5 | 1D FFT Filter | fft_filter_1d.c | Bandpass/lowpass/highpass filtering of LINE profiles. |
-| 6 | 2D FFT Filter | fft_filter_2d.c | Frequency-domain filtering of DATA_FIELDs (remove periodic noise, etc.). |
+| ~~4~~ | ~~Morphological Mask Ops~~ | ~~mask_morph.c~~ | ~~Erode, dilate, open, close on grain masks. Needed to clean up thresholded masks.~~ **DONE** |
+| ~~5~~ | ~~1D FFT Filter~~ | ~~fft_filter_1d.c~~ | ~~Bandpass/lowpass/highpass filtering of LINE profiles.~~ **DONE** |
+| ~~6~~ | ~~2D FFT Filter~~ | ~~fft_filter_2d.c~~ | ~~Frequency-domain filtering of DATA_FIELDs (remove periodic noise, etc.).~~ **DONE** |
 | 7 | Autocorrelation (ACF) | acf2d.c | 2D autocorrelation function. Reveals periodic structures and correlation lengths. |
 | 8 | PSDF | psdf2d.c | Radial/2D power spectral density function. Complementary to ACF for roughness characterization. |
 | 9 | Fractal Dimension | fractal.c | Multiple methods: partitioning, cube counting, triangulation, PSDF, HHCF. Quantifies surface complexity. |
@@ -61,11 +61,11 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 
 ---
 
-## Already Implemented in Argonode
+## Already Implemented in argonode
 
 For reference, these Gwyddion equivalents are already covered:
 
-| Argonode Node | Category | Gwyddion Equivalent |
+| argonode Node | Category | Gwyddion Equivalent |
 |--------------|----------|-------------------|
 | Load Image / Load SPM File | io | File import (gwy, sxm, ibw) |
 | Save Image | io | File export |
@@ -76,12 +76,17 @@ For reference, these Gwyddion equivalents are already covered:
 | Gaussian Filter | filters | filters.c (gaussian) |
 | Median Filter | filters | filters.c (median) |
 | Edge Detect | filters | edge.c (sobel, prewitt, laplacian, LoG) |
+| 1D FFT Filter | filters | fft_filter_1d.c (lowpass, highpass, bandpass, notch) |
+| 2D FFT Filter | filters | fft_filter_2d.c (lowpass, highpass, bandpass, notch) |
 | Statistics | analysis | stats.c |
 | Height Histogram | analysis | linestats.c (dh) |
 | 2D FFT | analysis | fft.c |
 | Cross Section | analysis | profile tool |
 | Profile Roughness | analysis | roughness.c (Ra, Rq, Rsk, Rku, Rp, Rv, Rt) |
 | Line Math | analysis | linestats.c |
-| Threshold Mask | grains | threshold.c, otsu_threshold.c |
-| Grain Analysis | grains | grain_stat.c |
+| Threshold Mask | mask | threshold.c, otsu_threshold.c |
+| Mask Morphology | mask | mask_morph.c (erode, dilate, open, close) |
+| Mask Invert | mask | — |
+| Mask Combine | mask | — (boolean AND, OR, XOR, subtract) |
+| Particle Analysis | grains | grain_stat.c |
 | Preview / 3D View / Print Table | display | Presentation, 3D view |

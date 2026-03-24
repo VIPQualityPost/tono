@@ -4,24 +4,26 @@ import React, {
 import {
   ReactFlow, Background, Controls, MiniMap,
   useNodesState, useEdgesState, addEdge, useReactFlow,
-  ReactFlowProvider,
+  ReactFlowProvider, getNodesBounds, getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import CustomNode, { NodeContext } from './CustomNode';
 import FileBrowser from './FileBrowser';
 import * as api from './api';
+import { toBlob } from 'html-to-image';
+import { embedWorkflow, extractWorkflow } from './pngMetadata';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
 const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD']);
 
 const TYPE_COLORS = {
-  DATA_FIELD: '#3a7abf',
-  IMAGE:      '#4caf50',
-  LINE:       '#ff9800',
-  TABLE:      '#fdd835',
-  COORD:      '#e91e63',
+  DATA_FIELD: '#ff002f',
+  IMAGE:      '#00ff08a0',
+  LINE:       '#ffbe5c',
+  TABLE:      '#35e2fd',
+  COORD:      '#e91ed1',
 };
 
 const NODE_TYPES = { custom: CustomNode };
@@ -272,6 +274,13 @@ function Flow() {
   // ── File browser ────────────────────────────────────────────────────
 
   const openFileBrowser = useCallback((callback) => {
+    // Use native file picker when running inside pywebview (desktop app)
+    if (window.pywebview?.api?.open_file_dialog) {
+      window.pywebview.api.open_file_dialog().then((path) => {
+        if (path) callback(path);
+      });
+      return;
+    }
     setFileBrowserCb(() => callback);
   }, []);
 
@@ -427,60 +436,162 @@ function Flow() {
     setStatus({ text: 'Graph cleared.', level: 'info' });
   }, [setNodes, setEdges]);
 
-  const saveWorkflow = useCallback(() => {
-    const currentNodes = reactFlow.getNodes().map((n) => ({
+  const applyWorkflowData = useCallback((data) => {
+    const loadedNodes = data.nodes || [];
+    const loadedEdges = data.edges || [];
+    const defs = nodeDefsRef.current;
+    const hydrated = loadedNodes.map((n) => ({
+      ...n,
+      data: {
+        ...n.data,
+        definition: defs[n.data.className] || n.data.definition,
+        previewImage: null, tableRows: null, meshData: null, overlay: null,
+      },
+    }));
+    setNodes(hydrated);
+    setEdges(loadedEdges);
+    const maxId = Math.max(0, ...loadedNodes.map((n) => parseInt(n.id, 10) || 0));
+    nextIdRef.current = maxId + 1;
+  }, [setNodes, setEdges]);
+
+  const getWorkflowBlob = useCallback(async () => {
+    const viewportEl = document.querySelector('.react-flow__viewport');
+    if (!viewportEl) throw new Error('Flow element not found');
+
+    const allNodes = reactFlow.getNodes();
+    if (allNodes.length === 0) throw new Error('No nodes to capture');
+
+    const bounds = getNodesBounds(allNodes);
+    const pad = 0.1; // 10% margin on each side
+    const imageWidth = Math.ceil(bounds.width * (1 + pad * 2));
+    const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
+    const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
+
+    const blob = await toBlob(viewportEl, {
+      backgroundColor: '#1a1a1a',
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+      },
+    });
+    if (!blob) throw new Error('Capture returned empty');
+
+    const currentNodes = allNodes.map((n) => ({
       ...n,
       data: { ...n.data, previewImage: null, tableRows: null, meshData: null, overlay: null },
     }));
-    const data = { version: 1, nodes: currentNodes, edges: reactFlow.getEdges() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'workflow.json';
-    a.click();
+    const workflow = { version: 1, nodes: currentNodes, edges: reactFlow.getEdges() };
+    return embedWorkflow(blob, workflow);
   }, [reactFlow]);
+
+  const saveWorkflow = useCallback(async () => {
+    setStatus({ text: 'Saving…', level: 'info' });
+    try {
+      const finalBlob = await getWorkflowBlob();
+
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'workflow.png',
+          types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(finalBlob);
+        await writable.close();
+      } else {
+        // Fallback: programmatic download
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(finalBlob);
+        a.download = 'workflow.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      }
+
+      setStatus({ text: 'Workflow saved.', level: 'info' });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        setStatus({ text: 'Save cancelled.', level: 'info' });
+      } else {
+        setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
+      }
+    }
+  }, [getWorkflowBlob]);
+
+  const copySnapshot = useCallback(() => {
+    setStatus({ text: 'Copying snapshot…', level: 'info' });
+    // Pass a Promise<Blob> to ClipboardItem so the clipboard.write() call
+    // happens synchronously within the user gesture, avoiding permission errors.
+    const blobPromise = getWorkflowBlob().catch((err) => {
+      setStatus({ text: 'Snapshot failed: ' + err.message, level: 'error' });
+      throw err;
+    });
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]).then(() => {
+      setStatus({ text: 'Snapshot copied to clipboard.', level: 'info' });
+    }).catch((err) => {
+      setStatus({ text: 'Copy failed: ' + err.message, level: 'error' });
+    });
+  }, [getWorkflowBlob]);
 
   const loadWorkflow = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.json,.png';
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      const text = await file.text();
       try {
-        const data = JSON.parse(text);
-        const loadedNodes = data.nodes || [];
-        const loadedEdges = data.edges || [];
-
-        // Re-populate definitions from current nodeDefs
-        const defs = nodeDefsRef.current;
-        const hydrated = loadedNodes.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            definition: defs[n.data.className] || n.data.definition,
-            previewImage: null,
-            tableRows: null,
-            meshData: null,
-            overlay: null,
-          },
-        }));
-
-        setNodes(hydrated);
-        setEdges(loadedEdges);
-
-        // Update ID counter to avoid collisions
-        const maxId = Math.max(0, ...loadedNodes.map((n) => parseInt(n.id, 10) || 0));
-        nextIdRef.current = maxId + 1;
-
+        let data;
+        if (file.name.endsWith('.png') || file.type === 'image/png') {
+          data = await extractWorkflow(file);
+          if (!data) {
+            setStatus({ text: 'No workflow data found in image.', level: 'error' });
+            return;
+          }
+        } else {
+          data = JSON.parse(await file.text());
+        }
+        applyWorkflowData(data);
         setStatus({ text: 'Workflow loaded.', level: 'info' });
       } catch {
-        setStatus({ text: 'Invalid workflow JSON.', level: 'error' });
+        setStatus({ text: 'Invalid workflow file.', level: 'error' });
       }
     };
     input.click();
-  }, [setNodes, setEdges]);
+  }, [applyWorkflowData]);
+
+  // ── Drag-and-drop workflow image loading ───────────────────────────
+
+  const onDropFile = useCallback(async (event) => {
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+    event.preventDefault();
+
+    const file = files[0];
+    if (file.type !== 'image/png') return;
+
+    try {
+      const data = await extractWorkflow(file);
+      if (!data) {
+        setStatus({ text: 'No workflow data in this image.', level: 'error' });
+        return;
+      }
+      applyWorkflowData(data);
+      setStatus({ text: 'Workflow loaded from image.', level: 'info' });
+    } catch (err) {
+      setStatus({ text: 'Failed to load: ' + err.message, level: 'error' });
+    }
+  }, [applyWorkflowData]);
+
+  const onDragOver = useCallback((event) => {
+    if (event.dataTransfer?.types?.includes('Files')) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
 
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
@@ -509,7 +620,7 @@ function Flow() {
       <div className="app-container">
         {/* Toolbar */}
         <div id="toolbar">
-          <span id="app-title">Argonode</span>
+          <span id="app-title">argonode</span>
 
           <div className="toolbar-group">
             <button className="btn btn-primary" onClick={runWorkflow} title="Run workflow (Ctrl+Enter)">
@@ -521,11 +632,14 @@ function Flow() {
           </div>
 
           <div className="toolbar-group">
-            <button className="btn" onClick={saveWorkflow} title="Save workflow JSON">
+            <button className="btn" onClick={saveWorkflow} title="Save workflow as PNG">
               ⤓ Save
             </button>
-            <button className="btn" onClick={loadWorkflow} title="Load workflow JSON">
+            <button className="btn" onClick={loadWorkflow} title="Load workflow (JSON or PNG)">
               ⤒ Load
+            </button>
+            <button className="btn" onClick={copySnapshot} title="Copy workflow screenshot to clipboard">
+              ⎘ Snapshot
             </button>
           </div>
 
@@ -535,7 +649,7 @@ function Flow() {
         {/* React Flow canvas */}
         <div className="flow-container" onMouseDown={(e) => {
           if (!e.target.closest('.context-menu')) setContextMenu(null);
-        }}>
+        }} onDrop={onDropFile} onDragOver={onDragOver}>
           <ReactFlow
             nodes={nodes}
             edges={edges}

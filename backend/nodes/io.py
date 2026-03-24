@@ -9,11 +9,15 @@ from pathlib import Path
 
 from backend.node_registry import register_node
 from backend.data_types import DataField, encode_preview, image_to_uint8
-from backend.runtime_paths import input_dir, output_dir
+from backend.runtime_paths import demo_dir, input_dir, output_dir
 
 # Resolved at server startup so nodes know where to look
+DEMO_DIR = demo_dir()
 INPUT_DIR = input_dir()
 OUTPUT_DIR = output_dir()
+
+_DEMO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".npy", ".npz",
+                    ".gwy", ".sxm", ".ibw"}
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +63,81 @@ class LoadImage:
                 arr = arr.astype(np.float64)
 
         # Convert to float64 grayscale for the DATA_FIELD output
+        if arr.ndim == 3:
+            gray = np.mean(arr.astype(np.float64), axis=2)
+        else:
+            gray = arr.astype(np.float64)
+
+        field = DataField(data=gray)
+        return (arr, field)
+
+
+# ---------------------------------------------------------------------------
+# LoadDemo
+# ---------------------------------------------------------------------------
+
+def _list_demo_files() -> list[str]:
+    """Return sorted list of demo filenames available in the demo/ directory."""
+    if not DEMO_DIR.exists():
+        return []
+    return sorted(
+        f.name for f in DEMO_DIR.iterdir()
+        if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in _DEMO_EXTENSIONS
+    )
+
+
+@register_node(display_name="Load Demo Image")
+class LoadDemo:
+    @classmethod
+    def INPUT_TYPES(cls):
+        choices = _list_demo_files() or ["(no demo images found)"]
+        return {
+            "required": {
+                "name": (choices,),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "DATA_FIELD")
+    RETURN_NAMES = ("image", "field")
+    FUNCTION = "load"
+    CATEGORY = "io"
+    DESCRIPTION = "Load a bundled demo image so you can try the app without providing your own data."
+
+    def load(self, name: str):
+        path = DEMO_DIR / name
+        if not path.exists():
+            raise FileNotFoundError(f"Demo image not found: {name}")
+
+        ext = path.suffix.lower()
+
+        # SPM formats → delegate to LoadSPM-style loading, return as IMAGE + DATA_FIELD
+        if ext == ".gwy":
+            field = LoadSPM()._load_gwy(path, "Z")
+            arr = field.data
+            return (arr, field)
+        elif ext == ".sxm":
+            field = LoadSPM()._load_sxm(path, "Z")
+            arr = field.data
+            return (arr, field)
+        elif ext == ".ibw":
+            field = LoadSPM()._load_ibw(path)
+            arr = field.data
+            return (arr, field)
+
+        # npy / npz
+        if ext == ".npy":
+            arr = np.load(str(path)).astype(np.float64)
+        elif ext == ".npz":
+            npz = np.load(str(path))
+            key = list(npz.files)[0]
+            arr = npz[key].astype(np.float64)
+        else:
+            from PIL import Image
+            img = Image.open(str(path))
+            arr = np.array(img)
+            if arr.dtype != np.uint8:
+                arr = arr.astype(np.float64)
+
         if arr.ndim == 3:
             gray = np.mean(arr.astype(np.float64), axis=2)
         else:

@@ -10,7 +10,10 @@ readme = "GWYDDION_FEATURE_GAP.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.9,<4",
+    "gwyfile>=0.2",
+    "igor>=0.3",
     "matplotlib>=3.8,<4",
+    "nanonispy>=1.1",
     "numpy>=1.26,<3",
     "pillow>=10,<12",
     "scikit-image>=0.22,<1",
@@ -18,11 +21,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-spm = [
-    "gwyfile>=0.2",
-    "igor>=0.3",
-    "nanonispy>=1.1",
-]
 dev = [
     "pytest>=8,<9",
 ]

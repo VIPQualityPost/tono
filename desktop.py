@@ -14,7 +14,34 @@ from backend.runtime_paths import app_data_dir, ensure_runtime_dirs
 from backend.server import create_app
 
 HOST = "127.0.0.1"
-WINDOW_TITLE = "Argonode"
+WINDOW_TITLE = "argonode"
+
+
+class _Api:
+    """Exposed to JavaScript as window.pywebview.api."""
+
+    def __init__(self, window_ref: list):
+        self._window_ref = window_ref
+
+    def open_file_dialog(self) -> str | None:
+        """Open a native file picker and return the selected path (or None)."""
+        win = self._window_ref[0]
+        if win is None:
+            return None
+        result = win.create_file_dialog(
+            webview.OPEN_DIALOG,
+            allow_multiple=False,
+            file_types=(
+                "All supported (*.png;*.jpg;*.jpeg;*.tiff;*.tif;*.npy;*.npz;*.gwy;*.sxm;*.ibw)",
+                "Images (*.png;*.jpg;*.jpeg;*.tiff;*.tif)",
+                "NumPy (*.npy;*.npz)",
+                "SPM (*.gwy;*.sxm;*.ibw)",
+                "All files (*.*)",
+            ),
+        )
+        if result and len(result) > 0:
+            return result[0]
+        return None
 
 
 def _pick_free_port() -> int:
@@ -85,9 +112,12 @@ def main() -> None:
     ready.wait(timeout=15.0)
 
     if "error" in state:
-        raise RuntimeError("Argonode server failed to start") from state["error"]
+        raise RuntimeError("argonode server failed to start") from state["error"]
 
     _wait_for_server(f"{base_url}/nodes")
+
+    window_ref: list[webview.Window | None] = [None]
+    js_api = _Api(window_ref)
 
     window = webview.create_window(
         WINDOW_TITLE,
@@ -95,7 +125,9 @@ def main() -> None:
         width=1600,
         height=1000,
         min_size=(1100, 720),
+        js_api=js_api,
     )
+    window_ref[0] = window
 
     def _shutdown() -> None:
         loop = state.get("loop")

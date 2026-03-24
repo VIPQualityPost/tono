@@ -177,13 +177,19 @@ class ExecutionEngine:
     ) -> None:
         """Wire up broadcast callbacks on display node classes."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D
-        from backend.nodes.analysis import CrossSection
+        from backend.nodes.analysis import CrossSection, LineCursors
+        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
         from backend.nodes.io import SaveImage
 
         PreviewImage._broadcast_fn = on_preview
+        ThresholdMask._broadcast_fn = on_preview
+        MaskMorphology._broadcast_fn = on_preview
+        MaskInvert._broadcast_fn = on_preview
+        MaskCombine._broadcast_fn = on_preview
         View3D._broadcast_mesh_fn = on_mesh
         PrintTable._broadcast_table_fn = on_table
         CrossSection._broadcast_overlay_fn = on_overlay
+        LineCursors._broadcast_overlay_fn = on_overlay
         SaveImage._broadcast_preview = (
             (lambda data_uri: on_preview("save", data_uri)) if on_preview else None
         )
@@ -191,8 +197,10 @@ class ExecutionEngine:
     def _set_node_id_on_display(self, cls: type, node_id: str) -> None:
         """Inform display nodes of their current node_id for WS tagging."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D
-        from backend.nodes.analysis import CrossSection
-        if cls in (PreviewImage, PrintTable, View3D, CrossSection):
+        from backend.nodes.analysis import CrossSection, LineCursors
+        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
+        if cls in (PreviewImage, PrintTable, View3D, CrossSection, LineCursors,
+                   ThresholdMask, MaskMorphology, MaskInvert, MaskCombine):
             cls._current_node_id = node_id
 
     def _auto_preview(
@@ -206,11 +214,15 @@ class ExecutionEngine:
         """
         After every node executes, inspect its outputs and broadcast
         a preview for the first DATA_FIELD, IMAGE, or TABLE found.
+        Skip nodes that broadcast their own custom preview.
         """
         import numpy as np
         from backend.data_types import (
             DataField, datafield_to_uint8, image_to_uint8, encode_preview,
         )
+
+        if getattr(cls, "_CUSTOM_PREVIEW", False):
+            return
 
         return_types = getattr(cls, "RETURN_TYPES", ())
 

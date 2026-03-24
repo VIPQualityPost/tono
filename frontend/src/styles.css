@@ -21,8 +21,8 @@ html, body, #root {
 /* ── Toolbar ───────────────────────────────────────────────────────── */
 #toolbar {
   height: 44px;
-  background: #16213e;
-  border-bottom: 1px solid #0f3460;
+  background: #242424;
+  border-bottom: 1px solid #000000;
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -36,7 +36,7 @@ html, body, #root {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #e94560;
+  color: #ffffff;
   margin-right: 8px;
   flex-shrink: 0;
 }
@@ -129,8 +129,17 @@ html, body, #root {
   cursor: grabbing;
 }
 
-.custom-node.selected {
+/* Selected node — target via React Flow's wrapper class */
+.react-flow__node.selected .custom-node {
   border-color: #90caf9;
+  box-shadow: 0 0 0 1px #90caf9, 0 0 12px rgba(144, 202, 249, 0.4);
+}
+
+/* Selected edge */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #90caf9 !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 4px rgba(144, 202, 249, 0.6));
 }
 
 .node-title {

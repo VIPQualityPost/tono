@@ -69,6 +69,7 @@ class HeightHistogram:
             "required": {
                 "field": ("DATA_FIELD",),
                 "n_bins": ("INT", {"default": 256, "min": 10, "max": 1000, "step": 1}),
+                "y_scale": (["linear", "log"],),
             }
         }
 
@@ -78,13 +79,150 @@ class HeightHistogram:
     CATEGORY = "analysis"
     DESCRIPTION = (
         "Compute the height distribution histogram (DH). "
+        "Use log scale to reveal small peaks next to a dominant background. "
         "Equivalent to gwy_data_field_dh."
     )
 
-    def process(self, field: DataField, n_bins: int) -> tuple:
+    def process(self, field: DataField, n_bins: int, y_scale: str = "linear") -> tuple:
         counts, bin_edges = np.histogram(field.data.ravel(), bins=int(n_bins))
         bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-        return (counts.astype(np.float64), bin_centers)
+        counts = counts.astype(np.float64)
+        if y_scale == "log":
+            counts = np.log10(1.0 + counts)
+        return (counts, bin_centers)
+
+
+# ---------------------------------------------------------------------------
+# LineCursors — interactive measurement cursors on any LINE plot
+# ---------------------------------------------------------------------------
+
+@register_node(display_name="Line Cursors")
+class LineCursors:
+    """Place two draggable cursors on any LINE plot to measure values and deltas."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "line": ("LINE",),
+                "x1": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "y1": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "x2": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "y2": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+            },
+            "optional": {
+                "x_axis": ("LINE",),
+            },
+        }
+
+    RETURN_TYPES = ("TABLE",)
+    RETURN_NAMES = ("measurement",)
+    FUNCTION = "process"
+    CATEGORY = "analysis"
+    DESCRIPTION = (
+        "Place two cursors on any line plot (histogram, cross section, profile) "
+        "to measure positions, values, and deltas. Drag the markers to reposition."
+    )
+
+    _broadcast_overlay_fn = None
+    _current_node_id: str = ""
+
+    def process(
+        self, line, x1: float, y1: float, x2: float, y2: float,
+        x_axis=None,
+    ) -> tuple:
+        import io as _io
+        import base64
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        y = np.asarray(line, dtype=np.float64).ravel()
+        n = len(y)
+        if x_axis is not None:
+            x = np.asarray(x_axis, dtype=np.float64).ravel()[:n]
+        else:
+            x = np.arange(n, dtype=np.float64)
+
+        # --- Render the base plot first to determine axes bounds ---
+        fig, ax = plt.subplots(figsize=(3.2, 2.2), dpi=100)
+        fig.patch.set_facecolor("#1e293b")
+        ax.set_facecolor("#0f172a")
+        ax.plot(x, y, color="#ff9800", linewidth=1.2)
+        ax.tick_params(colors="#94a3b8", labelsize=7)
+        for spine in ax.spines.values():
+            spine.set_color("#334155")
+        ax.grid(True, color="#334155", linewidth=0.3, alpha=0.5)
+        fig.tight_layout(pad=0.4)
+
+        # Force a draw so transforms are valid
+        fig.canvas.draw()
+
+        # Get axes position in figure-fraction coordinates
+        ax_pos = ax.get_position()
+        ax_l, ax_b = ax_pos.x0, ax_pos.y0
+        ax_w, ax_h = ax_pos.width, ax_pos.height
+
+        # x1/y1 arrive as image-fraction from the frontend drag.
+        # Convert image-fraction x → axes-fraction → nearest data index.
+        def img_x_to_idx(ix):
+            axes_frac = np.clip((ix - ax_l) / ax_w, 0, 1)
+            return int(np.clip(round(axes_frac * (n - 1)), 0, n - 1))
+
+        idx_a = img_x_to_idx(x1)
+        idx_b = img_x_to_idx(x2)
+
+        xa, ya = float(x[idx_a]), float(y[idx_a])
+        xb, yb = float(x[idx_b]), float(y[idx_b])
+
+        # --- Draw cursor lines and markers on the plot ---
+        ax.axvline(xa, color="#ffd700", linewidth=1.5, linestyle="--", alpha=0.9)
+        ax.axvline(xb, color="#ffd700", linewidth=1.5, linestyle="--", alpha=0.9)
+        ax.plot(xa, ya, "o", color="#ffd700", markersize=6, zorder=5)
+        ax.plot(xb, yb, "o", color="#ffd700", markersize=6, zorder=5)
+        ax.annotate(
+            "", xy=(xb, yb), xytext=(xa, ya),
+            arrowprops=dict(arrowstyle="<->", color="#90caf9", lw=1.5),
+        )
+
+        # --- Broadcast overlay ---
+        if LineCursors._broadcast_overlay_fn is not None:
+            # Convert data-space positions back to image-fraction for markers
+            fig.canvas.draw()
+            inv = fig.transFigure.inverted()
+            fig_a = inv.transform(ax.transData.transform([xa, ya]))
+            fig_b = inv.transform(ax.transData.transform([xb, yb]))
+
+            buf = _io.BytesIO()
+            fig.savefig(buf, format="png", facecolor=fig.get_facecolor())
+            buf.seek(0)
+            image_uri = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+
+            LineCursors._broadcast_overlay_fn(
+                LineCursors._current_node_id,
+                {
+                    "image": image_uri,
+                    "x1": float(fig_a[0]),
+                    "y1": float(1.0 - fig_a[1]),  # flip: image y=0 is top
+                    "x2": float(fig_b[0]),
+                    "y2": float(1.0 - fig_b[1]),
+                    "a_locked": False,
+                    "b_locked": False,
+                },
+            )
+
+        plt.close(fig)
+
+        # --- Output table ---
+        table = [
+            {"quantity": "A position", "value": xa, "unit": ""},
+            {"quantity": "A value",    "value": ya, "unit": ""},
+            {"quantity": "B position", "value": xb, "unit": ""},
+            {"quantity": "B value",    "value": yb, "unit": ""},
+            {"quantity": "delta X",    "value": xb - xa, "unit": ""},
+            {"quantity": "delta Y",    "value": yb - ya, "unit": ""},
+        ]
+        return (table,)
 
 
 # ---------------------------------------------------------------------------
@@ -242,9 +380,9 @@ class CrossSection:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-                "x1": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "x1": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "y1": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
-                "x2": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "x2": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "y2": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "extend": (["none", "to_edges"],),
                 "n_samples": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 1}),

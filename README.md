@@ -1,6 +1,6 @@
-# Argonode
+# argonode
 
-Argonode is a node-based image analysis application with:
+argonode is a node-based image analysis application with:
 
 - a Python backend built on `aiohttp`
 - a React + Vite frontend
@@ -135,13 +135,13 @@ powershell -ExecutionPolicy Bypass -File scripts\build-desktop.ps1
 The packaged app is written to:
 
 ```text
-desktop-dist/Argonode/
+desktop-dist/argonode/
 ```
 
 Main executable:
 
 ```text
-desktop-dist/Argonode/Argonode.exe
+desktop-dist/argonode/argonode.exe
 ```
 
 ### One-File Build
@@ -161,14 +161,14 @@ During normal source-based development, input/output folders live under the repo
 In the packaged desktop app, writable data is stored under:
 
 ```text
-%LOCALAPPDATA%\Argonode\
+%LOCALAPPDATA%\argonode\
 ```
 
 Specifically:
 
 ```text
-%LOCALAPPDATA%\Argonode\input
-%LOCALAPPDATA%\Argonode\output
+%LOCALAPPDATA%\argonode\input
+%LOCALAPPDATA%\argonode\output
 ```
 
 You can override the packaged app data directory with:
