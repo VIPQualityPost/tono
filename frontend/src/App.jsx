@@ -13,6 +13,7 @@ import FileBrowser from './FileBrowser';
 import * as api from './api';
 import { toBlob } from 'html-to-image';
 import { embedWorkflow, extractWorkflow } from './pngMetadata';
+import { serializeWorkflowState } from './workflowSerialization';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -51,29 +52,94 @@ function blobToDataUrl(blob) {
   });
 }
 
-function serializeWorkflowState(nodes, edges) {
-  return {
-    version: 1,
-    nodes: nodes.map((node) => ({
-      id: node.id,
-      type: node.type || 'custom',
-      position: node.position,
-      dragHandle: node.dragHandle || '.drag-handle',
-      data: {
-        label: node.data?.label || node.data?.className || 'Node',
-        className: node.data?.className || '',
-        widgetValues: node.data?.widgetValues || {},
-      },
-    })),
-    edges: edges.map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      sourceHandle: edge.sourceHandle,
-      target: edge.target,
-      targetHandle: edge.targetHandle,
-      style: edge.style,
-    })),
-  };
+async function waitForImageElement(img) {
+  if (img.complete && img.naturalWidth > 0) return;
+  if (typeof img.decode === 'function') {
+    try {
+      await img.decode();
+      return;
+    } catch {
+      // Fall back to load/error listeners below.
+    }
+  }
+  await new Promise((resolve) => {
+    const done = () => {
+      img.removeEventListener('load', done);
+      img.removeEventListener('error', done);
+      resolve();
+    };
+    img.addEventListener('load', done, { once: true });
+    img.addEventListener('error', done, { once: true });
+  });
+}
+
+function createCapturePlaceholder(el, dataUrl) {
+  const rect = el.getBoundingClientRect();
+  const style = window.getComputedStyle(el);
+  const placeholder = document.createElement('div');
+
+  placeholder.style.display = style.display === 'inline' ? 'inline-block' : style.display;
+  placeholder.style.width = `${el.clientWidth || rect.width}px`;
+  placeholder.style.height = `${el.clientHeight || rect.height}px`;
+  placeholder.style.maxWidth = style.maxWidth;
+  placeholder.style.maxHeight = style.maxHeight;
+  placeholder.style.minWidth = style.minWidth;
+  placeholder.style.minHeight = style.minHeight;
+  placeholder.style.borderRadius = style.borderRadius;
+  placeholder.style.backgroundImage = `url("${dataUrl}")`;
+  placeholder.style.backgroundRepeat = 'no-repeat';
+  placeholder.style.backgroundPosition = 'center';
+  placeholder.style.backgroundSize = el.tagName === 'CANVAS' ? '100% 100%' : 'contain';
+  placeholder.style.flexShrink = style.flexShrink;
+
+  return placeholder;
+}
+
+async function captureViewportBlob(viewportEl, options) {
+  const restorers = [];
+  const images = Array.from(viewportEl.querySelectorAll('img'));
+  await Promise.all(images.map(waitForImageElement));
+
+  for (const img of images) {
+    const dataUrl = img.currentSrc || img.src;
+    if (!dataUrl || !img.parentNode) continue;
+    const placeholder = createCapturePlaceholder(img, dataUrl);
+    img.parentNode.replaceChild(placeholder, img);
+    restorers.push(() => {
+      if (placeholder.parentNode) {
+        placeholder.parentNode.replaceChild(img, placeholder);
+      }
+    });
+  }
+
+  const canvases = Array.from(viewportEl.querySelectorAll('canvas'));
+  for (const canvas of canvases) {
+    if (!canvas.parentNode) continue;
+    let dataUrl = 'data:,';
+    try {
+      dataUrl = canvas.toDataURL('image/png');
+    } catch {
+      dataUrl = 'data:,';
+    }
+    if (dataUrl === 'data:,') continue;
+
+    const placeholder = createCapturePlaceholder(canvas, dataUrl);
+    canvas.parentNode.replaceChild(placeholder, canvas);
+    restorers.push(() => {
+      if (placeholder.parentNode) {
+        placeholder.parentNode.replaceChild(canvas, placeholder);
+      }
+    });
+  }
+
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+  try {
+    return await toBlob(viewportEl, options);
+  } finally {
+    restorers.reverse().forEach((restore) => restore());
+  }
 }
 
 // ── Graph serialisation → backend prompt format ───────────────────────
@@ -505,7 +571,7 @@ function Flow() {
     const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
     const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
 
-    const blob = await toBlob(viewportEl, {
+    const blob = await captureViewportBlob(viewportEl, {
       backgroundColor: '#1a1a1a',
       width: imageWidth,
       height: imageHeight,

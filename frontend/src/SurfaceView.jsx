@@ -28,7 +28,11 @@ export default function SurfaceView({ meshData }) {
     const width = container.clientWidth;
     const height = width; // 1:1 aspect
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      preserveDrawingBuffer: true,
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x0f172a);

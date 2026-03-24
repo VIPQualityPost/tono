@@ -10,6 +10,7 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
+    "test:frontend": "npm --prefix frontend test",
     "backend": "python -m backend.main",
     "desktop": "python desktop.py",
     "build:windows": "powershell -ExecutionPolicy Bypass -File scripts\\build-windows.ps1",
