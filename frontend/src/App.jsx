@@ -180,50 +180,185 @@ function serializeGraph(nodes, edges) {
 // ── Context menu component ────────────────────────────────────────────
 
 function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirection }) {
+  const [openCat, setOpenCat] = useState(null);
+  const [search, setSearch] = useState('');
+  const menuRef = useRef(null);
+  const [menuPos, setMenuPos] = useState({ x, y });
+  const subMenuRef = useRef(null);
+  const [subPos, setSubPos] = useState({ x: 0, y: 0 });
+  const catRowRefs = useRef({});
+
   // Group by category, optionally filtering to compatible nodes
-  const categories = {};
-  for (const [className, def] of Object.entries(nodeDefs)) {
-    // If filtering: only show nodes with a matching input or output
-    if (filterType && filterDirection) {
-      if (filterDirection === 'source') {
-        // Dragged from an output — show nodes that have a matching INPUT
-        const req = def.input.required || {};
-        const opt = def.input.optional || {};
-        const allInputs = { ...req, ...opt };
-        const hasMatch = Object.values(allInputs).some((spec) => {
-          const [type] = Array.isArray(spec) ? spec : [spec];
-          return type === filterType;
-        });
-        if (!hasMatch) continue;
-      } else {
-        // Dragged from an input — show nodes that have a matching OUTPUT
-        if (!def.output.includes(filterType)) continue;
+  const categories = useMemo(() => {
+    const cats = {};
+    for (const [className, def] of Object.entries(nodeDefs)) {
+      if (filterType && filterDirection) {
+        if (filterDirection === 'source') {
+          const req = def.input.required || {};
+          const opt = def.input.optional || {};
+          const allInputs = { ...req, ...opt };
+          const hasMatch = Object.values(allInputs).some((spec) => {
+            const [type] = Array.isArray(spec) ? spec : [spec];
+            return type === filterType;
+          });
+          if (!hasMatch) continue;
+        } else {
+          if (!def.output.includes(filterType)) continue;
+        }
+      }
+      const cat = def.category || 'uncategorized';
+      if (!cats[cat]) cats[cat] = [];
+      cats[cat].push({ className, def });
+    }
+    return cats;
+  }, [nodeDefs, filterType, filterDirection]);
+
+  // Flat filtered list for search
+  const searchResults = useMemo(() => {
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    const results = [];
+    for (const items of Object.values(categories)) {
+      for (const { className, def } of items) {
+        const name = (def.display_name || className).toLowerCase();
+        if (name.includes(q)) results.push({ className, def });
       }
     }
+    return results;
+  }, [search, categories]);
 
-    const cat = def.category || 'uncategorized';
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push({ className, def });
-  }
+  // Clamp main menu position to viewport on mount
+  useEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let nx = x, ny = y;
+    if (x + rect.width > vw) nx = vw - rect.width - 8;
+    if (y + rect.height > vh) ny = vh - rect.height - 8;
+    if (nx < 4) nx = 4;
+    if (ny < 4) ny = 4;
+    setMenuPos({ x: nx, y: ny });
+  }, [x, y]);
+
+  // Position submenu next to the hovered category row, clamped to viewport
+  useEffect(() => {
+    if (!openCat) return;
+    const rowEl = catRowRefs.current[openCat];
+    const subEl = subMenuRef.current;
+    if (!rowEl || !subEl) return;
+
+    const rowRect = rowEl.getBoundingClientRect();
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const subRect = subEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Horizontal: prefer right side, fall back to left
+    let sx = menuRect.right - 1;
+    if (sx + subRect.width > vw - 8) {
+      sx = menuRect.left - subRect.width + 1;
+    }
+    if (sx < 4) sx = 4;
+
+    // Vertical: align top with hovered row, clamp to viewport
+    let sy = rowRect.top;
+    if (sy + subRect.height > vh - 8) {
+      sy = vh - subRect.height - 8;
+    }
+    if (sy < 4) sy = 4;
+
+    setSubPos({ x: sx, y: sy });
+  }, [openCat]);
+
+  const handleCatEnter = useCallback((cat) => {
+    setOpenCat(cat);
+  }, []);
 
   if (Object.keys(categories).length === 0) {
     return (
-      <div className="context-menu" style={{ left: x, top: y }} onClick={(e) => e.stopPropagation()}>
+      <div className="context-menu" ref={menuRef} style={{ left: menuPos.x, top: menuPos.y }} onClick={(e) => e.stopPropagation()}>
         <div className="context-item" style={{ color: '#64748b' }}>No compatible nodes</div>
       </div>
     );
   }
 
+  const catNames = Object.keys(categories).sort();
+
   return (
-    <div
-      className="context-menu"
-      style={{ left: x, top: y }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {Object.entries(categories).map(([cat, items]) => (
-        <div key={cat}>
-          <div className="context-category">{cat}</div>
-          {items.map(({ className, def }) => (
+    <>
+      <div
+        className="context-menu ctx-root"
+        ref={menuRef}
+        style={{ left: menuPos.x, top: menuPos.y }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseLeave={(e) => {
+          // Close submenu only if mouse didn't move into the submenu
+          const related = e.relatedTarget;
+          if (subMenuRef.current && subMenuRef.current.contains(related)) return;
+          setOpenCat(null);
+        }}
+      >
+        <div className="ctx-title">Add Node</div>
+        <div className="ctx-search-row">
+          <input
+            className="ctx-search"
+            type="text"
+            placeholder="Search…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setOpenCat(null); }}
+            autoFocus
+          />
+        </div>
+
+        {searchResults ? (
+          <div className="ctx-list">
+            {searchResults.length === 0 ? (
+              <div className="context-item" style={{ color: '#64748b' }}>No matches</div>
+            ) : (
+              searchResults.map(({ className, def }) => (
+                <div
+                  key={className}
+                  className="context-item"
+                  onClick={() => { onAdd(className, def); onClose(); }}
+                >
+                  {def.display_name || className}
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="ctx-list">
+            {catNames.map((cat) => (
+              <div
+                key={cat}
+                ref={(el) => { catRowRefs.current[cat] = el; }}
+                className={`ctx-cat-item${openCat === cat ? ' ctx-cat-active' : ''}`}
+                onMouseEnter={() => handleCatEnter(cat)}
+              >
+                <span className="ctx-cat-label">{cat}</span>
+                <span className="ctx-cat-arrow">▶</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Submenu rendered as a sibling, positioned at computed screen coords */}
+      {openCat && categories[openCat] && (
+        <div
+          className="context-menu ctx-submenu"
+          ref={subMenuRef}
+          style={{ left: subPos.x, top: subPos.y }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseLeave={(e) => {
+            const related = e.relatedTarget;
+            if (menuRef.current && menuRef.current.contains(related)) return;
+            setOpenCat(null);
+          }}
+        >
+          {categories[openCat].map(({ className, def }) => (
             <div
               key={className}
               className="context-item"
@@ -233,8 +368,8 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
             </div>
           ))}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
 

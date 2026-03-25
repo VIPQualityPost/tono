@@ -408,23 +408,76 @@ html, body, #root {
   border: 1px solid #0f3460;
   border-radius: 6px;
   min-width: 180px;
-  max-height: 60vh;
-  overflow-y: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   padding: 4px 0;
 }
 
-.context-category {
-  padding: 6px 12px 3px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #64748b;
-  border-top: 1px solid #0f3460;
+.ctx-title {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  border-bottom: 1px solid #0f3460;
 }
-.context-category:first-child {
-  border-top: none;
+
+.ctx-search-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid #0f3460;
+}
+.ctx-search {
+  width: 100%;
+  background: #0f172a;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+}
+.ctx-search:focus {
+  border-color: #3a7abf;
+}
+.ctx-search::placeholder {
+  color: #475569;
+}
+
+.ctx-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* ── Category leaf items ── */
+.ctx-cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #e0e0e0;
+}
+.ctx-cat-item:hover,
+.ctx-cat-active {
+  background: #0f3460;
+}
+.ctx-cat-label {
+  text-transform: capitalize;
+}
+.ctx-cat-arrow {
+  font-size: 8px;
+  color: #64748b;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+.ctx-cat-active .ctx-cat-arrow {
+  color: #e0e0e0;
+}
+
+/* ── Submenu panel (separate fixed-position sibling) ── */
+.ctx-submenu {
+  position: fixed;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 .context-item {
@@ -432,6 +485,7 @@ html, body, #root {
   font-size: 12px;
   cursor: pointer;
   color: #e0e0e0;
+  white-space: nowrap;
 }
 .context-item:hover {
   background: #0f3460;
