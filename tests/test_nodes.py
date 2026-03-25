@@ -10,7 +10,7 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, ".")
-from backend.data_types import DataField, datafield_to_uint8
+from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8
 
 
 def make_field(data=None, shape=(64, 64), xreal=1e-6, yreal=1e-6):
@@ -899,12 +899,20 @@ def test_value_display():
 
     node = ValueDisplay()
     captured = []
-    ValueDisplay._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
+    ValueDisplay._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
     ValueDisplay._current_node_id = "test"
 
     result = node.display_value(3.25)
     assert result == (3.25,)
-    assert captured == [("test", 3.25)]
+    assert captured == [("test", {"value": 3.25})]
+
+    measurements = MeasureTable([
+        {"quantity": "delta X", "value": 1.7e-7, "unit": "m"},
+        {"quantity": "delta Y", "value": 463, "unit": "count"},
+    ])
+    result = node.display_value(measurements, measurement="delta X")
+    assert result == (1.7e-7,)
+    assert captured[-1] == ("test", {"value": 1.7e-7, "unit": "m"})
 
     ValueDisplay._broadcast_value_fn = None
     print("  PASS\n")
@@ -1358,12 +1366,12 @@ def test_table_math():
     captured = []
     TableMath._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
     TableMath._current_node_id = "test"
-    table = [
+    table = RecordTable([
         {"label": "a", "value": 1.0, "other": 10},
         {"label": "b", "value": 5.0, "other": 20},
         {"label": "c", "value": "3.0", "other": 30},
         {"label": "d", "value": "bad", "other": 40},
-    ]
+    ])
 
     result, = node.process(table, column="value", operation="max")
     assert result == 5.0
@@ -1400,6 +1408,16 @@ def test_table_math():
     except ValueError:
         pass
 
+    try:
+        node.process(
+            MeasureTable([{"quantity": "A position", "value": 1.0, "unit": "m"}]),
+            column="value",
+            operation="max",
+        )
+        raise AssertionError("Expected measurement table input to raise ValueError")
+    except ValueError:
+        pass
+
     TableMath._broadcast_value_fn = None
 
     print("  PASS\n")
@@ -1415,32 +1433,45 @@ def test_stats():
 
     node = Stats()
     captured = []
-    Stats._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
+    Stats._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
     Stats._current_node_id = "test"
 
     line = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64)
     result, = node.process(line, operation="mean", column="value")
     assert np.isclose(result, 2.5)
-    assert captured[-1] == ("test", result)
+    assert captured[-1] == ("test", {"value": result})
 
-    table = [
-        {"name": "a", "value": 3.0, "other": 10.0},
-        {"name": "b", "value": 7.0, "other": 20.0},
-    ]
+    table = RecordTable([
+        {"name": "a", "value": 3.0, "unit": "m", "other": 10.0},
+        {"name": "b", "value": 7.0, "unit": "m", "other": 20.0},
+    ])
     result, = node.process(table, operation="max", column="value")
     assert result == 7.0
+    assert captured[-1] == ("test", {"value": 7.0, "unit": "m"})
 
     field = make_field(data=np.array([[1.0, 5.0], [2.0, 4.0]], dtype=np.float64))
     result, = node.process(field, operation="range", column="value")
     assert result == 4.0
+    assert captured[-1] == ("test", {"value": 4.0, "unit": "m"})
 
     image = np.array([[0, 10], [20, 30]], dtype=np.uint8)
     result, = node.process(image, operation="avg", column="value")
     assert np.isclose(result, 15.0)
+    assert captured[-1] == ("test", {"value": 15.0})
 
     try:
         node.process(table, operation="Rq", column="value")
         raise AssertionError("Expected invalid TABLE operation to raise ValueError")
+    except ValueError:
+        pass
+
+    try:
+        node.process(
+            MeasureTable([{"quantity": "min", "value": 1.0, "unit": "m"}]),
+            operation="max",
+            column="value",
+        )
+        raise AssertionError("Expected measurement table input to raise ValueError")
     except ValueError:
         pass
 

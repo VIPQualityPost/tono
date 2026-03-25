@@ -19,6 +19,14 @@ import numpy as np
 COLORMAPS = ("viridis", "gray", "hot", "jet", "plasma", "inferno", "terrain",
              "cividis", "magma", "copper", "afmhot")
 
+
+class RecordTable(list):
+    """Tabular rows with a shared schema, e.g. particle statistics."""
+
+
+class MeasureTable(list):
+    """Named scalar measurements, typically rows of quantity/value/unit."""
+
 @dataclass
 class DataField:
     data: np.ndarray        # shape (yres, xres), dtype float64

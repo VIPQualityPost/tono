@@ -4,7 +4,7 @@ import React, {
 import {
   ReactFlow, Background, Controls, MiniMap,
   useNodesState, useEdgesState, addEdge, useReactFlow,
-  ReactFlowProvider, getNodesBounds, getViewportForBounds,
+  ReactFlowProvider, getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -18,20 +18,28 @@ import { serializeWorkflowState } from './workflowSerialization';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD', 'STATS_SOURCE']);
+const DATA_TYPES = new Set([
+  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
+  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE',
+]);
 
 const SOCKET_COMPATIBILITY = {
-  STATS_SOURCE: new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE']),
+  STATS_SOURCE: new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'RECORD_TABLE']),
+  ANY_TABLE: new Set(['MEASURE_TABLE', 'RECORD_TABLE']),
+  VALUE_SOURCE: new Set(['FLOAT', 'MEASURE_TABLE']),
 };
 
 const TYPE_COLORS = {
   DATA_FIELD: '#ff002f',
   IMAGE:      '#00ff08a0',
   LINE:       '#ffbe5c',
-  TABLE:      '#35e2fd',
+  MEASURE_TABLE:'#35e2fd',
+  RECORD_TABLE:'#fbbf24',
+  ANY_TABLE:  '#67e8f9',
   COORD:      '#e91ed1',
   FLOAT:      '#7dd3fc',
   STATS_SOURCE:'#c084fc',
+  VALUE_SOURCE:'#60a5fa',
 };
 
 const NODE_TYPES = { custom: CustomNode };
@@ -54,6 +62,46 @@ function socketTypesCompatible(sourceType, targetType) {
   if (sourceType === targetType) return true;
   const accepted = SOCKET_COMPATIBILITY[targetType];
   return !!accepted?.has(sourceType);
+}
+
+function getRenderedNodeBounds(nodes) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let found = false;
+
+  for (const node of nodes) {
+    const selectorId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(String(node.id))
+      : String(node.id);
+    const el = document.querySelector(`.react-flow__node[data-id="${selectorId}"]`);
+    const width = el?.offsetWidth || node.measured?.width || node.width || 0;
+    const height = el?.offsetHeight || node.measured?.height || node.height || 0;
+    const x = node.positionAbsolute?.x ?? node.position?.x ?? 0;
+    const y = node.positionAbsolute?.y ?? node.position?.y ?? 0;
+
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      continue;
+    }
+
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+    maxY = Math.max(maxY, y + height);
+    found = true;
+  }
+
+  if (!found) {
+    return null;
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
+  };
 }
 
 async function waitForImageElement(img) {
@@ -463,7 +511,12 @@ function Flow() {
           updateNodeData(msg.data.node_id, { tableRows: msg.data.rows });
           break;
         case 'scalar':
-          updateNodeData(msg.data.node_id, { scalarValue: msg.data.value });
+          updateNodeData(msg.data.node_id, {
+            scalarValue: {
+              value: msg.data.value,
+              unit: typeof msg.data.unit === 'string' ? msg.data.unit : '',
+            },
+          });
           break;
         case 'mesh3d':
           updateNodeData(msg.data.node_id, { meshData: msg.data.mesh });
@@ -797,7 +850,10 @@ function Flow() {
     const allNodes = reactFlow.getNodes();
     if (allNodes.length === 0) throw new Error('No nodes to capture');
 
-    const bounds = getNodesBounds(allNodes);
+    const bounds = getRenderedNodeBounds(allNodes);
+    if (!bounds) {
+      throw new Error('Could not determine rendered node bounds');
+    }
     const pad = 0.1; // 10% margin on each side
     const imageWidth = Math.ceil(bounds.width * (1 + pad * 2));
     const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));

@@ -50,7 +50,7 @@ class ExecutionEngine:
         on_table: Callable[[str, list], None] | None = None,
         on_mesh: Callable[[str, dict], None] | None = None,
         on_overlay: Callable[[str, str], None] | None = None,
-        on_value: Callable[[str, float], None] | None = None,
+        on_value: Callable[[str, Any], None] | None = None,
         on_warning: Callable[[str, str], None] | None = None,
     ) -> dict[str, tuple]:
         """
@@ -64,6 +64,7 @@ class ExecutionEngine:
         on_preview      : called with (node_id, data_uri) when a display node runs
         on_table        : called with (node_id, table_list) when PrintTable runs
         on_overlay      : called with (node_id, data_uri) for interactive overlays
+        on_value        : called with (node_id, scalar-payload) for scalar displays
         on_warning      : called with (node_id, message) for node warnings
 
         Returns
@@ -104,7 +105,7 @@ class ExecutionEngine:
             node_outputs[node_id] = result
 
             # Auto-preview: broadcast a thumbnail for any DATA_FIELD,
-            # IMAGE, or TABLE output so every node shows its result.
+            # IMAGE, or table-like output so every node shows its result.
             if on_preview or on_table:
                 self._auto_preview(cls, node_id, result, on_preview, on_table)
 
@@ -226,7 +227,7 @@ class ExecutionEngine:
     ) -> None:
         """
         After every node executes, inspect its outputs and broadcast
-        a preview for the first DATA_FIELD, IMAGE, or TABLE found.
+        a preview for the first DATA_FIELD, IMAGE, or table-like output found.
         Skip nodes that broadcast their own custom preview.
         """
         import numpy as np
@@ -260,7 +261,7 @@ class ExecutionEngine:
                     on_preview(node_id, preview)
                     return
 
-            if type_name == "TABLE" and isinstance(value, list) and on_table:
+            if type_name in ("TABLE", "MEASURE_TABLE", "RECORD_TABLE") and isinstance(value, list) and on_table:
                 on_table(node_id, value)
                 return
 

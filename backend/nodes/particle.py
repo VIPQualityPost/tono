@@ -8,7 +8,7 @@ Gwyddion equivalents:
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ class ParticleAnalysis:
             }
         }
 
-    RETURN_TYPES = ("TABLE",)
+    RETURN_TYPES = ("RECORD_TABLE",)
     RETURN_NAMES = ("particle_stats",)
     FUNCTION = "process"
     CATEGORY = "particles"
@@ -45,7 +45,7 @@ class ParticleAnalysis:
 
         pixel_area = field.dx * field.dy  # m^2 per pixel
 
-        rows = []
+        rows = RecordTable()
         for pid in range(1, n_particles + 1):
             particle_pixels = labeled == pid
             area_px = int(particle_pixels.sum())

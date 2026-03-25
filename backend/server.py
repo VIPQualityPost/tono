@@ -16,7 +16,7 @@ WebSocket message types sent to clients
 {"type": "executing",          "data": {"node": "...", "prompt_id": "..."}}
 {"type": "preview",            "data": {"node_id": "...", "image": "data:..."}}
 {"type": "table",              "data": {"node_id": "...", "rows": [...]}}
-{"type": "scalar",             "data": {"node_id": "...", "value": 1.23}}
+{"type": "scalar",             "data": {"node_id": "...", "value": 1.23, "unit": "nm"}}
 {"type": "execution_error",    "data": {"node_id": "...", "message": "..."}}
 {"type": "execution_complete", "data": {"prompt_id": "..."}}
 """
@@ -115,8 +115,18 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     def on_overlay(node_id: str, overlay_data) -> None:
         broadcast({"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data}})
 
-    def on_value(node_id: str, value: float) -> None:
-        broadcast({"type": "scalar", "data": {"node_id": node_id, "value": value}})
+    def on_value(node_id: str, payload) -> None:
+        if isinstance(payload, dict):
+            value = payload.get("value")
+            unit = payload.get("unit", "")
+        else:
+            value = payload
+            unit = ""
+
+        data = {"node_id": node_id, "value": value}
+        if isinstance(unit, str) and unit.strip():
+            data["unit"] = unit.strip()
+        broadcast({"type": "scalar", "data": data})
 
     def on_warning(node_id: str, message: str) -> None:
         broadcast({"type": "node_warning", "data": {"node_id": node_id, "message": message}})

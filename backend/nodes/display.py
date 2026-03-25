@@ -10,8 +10,53 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import (
-    DataField, COLORMAPS, datafield_to_uint8, image_to_uint8, encode_preview, normalize_for_colormap,
+    DataField, MeasureTable, COLORMAPS, datafield_to_uint8, image_to_uint8, encode_preview, normalize_for_colormap,
 )
+
+
+def _measurement_names(table: list) -> list[str]:
+    names = []
+    for row in table:
+        if not isinstance(row, dict):
+            continue
+        quantity = row.get("quantity")
+        if isinstance(quantity, str) and quantity and quantity not in names:
+            names.append(quantity)
+    return names
+
+
+def _measurement_entry(table: list, selection: str) -> dict:
+    names = _measurement_names(table)
+    if not names:
+        raise ValueError("Measurement table has no selectable rows.")
+
+    target = selection if selection in names else names[0]
+    for row in table:
+        if isinstance(row, dict) and row.get("quantity") == target:
+            return row
+
+    raise ValueError(f"Measurement '{target}' was not found.")
+
+
+def _measurement_value(table: list, selection: str) -> float:
+    row = _measurement_entry(table, selection)
+    value = row.get("value")
+    if isinstance(value, bool):
+        raise ValueError(f"Measurement '{row.get('quantity', selection)}' does not have a numeric value.")
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Measurement '{row.get('quantity', selection)}' does not have a numeric value.") from exc
+    if np.isfinite(numeric):
+        return numeric
+    raise ValueError(f"Measurement '{row.get('quantity', selection)}' does not have a numeric value.")
+
+
+def _scalar_payload(value: float, unit: str = "") -> dict:
+    payload = {"value": float(value)}
+    if isinstance(unit, str) and unit.strip():
+        payload["unit"] = unit.strip()
+    return payload
 
 
 @register_node(display_name="Preview")
@@ -156,7 +201,7 @@ class PrintTable:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "table": ("TABLE",),
+                "table": ("ANY_TABLE",),
             }
         }
 
@@ -164,7 +209,7 @@ class PrintTable:
     FUNCTION = "print_table"
     CATEGORY = "display"
     OUTPUT_NODE = True
-    DESCRIPTION = "Send a TABLE to the browser as a WebSocket message for display."
+    DESCRIPTION = "Send a measurement or record table to the browser as a WebSocket message for display."
 
     _broadcast_table_fn = None
     _current_node_id: str = ""
@@ -181,7 +226,14 @@ class ValueDisplay:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": ("FLOAT",),
+                "value": ("VALUE_SOURCE",),
+                "measurement": ("STRING", {
+                    "default": "",
+                    "choices_from_measure_input": "value",
+                    "show_when_source_type": {
+                        "value": ["MEASURE_TABLE"],
+                    },
+                }),
             }
         }
 
@@ -189,13 +241,19 @@ class ValueDisplay:
     RETURN_NAMES = ("value",)
     FUNCTION = "display_value"
     CATEGORY = "display"
-    DESCRIPTION = "Display a FLOAT in the graph and pass the same value through unchanged."
+    DESCRIPTION = "Display a FLOAT, or a selected numeric row from a measurement table, and pass the value through unchanged."
 
     _broadcast_value_fn = None
     _current_node_id: str = ""
 
-    def display_value(self, value: float) -> tuple:
-        numeric = float(value)
+    def display_value(self, value, measurement: str = "") -> tuple:
+        unit = ""
+        if isinstance(value, MeasureTable):
+            row = _measurement_entry(value, measurement)
+            numeric = _measurement_value(value, measurement)
+            unit = row.get("unit", "") if isinstance(row.get("unit"), str) else ""
+        else:
+            numeric = float(value)
         if ValueDisplay._broadcast_value_fn is not None:
-            ValueDisplay._broadcast_value_fn(ValueDisplay._current_node_id, numeric)
+            ValueDisplay._broadcast_value_fn(ValueDisplay._current_node_id, _scalar_payload(numeric, unit))
         return (numeric,)

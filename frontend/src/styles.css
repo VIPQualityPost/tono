@@ -194,6 +194,20 @@ html, body, #root {
   overflow-wrap: anywhere;
 }
 
+.node-value-box-number {
+  display: inline-block;
+}
+
+.node-value-box-unit {
+  display: inline-block;
+  margin-left: 0.35em;
+  font-size: 0.58em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(224, 242, 254, 0.82);
+  vertical-align: baseline;
+}
+
 /* ── I/O rows ──────────────────────────────────────────────────────── */
 .io-row {
   display: flex;
@@ -564,6 +578,8 @@ html, body, #root {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 10px;
   color: #cbd5e1;
+  table-layout: auto;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .node-table-grid th,
@@ -592,6 +608,20 @@ html, body, #root {
 
 .node-table-grid tbody tr:last-child td {
   border-bottom: none;
+}
+
+.node-table-col-quantity {
+  width: 46%;
+}
+
+.node-table-col-value {
+  width: 32%;
+  text-align: right !important;
+}
+
+.node-table-col-unit {
+  width: 22%;
+  text-align: left;
 }
 
 .node-table-num {

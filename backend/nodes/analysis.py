@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Callable
 from backend.node_registry import register_node
-from backend.data_types import DataField, datafield_to_uint8, encode_preview
+from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8, encode_preview
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ class StatisticsNode:
             }
         }
 
-    RETURN_TYPES = ("TABLE",)
+    RETURN_TYPES = ("MEASURE_TABLE",)
     RETURN_NAMES = ("stats",)
     FUNCTION = "process"
     CATEGORY = "analysis"
@@ -45,7 +45,7 @@ class StatisticsNode:
         skewness = float(np.mean(((d - mean) / rms) ** 3)) if rms > 0 else 0.0
         kurtosis = float(np.mean(((d - mean) / rms) ** 4)) if rms > 0 else 0.0
 
-        table = [
+        table = MeasureTable([
             {"quantity": "min",      "value": float(d.min()),    "unit": field.si_unit_z},
             {"quantity": "max",      "value": float(d.max()),    "unit": field.si_unit_z},
             {"quantity": "mean",     "value": mean,              "unit": field.si_unit_z},
@@ -54,7 +54,7 @@ class StatisticsNode:
             {"quantity": "skewness", "value": skewness,          "unit": ""},
             {"quantity": "kurtosis", "value": kurtosis,          "unit": ""},
             {"quantity": "range",    "value": float(d.max() - d.min()), "unit": field.si_unit_z},
-        ]
+        ])
         return (table,)
 
 
@@ -78,7 +78,7 @@ class HeightHistogram:
             }
         }
 
-    RETURN_TYPES = ("TABLE",)
+    RETURN_TYPES = ("MEASURE_TABLE",)
     RETURN_NAMES = ("measurements",)
     FUNCTION = "process"
     CATEGORY = "analysis"
@@ -147,14 +147,14 @@ class HeightHistogram:
                 },
             )
 
-        table = [
+        table = MeasureTable([
             {"quantity": "A position", "value": xa, "unit": field.si_unit_z},
             {"quantity": "A count",    "value": ya, "unit": count_unit},
             {"quantity": "B position", "value": xb, "unit": field.si_unit_z},
             {"quantity": "B count",    "value": yb, "unit": count_unit},
             {"quantity": "delta X",    "value": xb - xa, "unit": field.si_unit_z},
             {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
-        ]
+        ])
         return (table,)
 
 
@@ -181,7 +181,7 @@ class LineCursors:
             },
         }
 
-    RETURN_TYPES = ("TABLE",)
+    RETURN_TYPES = ("MEASURE_TABLE",)
     RETURN_NAMES = ("measurement",)
     FUNCTION = "process"
     CATEGORY = "analysis"
@@ -242,14 +242,14 @@ class LineCursors:
             )
 
         # --- Output table ---
-        table = [
+        table = MeasureTable([
             {"quantity": "A position", "value": xa, "unit": ""},
             {"quantity": "A value",    "value": ya, "unit": ""},
             {"quantity": "B position", "value": xb, "unit": ""},
             {"quantity": "B value",    "value": yb, "unit": ""},
             {"quantity": "delta X",    "value": xb - xa, "unit": ""},
             {"quantity": "delta Y",    "value": yb - ya, "unit": ""},
-        ]
+        ])
         return (table,)
 
 
@@ -614,7 +614,7 @@ class LineMath:
             }
         }
 
-    RETURN_TYPES = ("TABLE",)
+    RETURN_TYPES = ("MEASURE_TABLE",)
     RETURN_NAMES = ("result",)
     FUNCTION = "process"
     CATEGORY = "analysis"
@@ -627,12 +627,12 @@ class LineMath:
         z = np.asarray(line, dtype=np.float64).ravel()
         fn, unit = LINE_OPS[operation]
         value = fn(z)
-        table = [{"quantity": operation, "value": value, "unit": unit}]
+        table = MeasureTable([{"quantity": operation, "value": value, "unit": unit}])
         return (table,)
 
 
 # ---------------------------------------------------------------------------
-# TableMath — scalar measurement from a numeric TABLE column
+# TableMath — scalar measurement from a numeric record-table column
 # ---------------------------------------------------------------------------
 
 TABLE_OPS: dict[str, Callable[[np.ndarray], float]] = {
@@ -663,9 +663,62 @@ ARRAY_OPS: dict[str, Callable[[np.ndarray], float]] = {
 }
 
 
+def _square_unit(unit: str) -> str:
+    unit = str(unit or "").strip()
+    if not unit:
+        return ""
+    if any(token in unit for token in ("^", "(", ")", "/", "*", " ")):
+        return f"({unit})^2"
+    return f"{unit}^2"
+
+
+def _apply_scalar_unit(base_unit: str, operation: str) -> str:
+    unit = str(base_unit or "").strip()
+    if operation == "count":
+        return "count"
+    if not unit:
+        return ""
+    if operation == "variance":
+        return _square_unit(unit)
+    return unit
+
+
+def _common_table_unit(table: list, column: str) -> str:
+    candidates = []
+    seen = set()
+    unit_key = f"{column}_unit"
+
+    for row in table:
+        if not isinstance(row, dict):
+            continue
+        unit = None
+        if unit_key in row and isinstance(row.get(unit_key), str):
+            unit = row.get(unit_key)
+        elif column == "value" and isinstance(row.get("unit"), str):
+            unit = row.get("unit")
+        if unit is None:
+            continue
+        unit = unit.strip()
+        if not unit or unit in seen:
+            continue
+        seen.add(unit)
+        candidates.append(unit)
+
+    if len(candidates) == 1:
+        return candidates[0]
+    return ""
+
+
+def _scalar_payload(value: float, unit: str = "") -> dict:
+    payload = {"value": float(value)}
+    if isinstance(unit, str) and unit.strip():
+        payload["unit"] = unit.strip()
+    return payload
+
+
 @register_node(display_name="Table Math")
 class TableMath:
-    """Compute a scalar reduction over one numeric column in a TABLE."""
+    """Compute a scalar reduction over one numeric column in a record table."""
 
     _broadcast_value_fn = None
     _current_node_id: str = ""
@@ -674,7 +727,7 @@ class TableMath:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "table": ("TABLE",),
+                "table": ("RECORD_TABLE",),
                 "column": ("STRING", {
                     "default": "value",
                     "choices_from_table_input": "table",
@@ -688,13 +741,15 @@ class TableMath:
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
-        "Compute a scalar reduction over one numeric TABLE column. "
+        "Compute a scalar reduction over one numeric record-table column. "
         "Useful for max, min, avg, median, sum, range, std, variance, and count."
     )
 
     def process(self, table: list, column: str, operation: str) -> tuple:
+        if isinstance(table, MeasureTable):
+            raise ValueError("Table Math only accepts record tables, not measurement tables.")
         if not isinstance(table, list) or not table:
-            raise ValueError("Table Math requires a non-empty TABLE input.")
+            raise ValueError("Table Math requires a non-empty record table input.")
 
         column_name = resolve_table_column_name(table, column)
         values = extract_numeric_table_values(table, column_name)
@@ -759,7 +814,7 @@ def resolve_table_column_name(table: list, column: str) -> str:
 
 @register_node(display_name="Stats")
 class Stats:
-    """Polymorphic scalar stats node for LINE, TABLE, DATA_FIELD, or IMAGE inputs."""
+    """Polymorphic scalar stats node for LINE, RECORD_TABLE, DATA_FIELD, or IMAGE inputs."""
 
     _broadcast_value_fn = None
     _current_node_id: str = ""
@@ -773,14 +828,14 @@ class Stats:
                     "default": "value",
                     "choices_from_table_input": "input",
                     "show_when_source_type": {
-                        "input": ["TABLE"],
+                        "input": ["RECORD_TABLE"],
                     },
                 }),
                 "operation": ("STRING", {
                     "default": "mean",
                     "choices_by_source_type": {
                         "LINE": list(LINE_OPS.keys()),
-                        "TABLE": list(TABLE_OPS.keys()),
+                        "RECORD_TABLE": list(TABLE_OPS.keys()),
                         "DATA_FIELD": list(ARRAY_OPS.keys()),
                         "IMAGE": list(ARRAY_OPS.keys()),
                     },
@@ -794,14 +849,14 @@ class Stats:
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
-        "Compute a contextual scalar statistic from a LINE, TABLE, DATA_FIELD, or IMAGE. "
+        "Compute a contextual scalar statistic from a LINE, record table, DATA_FIELD, or IMAGE. "
         "The available operations adapt to the connected input type."
     )
 
     def process(self, input, operation: str, column: str = "value") -> tuple:
-        source_type, values = self._resolve_input_values(input, column)
+        source_type, values, resolved_column = self._resolve_input_values(input, column)
 
-        if source_type == "TABLE":
+        if source_type == "RECORD_TABLE":
             ops = TABLE_OPS
         elif source_type == "LINE":
             ops = LINE_OPS
@@ -815,29 +870,49 @@ class Stats:
         fn = op_entry[0] if isinstance(op_entry, tuple) else op_entry
         result = fn(values)
         if Stats._broadcast_value_fn is not None:
-            Stats._broadcast_value_fn(Stats._current_node_id, result)
+            Stats._broadcast_value_fn(
+                Stats._current_node_id,
+                _scalar_payload(result, self._resolve_output_unit(input, source_type, resolved_column, operation)),
+            )
         return (result,)
 
-    def _resolve_input_values(self, input_value, column: str) -> tuple[str, np.ndarray]:
+    def _resolve_output_unit(self, input_value, source_type: str, column: str | None, operation: str) -> str:
+        if source_type == "DATA_FIELD" and isinstance(input_value, DataField):
+            return _apply_scalar_unit(input_value.si_unit_z, operation)
+
+        if source_type == "LINE":
+            line_entry = LINE_OPS.get(operation)
+            explicit_unit = line_entry[1] if isinstance(line_entry, tuple) and len(line_entry) > 1 else ""
+            return _apply_scalar_unit(explicit_unit, operation)
+
+        if source_type == "RECORD_TABLE" and isinstance(input_value, list) and column:
+            return _apply_scalar_unit(_common_table_unit(input_value, column), operation)
+
+        return ""
+
+    def _resolve_input_values(self, input_value, column: str) -> tuple[str, np.ndarray, str | None]:
         if isinstance(input_value, DataField):
             values = np.asarray(input_value.data, dtype=np.float64)
-            return ("DATA_FIELD", values.ravel())
+            return ("DATA_FIELD", values.ravel(), None)
+
+        if isinstance(input_value, MeasureTable):
+            raise ValueError("Stats only accepts record tables, not measurement tables.")
 
         if isinstance(input_value, list):
             if not input_value:
-                raise ValueError("Stats requires a non-empty TABLE input.")
+                raise ValueError("Stats requires a non-empty record table input.")
             column_name = resolve_table_column_name(input_value, column)
             values = extract_numeric_table_values(input_value, column_name)
             if not values:
                 raise ValueError(f"Column '{column_name}' has no numeric values.")
-            return ("TABLE", np.asarray(values, dtype=np.float64))
+            return ("RECORD_TABLE", np.asarray(values, dtype=np.float64), column_name)
 
         if isinstance(input_value, np.ndarray):
             values = np.asarray(input_value, dtype=np.float64)
             if values.size == 0:
                 raise ValueError("Stats requires a non-empty input.")
             if values.ndim == 1:
-                return ("LINE", values.ravel())
-            return ("IMAGE", values.ravel())
+                return ("LINE", values.ravel(), None)
+            return ("IMAGE", values.ravel(), None)
 
         raise ValueError(f"Unsupported Stats input type: {type(input_value).__name__}")

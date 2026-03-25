@@ -8,17 +8,23 @@ const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD', 'STATS_SOURCE']);
+const DATA_TYPES = new Set([
+  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
+  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE',
+]);
 const SOCKET_WIDGET_TYPES = new Set(['FLOAT']);
 
 const TYPE_COLORS = {
   DATA_FIELD: '#3a7abf',
   IMAGE:      '#4caf50',
   LINE:       '#ff9800',
-  TABLE:      '#fdd835',
+  MEASURE_TABLE:'#35e2fd',
+  RECORD_TABLE:'#fbbf24',
+  ANY_TABLE:  '#67e8f9',
   COORD:      '#e91e63',
   FLOAT:      '#7dd3fc',
   STATS_SOURCE:'#c084fc',
+  VALUE_SOURCE:'#60a5fa',
 };
 
 const CAT_COLORS = {
@@ -183,7 +189,42 @@ function getTableColumns(rows) {
   return columns;
 }
 
-function formatTableCell(value) {
+function getMeasurementChoices(rows) {
+  const names = [];
+  for (const row of rows || []) {
+    const quantity = row?.quantity;
+    if (typeof quantity === 'string' && quantity && !names.includes(quantity)) {
+      names.push(quantity);
+    }
+  }
+  return names;
+}
+
+const SI_PREFIXES = [
+  { exp: -24, prefix: 'y' },
+  { exp: -21, prefix: 'z' },
+  { exp: -18, prefix: 'a' },
+  { exp: -15, prefix: 'f' },
+  { exp: -12, prefix: 'p' },
+  { exp: -9, prefix: 'n' },
+  { exp: -6, prefix: 'u' },
+  { exp: -3, prefix: 'm' },
+  { exp: 0, prefix: '' },
+  { exp: 3, prefix: 'k' },
+  { exp: 6, prefix: 'M' },
+  { exp: 9, prefix: 'G' },
+  { exp: 12, prefix: 'T' },
+  { exp: 15, prefix: 'P' },
+  { exp: 18, prefix: 'E' },
+  { exp: 21, prefix: 'Z' },
+  { exp: 24, prefix: 'Y' },
+];
+
+const PREFIXABLE_UNITS = new Set([
+  'm', 's', 'A', 'V', 'W', 'Hz', 'F', 'C', 'J', 'N', 'Pa', 'T', 'H', 'S', 'g', 'K', 'Ohm', 'ohm', 'Ω',
+]);
+
+function formatNumericCell(value) {
   if (value == null) return '';
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return String(value);
@@ -196,6 +237,48 @@ function formatTableCell(value) {
   return String(value);
 }
 
+function applySIPrefix(value, unit) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return { valueText: formatNumericCell(value), unitText: unit };
+  }
+  if (typeof unit !== 'string' || !PREFIXABLE_UNITS.has(unit)) {
+    return { valueText: formatNumericCell(value), unitText: unit };
+  }
+  if (value === 0) {
+    return { valueText: '0', unitText: unit };
+  }
+
+  const abs = Math.abs(value);
+  let exp = Math.floor(Math.log10(abs) / 3) * 3;
+  exp = Math.max(-24, Math.min(24, exp));
+
+  let scaled = value / (10 ** exp);
+  if (Math.abs(scaled) >= 999.5 && exp < 24) {
+    exp += 3;
+    scaled = value / (10 ** exp);
+  }
+
+  const prefix = SI_PREFIXES.find((entry) => entry.exp === exp)?.prefix ?? '';
+  return {
+    valueText: formatNumericCell(scaled),
+    unitText: `${prefix}${unit}`,
+  };
+}
+
+function formatTableCell(value) {
+  return formatNumericCell(value);
+}
+
+function formatTableRowCell(row, column) {
+  if (column === 'value' && typeof row?.unit === 'string') {
+    return applySIPrefix(row?.value, row.unit).valueText;
+  }
+  if (column === 'unit' && typeof row?.unit === 'string') {
+    return applySIPrefix(row?.value, row.unit).unitText;
+  }
+  return formatTableCell(row?.[column]);
+}
+
 function formatScalarValue(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   const numeric = Number(value);
@@ -204,6 +287,43 @@ function formatScalarValue(value) {
   if (abs === 0) return '0';
   if ((abs > 0 && abs < 1e-3) || abs >= 1e5) return numeric.toExponential(4);
   return numeric.toFixed(abs >= 100 ? 2 : 4).replace(/\.?0+$/, '');
+}
+
+function getScalarPayload(scalarValue) {
+  if (typeof scalarValue === 'number') {
+    return Number.isFinite(scalarValue) ? { value: scalarValue, unit: '' } : null;
+  }
+  if (!scalarValue || typeof scalarValue !== 'object') return null;
+  const numeric = Number(scalarValue.value);
+  if (!Number.isFinite(numeric)) return null;
+  return {
+    value: numeric,
+    unit: typeof scalarValue.unit === 'string' ? scalarValue.unit : '',
+  };
+}
+
+function formatScalarDisplay(scalarValue) {
+  const payload = getScalarPayload(scalarValue);
+  if (!payload) return null;
+
+  if (payload.unit) {
+    if (PREFIXABLE_UNITS.has(payload.unit)) {
+      const prefixed = applySIPrefix(payload.value, payload.unit);
+      return {
+        valueText: prefixed.valueText,
+        unitText: prefixed.unitText,
+      };
+    }
+    return {
+      valueText: formatScalarValue(payload.value),
+      unitText: payload.unit,
+    };
+  }
+
+  return {
+    valueText: formatScalarValue(payload.value),
+    unitText: '',
+  };
 }
 
 function getSourceTypeForInput(store, nodeId, inputName) {
@@ -221,6 +341,13 @@ function getSourceNodeForInput(store, nodeId, inputName) {
   return store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
 }
 
+function getWidgetSourceInputName(opts) {
+  return opts?.source_type_input
+    || opts?.choices_from_table_input
+    || opts?.choices_from_measure_input
+    || Object.keys(opts?.show_when_source_type || {})[0];
+}
+
 function widgetVisibleForSourceType(widget, sourceType) {
   const rules = widget?.opts?.show_when_source_type;
   if (!rules || typeof rules !== 'object') return true;
@@ -233,15 +360,37 @@ function widgetVisibleForSourceType(widget, sourceType) {
 function NodeTable({ rows }) {
   const columns = getTableColumns(rows);
   if (columns.length === 0) return null;
+  const lowerColumns = columns.map((column) => String(column).toLowerCase());
+  const hasMeasurementLayout = (
+    lowerColumns.length === 3
+    && lowerColumns[0] === 'quantity'
+    && lowerColumns[1] === 'value'
+    && lowerColumns[2] === 'unit'
+  );
+
+  const getColumnClass = (column) => {
+    const lower = String(column).toLowerCase();
+    if (lower === 'value') return 'node-table-col-value';
+    if (lower === 'unit') return 'node-table-col-unit';
+    if (lower === 'quantity') return 'node-table-col-quantity';
+    return '';
+  };
 
   return (
     <div className="node-table-wrap">
       <div className="node-table-scroll">
         <table className="node-table-grid">
+          {hasMeasurementLayout && (
+            <colgroup>
+              <col className="node-table-col-quantity" />
+              <col className="node-table-col-value" />
+              <col className="node-table-col-unit" />
+            </colgroup>
+          )}
           <thead>
             <tr>
               {columns.map((column) => (
-                <th key={column} scope="col">{column}</th>
+                <th key={column} scope="col" className={getColumnClass(column)}>{column}</th>
               ))}
             </tr>
           </thead>
@@ -250,13 +399,17 @@ function NodeTable({ rows }) {
               <tr key={row.id ?? row.quantity ?? rowIndex}>
                 {columns.map((column) => {
                   const value = row?.[column];
+                  const displayValue = formatTableRowCell(row, column);
                   return (
                     <td
                       key={`${rowIndex}-${column}`}
-                      className={typeof value === 'number' ? 'node-table-num' : ''}
-                      title={formatTableCell(value)}
+                      className={[
+                        getColumnClass(column),
+                        (typeof value === 'number' || (column === 'value' && typeof row?.value === 'number')) ? 'node-table-num' : '',
+                      ].filter(Boolean).join(' ')}
+                      title={displayValue}
                     >
-                      {formatTableCell(value)}
+                      {displayValue}
                     </td>
                   );
                 })}
@@ -274,6 +427,7 @@ function NodeTable({ rows }) {
 function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
   const def = data.definition;
+  const scalarDisplay = formatScalarDisplay(data.scalarValue);
 
   // Parse inputs into data handles and widgets
   const required = def.input.required || {};
@@ -418,15 +572,20 @@ function CustomNode({ id, data }) {
           <div className="node-warning">{data.warning}</div>
         )}
 
-        {typeof data.scalarValue === 'number' && (
+        {scalarDisplay && (
           <div className="node-value-display">
             <div className="node-value-label">Value</div>
-            <div className="node-value-box">{formatScalarValue(data.scalarValue)}</div>
+            <div className="node-value-box">
+              <span className="node-value-box-number">{scalarDisplay.valueText}</span>
+              {scalarDisplay.unitText && (
+                <span className="node-value-box-unit">{scalarDisplay.unitText}</span>
+              )}
+            </div>
           </div>
         )}
 
         {/* Widget rows */}
-        {widgets.filter((w) => widgetVisibleForSourceType(w, connectedSourceTypes?.[w.opts?.source_type_input || w.opts?.choices_from_table_input || Object.keys(w.opts?.show_when_source_type || {})[0]])).map((w) => (
+        {widgets.filter((w) => widgetVisibleForSourceType(w, connectedSourceTypes?.[getWidgetSourceInputName(w.opts)])).map((w) => (
           <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
             {w.socketType && (
               <Handle
@@ -553,9 +712,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   const dynamicSourceType = useStore(
     useCallback(
       (s) => {
-        const inputName = opts?.source_type_input
-          || opts?.choices_from_table_input
-          || Object.keys(opts?.show_when_source_type || {})[0];
+        const inputName = getWidgetSourceInputName(opts);
         if (!inputName) return null;
         return getSourceTypeForInput(s, nodeId, inputName);
       },
@@ -568,12 +725,26 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         const tableInputName = opts?.choices_from_table_input;
         if (!tableInputName) return [];
         const sourceType = getSourceTypeForInput(s, nodeId, tableInputName);
-        if (sourceType !== 'TABLE') return [];
+        if (sourceType !== 'RECORD_TABLE') return [];
         const sourceNode = getSourceNodeForInput(s, nodeId, tableInputName);
         const rows = sourceNode?.data?.tableRows;
         return Array.isArray(rows) ? getTableColumns(rows) : [];
       },
       [nodeId, opts?.choices_from_table_input],
+    ),
+  );
+  const dynamicMeasurementChoices = useStore(
+    useCallback(
+      (s) => {
+        const measurementInputName = opts?.choices_from_measure_input;
+        if (!measurementInputName) return [];
+        const sourceType = getSourceTypeForInput(s, nodeId, measurementInputName);
+        if (sourceType !== 'MEASURE_TABLE') return [];
+        const sourceNode = getSourceNodeForInput(s, nodeId, measurementInputName);
+        const rows = sourceNode?.data?.tableRows;
+        return Array.isArray(rows) ? getMeasurementChoices(rows) : [];
+      },
+      [nodeId, opts?.choices_from_measure_input],
     ),
   );
   const dynamicTypeChoices = (() => {
@@ -599,6 +770,13 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     const preferred = dynamicTableColumns.includes('value') ? 'value' : dynamicTableColumns[0];
     if (preferred != null) onChange(nodeId, name, preferred);
   }, [dynamicTableColumns, name, nodeId, onChange, opts?.choices_from_table_input, val]);
+
+  useEffect(() => {
+    if (!opts?.choices_from_measure_input || dynamicMeasurementChoices.length === 0) return;
+    const current = String(val ?? '');
+    if (dynamicMeasurementChoices.includes(current)) return;
+    if (dynamicMeasurementChoices[0] != null) onChange(nodeId, name, dynamicMeasurementChoices[0]);
+  }, [dynamicMeasurementChoices, name, nodeId, onChange, opts?.choices_from_measure_input, val]);
 
   useEffect(() => {
     if (dynamicTypeChoices.length === 0) return;
@@ -655,6 +833,24 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         >
           {dynamicTableColumns.map((column) => (
             <option key={column} value={column}>{column}</option>
+          ))}
+        </select>
+      </>
+    );
+  }
+
+  if (type === 'STRING' && opts?.choices_from_measure_input && dynamicMeasurementChoices.length > 0) {
+    const selected = dynamicMeasurementChoices.includes(String(val)) ? String(val) : dynamicMeasurementChoices[0];
+    return (
+      <>
+        <label>{name}</label>
+        <select
+          className="nodrag"
+          value={selected}
+          onChange={(e) => onChange(nodeId, name, e.target.value)}
+        >
+          {dynamicMeasurementChoices.map((choice) => (
+            <option key={choice} value={choice}>{choice}</option>
           ))}
         </select>
       </>
