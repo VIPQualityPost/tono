@@ -161,6 +161,39 @@ html, body, #root {
   border-bottom: 1px solid rgba(251, 191, 36, 0.2);
 }
 
+.node-value-display {
+  padding: 8px 10px 4px;
+}
+
+.node-value-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  margin-bottom: 5px;
+}
+
+.node-value-box {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  background:
+    linear-gradient(180deg, rgba(14, 116, 144, 0.2), rgba(8, 47, 73, 0.45)),
+    linear-gradient(135deg, rgba(125, 211, 252, 0.08), rgba(56, 189, 248, 0.02));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(2, 132, 199, 0.14);
+  color: #e0f2fe;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+}
+
 /* ── I/O rows ──────────────────────────────────────────────────────── */
 .io-row {
   display: flex;

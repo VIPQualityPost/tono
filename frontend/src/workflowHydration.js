@@ -39,6 +39,7 @@ export function hydrateWorkflowState(data, defs = {}) {
       tableRows: null,
       meshData: null,
       overlay: null,
+      scalarValue: null,
     },
   }));
 

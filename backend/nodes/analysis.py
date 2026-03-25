@@ -587,12 +587,18 @@ TABLE_OPS: dict[str, Callable[[np.ndarray], float]] = {
 class TableMath:
     """Compute a scalar reduction over one numeric column in a TABLE."""
 
+    _broadcast_value_fn = None
+    _current_node_id: str = ""
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "table": ("TABLE",),
-                "column": ("STRING", {"default": "value"}),
+                "column": ("STRING", {
+                    "default": "value",
+                    "choices_from_table_input": "table",
+                }),
                 "operation": (list(TABLE_OPS.keys()),),
             }
         }
@@ -618,7 +624,11 @@ class TableMath:
         op = TABLE_OPS.get(operation)
         if op is None:
             raise ValueError(f"Unsupported table operation: {operation}")
-        return (op(np.asarray(values, dtype=np.float64)),)
+
+        result = op(np.asarray(values, dtype=np.float64))
+        if TableMath._broadcast_value_fn is not None:
+            TableMath._broadcast_value_fn(TableMath._current_node_id, result)
+        return (result,)
 
     def _resolve_column_name(self, table: list, column: str) -> str:
         requested = str(column or "").strip()

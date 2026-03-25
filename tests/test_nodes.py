@@ -868,6 +868,23 @@ def test_print_table():
     print("  PASS\n")
 
 
+def test_value_display():
+    print("=== Test: ValueDisplay ===")
+    from backend.nodes.display import ValueDisplay
+
+    node = ValueDisplay()
+    captured = []
+    ValueDisplay._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
+    ValueDisplay._current_node_id = "test"
+
+    result = node.display_value(3.25)
+    assert result == (3.25,)
+    assert captured == [("test", 3.25)]
+
+    ValueDisplay._broadcast_value_fn = None
+    print("  PASS\n")
+
+
 # =========================================================================
 # I/O — IBW multi-channel loading
 # =========================================================================
@@ -1313,6 +1330,9 @@ def test_table_math():
     from backend.nodes.analysis import TableMath
 
     node = TableMath()
+    captured = []
+    TableMath._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
+    TableMath._current_node_id = "test"
     table = [
         {"label": "a", "value": 1.0, "other": 10},
         {"label": "b", "value": 5.0, "other": 20},
@@ -1322,6 +1342,7 @@ def test_table_math():
 
     result, = node.process(table, column="value", operation="max")
     assert result == 5.0
+    assert captured[-1] == ("test", 5.0)
 
     result, = node.process(table, column="value", operation="min")
     assert result == 1.0
@@ -1353,6 +1374,8 @@ def test_table_math():
         raise AssertionError("Expected non-numeric column to raise ValueError")
     except ValueError:
         pass
+
+    TableMath._broadcast_value_fn = None
 
     print("  PASS\n")
 
@@ -1460,6 +1483,7 @@ if __name__ == "__main__":
     # Display
     test_preview_image()
     test_print_table()
+    test_value_display()
     test_view3d()
 
     print("All tests passed!")

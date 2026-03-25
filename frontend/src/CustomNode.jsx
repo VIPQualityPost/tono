@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useCallback, useState, memo, lazy, Suspense } from 'react';
+import React, { useContext, useRef, useCallback, useState, useEffect, memo, lazy, Suspense } from 'react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import LinePlotOverlay from './LinePlotOverlay';
 
@@ -195,6 +195,16 @@ function formatTableCell(value) {
   return String(value);
 }
 
+function formatScalarValue(value) {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(numeric);
+  const abs = Math.abs(numeric);
+  if (abs === 0) return '0';
+  if ((abs > 0 && abs < 1e-3) || abs >= 1e5) return numeric.toExponential(4);
+  return numeric.toFixed(abs >= 100 ? 2 : 4).replace(/\.?0+$/, '');
+}
+
 function NodeTable({ rows }) {
   const columns = getTableColumns(rows);
   if (columns.length === 0) return null;
@@ -362,6 +372,13 @@ function CustomNode({ id, data }) {
           <div className="node-warning">{data.warning}</div>
         )}
 
+        {typeof data.scalarValue === 'number' && (
+          <div className="node-value-display">
+            <div className="node-value-label">Value</div>
+            <div className="node-value-box">{formatScalarValue(data.scalarValue)}</div>
+          </div>
+        )}
+
         {/* Widget rows */}
         {widgets.map((w) => (
           <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
@@ -487,6 +504,29 @@ function CustomNode({ id, data }) {
 function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser }) {
   const { name, type, opts } = widget;
   const val = value ?? opts?.default ?? '';
+  const dynamicTableColumns = useStore(
+    useCallback(
+      (s) => {
+        const tableInputName = opts?.choices_from_table_input;
+        if (!tableInputName) return [];
+        const targetHandle = `input::${tableInputName}::TABLE`;
+        const edge = s.edges?.find((e) => e.target === nodeId && e.targetHandle === targetHandle);
+        if (!edge) return [];
+        const sourceNode = s.nodeLookup?.get(edge.source) || s.nodes?.find((n) => n.id === edge.source);
+        const rows = sourceNode?.data?.tableRows;
+        return Array.isArray(rows) ? getTableColumns(rows) : [];
+      },
+      [nodeId, opts?.choices_from_table_input],
+    ),
+  );
+
+  useEffect(() => {
+    if (!opts?.choices_from_table_input || dynamicTableColumns.length === 0) return;
+    const current = String(val ?? '');
+    if (dynamicTableColumns.includes(current)) return;
+    const preferred = dynamicTableColumns.includes('value') ? 'value' : dynamicTableColumns[0];
+    if (preferred != null) onChange(nodeId, name, preferred);
+  }, [dynamicTableColumns, name, nodeId, onChange, opts?.choices_from_table_input, val]);
 
   // Combo / enum — type itself is the array of options
   if (Array.isArray(type)) {
@@ -500,6 +540,24 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         >
           {type.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </>
+    );
+  }
+
+  if (type === 'STRING' && opts?.choices_from_table_input && dynamicTableColumns.length > 0) {
+    const selected = dynamicTableColumns.includes(String(val)) ? String(val) : dynamicTableColumns[0];
+    return (
+      <>
+        <label>{name}</label>
+        <select
+          className="nodrag"
+          value={selected}
+          onChange={(e) => onChange(nodeId, name, e.target.value)}
+        >
+          {dynamicTableColumns.map((column) => (
+            <option key={column} value={column}>{column}</option>
           ))}
         </select>
       </>

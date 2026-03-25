@@ -451,6 +451,9 @@ function Flow() {
         case 'table':
           updateNodeData(msg.data.node_id, { tableRows: msg.data.rows });
           break;
+        case 'scalar':
+          updateNodeData(msg.data.node_id, { scalarValue: msg.data.value });
+          break;
         case 'mesh3d':
           updateNodeData(msg.data.node_id, { meshData: msg.data.mesh });
           break;
@@ -628,6 +631,7 @@ function Flow() {
         tableRows: null,
         meshData: null,
         overlay: null,
+        scalarValue: null,
       },
     };
 

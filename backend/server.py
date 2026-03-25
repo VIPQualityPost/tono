@@ -16,6 +16,7 @@ WebSocket message types sent to clients
 {"type": "executing",          "data": {"node": "...", "prompt_id": "..."}}
 {"type": "preview",            "data": {"node_id": "...", "image": "data:..."}}
 {"type": "table",              "data": {"node_id": "...", "rows": [...]}}
+{"type": "scalar",             "data": {"node_id": "...", "value": 1.23}}
 {"type": "execution_error",    "data": {"node_id": "...", "message": "..."}}
 {"type": "execution_complete", "data": {"prompt_id": "..."}}
 """
@@ -113,6 +114,9 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
 
     def on_overlay(node_id: str, overlay_data) -> None:
         broadcast({"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data}})
+
+    def on_value(node_id: str, value: float) -> None:
+        broadcast({"type": "scalar", "data": {"node_id": node_id, "value": value}})
 
     def on_warning(node_id: str, message: str) -> None:
         broadcast({"type": "node_warning", "data": {"node_id": node_id, "message": message}})
@@ -260,6 +264,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
                         on_table=on_table,
                         on_mesh=on_mesh,
                         on_overlay=on_overlay,
+                        on_value=on_value,
                         on_warning=on_warning,
                     ),
                 )

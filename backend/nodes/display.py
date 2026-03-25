@@ -173,3 +173,29 @@ class PrintTable:
         if PrintTable._broadcast_table_fn is not None:
             PrintTable._broadcast_table_fn(PrintTable._current_node_id, table)
         return ()
+
+
+@register_node(display_name="Value Display")
+class ValueDisplay:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": ("FLOAT",),
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "display_value"
+    CATEGORY = "display"
+    DESCRIPTION = "Display a FLOAT in the graph and pass the same value through unchanged."
+
+    _broadcast_value_fn = None
+    _current_node_id: str = ""
+
+    def display_value(self, value: float) -> tuple:
+        numeric = float(value)
+        if ValueDisplay._broadcast_value_fn is not None:
+            ValueDisplay._broadcast_value_fn(ValueDisplay._current_node_id, numeric)
+        return (numeric,)
