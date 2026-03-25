@@ -1055,6 +1055,18 @@ function Flow() {
     setContextMenu({ x: event.clientX, y: event.clientY });
   }, []);
 
+  useEffect(() => {
+    if (!contextMenu) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (event.target.closest('.context-menu')) return;
+      setContextMenu(null);
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    return () => window.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [contextMenu]);
+
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
@@ -1089,9 +1101,7 @@ function Flow() {
         </div>
 
         {/* React Flow canvas */}
-        <div className="flow-container" onMouseDown={(e) => {
-          if (!e.target.closest('.context-menu')) setContextMenu(null);
-        }} onDrop={onDropFile} onDragOver={onDragOver}>
+        <div className="flow-container" onDrop={onDropFile} onDragOver={onDragOver}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
