@@ -18,7 +18,11 @@ import { serializeWorkflowState } from './workflowSerialization';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD']);
+const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD', 'STATS_SOURCE']);
+
+const SOCKET_COMPATIBILITY = {
+  STATS_SOURCE: new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE']),
+};
 
 const TYPE_COLORS = {
   DATA_FIELD: '#ff002f',
@@ -27,6 +31,7 @@ const TYPE_COLORS = {
   TABLE:      '#35e2fd',
   COORD:      '#e91ed1',
   FLOAT:      '#7dd3fc',
+  STATS_SOURCE:'#c084fc',
 };
 
 const NODE_TYPES = { custom: CustomNode };
@@ -43,6 +48,12 @@ function getInputName(handleId) {
 
 function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
+}
+
+function socketTypesCompatible(sourceType, targetType) {
+  if (sourceType === targetType) return true;
+  const accepted = SOCKET_COMPATIBILITY[targetType];
+  return !!accepted?.has(sourceType);
 }
 
 async function waitForImageElement(img) {
@@ -220,11 +231,11 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
           const allInputs = { ...req, ...opt };
           const hasMatch = Object.values(allInputs).some((spec) => {
             const [type] = Array.isArray(spec) ? spec : [spec];
-            return type === filterType;
+            return socketTypesCompatible(filterType, type);
           });
           if (!hasMatch) continue;
         } else {
-          if (!def.output.includes(filterType)) continue;
+          if (!def.output.some((type) => socketTypesCompatible(type, filterType))) continue;
         }
       }
       const cat = def.category || 'uncategorized';
@@ -474,7 +485,7 @@ function Flow() {
   const isValidConnection = useCallback((connection) => {
     const srcType = getHandleType(connection.sourceHandle);
     const tgtType = getHandleType(connection.targetHandle);
-    return srcType === tgtType;
+    return socketTypesCompatible(srcType, tgtType);
   }, []);
 
   const onConnect = useCallback((params) => {
@@ -667,10 +678,15 @@ function Flow() {
         const allInputs = { ...(def.input.required || {}), ...(def.input.optional || {}) };
         const inputName = Object.entries(allInputs).find(([, spec]) => {
           const [type] = Array.isArray(spec) ? spec : [spec];
-          return type === filterType;
+          return socketTypesCompatible(filterType, type);
         })?.[0];
         if (inputName) {
-          const targetHandle = `input::${inputName}::${filterType}`;
+          const targetType = (() => {
+            const spec = allInputs[inputName];
+            const [type] = Array.isArray(spec) ? spec : [spec];
+            return type;
+          })();
+          const targetHandle = `input::${inputName}::${targetType}`;
           const color = TYPE_COLORS[filterType] || '#999';
           setEdges((eds) => addEdge({
             source: contextMenu.pendingNodeId,
@@ -682,10 +698,11 @@ function Flow() {
         }
       } else {
         // Dragged from an input → connect from the first matching output on the new node
-        const outputIdx = def.output.indexOf(filterType);
+        const outputIdx = def.output.findIndex((type) => socketTypesCompatible(type, filterType));
         if (outputIdx !== -1) {
-          const sourceHandle = `output::${outputIdx}::${filterType}`;
-          const color = TYPE_COLORS[filterType] || '#999';
+          const outputType = def.output[outputIdx];
+          const sourceHandle = `output::${outputIdx}::${outputType}`;
+          const color = TYPE_COLORS[outputType] || '#999';
           setEdges((eds) => addEdge({
             source: newNodeId,
             sourceHandle,

@@ -8,7 +8,7 @@ const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD']);
+const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD', 'STATS_SOURCE']);
 const SOCKET_WIDGET_TYPES = new Set(['FLOAT']);
 
 const TYPE_COLORS = {
@@ -18,6 +18,7 @@ const TYPE_COLORS = {
   TABLE:      '#fdd835',
   COORD:      '#e91e63',
   FLOAT:      '#7dd3fc',
+  STATS_SOURCE:'#c084fc',
 };
 
 const CAT_COLORS = {
@@ -205,6 +206,30 @@ function formatScalarValue(value) {
   return numeric.toFixed(abs >= 100 ? 2 : 4).replace(/\.?0+$/, '');
 }
 
+function getSourceTypeForInput(store, nodeId, inputName) {
+  const targetHandle = `input::${inputName}::`;
+  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  if (!edge?.sourceHandle) return null;
+  const parts = edge.sourceHandle.split('::');
+  return parts[2] || null;
+}
+
+function getSourceNodeForInput(store, nodeId, inputName) {
+  const targetHandle = `input::${inputName}::`;
+  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  if (!edge) return null;
+  return store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
+}
+
+function widgetVisibleForSourceType(widget, sourceType) {
+  const rules = widget?.opts?.show_when_source_type;
+  if (!rules || typeof rules !== 'object') return true;
+  const inputName = Object.keys(rules)[0];
+  const allowed = Array.isArray(rules[inputName]) ? rules[inputName] : [];
+  if (allowed.length === 0) return true;
+  return allowed.includes(sourceType);
+}
+
 function NodeTable({ rows }) {
   const columns = getTableColumns(rows);
   if (columns.length === 0) return null;
@@ -290,6 +315,20 @@ function CustomNode({ id, data }) {
     ),
   );
 
+  const connectedSourceTypes = useStore(
+    useCallback(
+      (s) => {
+        const sourceTypes = {};
+        const allInputs = { ...required, ...optional };
+        for (const name of Object.keys(allInputs)) {
+          sourceTypes[name] = getSourceTypeForInput(s, id, name);
+        }
+        return sourceTypes;
+      },
+      [id, required, optional],
+    ),
+  );
+
   for (const [name, spec] of Object.entries(optional)) {
     const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
     if (isProgressive && DATA_TYPES.has(type)) {
@@ -320,6 +359,13 @@ function CustomNode({ id, data }) {
 
   const catColor = CAT_COLORS[def.category] || '#333';
   const maxIORows = Math.max(dataInputs.length, outputs.length);
+  const hasInteractiveLineOverlay = data.overlay?.kind === 'line_plot' && hiddenWidgets.has('x1');
+  const overlayTitle = data.overlay?.section_title
+    || (data.overlay?.kind === 'crop_box'
+      ? 'Crop'
+      : data.overlay?.kind === 'line_plot'
+        ? 'Line Plot'
+        : 'Cross Section');
 
   return (
     <div className="custom-node">
@@ -380,7 +426,7 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Widget rows */}
-        {widgets.map((w) => (
+        {widgets.filter((w) => widgetVisibleForSourceType(w, connectedSourceTypes?.[w.opts?.source_type_input || w.opts?.choices_from_table_input || Object.keys(w.opts?.show_when_source_type || {})[0]])).map((w) => (
           <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
             {w.socketType && (
               <Handle
@@ -425,7 +471,7 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Collapsible preview image */}
-        {data.previewImage && (
+        {data.previewImage && !(hasInteractiveLineOverlay && typeof data.previewImage === 'object' && data.previewImage.kind === 'line_plot') && (
           <CollapsibleSection title="Preview" defaultOpen={true}>
             <PreviewBoundary
               resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
@@ -447,7 +493,7 @@ function CustomNode({ id, data }) {
 
         {/* Interactive cross-section overlay */}
         {data.overlay && hiddenWidgets.has('x1') && (
-          <CollapsibleSection title={data.overlay.kind === 'crop_box' ? 'Crop' : 'Cross Section'} defaultOpen={true}>
+          <CollapsibleSection title={overlayTitle} defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading...</div>}>
               {data.overlay.kind === 'line_plot' ? (
                 <LinePlotOverlay
@@ -504,21 +550,47 @@ function CustomNode({ id, data }) {
 function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser }) {
   const { name, type, opts } = widget;
   const val = value ?? opts?.default ?? '';
+  const dynamicSourceType = useStore(
+    useCallback(
+      (s) => {
+        const inputName = opts?.source_type_input
+          || opts?.choices_from_table_input
+          || Object.keys(opts?.show_when_source_type || {})[0];
+        if (!inputName) return null;
+        return getSourceTypeForInput(s, nodeId, inputName);
+      },
+      [nodeId, opts],
+    ),
+  );
   const dynamicTableColumns = useStore(
     useCallback(
       (s) => {
         const tableInputName = opts?.choices_from_table_input;
         if (!tableInputName) return [];
-        const targetHandle = `input::${tableInputName}::TABLE`;
-        const edge = s.edges?.find((e) => e.target === nodeId && e.targetHandle === targetHandle);
-        if (!edge) return [];
-        const sourceNode = s.nodeLookup?.get(edge.source) || s.nodes?.find((n) => n.id === edge.source);
+        const sourceType = getSourceTypeForInput(s, nodeId, tableInputName);
+        if (sourceType !== 'TABLE') return [];
+        const sourceNode = getSourceNodeForInput(s, nodeId, tableInputName);
         const rows = sourceNode?.data?.tableRows;
         return Array.isArray(rows) ? getTableColumns(rows) : [];
       },
       [nodeId, opts?.choices_from_table_input],
     ),
   );
+  const dynamicTypeChoices = (() => {
+    const byType = opts?.choices_by_source_type;
+    if (!byType) return [];
+    if (dynamicSourceType) {
+      return Array.isArray(byType[dynamicSourceType]) ? byType[dynamicSourceType] : [];
+    }
+    const merged = [];
+    for (const choices of Object.values(byType)) {
+      if (!Array.isArray(choices)) continue;
+      for (const choice of choices) {
+        if (!merged.includes(choice)) merged.push(choice);
+      }
+    }
+    return merged;
+  })();
 
   useEffect(() => {
     if (!opts?.choices_from_table_input || dynamicTableColumns.length === 0) return;
@@ -527,6 +599,13 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     const preferred = dynamicTableColumns.includes('value') ? 'value' : dynamicTableColumns[0];
     if (preferred != null) onChange(nodeId, name, preferred);
   }, [dynamicTableColumns, name, nodeId, onChange, opts?.choices_from_table_input, val]);
+
+  useEffect(() => {
+    if (dynamicTypeChoices.length === 0) return;
+    const current = String(val ?? '');
+    if (dynamicTypeChoices.includes(current)) return;
+    onChange(nodeId, name, dynamicTypeChoices[0]);
+  }, [dynamicTypeChoices, name, nodeId, onChange, val]);
 
   // Combo / enum — type itself is the array of options
   if (Array.isArray(type)) {
@@ -540,6 +619,24 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         >
           {type.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </>
+    );
+  }
+
+  if (type === 'STRING' && dynamicTypeChoices.length > 0) {
+    const selected = dynamicTypeChoices.includes(String(val)) ? String(val) : dynamicTypeChoices[0];
+    return (
+      <>
+        <label>{name}</label>
+        <select
+          className="nodrag"
+          value={selected}
+          onChange={(e) => onChange(nodeId, name, e.target.value)}
+        >
+          {dynamicTypeChoices.map((choice) => (
+            <option key={choice} value={choice}>{choice}</option>
           ))}
         </select>
       </>

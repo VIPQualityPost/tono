@@ -481,17 +481,42 @@ def test_height_histogram():
     data = np.linspace(0, 1, 1000).reshape(25, 40)
     field = make_field(data=data)
 
-    counts, bin_centers = node.process(field, n_bins=10, y_scale="linear")
-    assert len(counts) == 10
-    assert len(bin_centers) == 10
-    assert counts.dtype == np.float64
-    # Total counts should equal number of pixels
-    assert counts.sum() == 1000
-    # For uniform data, each bin should have ~100 counts
-    assert np.std(counts) < 10, f"Histogram not flat enough: std={np.std(counts)}"
-    # Bin centers should span the data range
-    assert bin_centers[0] > 0.0
-    assert bin_centers[-1] < 1.0
+    overlays = []
+    HeightHistogram._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
+    HeightHistogram._current_node_id = "test"
+
+    table, = node.process(
+        field,
+        n_bins=10,
+        y_scale="linear",
+        x1=0.2,
+        y1=0.5,
+        x2=0.8,
+        y2=0.5,
+    )
+    measurements = {row["quantity"]: row for row in table}
+    assert "A position" in measurements
+    assert "A count" in measurements
+    assert "B position" in measurements
+    assert "B count" in measurements
+    assert "delta X" in measurements
+    assert "delta Y" in measurements
+    assert measurements["A count"]["unit"] == "count"
+    assert measurements["B count"]["unit"] == "count"
+    assert measurements["B position"]["value"] > measurements["A position"]["value"]
+    assert len(overlays) == 1
+    assert overlays[0]["kind"] == "line_plot"
+    assert overlays[0]["section_title"] == "Histogram"
+    assert len(overlays[0]["line"]) == 10
+    assert len(overlays[0]["x_axis"]) == 10
+    assert np.isclose(overlays[0]["x1"], 0.2)
+    assert np.isclose(overlays[0]["x2"], 0.8)
+    assert np.isclose(
+        measurements["delta Y"]["value"],
+        measurements["B count"]["value"] - measurements["A count"]["value"],
+    )
+
+    HeightHistogram._broadcast_overlay_fn = None
     print("  PASS\n")
 
 
@@ -1381,6 +1406,49 @@ def test_table_math():
 
 
 # =========================================================================
+# Analysis — Stats
+# =========================================================================
+
+def test_stats():
+    print("=== Test: Stats ===")
+    from backend.nodes.analysis import Stats
+
+    node = Stats()
+    captured = []
+    Stats._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
+    Stats._current_node_id = "test"
+
+    line = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64)
+    result, = node.process(line, operation="mean", column="value")
+    assert np.isclose(result, 2.5)
+    assert captured[-1] == ("test", result)
+
+    table = [
+        {"name": "a", "value": 3.0, "other": 10.0},
+        {"name": "b", "value": 7.0, "other": 20.0},
+    ]
+    result, = node.process(table, operation="max", column="value")
+    assert result == 7.0
+
+    field = make_field(data=np.array([[1.0, 5.0], [2.0, 4.0]], dtype=np.float64))
+    result, = node.process(field, operation="range", column="value")
+    assert result == 4.0
+
+    image = np.array([[0, 10], [20, 30]], dtype=np.uint8)
+    result, = node.process(image, operation="avg", column="value")
+    assert np.isclose(result, 15.0)
+
+    try:
+        node.process(table, operation="Rq", column="value")
+        raise AssertionError("Expected invalid TABLE operation to raise ValueError")
+    except ValueError:
+        pass
+
+    Stats._broadcast_value_fn = None
+    print("  PASS\n")
+
+
+# =========================================================================
 # Display — View3D
 # =========================================================================
 
@@ -1457,6 +1525,7 @@ if __name__ == "__main__":
     test_fft2d()
     test_line_math()
     test_table_math()
+    test_stats()
 
     # Mask
     test_threshold_mask()

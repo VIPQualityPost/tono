@@ -71,26 +71,91 @@ class HeightHistogram:
                 "field": ("DATA_FIELD",),
                 "n_bins": ("INT", {"default": 256, "min": 10, "max": 1000, "step": 1}),
                 "y_scale": (["linear", "log"],),
+                "x1": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "y1": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "x2": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
+                "y2": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
             }
         }
 
-    RETURN_TYPES = ("LINE", "LINE")
-    RETURN_NAMES = ("counts", "bin_centers")
+    RETURN_TYPES = ("TABLE",)
+    RETURN_NAMES = ("measurements",)
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
         "Compute the height distribution histogram (DH). "
         "Use log scale to reveal small peaks next to a dominant background. "
+        "Outputs marker measurements while showing the histogram interactively in-node. "
         "Equivalent to gwy_data_field_dh."
     )
 
-    def process(self, field: DataField, n_bins: int, y_scale: str = "linear") -> tuple:
-        counts, bin_edges = np.histogram(field.data.ravel(), bins=int(n_bins))
+    _broadcast_overlay_fn = None
+    _current_node_id: str = ""
+
+    def process(
+        self,
+        field: DataField,
+        n_bins: int,
+        y_scale: str = "linear",
+        x1: float = 0.25,
+        y1: float = 0.5,
+        x2: float = 0.75,
+        y2: float = 0.5,
+    ) -> tuple:
+        raw_counts, bin_edges = np.histogram(field.data.ravel(), bins=int(n_bins))
         bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-        counts = counts.astype(np.float64)
+        counts = raw_counts.astype(np.float64)
         if y_scale == "log":
             counts = np.log10(1.0 + counts)
-        return (counts, bin_centers)
+
+        x1 = float(np.clip(x1, 0.0, 1.0))
+        x2 = float(np.clip(x2, 0.0, 0.0 + 1.0))
+
+        xmin = float(np.min(bin_centers)) if len(bin_centers) else 0.0
+        xmax = float(np.max(bin_centers)) if len(bin_centers) else 1.0
+
+        def x_frac_to_idx(frac):
+            if len(bin_centers) <= 1:
+                return 0
+            if xmax == xmin:
+                return 0
+            target_x = xmin + frac * (xmax - xmin)
+            return int(np.argmin(np.abs(bin_centers - target_x)))
+
+        idx_a = x_frac_to_idx(x1)
+        idx_b = x_frac_to_idx(x2)
+        xa = float(bin_centers[idx_a]) if len(bin_centers) else 0.0
+        xb = float(bin_centers[idx_b]) if len(bin_centers) else 0.0
+        ya = float(counts[idx_a]) if len(counts) else 0.0
+        yb = float(counts[idx_b]) if len(counts) else 0.0
+        count_unit = "count" if y_scale == "linear" else "log10(1+count)"
+
+        if HeightHistogram._broadcast_overlay_fn is not None:
+            HeightHistogram._broadcast_overlay_fn(
+                HeightHistogram._current_node_id,
+                {
+                    "kind": "line_plot",
+                    "section_title": "Histogram",
+                    "line": counts.tolist(),
+                    "x_axis": bin_centers.astype(np.float64).tolist(),
+                    "x1": float(np.clip(x1, 0.0, 1.0)),
+                    "x2": float(np.clip(x2, 0.0, 1.0)),
+                    "y1": float(y1),
+                    "y2": float(y2),
+                    "a_locked": False,
+                    "b_locked": False,
+                },
+            )
+
+        table = [
+            {"quantity": "A position", "value": xa, "unit": field.si_unit_z},
+            {"quantity": "A count",    "value": ya, "unit": count_unit},
+            {"quantity": "B position", "value": xb, "unit": field.si_unit_z},
+            {"quantity": "B count",    "value": yb, "unit": count_unit},
+            {"quantity": "delta X",    "value": xb - xa, "unit": field.si_unit_z},
+            {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
+        ]
+        return (table,)
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +229,7 @@ class LineCursors:
                 LineCursors._current_node_id,
                 {
                     "kind": "line_plot",
+                    "section_title": "Line Cursors",
                     "line": y.tolist(),
                     "x_axis": x.tolist(),
                     "x1": x1,
@@ -582,6 +648,20 @@ TABLE_OPS: dict[str, Callable[[np.ndarray], float]] = {
     "count": lambda values: float(len(values)),
 }
 
+ARRAY_OPS: dict[str, Callable[[np.ndarray], float]] = {
+    "min": lambda values: float(np.min(values)),
+    "max": lambda values: float(np.max(values)),
+    "avg": lambda values: float(np.mean(values)),
+    "mean": lambda values: float(np.mean(values)),
+    "median": lambda values: float(np.median(values)),
+    "sum": lambda values: float(np.sum(values)),
+    "range": lambda values: float(np.max(values) - np.min(values)),
+    "std": lambda values: float(np.std(values)),
+    "variance": lambda values: float(np.var(values)),
+    "rms": lambda values: float(np.sqrt(np.mean(values * values))),
+    "count": lambda values: float(values.size),
+}
+
 
 @register_node(display_name="Table Math")
 class TableMath:
@@ -616,8 +696,8 @@ class TableMath:
         if not isinstance(table, list) or not table:
             raise ValueError("Table Math requires a non-empty TABLE input.")
 
-        column_name = self._resolve_column_name(table, column)
-        values = self._extract_numeric_values(table, column_name)
+        column_name = resolve_table_column_name(table, column)
+        values = extract_numeric_table_values(table, column_name)
         if not values:
             raise ValueError(f"Column '{column_name}' has no numeric values.")
 
@@ -630,46 +710,134 @@ class TableMath:
             TableMath._broadcast_value_fn(TableMath._current_node_id, result)
         return (result,)
 
-    def _resolve_column_name(self, table: list, column: str) -> str:
-        requested = str(column or "").strip()
-        if requested:
-            return requested
 
-        if self._extract_numeric_values(table, "value"):
-            return "value"
+def extract_numeric_table_values(table: list, column: str) -> list[float]:
+    values = []
+    for row in table:
+        if not isinstance(row, dict) or column not in row:
+            continue
+        value = row[column]
+        if isinstance(value, bool):
+            continue
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            continue
+        if np.isfinite(numeric):
+            values.append(numeric)
+    return values
 
-        numeric_columns = []
-        seen = set()
-        for row in table:
-            if not isinstance(row, dict):
-                continue
-            for key in row.keys():
-                if key in seen:
-                    continue
-                seen.add(key)
-                if self._extract_numeric_values(table, key):
-                    numeric_columns.append(key)
 
-        if len(numeric_columns) == 1:
-            return numeric_columns[0]
-        if not numeric_columns:
-            raise ValueError("Table Math could not find any numeric columns in the input table.")
-        raise ValueError(
-            "Table Math found multiple numeric columns; set the column name explicitly."
-        )
+def resolve_table_column_name(table: list, column: str) -> str:
+    requested = str(column or "").strip()
+    if requested:
+        return requested
 
-    def _extract_numeric_values(self, table: list, column: str) -> list[float]:
-        values = []
-        for row in table:
-            if not isinstance(row, dict) or column not in row:
+    if extract_numeric_table_values(table, "value"):
+        return "value"
+
+    numeric_columns = []
+    seen = set()
+    for row in table:
+        if not isinstance(row, dict):
+            continue
+        for key in row.keys():
+            if key in seen:
                 continue
-            value = row[column]
-            if isinstance(value, bool):
-                continue
-            try:
-                numeric = float(value)
-            except (TypeError, ValueError):
-                continue
-            if np.isfinite(numeric):
-                values.append(numeric)
-        return values
+            seen.add(key)
+            if extract_numeric_table_values(table, key):
+                numeric_columns.append(key)
+
+    if len(numeric_columns) == 1:
+        return numeric_columns[0]
+    if not numeric_columns:
+        raise ValueError("Table Math could not find any numeric columns in the input table.")
+    raise ValueError(
+        "Table Math found multiple numeric columns; set the column name explicitly."
+    )
+
+
+@register_node(display_name="Stats")
+class Stats:
+    """Polymorphic scalar stats node for LINE, TABLE, DATA_FIELD, or IMAGE inputs."""
+
+    _broadcast_value_fn = None
+    _current_node_id: str = ""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "input": ("STATS_SOURCE",),
+                "column": ("STRING", {
+                    "default": "value",
+                    "choices_from_table_input": "input",
+                    "show_when_source_type": {
+                        "input": ["TABLE"],
+                    },
+                }),
+                "operation": ("STRING", {
+                    "default": "mean",
+                    "choices_by_source_type": {
+                        "LINE": list(LINE_OPS.keys()),
+                        "TABLE": list(TABLE_OPS.keys()),
+                        "DATA_FIELD": list(ARRAY_OPS.keys()),
+                        "IMAGE": list(ARRAY_OPS.keys()),
+                    },
+                    "source_type_input": "input",
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "process"
+    CATEGORY = "analysis"
+    DESCRIPTION = (
+        "Compute a contextual scalar statistic from a LINE, TABLE, DATA_FIELD, or IMAGE. "
+        "The available operations adapt to the connected input type."
+    )
+
+    def process(self, input, operation: str, column: str = "value") -> tuple:
+        source_type, values = self._resolve_input_values(input, column)
+
+        if source_type == "TABLE":
+            ops = TABLE_OPS
+        elif source_type == "LINE":
+            ops = LINE_OPS
+        else:
+            ops = ARRAY_OPS
+
+        if operation not in ops:
+            raise ValueError(f"Operation '{operation}' is not valid for {source_type} input.")
+
+        op_entry = ops[operation]
+        fn = op_entry[0] if isinstance(op_entry, tuple) else op_entry
+        result = fn(values)
+        if Stats._broadcast_value_fn is not None:
+            Stats._broadcast_value_fn(Stats._current_node_id, result)
+        return (result,)
+
+    def _resolve_input_values(self, input_value, column: str) -> tuple[str, np.ndarray]:
+        if isinstance(input_value, DataField):
+            values = np.asarray(input_value.data, dtype=np.float64)
+            return ("DATA_FIELD", values.ravel())
+
+        if isinstance(input_value, list):
+            if not input_value:
+                raise ValueError("Stats requires a non-empty TABLE input.")
+            column_name = resolve_table_column_name(input_value, column)
+            values = extract_numeric_table_values(input_value, column_name)
+            if not values:
+                raise ValueError(f"Column '{column_name}' has no numeric values.")
+            return ("TABLE", np.asarray(values, dtype=np.float64))
+
+        if isinstance(input_value, np.ndarray):
+            values = np.asarray(input_value, dtype=np.float64)
+            if values.size == 0:
+                raise ValueError("Stats requires a non-empty input.")
+            if values.ndim == 1:
+                return ("LINE", values.ravel())
+            return ("IMAGE", values.ravel())
+
+        raise ValueError(f"Unsupported Stats input type: {type(input_value).__name__}")
