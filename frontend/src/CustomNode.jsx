@@ -5,6 +5,7 @@ import LinePlotOverlay from './LinePlotOverlay';
 const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
 const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
+const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -525,8 +526,12 @@ function CustomNode({ id, data }) {
   const catColor = CAT_COLORS[def.category] || '#333';
   const maxIORows = Math.max(dataInputs.length, outputs.length);
   const hasInteractiveLineOverlay = data.overlay?.kind === 'line_plot' && hiddenWidgets.has('x1');
+  const hasInteractiveOverlay = !!data.overlay && (hiddenWidgets.has('x1') || data.overlay.kind === 'mask_paint');
+  const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint';
   const overlayTitle = data.overlay?.section_title
-    || (data.overlay?.kind === 'crop_box'
+    || (data.overlay?.kind === 'mask_paint'
+      ? 'Mask'
+      : data.overlay?.kind === 'crop_box'
       ? 'Crop'
       : data.overlay?.kind === 'line_plot'
         ? 'Line Plot'
@@ -641,7 +646,9 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Collapsible preview image */}
-        {data.previewImage && !(hasInteractiveLineOverlay && typeof data.previewImage === 'object' && data.previewImage.kind === 'line_plot') && (
+        {data.previewImage
+          && !hidePreviewForInteractiveMask
+          && !(hasInteractiveLineOverlay && typeof data.previewImage === 'object' && data.previewImage.kind === 'line_plot') && (
           <CollapsibleSection title="Preview" defaultOpen={true}>
             <PreviewBoundary
               resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
@@ -662,7 +669,7 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Interactive cross-section overlay */}
-        {data.overlay && hiddenWidgets.has('x1') && (
+        {hasInteractiveOverlay && (
           <CollapsibleSection title={overlayTitle} defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading...</div>}>
               {data.overlay.kind === 'line_plot' ? (
@@ -684,6 +691,16 @@ function CustomNode({ id, data }) {
                   y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
                   aLocked={data.overlay.a_locked}
                   bLocked={data.overlay.b_locked}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : data.overlay.kind === 'mask_paint' ? (
+                <MaskPaintOverlay
+                  image={data.overlay.image}
+                  imageWidth={data.overlay.image_width}
+                  imageHeight={data.overlay.image_height}
+                  penSize={data.widgetValues.pen_size}
+                  maskPaths={data.widgetValues.mask_paths}
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
                 />

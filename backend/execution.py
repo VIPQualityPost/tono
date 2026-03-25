@@ -188,7 +188,7 @@ class ExecutionEngine:
         from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay
         from backend.nodes.analysis import CrossSection, LineCursors, TableMath, Stats, HeightHistogram
         from backend.nodes.modify import CropResizeField
-        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
+        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
         from backend.nodes.io import SaveImage, LoadFile
 
         PreviewImage._broadcast_fn = on_preview
@@ -196,6 +196,7 @@ class ExecutionEngine:
         MaskMorphology._broadcast_fn = on_preview
         MaskInvert._broadcast_fn = on_preview
         MaskCombine._broadcast_fn = on_preview
+        DrawMask._broadcast_overlay_fn = on_overlay
         View3D._broadcast_mesh_fn = on_mesh
         PrintTable._broadcast_table_fn = on_table
         ValueDisplay._broadcast_value_fn = on_value
@@ -213,10 +214,10 @@ class ExecutionEngine:
         from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay
         from backend.nodes.analysis import CrossSection, LineCursors, TableMath, Stats, HeightHistogram
         from backend.nodes.modify import CropResizeField
-        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
+        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
         from backend.nodes.io import LoadFile, SaveImage
         if cls in (PreviewImage, PrintTable, View3D, ValueDisplay, TableMath, Stats, HeightHistogram, CrossSection, LineCursors, CropResizeField,
-                   ThresholdMask, MaskMorphology, MaskInvert, MaskCombine,
+                   ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask,
                    LoadFile, SaveImage):
             cls._current_node_id = node_id
 

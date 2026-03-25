@@ -530,7 +530,12 @@ function Flow() {
           updateNodeData(msg.data.node_id, { meshData: msg.data.mesh });
           break;
         case 'overlay':
-          updateNodeData(msg.data.node_id, { overlay: msg.data.overlay });
+          updateNodeData(
+            msg.data.node_id,
+            msg.data.overlay?.kind === 'mask_paint'
+              ? { overlay: msg.data.overlay, previewImage: null }
+              : { overlay: msg.data.overlay },
+          );
           break;
         case 'node_warning':
           updateNodeData(msg.data.node_id, { warning: msg.data.message });
