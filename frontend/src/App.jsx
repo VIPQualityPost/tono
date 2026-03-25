@@ -178,6 +178,7 @@ function serializeGraph(nodes, edges, { excludeManualTrigger = false } = {}) {
     for (const [name, spec] of Object.entries(required)) {
       const [type] = Array.isArray(spec) ? spec : [spec];
       if (DATA_TYPES.has(type)) continue; // socket, handled via edges
+      if (type === 'BUTTON') continue; // UI-only widget, not a backend input
       if (widgetValues[name] !== undefined) {
         inputs[name] = widgetValues[name];
       }
@@ -604,6 +605,7 @@ function Flow() {
     for (const [name, spec] of Object.entries(required)) {
       const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
       if (DATA_TYPES.has(type)) continue;
+      if (type === 'BUTTON') continue;
       if (Array.isArray(type)) {
         widgetValues[name] = type[0]; // combo default = first option
       } else {
@@ -1026,7 +1028,7 @@ function Flow() {
                 const cat = n.data?.definition?.category;
                 const colors = {
                   io: '#37474f', filters: '#1a237e', level: '#1b5e20',
-                  analysis: '#4a148c', grains: '#bf360c', display: '#212121',
+                  analysis: '#4a148c', particles: '#bf360c', display: '#212121',
                 };
                 return colors[cat] || '#333';
               }}

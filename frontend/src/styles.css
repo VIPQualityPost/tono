@@ -227,6 +227,23 @@ html, body, #root {
   accent-color: #3a7abf;
 }
 
+.widget-button {
+  flex: 1;
+  min-width: 0;
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.widget-button:hover {
+  background: #1a4a8a;
+  border-color: #3a7abf;
+}
+
 .slider-control {
   display: flex;
   align-items: center;
@@ -496,18 +513,56 @@ html, body, #root {
 }
 
 /* ── Node table ────────────────────────────────────────────────────── */
-.node-table {
-  padding: 4px 10px;
+.node-table-wrap {
+  padding: 4px 10px 8px;
+}
+
+.node-table-scroll {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #0f172a;
+}
+
+.node-table-grid {
+  width: 100%;
+  border-collapse: collapse;
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 10px;
   color: #cbd5e1;
 }
 
-.table-line {
+.node-table-grid th,
+.node-table-grid td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.75);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.node-table-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #16213e;
+  color: #94a3b8;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.node-table-grid tbody tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.38);
+}
+
+.node-table-grid tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.node-table-num {
+  text-align: right !important;
 }
 
 /* ── Node resize handles ───────────────────────────────────────────── */

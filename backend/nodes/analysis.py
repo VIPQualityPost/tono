@@ -10,6 +10,7 @@ Gwyddion equivalents:
 
 from __future__ import annotations
 import numpy as np
+from typing import Callable
 from backend.node_registry import register_node
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
 
@@ -562,3 +563,103 @@ class LineMath:
         value = fn(z)
         table = [{"quantity": operation, "value": value, "unit": unit}]
         return (table,)
+
+
+# ---------------------------------------------------------------------------
+# TableMath — scalar measurement from a numeric TABLE column
+# ---------------------------------------------------------------------------
+
+TABLE_OPS: dict[str, Callable[[np.ndarray], float]] = {
+    "min": lambda values: float(np.min(values)),
+    "max": lambda values: float(np.max(values)),
+    "avg": lambda values: float(np.mean(values)),
+    "mean": lambda values: float(np.mean(values)),
+    "median": lambda values: float(np.median(values)),
+    "sum": lambda values: float(np.sum(values)),
+    "range": lambda values: float(np.max(values) - np.min(values)),
+    "std": lambda values: float(np.std(values)),
+    "variance": lambda values: float(np.var(values)),
+    "count": lambda values: float(len(values)),
+}
+
+
+@register_node(display_name="Table Math")
+class TableMath:
+    """Compute a scalar reduction over one numeric column in a TABLE."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "table": ("TABLE",),
+                "column": ("STRING", {"default": "value"}),
+                "operation": (list(TABLE_OPS.keys()),),
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "process"
+    CATEGORY = "analysis"
+    DESCRIPTION = (
+        "Compute a scalar reduction over one numeric TABLE column. "
+        "Useful for max, min, avg, median, sum, range, std, variance, and count."
+    )
+
+    def process(self, table: list, column: str, operation: str) -> tuple:
+        if not isinstance(table, list) or not table:
+            raise ValueError("Table Math requires a non-empty TABLE input.")
+
+        column_name = self._resolve_column_name(table, column)
+        values = self._extract_numeric_values(table, column_name)
+        if not values:
+            raise ValueError(f"Column '{column_name}' has no numeric values.")
+
+        op = TABLE_OPS.get(operation)
+        if op is None:
+            raise ValueError(f"Unsupported table operation: {operation}")
+        return (op(np.asarray(values, dtype=np.float64)),)
+
+    def _resolve_column_name(self, table: list, column: str) -> str:
+        requested = str(column or "").strip()
+        if requested:
+            return requested
+
+        if self._extract_numeric_values(table, "value"):
+            return "value"
+
+        numeric_columns = []
+        seen = set()
+        for row in table:
+            if not isinstance(row, dict):
+                continue
+            for key in row.keys():
+                if key in seen:
+                    continue
+                seen.add(key)
+                if self._extract_numeric_values(table, key):
+                    numeric_columns.append(key)
+
+        if len(numeric_columns) == 1:
+            return numeric_columns[0]
+        if not numeric_columns:
+            raise ValueError("Table Math could not find any numeric columns in the input table.")
+        raise ValueError(
+            "Table Math found multiple numeric columns; set the column name explicitly."
+        )
+
+    def _extract_numeric_values(self, table: list, column: str) -> list[float]:
+        values = []
+        for row in table:
+            if not isinstance(row, dict) or column not in row:
+                continue
+            value = row[column]
+            if isinstance(value, bool):
+                continue
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+            if np.isfinite(numeric):
+                values.append(numeric)
+        return values

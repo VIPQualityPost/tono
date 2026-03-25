@@ -10,7 +10,7 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, ".")
-from backend.data_types import DataField
+from backend.data_types import DataField, datafield_to_uint8
 
 
 def make_field(data=None, shape=(64, 64), xreal=1e-6, yreal=1e-6):
@@ -219,6 +219,47 @@ def test_rotate_field():
     assert np.isclose(rotated_45.yreal, expected_yreal)
     assert np.isclose(rotated_45.xoff + rotated_45.xreal / 2.0, field.xoff + field.xreal / 2.0)
     assert np.isclose(rotated_45.yoff + rotated_45.yreal / 2.0, field.yoff + field.yreal / 2.0)
+
+    print("  PASS\n")
+
+
+def test_colormap_adjust():
+    print("=== Test: ColormapAdjust ===")
+    from backend.nodes.modify import ColormapAdjust
+
+    node = ColormapAdjust()
+    field = DataField(
+        data=np.array([[0.0, 0.25, 0.5, 0.75, 1.0]], dtype=np.float64),
+        xreal=5.0,
+        yreal=1.0,
+        colormap="gray",
+    )
+
+    adjusted, = node.process(field, offset=0.25, scale=0.5)
+    assert np.array_equal(adjusted.data, field.data)
+    assert adjusted.display_offset == 0.25
+    assert adjusted.display_scale == 0.5
+    assert adjusted.colormap == field.colormap
+
+    rgb = datafield_to_uint8(adjusted, "gray")
+    intensities = rgb[0, :, 0]
+    assert intensities[0] == 0
+    assert intensities[1] == 0
+    assert 110 <= intensities[2] <= 145
+    assert intensities[3] == 255
+    assert intensities[4] == 255
+
+    auto_like, = node.process(field, offset=0.0, scale=1.0)
+    auto_rgb = datafield_to_uint8(auto_like, "gray")
+    auto_intensities = auto_rgb[0, :, 0]
+    assert auto_intensities[0] == 0
+    assert auto_intensities[-1] == 255
+
+    try:
+        node.process(field, offset=0.0, scale=0.0)
+        raise AssertionError("Expected non-positive scale to raise ValueError")
+    except ValueError:
+        pass
 
     print("  PASS\n")
 
@@ -1264,6 +1305,59 @@ def test_line_math():
 
 
 # =========================================================================
+# Analysis — TableMath
+# =========================================================================
+
+def test_table_math():
+    print("=== Test: TableMath ===")
+    from backend.nodes.analysis import TableMath
+
+    node = TableMath()
+    table = [
+        {"label": "a", "value": 1.0, "other": 10},
+        {"label": "b", "value": 5.0, "other": 20},
+        {"label": "c", "value": "3.0", "other": 30},
+        {"label": "d", "value": "bad", "other": 40},
+    ]
+
+    result, = node.process(table, column="value", operation="max")
+    assert result == 5.0
+
+    result, = node.process(table, column="value", operation="min")
+    assert result == 1.0
+
+    result, = node.process(table, column="value", operation="avg")
+    assert np.isclose(result, 3.0)
+
+    result, = node.process(table, column="value", operation="median")
+    assert np.isclose(result, 3.0)
+
+    result, = node.process(table, column="other", operation="sum")
+    assert result == 100.0
+
+    result, = node.process(table, column="other", operation="count")
+    assert result == 4.0
+
+    # Blank column name should fall back to the common "value" column.
+    result, = node.process(table, column="", operation="range")
+    assert result == 4.0
+
+    try:
+        node.process(table, column="missing", operation="max")
+        raise AssertionError("Expected missing numeric column to raise ValueError")
+    except ValueError:
+        pass
+
+    try:
+        node.process([{"label": "only text"}], column="label", operation="max")
+        raise AssertionError("Expected non-numeric column to raise ValueError")
+    except ValueError:
+        pass
+
+    print("  PASS\n")
+
+
+# =========================================================================
 # Display — View3D
 # =========================================================================
 
@@ -1322,6 +1416,7 @@ if __name__ == "__main__":
     test_median_filter()
     test_crop_resize_field()
     test_rotate_field()
+    test_colormap_adjust()
     test_edge_detect()
     test_fft_filter_1d()
     test_fft_filter_2d()
@@ -1338,6 +1433,7 @@ if __name__ == "__main__":
     test_line_cursors()
     test_fft2d()
     test_line_math()
+    test_table_math()
 
     # Mask
     test_threshold_mask()

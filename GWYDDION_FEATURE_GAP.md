@@ -29,7 +29,7 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 |---|---------|---------------|-------------|
 | 15 | Correlation / Pattern Matching | crosscor.c, maskcor.c | Find repeated features or align images via cross-correlation. |
 | 16 | Slope Distribution | slope_dist.c | Angular histogram of surface slopes. Characterizes surface texture directionality. |
-| 17 | Grain Filtering | grain_filter.c | Remove grains by size, height, or border contact. Refine grain masks post-detection. |
+| 17 | Grain Filtering | grain_filter.c | Remove particles by size, height, or border contact. Refine grain masks post-detection. |
 | 18 | Field Arithmetic | arithmetic.c | Add/subtract/multiply/divide two DATA_FIELDs. Useful for difference maps, normalization. |
 | 19 | Spot Removal | spotremove.c | Interpolate over selected point defects (dust, spikes). |
 | 20 | Tip Modeling / Deconvolution | tip_blind.c, tip_model.c | Estimate tip shape from image, deconvolve to recover true surface. |
@@ -88,5 +88,5 @@ For reference, these Gwyddion equivalents are already covered:
 | Mask Morphology | mask | mask_morph.c (erode, dilate, open, close) |
 | Mask Invert | mask | — |
 | Mask Combine | mask | — (boolean AND, OR, XOR, subtract) |
-| Particle Analysis | grains | grain_stat.c |
+| Particle Analysis | particles | grain_stat.c |
 | Preview / 3D View / Print Table | display | Presentation, 3D view |

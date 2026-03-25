@@ -26,7 +26,7 @@ const CAT_COLORS = {
   modify:   '#0f766e',
   level:    '#1b5e20',
   analysis: '#4a148c',
-  grains:   '#bf360c',
+  particles:'#bf360c',
   display:  '#212121',
 };
 
@@ -167,6 +167,69 @@ function CollapsibleSection({ title, defaultOpen, children }) {
         {title}
       </button>
       {open && children}
+    </div>
+  );
+}
+
+function getTableColumns(rows) {
+  const columns = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    for (const key of Object.keys(row)) {
+      if (!columns.includes(key)) columns.push(key);
+    }
+  }
+  return columns;
+}
+
+function formatTableCell(value) {
+  if (value == null) return '';
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return String(value);
+    const abs = Math.abs(value);
+    if (Number.isInteger(value) && abs < 1e6) return String(value);
+    if ((abs > 0 && abs < 1e-3) || abs >= 1e4) return value.toExponential(3);
+    return value.toFixed(4).replace(/\.?0+$/, '');
+  }
+  if (Array.isArray(value)) return value.join(', ');
+  return String(value);
+}
+
+function NodeTable({ rows }) {
+  const columns = getTableColumns(rows);
+  if (columns.length === 0) return null;
+
+  return (
+    <div className="node-table-wrap">
+      <div className="node-table-scroll">
+        <table className="node-table-grid">
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column} scope="col">{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={row.id ?? row.quantity ?? rowIndex}>
+                {columns.map((column) => {
+                  const value = row?.[column];
+                  return (
+                    <td
+                      key={`${rowIndex}-${column}`}
+                      className={typeof value === 'number' ? 'node-table-num' : ''}
+                      title={formatTableCell(value)}
+                    >
+                      {formatTableCell(value)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -411,21 +474,7 @@ function CustomNode({ id, data }) {
         {/* Collapsible table data */}
         {data.tableRows && data.tableRows.length > 0 && (
           <CollapsibleSection title="Table" defaultOpen={true}>
-            <div className="node-table">
-              {data.tableRows.map((row, i) => {
-                let line;
-                if (row.quantity !== undefined) {
-                  const val = typeof row.value === 'number' ? row.value.toExponential(3) : row.value;
-                  line = `${row.quantity}: ${val} ${row.unit || ''}`;
-                } else {
-                  line = Object.entries(row)
-                    .slice(0, 3)
-                    .map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toExponential(2) : v}`)
-                    .join('  ');
-                }
-                return <div key={i} className="table-line">{line}</div>;
-              })}
-            </div>
+            <NodeTable rows={data.tableRows} />
           </CollapsibleSection>
         )}
       </div>
@@ -477,6 +526,26 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
           </button>
         </div>
       </>
+    );
+  }
+
+  if (type === 'BUTTON') {
+    const updates = opts?.set_widgets && typeof opts.set_widgets === 'object'
+      ? Object.entries(opts.set_widgets)
+      : [];
+
+    return (
+      <button
+        className="nodrag widget-button"
+        type="button"
+        onClick={() => {
+          for (const [targetName, targetValue] of updates) {
+            onChange(nodeId, targetName, targetValue);
+          }
+        }}
+      >
+        {opts?.label || name}
+      </button>
     );
   }
 

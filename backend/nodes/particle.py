@@ -2,7 +2,7 @@
 Particle detection nodes.
 
 Gwyddion equivalents:
-  ParticleAnalysis → gwy_data_field_grains_get_values (grains-values.c)
+  ParticleAnalysis → gwy_data_field_particles_get_values (particles-values.c)
 """
 
 from __future__ import annotations
@@ -30,11 +30,11 @@ class ParticleAnalysis:
     RETURN_TYPES = ("TABLE",)
     RETURN_NAMES = ("particle_stats",)
     FUNCTION = "process"
-    CATEGORY = "grains"
+    CATEGORY = "particles"
     DESCRIPTION = (
         "Label connected particle regions in a binary mask and compute per-particle "
         "statistics: area, equivalent diameter, mean/max height, bounding box. "
-        "Equivalent to gwy_data_field_grains_get_values."
+        "Equivalent to gwy_data_field_particles_get_values."
     )
 
     def process(self, field: DataField, mask: np.ndarray, min_size: int) -> tuple:

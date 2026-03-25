@@ -9,7 +9,9 @@ before execution begins.
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField, COLORMAPS, datafield_to_uint8, image_to_uint8, encode_preview
+from backend.data_types import (
+    DataField, COLORMAPS, datafield_to_uint8, image_to_uint8, encode_preview, normalize_for_colormap,
+)
 
 
 @register_node(display_name="Preview")
@@ -113,10 +115,13 @@ class View3D:
 
         # Normalize for colormap
         zmin, zmax = float(z.min()), float(z.max())
-        if zmax > zmin:
-            z_norm = (z - zmin) / (zmax - zmin)
-        else:
-            z_norm = np.zeros_like(z)
+        z_norm = normalize_for_colormap(
+            z,
+            offset=field.display_offset,
+            scale=field.display_scale,
+            data_min=float(field.data.min()),
+            data_max=float(field.data.max()),
+        )
 
         cmap_name = field.colormap if colormap == "auto" else colormap
         cmap = cm.get_cmap(cmap_name)

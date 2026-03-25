@@ -32,6 +32,8 @@ class DataField:
     si_unit_z: str = "m"
     domain: str = "spatial"  # "spatial" or "frequency"
     colormap: str = "viridis"
+    display_offset: float = 0.0
+    display_scale: float = 1.0
 
     def __post_init__(self) -> None:
         self.data = np.asarray(self.data, dtype=np.float64)
@@ -53,6 +55,8 @@ class DataField:
             si_unit_z=self.si_unit_z,
             domain=self.domain,
             colormap=self.colormap,
+            display_offset=self.display_offset,
+            display_scale=self.display_scale,
         )
 
     def replace(self, **kwargs) -> "DataField":
@@ -69,6 +73,8 @@ class DataField:
             "si_unit_z": self.si_unit_z,
             "domain": self.domain,
             "colormap": self.colormap,
+            "display_offset": self.display_offset,
+            "display_scale": self.display_scale,
         }
         base.update(kwargs)
         return DataField(**base)
@@ -88,20 +94,51 @@ class DataField:
 # Utility helpers shared across nodes
 # ---------------------------------------------------------------------------
 
+def normalize_for_colormap(
+    data: np.ndarray,
+    *,
+    offset: float = 0.0,
+    scale: float = 1.0,
+    data_min: float | None = None,
+    data_max: float | None = None,
+) -> np.ndarray:
+    """
+    Normalize an array to [0, 1] for colormap lookup, then apply a display window.
+
+    offset/scale operate in normalized data coordinates:
+      output = clip((base_norm - offset) / scale, 0, 1)
+    So offset=0, scale=1 maps the full data range 1:1 into the colormap.
+    """
+    data = np.asarray(data, dtype=np.float64)
+    dmin = float(data.min()) if data_min is None else float(data_min)
+    dmax = float(data.max()) if data_max is None else float(data_max)
+
+    if dmax > dmin:
+        base_norm = (data - dmin) / (dmax - dmin)
+    else:
+        base_norm = np.zeros_like(data)
+
+    offset = float(offset)
+    scale = float(scale)
+    if not np.isfinite(offset):
+        offset = 0.0
+    if not np.isfinite(scale) or scale <= 0.0:
+        scale = 1.0
+
+    return np.clip((base_norm - offset) / scale, 0.0, 1.0)
+
+
 def datafield_to_uint8(df: DataField, colormap: str = "gray") -> np.ndarray:
     """
     Normalize a DataField to a uint8 (H, W, 3) RGB array using matplotlib colormap.
     Returns shape (H, W, 3) uint8.
     """
     import matplotlib.cm as cm
-    import matplotlib.colors as mcolors
-
-    data = df.data
-    dmin, dmax = data.min(), data.max()
-    if dmax > dmin:
-        normalized = (data - dmin) / (dmax - dmin)
-    else:
-        normalized = np.zeros_like(data)
+    normalized = normalize_for_colormap(
+        df.data,
+        offset=df.display_offset,
+        scale=df.display_scale,
+    )
 
     cmap = cm.get_cmap(colormap)
     rgba = cmap(normalized)                     # (H, W, 4) float [0,1]
