@@ -16,6 +16,9 @@ from dataclasses import dataclass, field
 import numpy as np
 
 
+COLORMAPS = ("viridis", "gray", "hot", "jet", "plasma", "inferno", "terrain",
+             "cividis", "magma", "copper", "afmhot")
+
 @dataclass
 class DataField:
     data: np.ndarray        # shape (yres, xres), dtype float64
@@ -28,6 +31,7 @@ class DataField:
     si_unit_xy: str = "m"
     si_unit_z: str = "m"
     domain: str = "spatial"  # "spatial" or "frequency"
+    colormap: str = "viridis"
 
     def __post_init__(self) -> None:
         self.data = np.asarray(self.data, dtype=np.float64)
@@ -48,6 +52,7 @@ class DataField:
             si_unit_xy=self.si_unit_xy,
             si_unit_z=self.si_unit_z,
             domain=self.domain,
+            colormap=self.colormap,
         )
 
     def replace(self, **kwargs) -> "DataField":
@@ -63,6 +68,7 @@ class DataField:
             "si_unit_xy": self.si_unit_xy,
             "si_unit_z": self.si_unit_z,
             "domain": self.domain,
+            "colormap": self.colormap,
         }
         base.update(kwargs)
         return DataField(**base)

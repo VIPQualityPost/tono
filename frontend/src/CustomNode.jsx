@@ -211,6 +211,11 @@ function CustomNode({ id, data }) {
           );
         })}
 
+        {/* Warning notification */}
+        {data.warning && (
+          <div className="node-warning">{data.warning}</div>
+        )}
+
         {/* Widget rows */}
         {widgets.map((w) => (
           <div className="widget-row" key={w.name}>

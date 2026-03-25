@@ -436,6 +436,9 @@ function Flow() {
         case 'overlay':
           updateNodeData(msg.data.node_id, { overlay: msg.data.overlay });
           break;
+        case 'node_warning':
+          updateNodeData(msg.data.node_id, { warning: msg.data.message });
+          break;
       }
     });
     api.initWS();
@@ -500,9 +503,36 @@ function Flow() {
         data: {
           ...n.data,
           widgetValues: { ...n.data.widgetValues, [name]: value },
+          // Clear warning when user changes a value
+          warning: null,
         },
       };
     }));
+
+    // If this is a filename/name change on a LoadFile/LoadDemo node, fetch channels
+    if ((name === 'filename' || name === 'name') && value) {
+      const node = reactFlow.getNode(nodeId);
+      if (node && (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo')) {
+        api.getChannels(value).then((channels) => {
+          setNodes((prev) => prev.map((n) => {
+            if (n.id !== nodeId) return n;
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                definition: {
+                  ...n.data.definition,
+                  output: channels.map((c) => c.type),
+                  output_name: channels.map((c) => c.name),
+                },
+              },
+            };
+          }));
+          reactFlow.updateNodeInternals(nodeId);
+        });
+      }
+    }
+
     scheduleAutoRun();
   }, [setNodes]); // scheduleAutoRun is stable (no deps)
 
@@ -567,6 +597,27 @@ function Flow() {
     };
 
     setNodes((ns) => [...ns, newNode]);
+
+    // For LoadFile/LoadDemo, auto-fetch channels for the default value
+    if (className === 'LoadDemo' && widgetValues.name) {
+      api.getChannels(widgetValues.name).then((channels) => {
+        setNodes((prev) => prev.map((n) => {
+          if (n.id !== newNodeId) return n;
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              definition: {
+                ...n.data.definition,
+                output: channels.map((c) => c.type),
+                output_name: channels.map((c) => c.name),
+              },
+            },
+          };
+        }));
+        reactFlow.updateNodeInternals(newNodeId);
+      });
+    }
 
     // Auto-connect if this was triggered by dropping a connection on blank space
     if (contextMenu.pendingHandleId) {

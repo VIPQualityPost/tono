@@ -9,7 +9,7 @@ before execution begins.
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField, datafield_to_uint8, image_to_uint8, encode_preview
+from backend.data_types import DataField, COLORMAPS, datafield_to_uint8, image_to_uint8, encode_preview
 
 
 @register_node(display_name="Preview")
@@ -18,7 +18,7 @@ class PreviewImage:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "colormap": (["gray", "hot", "jet", "viridis", "plasma", "inferno"],),
+                "colormap": (["auto"] + list(COLORMAPS),),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -36,6 +36,10 @@ class PreviewImage:
     _current_node_id: str = ""
 
     def preview(self, colormap: str, image: np.ndarray | None = None, field=None) -> tuple:
+        # Resolve "auto" — use field's colormap if available, else fall back to gray
+        if colormap == "auto":
+            colormap = field.colormap if field is not None else "gray"
+
         # Prefer field if both are connected; accept whichever is provided
         if field is not None:
             arr_u8 = datafield_to_uint8(field, colormap)
@@ -73,7 +77,7 @@ class View3D:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-                "colormap": (["viridis", "gray", "hot", "jet", "plasma", "inferno", "terrain"],),
+                "colormap": (["auto"] + list(COLORMAPS),),
                 "z_scale": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 20.0, "step": 0.1}),
                 "resolution": ("INT", {"default": 128, "min": 32, "max": 512, "step": 16}),
             }
@@ -114,7 +118,8 @@ class View3D:
         else:
             z_norm = np.zeros_like(z)
 
-        cmap = cm.get_cmap(colormap)
+        cmap_name = field.colormap if colormap == "auto" else colormap
+        cmap = cm.get_cmap(cmap_name)
         rgba = cmap(z_norm)  # (ny, nx, 4) float [0,1]
         colors_u8 = (rgba[:, :, :3] * 255).astype(np.uint8)
 

@@ -34,6 +34,12 @@ export async function uploadFile(file) {
   return r.json();
 }
 
+export async function getChannels(filepath) {
+  const r = await fetch(`/channels?file=${encodeURIComponent(filepath)}`);
+  if (!r.ok) return [{ name: 'field', type: 'DATA_FIELD' }];
+  return r.json();
+}
+
 export async function runPrompt(prompt) {
   const r = await fetch('/prompt', {
     method: 'POST',

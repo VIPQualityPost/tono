@@ -101,6 +101,9 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     def on_overlay(node_id: str, overlay_data) -> None:
         broadcast({"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data}})
 
+    def on_warning(node_id: str, message: str) -> None:
+        broadcast({"type": "node_warning", "data": {"node_id": node_id, "message": message}})
+
     # ------------------------------------------------------------------
     # Route handlers
     # ------------------------------------------------------------------
@@ -193,6 +196,18 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
             },
         )
 
+    async def get_channels(request: web.Request) -> web.Response:
+        """Return available channels for a given file path."""
+        from backend.nodes.io import list_channels
+        filepath = request.query.get("file", "")
+        if not filepath:
+            return web.Response(
+                text=_dumps([{"name": "field", "type": "DATA_FIELD"}]),
+                content_type="application/json",
+            )
+        channels = await loop.run_in_executor(None, list_channels, filepath)
+        return web.Response(text=_dumps(channels), content_type="application/json")
+
     async def submit_prompt(request: web.Request) -> web.Response:
         body = await request.json()
         prompt = body.get("prompt")
@@ -218,6 +233,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
                         on_table=on_table,
                         on_mesh=on_mesh,
                         on_overlay=on_overlay,
+                        on_warning=on_warning,
                     ),
                 )
                 broadcast({"type": "execution_complete", "data": {"prompt_id": prompt_id}})
@@ -262,6 +278,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     app.router.add_get("/browse", browse_dir)
     app.router.add_post("/upload", upload_file)
     app.router.add_post("/download", download_file)
+    app.router.add_get("/channels", get_channels)
     app.router.add_post("/prompt", submit_prompt)
     app.router.add_get("/ws", websocket_handler)
 

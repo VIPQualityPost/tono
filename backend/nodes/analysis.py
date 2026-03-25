@@ -326,6 +326,7 @@ class FFT2D:
             si_unit_xy="1/m",
             si_unit_z=z_unit,
             domain="frequency",
+            colormap=field.colormap,
         )
         return (out_field,)
 
