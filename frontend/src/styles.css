@@ -237,6 +237,27 @@ html, body, #root {
   height: 10px !important;
   border: 2px solid #1e293b !important;
   border-radius: 50% !important;
+  position: absolute;
+  overflow: visible !important;
+  cursor: crosshair;
+}
+
+.typed-handle::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  bottom: -7px;
+  pointer-events: auto;
+}
+
+.typed-handle.react-flow__handle-left::before {
+  left: -4px;
+  right: -16px;
+}
+
+.typed-handle.react-flow__handle-right::before {
+  left: -16px;
+  right: -4px;
 }
 
 /* ── Widget rows ───────────────────────────────────────────────────── */
