@@ -13,6 +13,7 @@ import FileBrowser from './FileBrowser';
 import * as api from './api';
 import { toBlob } from 'html-to-image';
 import { embedWorkflow, extractWorkflow } from './pngMetadata';
+import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
 
@@ -867,7 +868,7 @@ function Flow() {
     const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
     const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
 
-    const blob = await captureViewportBlob(viewportEl, {
+    const blob = await captureWorkflowViewportBlob(viewportEl, {
       backgroundColor: '#1a1a1a',
       width: imageWidth,
       height: imageHeight,
