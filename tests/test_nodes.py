@@ -64,6 +64,165 @@ def test_median_filter():
     print("  PASS\n")
 
 
+def test_crop_resize_field():
+    print("=== Test: CropResizeField ===")
+    from backend.nodes.modify import CropResizeField
+    node = CropResizeField()
+
+    data = np.arange(32, dtype=np.float64).reshape(4, 8)
+    field = DataField(
+        data=data,
+        xreal=8.0,
+        yreal=4.0,
+        xoff=10.0,
+        yoff=20.0,
+        si_unit_xy="nm",
+        si_unit_z="nm",
+    )
+
+    overlays = []
+    CropResizeField._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
+    CropResizeField._current_node_id = "test"
+
+    cropped, = node.process(
+        field,
+        x1=0.25,
+        y1=0.25,
+        x2=0.75,
+        y2=1.0,
+        target_width=0,
+        target_height=0,
+        interpolation="bilinear",
+    )
+    assert cropped.data.shape == (3, 4)
+    assert np.array_equal(cropped.data, data[1:4, 2:6])
+    assert cropped.xreal == 4.0
+    assert cropped.yreal == 3.0
+    assert cropped.xoff == 12.0
+    assert cropped.yoff == 21.0
+    assert cropped.si_unit_xy == field.si_unit_xy
+    assert cropped.si_unit_z == field.si_unit_z
+    assert len(overlays) == 1
+    assert overlays[0]["kind"] == "crop_box"
+    assert overlays[0]["image"].startswith("data:image/png;base64,")
+    assert overlays[0]["a_locked"] is False
+    assert overlays[0]["b_locked"] is False
+
+    resized, = node.process(
+        field,
+        x1=0.0,
+        y1=0.0,
+        x2=1.0,
+        y2=1.0,
+        target_width=8,
+        target_height=0,
+        interpolation="bilinear",
+        corner_a=(0.25, 0.25),
+        corner_b=(0.75, 1.0),
+    )
+    assert resized.data.shape == (6, 8)
+    assert resized.xreal == cropped.xreal
+    assert resized.yreal == cropped.yreal
+    assert resized.xoff == cropped.xoff
+    assert resized.yoff == cropped.yoff
+    assert resized.domain == field.domain
+    assert overlays[-1]["a_locked"] is True
+    assert overlays[-1]["b_locked"] is True
+
+    reversed_crop, = node.process(
+        field,
+        x1=0.75,
+        y1=1.0,
+        x2=0.25,
+        y2=0.25,
+        target_width=0,
+        target_height=0,
+        interpolation="nearest",
+    )
+    assert np.array_equal(reversed_crop.data, cropped.data)
+
+    try:
+        node.process(
+            field,
+            x1=0.9,
+            y1=0.0,
+            x2=0.9,
+            y2=1.0,
+            target_width=0,
+            target_height=0,
+            interpolation="nearest",
+        )
+        raise AssertionError("Expected invalid crop bounds to raise ValueError")
+    except ValueError:
+        pass
+
+    CropResizeField._broadcast_overlay_fn = None
+
+    print("  PASS\n")
+
+
+def test_rotate_field():
+    print("=== Test: RotateField ===")
+    from backend.nodes.modify import RotateField
+    node = RotateField()
+
+    data = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
+    field = DataField(
+        data=data,
+        xreal=6.0,
+        yreal=4.0,
+        xoff=10.0,
+        yoff=20.0,
+        si_unit_xy="nm",
+        si_unit_z="nm",
+    )
+
+    rotated_90, = node.process(
+        field,
+        angle=90.0,
+        interpolation="nearest",
+        expand_canvas=True,
+    )
+    assert np.array_equal(rotated_90.data, np.rot90(data))
+    assert rotated_90.data.shape == (3, 2)
+    assert rotated_90.xreal == 4.0
+    assert rotated_90.yreal == 6.0
+    assert rotated_90.xoff == 11.0
+    assert rotated_90.yoff == 19.0
+    assert rotated_90.si_unit_xy == field.si_unit_xy
+    assert rotated_90.si_unit_z == field.si_unit_z
+
+    rotated_180, = node.process(
+        field,
+        angle=180.0,
+        interpolation="nearest",
+        expand_canvas=False,
+    )
+    assert np.array_equal(rotated_180.data, np.rot90(data, 2))
+    assert rotated_180.data.shape == data.shape
+    assert rotated_180.xreal == field.xreal
+    assert rotated_180.yreal == field.yreal
+    assert rotated_180.xoff == field.xoff
+    assert rotated_180.yoff == field.yoff
+
+    rotated_45, = node.process(
+        field,
+        angle=45.0,
+        interpolation="bilinear",
+        expand_canvas=True,
+    )
+    expected_xreal = abs(field.xreal * np.cos(np.deg2rad(45.0))) + abs(field.yreal * np.sin(np.deg2rad(45.0)))
+    expected_yreal = abs(field.xreal * np.sin(np.deg2rad(45.0))) + abs(field.yreal * np.cos(np.deg2rad(45.0)))
+    assert rotated_45.data.shape[0] > field.data.shape[0]
+    assert rotated_45.data.shape[1] > field.data.shape[1]
+    assert np.isclose(rotated_45.xreal, expected_xreal)
+    assert np.isclose(rotated_45.yreal, expected_yreal)
+    assert np.isclose(rotated_45.xoff + rotated_45.xreal / 2.0, field.xoff + field.xreal / 2.0)
+    assert np.isclose(rotated_45.yoff + rotated_45.yreal / 2.0, field.yoff + field.yreal / 2.0)
+
+    print("  PASS\n")
+
+
 def test_edge_detect():
     print("=== Test: EdgeDetect ===")
     from backend.nodes.filters import EdgeDetect
@@ -883,6 +1042,30 @@ def test_coordinate():
     print("  PASS\n")
 
 
+def test_range_slider():
+    print("=== Test: RangeSlider ===")
+    from backend.nodes.io import RangeSlider
+
+    node = RangeSlider()
+
+    result = node.process(min_value=0.0, max_value=10.0, value=3.25)
+    assert result == (3.25,)
+
+    # Clamp above max
+    result_high = node.process(min_value=0.0, max_value=10.0, value=12.0)
+    assert result_high == (10.0,)
+
+    # Reversed bounds should still work
+    result_reversed = node.process(min_value=5.0, max_value=-1.0, value=4.0)
+    assert result_reversed == (4.0,)
+
+    # Equal bounds collapse to a fixed value
+    result_fixed = node.process(min_value=2.5, max_value=2.5, value=99.0)
+    assert result_fixed == (2.5,)
+
+    print("  PASS\n")
+
+
 # =========================================================================
 # Analysis — LineCursors
 # =========================================================================
@@ -1137,6 +1320,8 @@ if __name__ == "__main__":
     # Filters
     test_gaussian_filter()
     test_median_filter()
+    test_crop_resize_field()
+    test_rotate_field()
     test_edge_detect()
     test_fft_filter_1d()
     test_fft_filter_2d()
@@ -1173,6 +1358,7 @@ if __name__ == "__main__":
     test_list_channels()
     test_load_demo()
     test_coordinate()
+    test_range_slider()
     test_save_image()
 
     # Display

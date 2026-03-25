@@ -26,6 +26,7 @@ const TYPE_COLORS = {
   LINE:       '#ffbe5c',
   TABLE:      '#35e2fd',
   COORD:      '#e91ed1',
+  FLOAT:      '#7dd3fc',
 };
 
 const NODE_TYPES = { custom: CustomNode };

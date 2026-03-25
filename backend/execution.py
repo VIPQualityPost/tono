@@ -181,6 +181,7 @@ class ExecutionEngine:
         """Wire up broadcast callbacks on display node classes."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D
         from backend.nodes.analysis import CrossSection, LineCursors
+        from backend.nodes.modify import CropResizeField
         from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
         from backend.nodes.io import SaveImage, LoadFile
 
@@ -193,6 +194,7 @@ class ExecutionEngine:
         PrintTable._broadcast_table_fn = on_table
         CrossSection._broadcast_overlay_fn = on_overlay
         LineCursors._broadcast_overlay_fn = on_overlay
+        CropResizeField._broadcast_overlay_fn = on_overlay
         LoadFile._broadcast_warning_fn = on_warning
         SaveImage._broadcast_warning_fn = on_warning
 
@@ -200,9 +202,10 @@ class ExecutionEngine:
         """Inform display nodes of their current node_id for WS tagging."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D
         from backend.nodes.analysis import CrossSection, LineCursors
+        from backend.nodes.modify import CropResizeField
         from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
         from backend.nodes.io import LoadFile, SaveImage
-        if cls in (PreviewImage, PrintTable, View3D, CrossSection, LineCursors,
+        if cls in (PreviewImage, PrintTable, View3D, CrossSection, LineCursors, CropResizeField,
                    ThresholdMask, MaskMorphology, MaskInvert, MaskCombine,
                    LoadFile, SaveImage):
             cls._current_node_id = node_id

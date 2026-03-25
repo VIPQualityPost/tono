@@ -4,10 +4,12 @@ import LinePlotOverlay from './LinePlotOverlay';
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
+const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 
 // ── Constants ─────────────────────────────────────────────────────────
 
 const DATA_TYPES = new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'TABLE', 'COORD']);
+const SOCKET_WIDGET_TYPES = new Set(['FLOAT']);
 
 const TYPE_COLORS = {
   DATA_FIELD: '#3a7abf',
@@ -15,11 +17,13 @@ const TYPE_COLORS = {
   LINE:       '#ff9800',
   TABLE:      '#fdd835',
   COORD:      '#e91e63',
+  FLOAT:      '#7dd3fc',
 };
 
 const CAT_COLORS = {
   io:       '#37474f',
   filters:  '#1a237e',
+  modify:   '#0f766e',
   level:    '#1b5e20',
   analysis: '#4a148c',
   grains:   '#bf360c',
@@ -189,7 +193,7 @@ function CustomNode({ id, data }) {
     } else if (opts?.hidden) {
       hiddenWidgets.add(name);
     } else {
-      widgets.push({ name, type, opts: opts || {} });
+      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
     }
   }
 
@@ -214,7 +218,7 @@ function CustomNode({ id, data }) {
   );
 
   for (const [name, spec] of Object.entries(optional)) {
-    const [type] = Array.isArray(spec) ? spec : [spec];
+    const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
     if (isProgressive && DATA_TYPES.has(type)) {
       // Progressive: show this slot only if it's the first or the previous is connected
       const match = name.match(/^field_(\d+)$/);
@@ -226,7 +230,13 @@ function CustomNode({ id, data }) {
         continue;
       }
     }
-    dataInputs.push({ name, type });
+    if (opts?.hidden) {
+      hiddenWidgets.add(name);
+    } else if (DATA_TYPES.has(type)) {
+      dataInputs.push({ name, type });
+    } else {
+      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
+    }
   }
 
   const outputs = def.output.map((type, i) => ({
@@ -291,11 +301,21 @@ function CustomNode({ id, data }) {
 
         {/* Widget rows */}
         {widgets.map((w) => (
-          <div className="widget-row" key={w.name}>
+          <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
+            {w.socketType && (
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={`input::${w.name}::${w.socketType}`}
+                className="typed-handle"
+                style={{ background: TYPE_COLORS[w.socketType] || '#999' }}
+              />
+            )}
             <WidgetControl
               widget={w}
               nodeId={id}
               value={data.widgetValues[w.name]}
+              widgetValues={data.widgetValues}
               onChange={ctx.onWidgetChange}
               openFileBrowser={ctx.openFileBrowser}
             />
@@ -347,13 +367,25 @@ function CustomNode({ id, data }) {
 
         {/* Interactive cross-section overlay */}
         {data.overlay && hiddenWidgets.has('x1') && (
-          <CollapsibleSection title="Cross Section" defaultOpen={true}>
+          <CollapsibleSection title={data.overlay.kind === 'crop_box' ? 'Crop' : 'Cross Section'} defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading...</div>}>
               {data.overlay.kind === 'line_plot' ? (
                 <LinePlotOverlay
                   overlay={data.overlay}
                   x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
                   x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  aLocked={data.overlay.a_locked}
+                  bLocked={data.overlay.b_locked}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : data.overlay.kind === 'crop_box' ? (
+                <CropBoxOverlay
+                  image={data.overlay.image}
+                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
+                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
                   aLocked={data.overlay.a_locked}
                   bLocked={data.overlay.b_locked}
                   nodeId={id}
@@ -403,7 +435,7 @@ function CustomNode({ id, data }) {
 
 // ── Widget renderer ───────────────────────────────────────────────────
 
-function WidgetControl({ widget, nodeId, value, onChange, openFileBrowser }) {
+function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser }) {
   const { name, type, opts } = widget;
   const val = value ?? opts?.default ?? '';
 
@@ -449,6 +481,39 @@ function WidgetControl({ widget, nodeId, value, onChange, openFileBrowser }) {
   }
 
   if (type === 'FLOAT') {
+    if (opts?.slider) {
+      const rawMin = opts?.min_widget ? widgetValues?.[opts.min_widget] : opts?.min;
+      const rawMax = opts?.max_widget ? widgetValues?.[opts.max_widget] : opts?.max;
+      const parsedMin = Number(rawMin);
+      const parsedMax = Number(rawMax);
+      let sliderMin = Number.isFinite(parsedMin) ? parsedMin : 0;
+      let sliderMax = Number.isFinite(parsedMax) ? parsedMax : 1;
+      if (sliderMax < sliderMin) [sliderMin, sliderMax] = [sliderMax, sliderMin];
+      const step = opts?.step ?? 0.01;
+      const numericVal = Number(val);
+      const clampedVal = Number.isFinite(numericVal)
+        ? Math.min(sliderMax, Math.max(sliderMin, numericVal))
+        : sliderMin;
+
+      return (
+        <>
+          <label>{name}</label>
+          <div className="slider-control">
+            <input
+              className="nodrag slider-input"
+              type="range"
+              min={sliderMin}
+              max={sliderMax}
+              step={step}
+              value={clampedVal}
+              onChange={(e) => onChange(nodeId, name, parseFloat(e.target.value))}
+            />
+            <span className="slider-value">{clampedVal.toFixed(4)}</span>
+          </div>
+        </>
+      );
+    }
+
     return (
       <>
         <label>{name}</label>
