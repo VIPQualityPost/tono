@@ -78,7 +78,7 @@ class View3D:
             "required": {
                 "field": ("DATA_FIELD",),
                 "colormap": (["auto"] + list(COLORMAPS),),
-                "z_scale": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 20.0, "step": 0.1}),
+                "z_scale": ("FLOAT", {"default": 1, "min": 0.1, "max": 10.0, "step": 0.05}),
                 "resolution": ("INT", {"default": 128, "min": 32, "max": 512, "step": 16}),
             }
         }
@@ -134,7 +134,7 @@ class View3D:
             "colors": colors_b64,
             "z_min": zmin,
             "z_max": zmax,
-            "z_scale": float(z_scale),
+            "z_scale": float(z_scale * 0.1),
             "x_range": [float(field.xoff), float(field.xoff + field.xreal)],
             "y_range": [float(field.yoff), float(field.yoff + field.yreal)],
         }

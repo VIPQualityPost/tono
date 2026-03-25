@@ -41,6 +41,7 @@ FRONTEND_DIR = frontend_dir()
 DIST_DIR = frontend_dist_dir()
 INPUT_DIR = input_dir()
 OUTPUT_DIR = output_dir()
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +62,18 @@ class _SafeEncoder(json.JSONEncoder):
 
 def _dumps(obj) -> str:
     return json.dumps(obj, cls=_SafeEncoder)
+
+
+def save_png_bytes(target_path: str, payload: bytes) -> Path:
+    path = Path(target_path).expanduser()
+    if not target_path.strip():
+        raise ValueError("Missing save path")
+    if path.suffix.lower() != ".png":
+        path = path.with_suffix(".png")
+    if not payload.startswith(PNG_SIGNATURE):
+        raise ValueError("Payload is not a valid PNG")
+    path.write_bytes(payload)
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -196,6 +209,20 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
             },
         )
 
+    async def save_workflow_png(request: web.Request) -> web.Response:
+        body = await request.read()
+        target_path = request.query.get("path", "")
+        if not target_path:
+            raise web.HTTPBadRequest(reason="Missing path")
+        try:
+            saved_path = save_png_bytes(target_path, body)
+        except ValueError as exc:
+            raise web.HTTPBadRequest(reason=str(exc)) from exc
+        return web.Response(
+            text=_dumps({"path": str(saved_path)}),
+            content_type="application/json",
+        )
+
     async def get_channels(request: web.Request) -> web.Response:
         """Return available channels for a given file path."""
         from backend.nodes.io import list_channels
@@ -278,6 +305,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     app.router.add_get("/browse", browse_dir)
     app.router.add_post("/upload", upload_file)
     app.router.add_post("/download", download_file)
+    app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)
     app.router.add_post("/prompt", submit_prompt)
     app.router.add_get("/ws", websocket_handler)

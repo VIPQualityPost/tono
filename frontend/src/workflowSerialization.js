@@ -10,6 +10,8 @@ export function serializeWorkflowState(nodes, edges) {
         label: node.data?.label || node.data?.className || 'Node',
         className: node.data?.className || '',
         widgetValues: node.data?.widgetValues || {},
+        output: node.data?.definition?.output || [],
+        output_name: node.data?.definition?.output_name || [],
       },
     })),
     edges: edges.map((edge) => ({
@@ -18,7 +20,7 @@ export function serializeWorkflowState(nodes, edges) {
       sourceHandle: edge.sourceHandle,
       target: edge.target,
       targetHandle: edge.targetHandle,
-      style: edge.style,
+      ...(edge.style ? { style: edge.style } : {}),
     })),
   };
 }

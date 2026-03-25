@@ -399,54 +399,86 @@ class Coordinate:
 # SaveImage
 # ---------------------------------------------------------------------------
 
-@register_node(display_name="Save Image")
+_MAX_SAVE_FIELDS = 8
+
+@register_node(display_name="Save Layers")
 class SaveImage:
     @classmethod
     def INPUT_TYPES(cls):
+        optional = {}
+        for i in range(_MAX_SAVE_FIELDS):
+            optional[f"field_{i}"] = ("DATA_FIELD",)
         return {
             "required": {
-                "image": ("IMAGE",),
-                "filename_prefix": ("STRING", {"default": "output"}),
-                "format": (["PNG", "TIFF", "NPY"],),
-            }
+                "filename": ("FILE_PICKER", {"default": ""}),
+                "format": (["TIFF", "NPZ"],),
+            },
+            "optional": optional,
         }
 
     RETURN_TYPES = ()
     FUNCTION = "save"
     CATEGORY = "io"
     OUTPUT_NODE = True
-    DESCRIPTION = "Save an image or array to the output folder."
+    MANUAL_TRIGGER = True
+    DESCRIPTION = (
+        "Save one or more DATA_FIELD layers to a single file. "
+        "Connect fields to the inputs — a new slot appears as each is filled. "
+        "TIFF writes float32 multi-page; NPZ writes float64 named arrays. "
+        "Click Save to write (does not auto-run)."
+    )
 
-    # Injected by server.py before execution begins
-    _broadcast_preview = None
+    _broadcast_warning_fn = None
+    _current_node_id = None
 
-    def save(self, image: np.ndarray, filename_prefix: str = "output", format: str = "PNG"):
-        OUTPUT_DIR.mkdir(exist_ok=True)
+    def save(self, filename: str, format: str = "TIFF", **kwargs):
+        # Collect connected fields in order
+        fields = []
+        for i in range(_MAX_SAVE_FIELDS):
+            f = kwargs.get(f"field_{i}")
+            if f is not None:
+                fields.append(f)
 
-        # Find next available filename
-        idx = 1
-        while True:
-            name = f"{filename_prefix}_{idx:04d}"
-            candidate = OUTPUT_DIR / f"{name}.{format.lower()}"
-            if not candidate.exists():
-                break
-            idx += 1
+        if not fields:
+            raise ValueError("No fields connected — connect at least one DATA_FIELD input.")
 
-        if format == "NPY":
-            np.save(str(OUTPUT_DIR / f"{name}.npy"), image)
+        if not filename or not filename.strip():
+            raise ValueError("No output path selected — use Browse to pick a location.")
+
+        path = Path(filename)
+        # Ensure parent directory exists
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Force correct extension
+        ext = ".tiff" if format == "TIFF" else ".npz"
+        if path.suffix.lower() != ext:
+            path = path.with_suffix(ext)
+
+        if format == "TIFF":
+            self._save_tiff(path, fields)
         else:
-            from PIL import Image
-            arr = image_to_uint8(image)
-            if arr.ndim == 2:
-                pil_img = Image.fromarray(arr, mode="L")
-            else:
-                pil_img = Image.fromarray(arr, mode="RGB")
-            pil_img.save(str(OUTPUT_DIR / f"{name}.{format.lower()}"))
+            self._save_npz(path, fields)
 
-        # Emit preview over WebSocket if callback is set
-        if SaveImage._broadcast_preview is not None:
-            arr_u8 = image_to_uint8(image)
-            data_uri = encode_preview(arr_u8)
-            SaveImage._broadcast_preview(data_uri)
+        self._send_warning(f"Saved {len(fields)} layer(s) to {path.name}")
+        return ()
+
+    def _save_tiff(self, path: Path, fields: list[DataField]):
+        from PIL import Image
+        images = []
+        for f in fields:
+            images.append(Image.fromarray(f.data.astype(np.float32)))
+        images[0].save(str(path), save_all=True, append_images=images[1:])
+
+    def _save_npz(self, path: Path, fields: list[DataField]):
+        arrays = {}
+        for i, f in enumerate(fields):
+            arrays[f"layer_{i}"] = f.data
+        np.savez(str(path), **arrays)
+
+    def _send_warning(self, message: str):
+        fn = SaveImage._broadcast_warning_fn
+        nid = SaveImage._current_node_id
+        if fn and nid:
+            fn(nid, message)
 
         return ()

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import logging
 import socket
 import threading
@@ -45,8 +44,8 @@ class _Api:
             return result[0]
         return None
 
-    def save_workflow_png(self, data_url: str, default_filename: str = "workflow.png") -> str | None:
-        """Open a native save dialog, write the PNG bytes, and return the saved path."""
+    def choose_save_workflow_png_path(self, default_filename: str = "workflow.png") -> str | None:
+        """Open a native save dialog and return the chosen PNG path (or None)."""
         win = self._window_ref[0]
         if win is None:
             return None
@@ -65,12 +64,6 @@ class _Api:
         path = Path(result[0] if isinstance(result, (list, tuple)) else result).expanduser()
         if path.suffix.lower() != ".png":
             path = path.with_suffix(".png")
-
-        _, _, encoded = data_url.partition(",")
-        if not encoded:
-            raise ValueError("Invalid data URL payload")
-
-        path.write_bytes(base64.b64decode(encoded))
         return str(path)
 
 

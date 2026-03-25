@@ -13,6 +13,7 @@ import FileBrowser from './FileBrowser';
 import * as api from './api';
 import { toBlob } from 'html-to-image';
 import { embedWorkflow, extractWorkflow } from './pngMetadata';
+import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -43,15 +44,6 @@ function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
 }
 
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-    reader.readAsDataURL(blob);
-  });
-}
-
 async function waitForImageElement(img) {
   if (img.complete && img.naturalWidth > 0) return;
   if (typeof img.decode === 'function') {
@@ -71,6 +63,31 @@ async function waitForImageElement(img) {
     img.addEventListener('load', done, { once: true });
     img.addEventListener('error', done, { once: true });
   });
+}
+
+async function getCaptureImageDataUrl(img) {
+  const src = img.currentSrc || img.src;
+  if (!src) return null;
+  if (!src.startsWith('data:')) return src;
+
+  const rect = img.getBoundingClientRect();
+  const width = Math.max(1, Math.round(img.clientWidth || rect.width));
+  const height = Math.max(1, Math.round(img.clientHeight || rect.height));
+  const scale = Math.min(2, window.devicePixelRatio || 1);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return src;
+
+  try {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return src;
+  }
 }
 
 function createCapturePlaceholder(el, dataUrl) {
@@ -101,8 +118,9 @@ async function captureViewportBlob(viewportEl, options) {
   await Promise.all(images.map(waitForImageElement));
 
   for (const img of images) {
-    const dataUrl = img.currentSrc || img.src;
-    if (!dataUrl || !img.parentNode) continue;
+    if (!img.parentNode) continue;
+    const dataUrl = await getCaptureImageDataUrl(img);
+    if (!dataUrl) continue;
     const placeholder = createCapturePlaceholder(img, dataUrl);
     img.parentNode.replaceChild(placeholder, img);
     restorers.push(() => {
@@ -144,12 +162,13 @@ async function captureViewportBlob(viewportEl, options) {
 
 // ── Graph serialisation → backend prompt format ───────────────────────
 
-function serializeGraph(nodes, edges) {
+function serializeGraph(nodes, edges, { excludeManualTrigger = false } = {}) {
   const prompt = {};
 
   for (const node of nodes) {
     const { className, definition, widgetValues } = node.data;
     if (!definition) continue;
+    if (excludeManualTrigger && definition.manual_trigger) continue;
 
     const inputs = {};
 
@@ -551,10 +570,23 @@ function Flow() {
 
   // ── Node context value (stable) ─────────────────────────────────────
 
+  const onManualTrigger = useCallback((nodeId) => {
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    // Include ALL nodes (no excludeManualTrigger) so the save node is in the prompt
+    const prompt = serializeGraph(currentNodes, currentEdges);
+    if (!prompt || Object.keys(prompt).length === 0) return;
+    setStatus({ text: 'Saving…', level: 'info' });
+    api.runPrompt(prompt).catch((err) => {
+      setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
+    });
+  }, [reactFlow]);
+
   const contextValue = useMemo(() => ({
     onWidgetChange,
     openFileBrowser,
-  }), [onWidgetChange, openFileBrowser]);
+    onManualTrigger,
+  }), [onWidgetChange, openFileBrowser, onManualTrigger]);
 
   // ── Add node from context menu ──────────────────────────────────────
 
@@ -687,13 +719,18 @@ function Flow() {
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
 
-    // Don't run if any node has unconnected required data inputs
+    // Don't run if any non-manual node has unconnected required data inputs
+    // or any FILE_PICKER widget is empty
     for (const node of currentNodes) {
       const def = node.data?.definition;
-      if (!def) continue;
+      if (!def || def.manual_trigger) continue; // skip manual-trigger nodes
       const required = def.input.required || {};
       for (const [name, spec] of Object.entries(required)) {
         const [type] = Array.isArray(spec) ? spec : [spec];
+        if (type === 'FILE_PICKER') {
+          if (!node.data.widgetValues?.[name]) return; // no file selected, skip
+          continue;
+        }
         if (!DATA_TYPES.has(type)) continue;
         const hasEdge = currentEdges.some(
           (e) => e.target === node.id && getInputName(e.targetHandle) === name
@@ -702,7 +739,7 @@ function Flow() {
       }
     }
 
-    const prompt = serializeGraph(currentNodes, currentEdges);
+    const prompt = serializeGraph(currentNodes, currentEdges, { excludeManualTrigger: true });
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Running…', level: 'info' });
     api.runPrompt(prompt).catch((err) => {
@@ -723,25 +760,10 @@ function Flow() {
   }, [setNodes, setEdges]);
 
   const applyWorkflowData = useCallback((data) => {
-    const loadedNodes = data.nodes || [];
-    const loadedEdges = data.edges || [];
-    const defs = nodeDefsRef.current;
-    const hydrated = loadedNodes.map((n) => ({
-      ...n,
-      type: n.type || 'custom',
-      dragHandle: n.dragHandle || '.drag-handle',
-      data: {
-        ...n.data,
-        label: n.data?.label || n.data?.className || 'Node',
-        widgetValues: n.data?.widgetValues || {},
-        definition: defs[n.data.className] || n.data.definition,
-        previewImage: null, tableRows: null, meshData: null, overlay: null,
-      },
-    }));
-    setNodes(hydrated);
-    setEdges(loadedEdges);
-    const maxId = Math.max(0, ...loadedNodes.map((n) => parseInt(n.id, 10) || 0));
-    nextIdRef.current = maxId + 1;
+    const hydrated = hydrateWorkflowState(data, nodeDefsRef.current);
+    setNodes(hydrated.nodes);
+    setEdges(hydrated.edges);
+    nextIdRef.current = hydrated.nextNodeId;
   }, [setNodes, setEdges]);
 
   const getWorkflowBlob = useCallback(async () => {
@@ -778,9 +800,23 @@ function Flow() {
     try {
       const finalBlob = await getWorkflowBlob();
 
-      if (window.pywebview?.api?.save_workflow_png) {
-        const dataUrl = await blobToDataUrl(finalBlob);
-        const savedPath = await window.pywebview.api.save_workflow_png(dataUrl, 'workflow.png');
+      if (window.pywebview?.api?.choose_save_workflow_png_path) {
+        const requestedPath = await window.pywebview.api.choose_save_workflow_png_path('workflow.png');
+        if (!requestedPath) {
+          setStatus({ text: 'Save cancelled.', level: 'info' });
+          return;
+        }
+        const resp = await fetch(`/save-workflow-png?path=${encodeURIComponent(requestedPath)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'image/png',
+          },
+          body: finalBlob,
+        });
+        if (!resp.ok) {
+          throw new Error(await resp.text() || `Save failed (${resp.status})`);
+        }
+        const { path: savedPath } = await resp.json();
         if (!savedPath) {
           setStatus({ text: 'Save cancelled.', level: 'info' });
           return;

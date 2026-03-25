@@ -367,6 +367,41 @@ html, body, #root {
   opacity: 0.9;
 }
 
+.lineplot-overlay {
+  width: 100%;
+  aspect-ratio: 32 / 22;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.lineplot-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lineplot-marker {
+  fill: #ffd700;
+  stroke: #fff;
+  stroke-width: 2px;
+  cursor: grab;
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.45));
+}
+
+.lineplot-marker:active {
+  cursor: grabbing;
+}
+
+.lineplot-marker-locked {
+  fill: #e91e63;
+  stroke: #e91e63;
+  cursor: default;
+}
+
 /* ── 3D surface view ──────────────────────────────────────────────── */
 .surface-view-container {
   width: 100%;

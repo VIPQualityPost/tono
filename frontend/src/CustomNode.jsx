@@ -1,5 +1,6 @@
 import React, { useContext, useRef, useCallback, useState, memo, lazy, Suspense } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useStore } from '@xyflow/react';
+import LinePlotOverlay from './LinePlotOverlay';
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
@@ -28,6 +29,47 @@ const CAT_COLORS = {
 // ── Context (provided by App) ─────────────────────────────────────────
 
 export const NodeContext = React.createContext(null);
+
+class PreviewBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error('[argonode] preview render failed', error);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
+    }
+
+    if (this.props.fallbackImage) {
+      return (
+        <div className="node-preview">
+          <img src={this.props.fallbackImage} alt="preview fallback" draggable={false} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="node-preview" style={{ color: '#94a3b8', padding: 8 }}>
+        Preview unavailable.
+      </div>
+    );
+  }
+}
 
 // ── Draggable number input ────────────────────────────────────────────
 
@@ -151,8 +193,39 @@ function CustomNode({ id, data }) {
     }
   }
 
+  // For manual-trigger nodes (Save), show progressive optional inputs:
+  // show field_N only if field_(N-1) is connected (or N==0).
+  const isProgressive = def.manual_trigger;
+  const connectedInputs = useStore(
+    useCallback(
+      (s) => {
+        if (!isProgressive) return null;
+        const set = new Set();
+        for (const e of s.edges) {
+          if (e.target === id) {
+            const parts = e.targetHandle?.split('::');
+            if (parts) set.add(parts[1]);
+          }
+        }
+        return set;
+      },
+      [id, isProgressive],
+    ),
+  );
+
   for (const [name, spec] of Object.entries(optional)) {
     const [type] = Array.isArray(spec) ? spec : [spec];
+    if (isProgressive && DATA_TYPES.has(type)) {
+      // Progressive: show this slot only if it's the first or the previous is connected
+      const match = name.match(/^field_(\d+)$/);
+      if (match) {
+        const idx = parseInt(match[1], 10);
+        if (idx === 0 || (connectedInputs && connectedInputs.has(`field_${idx - 1}`))) {
+          dataInputs.push({ name, type });
+        }
+        continue;
+      }
+    }
     dataInputs.push({ name, type });
   }
 
@@ -229,6 +302,19 @@ function CustomNode({ id, data }) {
           </div>
         ))}
 
+        {/* Manual trigger button (Save) */}
+        {def.manual_trigger && (
+          <div className="widget-row">
+            <button
+              className="nodrag btn btn-primary"
+              style={{ flex: 1 }}
+              onClick={() => ctx.onManualTrigger?.(id)}
+            >
+              Save to Disk
+            </button>
+          </div>
+        )}
+
         {/* Interactive 3D surface view */}
         {data.meshData && (
           <CollapsibleSection title="3D View" defaultOpen={true}>
@@ -241,9 +327,21 @@ function CustomNode({ id, data }) {
         {/* Collapsible preview image */}
         {data.previewImage && (
           <CollapsibleSection title="Preview" defaultOpen={true}>
-            <div className="node-preview">
-              <img src={data.previewImage} alt="preview" draggable={false} />
-            </div>
+            <PreviewBoundary
+              resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
+                kind: data.previewImage.kind,
+                len: data.previewImage.line?.length,
+              })}
+              fallbackImage={typeof data.previewImage === 'object' ? data.previewImage.fallback_image : null}
+            >
+              {typeof data.previewImage === 'string' ? (
+                <div className="node-preview">
+                  <img src={data.previewImage} alt="preview" draggable={false} />
+                </div>
+              ) : data.previewImage.kind === 'line_plot' ? (
+                <LinePlotOverlay overlay={data.previewImage} interactive={false} />
+              ) : null}
+            </PreviewBoundary>
           </CollapsibleSection>
         )}
 
@@ -251,17 +349,29 @@ function CustomNode({ id, data }) {
         {data.overlay && hiddenWidgets.has('x1') && (
           <CollapsibleSection title="Cross Section" defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading...</div>}>
-              <CrossSectionOverlay
-                image={data.overlay.image}
-                x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
-                y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
-                x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
-                y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
-                aLocked={data.overlay.a_locked}
-                bLocked={data.overlay.b_locked}
-                nodeId={id}
-                onWidgetChange={ctx.onWidgetChange}
-              />
+              {data.overlay.kind === 'line_plot' ? (
+                <LinePlotOverlay
+                  overlay={data.overlay}
+                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  aLocked={data.overlay.a_locked}
+                  bLocked={data.overlay.b_locked}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : (
+                <CrossSectionOverlay
+                  image={data.overlay.image}
+                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
+                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
+                  aLocked={data.overlay.a_locked}
+                  bLocked={data.overlay.b_locked}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              )}
             </Suspense>
           </CollapsibleSection>
         )}

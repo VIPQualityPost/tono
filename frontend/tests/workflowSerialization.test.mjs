@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { hydrateWorkflowState } from '../src/workflowHydration.js';
 import { serializeWorkflowState } from '../src/workflowSerialization.js';
 
 test('serializeWorkflowState keeps only stable workflow fields needed for reload', () => {
@@ -59,6 +60,8 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
           label: 'Demo Label',
           className: 'DemoNode',
           widgetValues: { threshold: 0.42, mode: 'fast' },
+          output: [],
+          output_name: [],
         },
       },
       {
@@ -70,6 +73,8 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
           label: 'NoLabelNode',
           className: 'NoLabelNode',
           widgetValues: {},
+          output: [],
+          output_name: [],
         },
       },
     ],
@@ -88,4 +93,100 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
   assert.equal('definition' in serialized.nodes[0].data, false);
   assert.equal('previewImage' in serialized.nodes[0].data, false);
   assert.equal('selected' in serialized.edges[0], false);
+});
+
+test('hydrateWorkflowState restores saved dynamic outputs on top of current node definitions', () => {
+  const saved = {
+    version: 1,
+    nodes: [
+      {
+        id: '12',
+        position: { x: 40, y: 80 },
+        data: {
+          className: 'LoadFile',
+          widgetValues: { filename: 'scan.ibw', colormap: 'viridis' },
+          output: ['DATA_FIELD', 'DATA_FIELD'],
+          output_name: ['Height', 'Phase'],
+          previewImage: 'stale',
+        },
+      },
+    ],
+    edges: [
+      {
+        id: 'e12-3',
+        source: '12',
+        sourceHandle: 'output::1::DATA_FIELD',
+        target: '3',
+        targetHandle: 'input::field::DATA_FIELD',
+      },
+    ],
+  };
+
+  const defs = {
+    LoadFile: {
+      category: 'io',
+      input: { required: { filename: ['FILE_PICKER', {}], colormap: [['viridis', 'gray'], {}] } },
+      output: ['DATA_FIELD'],
+      output_name: ['field'],
+      manual_trigger: false,
+    },
+  };
+
+  const hydrated = hydrateWorkflowState(saved, defs);
+
+  assert.equal(hydrated.nextNodeId, 13);
+  assert.deepEqual(hydrated.edges, saved.edges);
+  assert.equal(hydrated.nodes[0].type, 'custom');
+  assert.equal(hydrated.nodes[0].dragHandle, '.drag-handle');
+  assert.equal(hydrated.nodes[0].data.label, 'LoadFile');
+  assert.equal(hydrated.nodes[0].data.previewImage, null);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Height', 'Phase']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.input, defs.LoadFile.input);
+});
+
+test('serializeWorkflowState and hydrateWorkflowState preserve reload-critical metadata for dynamic nodes', () => {
+  const nodes = [
+    {
+      id: '7',
+      position: { x: 10, y: 20 },
+      data: {
+        label: 'Load File',
+        className: 'LoadFile',
+        widgetValues: { filename: 'scan.gwy', colormap: 'gray' },
+        definition: {
+          category: 'io',
+          input: { required: { filename: ['FILE_PICKER', {}], colormap: [['gray', 'viridis'], {}] } },
+          output: ['DATA_FIELD', 'DATA_FIELD', 'DATA_FIELD'],
+          output_name: ['Topography', 'Error', 'Mask'],
+        },
+        previewImage: 'data:image/png;base64,stale',
+      },
+    },
+  ];
+  const edges = [
+    {
+      id: 'e7-9',
+      source: '7',
+      sourceHandle: 'output::2::DATA_FIELD',
+      target: '9',
+      targetHandle: 'input::field::DATA_FIELD',
+    },
+  ];
+  const defs = {
+    LoadFile: {
+      category: 'io',
+      input: { required: { filename: ['FILE_PICKER', {}], colormap: [['gray', 'viridis'], {}] } },
+      output: ['DATA_FIELD'],
+      output_name: ['field'],
+    },
+  };
+
+  const serialized = serializeWorkflowState(nodes, edges);
+  const hydrated = hydrateWorkflowState(serialized, defs);
+
+  assert.deepEqual(hydrated.nodes[0].data.widgetValues, nodes[0].data.widgetValues);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD', 'DATA_FIELD']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Topography', 'Error', 'Mask']);
+  assert.deepEqual(hydrated.edges, edges);
 });

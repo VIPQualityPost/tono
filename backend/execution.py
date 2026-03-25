@@ -194,18 +194,17 @@ class ExecutionEngine:
         CrossSection._broadcast_overlay_fn = on_overlay
         LineCursors._broadcast_overlay_fn = on_overlay
         LoadFile._broadcast_warning_fn = on_warning
-        SaveImage._broadcast_preview = (
-            (lambda data_uri: on_preview("save", data_uri)) if on_preview else None
-        )
+        SaveImage._broadcast_warning_fn = on_warning
 
     def _set_node_id_on_display(self, cls: type, node_id: str) -> None:
         """Inform display nodes of their current node_id for WS tagging."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D
         from backend.nodes.analysis import CrossSection, LineCursors
         from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine
-        from backend.nodes.io import LoadFile
+        from backend.nodes.io import LoadFile, SaveImage
         if cls in (PreviewImage, PrintTable, View3D, CrossSection, LineCursors,
-                   ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, LoadFile):
+                   ThresholdMask, MaskMorphology, MaskInvert, MaskCombine,
+                   LoadFile, SaveImage):
             cls._current_node_id = node_id
 
     def _auto_preview(
@@ -262,11 +261,9 @@ class ExecutionEngine:
         cls: type,
         slot: int,
         result: tuple,
-    ) -> str | None:
-        """Render a LINE output as a small matplotlib plot, returned as a data URI."""
+    ) -> dict | None:
+        """Return structured LINE preview data for responsive frontend rendering."""
         import numpy as np
-        import base64
-        import io as _io
 
         return_types = getattr(cls, "RETURN_TYPES", ())
 
@@ -281,17 +278,22 @@ class ExecutionEngine:
             return None  # the first LINE already plotted both
 
         try:
+            import base64
+            import io as _io
             import matplotlib
             matplotlib.use("Agg")
             import matplotlib.pyplot as plt
 
+            y = np.asarray(y, dtype=np.float64).ravel()
+            if x is None:
+                x = np.arange(len(y), dtype=np.float64)
+            else:
+                x = np.asarray(x, dtype=np.float64).ravel()[:len(y)]
+
             fig, ax = plt.subplots(figsize=(3.2, 1.8), dpi=100)
             fig.patch.set_facecolor("#1e293b")
             ax.set_facecolor("#0f172a")
-            if x is not None:
-                ax.plot(x, y, color="#ff9800", linewidth=1.2)
-            else:
-                ax.plot(y, color="#ff9800", linewidth=1.2)
+            ax.plot(x, y, color="#ff9800", linewidth=1.2)
             ax.tick_params(colors="#94a3b8", labelsize=7)
             for spine in ax.spines.values():
                 spine.set_color("#334155")
@@ -301,8 +303,15 @@ class ExecutionEngine:
             buf = _io.BytesIO()
             fig.savefig(buf, format="png", facecolor=fig.get_facecolor())
             plt.close(fig)
-            b64 = base64.b64encode(buf.getvalue()).decode()
-            return f"data:image/png;base64,{b64}"
+            fallback_image = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
+
+            return {
+                "kind": "line_plot",
+                "line": y.tolist(),
+                "x_axis": x.tolist(),
+                "interactive": False,
+                "fallback_image": fallback_image,
+            }
         except Exception:
             return None
 

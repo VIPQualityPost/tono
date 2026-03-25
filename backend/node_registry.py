@@ -47,6 +47,7 @@ def get_node_info(class_name: str) -> dict[str, Any]:
         "output": list(cls.RETURN_TYPES),
         "output_name": list(getattr(cls, "RETURN_NAMES", cls.RETURN_TYPES)),
         "output_node": bool(getattr(cls, "OUTPUT_NODE", False)),
+        "manual_trigger": bool(getattr(cls, "MANUAL_TRIGGER", False)),
         "description": getattr(cls, "DESCRIPTION", ""),
     }
 

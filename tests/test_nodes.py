@@ -564,31 +564,57 @@ def test_load_file():
 
 
 def test_save_image():
-    print("=== Test: SaveImage ===")
+    print("=== Test: SaveImage (Save Layers) ===")
     from backend.nodes.io import SaveImage
     node = SaveImage()
 
+    field_a = make_field(data=np.random.default_rng(4).random((32, 32)))
+    field_b = make_field(data=np.random.default_rng(5).random((32, 32)))
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Monkey-patch OUTPUT_DIR for testing
-        from pathlib import Path
-        import backend.nodes.io as io_mod
-        orig_dir = io_mod.OUTPUT_DIR
-        io_mod.OUTPUT_DIR = Path(tmpdir)
+        # Save single layer as TIFF
+        tiff_path = os.path.join(tmpdir, "out.tiff")
+        node.save(filename=tiff_path, format="TIFF", field_0=field_a)
+        assert os.path.exists(tiff_path), "TIFF file not created"
+        from PIL import Image
+        im = Image.open(tiff_path)
+        assert im.n_frames == 1
+        arr_back = np.array(im)
+        assert arr_back.shape == (32, 32)
 
+        # Save multi-layer as TIFF
+        tiff_path2 = os.path.join(tmpdir, "multi.tiff")
+        node.save(filename=tiff_path2, format="TIFF", field_0=field_a, field_1=field_b)
+        im2 = Image.open(tiff_path2)
+        assert im2.n_frames == 2
+
+        # Save as NPZ
+        npz_path = os.path.join(tmpdir, "out.npz")
+        node.save(filename=npz_path, format="NPZ", field_0=field_a, field_1=field_b)
+        assert os.path.exists(npz_path)
+        npz = np.load(npz_path)
+        assert len(npz.files) == 2
+        assert np.allclose(npz["layer_0"], field_a.data)
+        assert np.allclose(npz["layer_1"], field_b.data)
+
+        # Extension is forced to match format
+        wrong_ext = os.path.join(tmpdir, "output.png")
+        node.save(filename=wrong_ext, format="TIFF", field_0=field_a)
+        assert os.path.exists(os.path.join(tmpdir, "output.tiff"))
+
+        # No fields connected → error
         try:
-            arr = np.random.default_rng(4).integers(0, 256, (32, 32), dtype=np.uint8)
+            node.save(filename=os.path.join(tmpdir, "empty.tiff"), format="TIFF")
+            assert False, "Should have raised ValueError"
+        except ValueError:
+            pass
 
-            # Save as PNG
-            node.save(image=arr, filename_prefix="test", format="PNG")
-            saved = os.listdir(tmpdir)
-            assert any(f.endswith(".png") for f in saved), f"No PNG file found in {saved}"
-
-            # Save as NPY
-            node.save(image=arr.astype(np.float64), filename_prefix="test", format="NPY")
-            saved = os.listdir(tmpdir)
-            assert any(f.endswith(".npy") for f in saved), f"No NPY file found in {saved}"
-        finally:
-            io_mod.OUTPUT_DIR = orig_dir
+        # No filename → error
+        try:
+            node.save(filename="", format="TIFF", field_0=field_a)
+            assert False, "Should have raised ValueError"
+        except ValueError:
+            pass
 
     print("  PASS\n")
 
@@ -896,8 +922,11 @@ def test_line_cursors():
 
     # Overlay should have been broadcast
     assert len(overlays) == 1
-    assert "image" in overlays[0]
-    assert overlays[0]["image"].startswith("data:image/png;base64,")
+    assert overlays[0]["kind"] == "line_plot"
+    assert len(overlays[0]["line"]) == len(line)
+    assert len(overlays[0]["x_axis"]) == len(line)
+    assert 0.0 <= overlays[0]["x1"] <= 1.0
+    assert 0.0 <= overlays[0]["x2"] <= 1.0
 
     # With x_axis provided
     x_axis = np.linspace(0, 1, 100).astype(np.float64)
