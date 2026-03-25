@@ -1229,7 +1229,7 @@ def test_fft2d():
     field = make_field(data=data, xreal=1e-6, yreal=1e-6)
 
     # log_magnitude
-    spectrum, = node.process(field, windowing="none", level="none", output="log_magnitude")
+    spectrum, spec_mag, spec_phase, spec_psdf = node.process(field, windowing="none", level="none")
     assert spectrum.data.shape == (N, N)
     assert spectrum.domain == "frequency"
     assert spectrum.si_unit_xy == "1/m"
@@ -1240,31 +1240,31 @@ def test_fft2d():
     assert abs(peak_idx - (centre + freq)) <= 1, f"Peak at {peak_idx}, expected ~{centre + freq}"
 
     # magnitude output
-    spec_mag, = node.process(field, windowing="hann", level="mean", output="magnitude")
+    _, spec_mag, _, _ = node.process(field, windowing="hann", level="mean")
     assert spec_mag.data.shape == (N, N)
     assert np.all(spec_mag.data >= 0)
 
     # phase output
-    spec_phase, = node.process(field, windowing="none", level="none", output="phase")
+    _, _, spec_phase, _ = node.process(field, windowing="none", level="none")
     assert spec_phase.data.shape == (N, N)
     assert spec_phase.data.min() >= -np.pi - 0.01
     assert spec_phase.data.max() <= np.pi + 0.01
 
     # psdf output — units should reflect PSDF calibration
-    spec_psdf, = node.process(field, windowing="hamming", level="plane", output="psdf")
+    _, _, _, spec_psdf = node.process(field, windowing="hamming", level="plane")
     assert spec_psdf.data.shape == (N, N)
     assert np.all(spec_psdf.data >= 0)
     assert "^2" in spec_psdf.si_unit_z
 
     # Constant field should have all energy at DC
     const_field = make_field(data=np.ones((32, 32)) * 3.0)
-    spec_const, = node.process(const_field, windowing="none", level="none", output="magnitude")
+    _, spec_const, _, _ = node.process(const_field, windowing="none", level="none")
     centre32 = 16
     dc_val = spec_const.data[centre32, centre32]
     assert dc_val == spec_const.data.max(), "DC should be the maximum for constant field"
 
     # Blackman windowing should also work without error
-    spec_bk, = node.process(field, windowing="blackman", level="none", output="log_magnitude")
+    spec_bk, _, _, _ = node.process(field, windowing="blackman", level="none")
     assert spec_bk.data.shape == (N, N)
 
     print("  PASS\n")

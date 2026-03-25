@@ -43,9 +43,10 @@ def main():
     field = make_field(data)
     save_field(field, "01_sines_input")
 
-    for output_mode in ["log_magnitude", "magnitude", "psdf"]:
-        result, = node.process(field, windowing="hann", level="mean", output=output_mode)
-        save_field(result, f"01_sines_{output_mode}")
+    log_magnitude, magnitude, _, psdf = node.process(field, windowing="hann", level="mean")
+    save_field(log_magnitude, "01_sines_log_magnitude")
+    save_field(magnitude, "01_sines_magnitude")
+    save_field(psdf, "01_sines_psdf")
 
     # --- Test 2: Real-world-like surface with noise + tilt ---
     print("\nTest 2: Tilted surface with features")
@@ -57,7 +58,7 @@ def main():
     save_field(field, "02_surface_input")
 
     for level_mode in ["none", "mean", "plane"]:
-        result, = node.process(field, windowing="hann", level=level_mode, output="log_magnitude")
+        result, _, _, _ = node.process(field, windowing="hann", level=level_mode)
         save_field(result, f"02_surface_fft_level_{level_mode}")
 
     # --- Test 3: Checkerboard pattern ---
@@ -67,7 +68,7 @@ def main():
     field = make_field(data)
     save_field(field, "03_checker_input")
 
-    result, = node.process(field, windowing="none", level="mean", output="log_magnitude")
+    result, _, _, _ = node.process(field, windowing="none", level="mean")
     save_field(result, "03_checker_fft")
 
     # --- Test 4: Concentric rings (radial frequency) ---
@@ -77,7 +78,7 @@ def main():
     field = make_field(data)
     save_field(field, "04_rings_input")
 
-    result, = node.process(field, windowing="hann", level="mean", output="log_magnitude")
+    result, _, _, _ = node.process(field, windowing="hann", level="mean")
     save_field(result, "04_rings_fft")
 
     # --- Test 5: Compare windowing effects ---
@@ -87,7 +88,7 @@ def main():
     save_field(field, "05_window_input")
 
     for win in ["none", "hann", "hamming", "blackman"]:
-        result, = node.process(field, windowing=win, level="mean", output="log_magnitude")
+        result, _, _, _ = node.process(field, windowing=win, level="mean")
         save_field(result, f"05_window_{win}")
 
     print(f"\nAll outputs saved to {OUT_DIR}/")

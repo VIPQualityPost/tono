@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.insert(0, ".")
 from backend.data_types import DataField
-from backend.nodes.analysis import FFT2D
+from backend.nodes.analysis import FFT2D, InverseFFT2D
 
 
 def make_field(data, xreal=1e-6, yreal=1e-6):
@@ -24,7 +24,7 @@ def test_dc_removal():
     field = make_field(data)
     node = FFT2D()
 
-    result, = node.process(field, windowing="none", level="mean", output="magnitude")
+    _, result, _, _ = node.process(field, windowing="none", level="mean")
     peak = result.data.max()
     print(f"  Peak magnitude after mean subtraction of constant image: {peak:.2e}")
     assert peak < 1e-10, f"Expected ~0, got {peak}"
@@ -43,7 +43,7 @@ def test_single_frequency():
     field = make_field(data, xreal=xreal, yreal=xreal)
 
     node = FFT2D()
-    result, = node.process(field, windowing="none", level="mean", output="magnitude")
+    _, result, _, _ = node.process(field, windowing="none", level="mean")
 
     # The peak should be at column offset = freq_cycles from center
     mag = result.data
@@ -76,7 +76,7 @@ def test_2d_frequency():
     field = make_field(data)
 
     node = FFT2D()
-    result, = node.process(field, windowing="none", level="mean", output="magnitude")
+    _, result, _, _ = node.process(field, windowing="none", level="mean")
     mag = result.data
 
     cy, cx = N // 2, N // 2
@@ -110,7 +110,7 @@ def test_psdf_normalization():
     field = make_field(data, xreal=xreal, yreal=xreal)
     node = FFT2D()
 
-    result, = node.process(field, windowing="none", level="none", output="psdf")
+    _, _, _, result = node.process(field, windowing="none", level="none")
     psdf = result.data
 
     # Integrate: sum of PSDF * dk_x * dk_y
@@ -141,11 +141,11 @@ def test_windowing_reduces_leakage():
     node = FFT2D()
 
     # Without windowing
-    r_none, = node.process(field, windowing="none", level="mean", output="magnitude")
+    _, r_none, _, _ = node.process(field, windowing="none", level="mean")
     mag_none = r_none.data[N // 2, :]  # center row
 
     # With Hann windowing
-    r_hann, = node.process(field, windowing="hann", level="mean", output="magnitude")
+    _, r_hann, _, _ = node.process(field, windowing="hann", level="mean")
     mag_hann = r_hann.data[N // 2, :]
 
     # Measure leakage: ratio of energy far from peak vs total
@@ -178,15 +178,15 @@ def test_plane_subtraction():
     node = FFT2D()
 
     # Without leveling — huge DC and low-freq energy
-    r_none, = node.process(field, windowing="none", level="none", output="magnitude")
+    _, r_none, _, _ = node.process(field, windowing="none", level="none")
     dc_none = r_none.data[N // 2, N // 2]
 
     # With mean subtraction — DC removed but gradient leaks
-    r_mean, = node.process(field, windowing="none", level="mean", output="magnitude")
+    _, r_mean, _, _ = node.process(field, windowing="none", level="mean")
     dc_mean = r_mean.data[N // 2, N // 2]
 
     # With plane subtraction — gradient removed
-    r_plane, = node.process(field, windowing="none", level="plane", output="magnitude")
+    _, r_plane, _, _ = node.process(field, windowing="none", level="plane")
     dc_plane = r_plane.data[N // 2, N // 2]
 
     # With plane subtraction, check the low-freq energy near DC is reduced
@@ -213,7 +213,7 @@ def test_non_square():
     field = make_field(data, xreal=1.5e-6, yreal=1.0e-6)
     node = FFT2D()
 
-    result, = node.process(field, windowing="hann", level="mean", output="log_magnitude")
+    result, _, _, _ = node.process(field, windowing="hann", level="mean")
     assert result.data.shape == (100, 150), f"Shape mismatch: {result.data.shape}"
     assert np.all(np.isfinite(result.data)), "Non-finite values in output"
     print(f"  Shape: {result.data.shape}")
@@ -234,7 +234,7 @@ def test_log_magnitude_visual_range():
     field = make_field(data)
 
     node = FFT2D()
-    result, = node.process(field, windowing="hann", level="mean", output="log_magnitude")
+    result, _, _, _ = node.process(field, windowing="hann", level="mean")
 
     vmin, vmax = result.data.min(), result.data.max()
     dynamic_range = vmax - vmin if vmin > 0 else vmax / max(abs(vmin), 1e-30)
@@ -243,6 +243,91 @@ def test_log_magnitude_visual_range():
     print(f"  Dynamic range: {dynamic_range:.2f}")
     assert vmax > vmin, "Log magnitude should have nonzero range"
     assert np.all(np.isfinite(result.data)), "Non-finite values in log magnitude"
+    print("  PASS\n")
+
+
+def test_inverse_fft_reconstructs_from_magnitude_and_phase():
+    """Magnitude + phase from FFT2D should reconstruct the original image."""
+    print("=== Test: Inverse FFT from magnitude + phase ===")
+    rng = np.random.default_rng(123)
+    data = rng.standard_normal((64, 96))
+    field = make_field(data, xreal=2.4e-6, yreal=1.6e-6)
+
+    fft_node = FFT2D()
+    ifft_node = InverseFFT2D()
+
+    _, magnitude, phase, _ = fft_node.process(field, windowing="none", level="none")
+    reconstructed, = ifft_node.process(magnitude, representation="magnitude", phase=phase)
+
+    max_err = np.max(np.abs(reconstructed.data - field.data))
+    print(f"  Reconstruction max error: {max_err:.3e}")
+    assert reconstructed.domain == "spatial"
+    assert reconstructed.data.shape == field.data.shape
+    assert np.isclose(reconstructed.xreal, field.xreal)
+    assert np.isclose(reconstructed.yreal, field.yreal)
+    assert max_err < 1e-9, f"Expected near-exact reconstruction, got {max_err}"
+    print("  PASS\n")
+
+
+def test_inverse_fft_reconstructs_from_log_magnitude_and_phase():
+    """log(|F|) + phase should also reconstruct after expm1 inversion."""
+    print("=== Test: Inverse FFT from log magnitude + phase ===")
+    y, x = np.mgrid[0:72, 0:80] / 80.0
+    data = (
+        0.8 * np.sin(2 * np.pi * 6 * x)
+        + 0.35 * np.cos(2 * np.pi * 9 * y)
+        + 0.15 * np.sin(2 * np.pi * (4 * x + 3 * y))
+    )
+    field = make_field(data, xreal=1.6e-6, yreal=1.44e-6)
+
+    fft_node = FFT2D()
+    ifft_node = InverseFFT2D()
+
+    log_magnitude, _, phase, _ = fft_node.process(field, windowing="none", level="none")
+    reconstructed, = ifft_node.process(log_magnitude, representation="log_magnitude", phase=phase)
+
+    rms_err = np.sqrt(np.mean((reconstructed.data - field.data) ** 2))
+    print(f"  Reconstruction RMS error: {rms_err:.3e}")
+    assert rms_err < 1e-9, f"Expected near-exact reconstruction, got {rms_err}"
+    print("  PASS\n")
+
+
+def test_inverse_fft_reconstructs_from_psdf_and_phase():
+    """PSDF + phase should reconstruct after undoing PSDF scaling."""
+    print("=== Test: Inverse FFT from PSDF + phase ===")
+    rng = np.random.default_rng(321)
+    data = rng.standard_normal((48, 64))
+    field = make_field(data, xreal=3.2e-6, yreal=2.4e-6)
+
+    fft_node = FFT2D()
+    ifft_node = InverseFFT2D()
+
+    _, _, phase, psdf = fft_node.process(field, windowing="none", level="none")
+    reconstructed, = ifft_node.process(psdf, representation="psdf", phase=phase)
+
+    max_err = np.max(np.abs(reconstructed.data - field.data))
+    print(f"  Reconstruction max error: {max_err:.3e}")
+    assert reconstructed.si_unit_z == field.si_unit_z
+    assert max_err < 1e-8, f"Expected near-exact reconstruction, got {max_err}"
+    print("  PASS\n")
+
+
+def test_inverse_fft_zero_phase_mode_returns_valid_image():
+    """Spectrum-only inversion should return a finite spatial image with the right shape."""
+    print("=== Test: Inverse FFT zero-phase mode ===")
+    data = np.sin(2 * np.pi * 5 * np.mgrid[0:64, 0:64][1] / 64.0)
+    field = make_field(data, xreal=1e-6, yreal=1e-6)
+
+    fft_node = FFT2D()
+    ifft_node = InverseFFT2D()
+
+    _, magnitude, _, _ = fft_node.process(field, windowing="none", level="none")
+    reconstructed, = ifft_node.process(magnitude, representation="magnitude")
+
+    print(f"  Output shape: {reconstructed.data.shape}")
+    assert reconstructed.domain == "spatial"
+    assert reconstructed.data.shape == field.data.shape
+    assert np.all(np.isfinite(reconstructed.data))
     print("  PASS\n")
 
 
@@ -255,4 +340,8 @@ if __name__ == "__main__":
     test_plane_subtraction()
     test_non_square()
     test_log_magnitude_visual_range()
+    test_inverse_fft_reconstructs_from_magnitude_and_phase()
+    test_inverse_fft_reconstructs_from_log_magnitude_and_phase()
+    test_inverse_fft_reconstructs_from_psdf_and_phase()
+    test_inverse_fft_zero_phase_mode_returns_valid_image()
     print("All tests passed!")
