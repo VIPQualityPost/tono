@@ -23,6 +23,7 @@ The engine:
 from __future__ import annotations
 import uuid
 from collections import defaultdict, deque
+from time import perf_counter
 from typing import Any, Callable
 
 from backend.node_registry import NODE_CLASS_MAPPINGS
@@ -45,7 +46,7 @@ class ExecutionEngine:
         self,
         prompt: dict[str, dict],
         on_node_start: Callable[[str], None] | None = None,
-        on_node_done: Callable[[str], None] | None = None,
+        on_node_done: Callable[[str, float], None] | None = None,
         on_preview: Callable[[str, str], None] | None = None,
         on_table: Callable[[str, list], None] | None = None,
         on_mesh: Callable[[str, dict], None] | None = None,
@@ -60,7 +61,7 @@ class ExecutionEngine:
         ----------
         prompt          : workflow dict (node_id → {class_type, inputs})
         on_node_start   : called with node_id just before a node executes
-        on_node_done    : called with node_id just after a node executes
+        on_node_done    : called with (node_id, elapsed_ms) just after a node executes
         on_preview      : called with (node_id, data_uri) when a display node runs
         on_table        : called with (node_id, table_list) when PrintTable runs
         on_overlay      : called with (node_id, data_uri) for interactive overlays
@@ -96,7 +97,9 @@ class ExecutionEngine:
 
             instance = cls()
             func = getattr(instance, cls.FUNCTION)
+            start_time = perf_counter()
             result = func(**inputs)
+            elapsed_ms = (perf_counter() - start_time) * 1000.0
 
             # Nodes must return a tuple; coerce single values just in case
             if not isinstance(result, tuple):
@@ -110,7 +113,7 @@ class ExecutionEngine:
                 self._auto_preview(cls, node_id, result, on_preview, on_table)
 
             if on_node_done:
-                on_node_done(node_id)
+                on_node_done(node_id, elapsed_ms)
 
         return node_outputs
 

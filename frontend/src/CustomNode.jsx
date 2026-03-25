@@ -326,6 +326,16 @@ function formatScalarDisplay(scalarValue) {
   };
 }
 
+function formatProcessingTime(value) {
+  const ms = Number(value);
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  if (ms < 1) return `${ms.toFixed(2)} ms`;
+  if (ms < 10) return `${ms.toFixed(1)} ms`;
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 10000) return `${(ms / 1000).toFixed(2)} s`;
+  return `${(ms / 1000).toFixed(1)} s`;
+}
+
 function getSourceTypeForInput(store, nodeId, inputName) {
   const targetHandle = `input::${inputName}::`;
   const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
@@ -428,6 +438,7 @@ function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
+  const processingTimeText = formatProcessingTime(data.processingTimeMs);
 
   // Parse inputs into data handles and widgets
   const required = def.input.required || {};
@@ -698,6 +709,11 @@ function CustomNode({ id, data }) {
           <CollapsibleSection title="Table" defaultOpen={true}>
             <NodeTable rows={data.tableRows} />
           </CollapsibleSection>
+        )}
+        {processingTimeText && (
+          <div className="node-benchmark" title={`Processed in ${processingTimeText}`}>
+            {processingTimeText}
+          </div>
         )}
       </div>
     </div>

@@ -85,6 +85,7 @@ http://127.0.0.1:5173
 Notes:
 
 - The frontend dev server proxies API and WebSocket requests to the backend.
+- If you open the backend directly in a browser instead of the Vite dev server, argonode now refreshes `frontend/dist` automatically when checked-out frontend sources are newer, such as after a `git pull`.
 - If you want the frontend accessible from other devices on your LAN, run:
 
 ```powershell

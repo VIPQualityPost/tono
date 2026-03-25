@@ -492,6 +492,10 @@ function Flow() {
       console.log('[argonode] WS:', msg.type, msg.data?.node_id || msg.data?.node || '');
       switch (msg.type) {
         case 'execution_start':
+          setNodes((ns) => ns.map((n) => ({
+            ...n,
+            data: { ...n.data, processingTimeMs: null },
+          })));
           setStatus({ text: 'Running workflow…', level: 'info' });
           break;
         case 'executing':
@@ -517,6 +521,9 @@ function Flow() {
               unit: typeof msg.data.unit === 'string' ? msg.data.unit : '',
             },
           });
+          break;
+        case 'node_timing':
+          updateNodeData(msg.data.node_id, { processingTimeMs: msg.data.elapsed_ms });
           break;
         case 'mesh3d':
           updateNodeData(msg.data.node_id, { meshData: msg.data.mesh });
@@ -696,6 +703,7 @@ function Flow() {
         meshData: null,
         overlay: null,
         scalarValue: null,
+        processingTimeMs: null,
       },
     };
 

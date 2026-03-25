@@ -150,6 +150,8 @@ html, body, #root {
 
 .node-body {
   padding: 4px 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .node-warning {
@@ -626,6 +628,20 @@ html, body, #root {
 
 .node-table-num {
   text-align: right !important;
+}
+
+.node-benchmark {
+  align-self: flex-end;
+  margin: 8px 10px 4px;
+  padding: 3px 7px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #94a3b8;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* ── Node resize handles ───────────────────────────────────────────── */

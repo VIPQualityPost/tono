@@ -17,6 +17,7 @@ WebSocket message types sent to clients
 {"type": "preview",            "data": {"node_id": "...", "image": "data:..."}}
 {"type": "table",              "data": {"node_id": "...", "rows": [...]}}
 {"type": "scalar",             "data": {"node_id": "...", "value": 1.23, "unit": "nm"}}
+{"type": "node_timing",        "data": {"node_id": "...", "elapsed_ms": 12.34}}
 {"type": "execution_error",    "data": {"node_id": "...", "message": "..."}}
 {"type": "execution_complete", "data": {"prompt_id": "..."}}
 """
@@ -25,15 +26,18 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
 from pathlib import Path
 
 from aiohttp import web, WSMsgType
+from backend.frontend_build import FrontendBuildError, ensure_frontend_dist_ready
 from backend.runtime_paths import (
     ensure_runtime_dirs,
     frontend_dir,
     frontend_dist_dir,
     input_dir,
     output_dir,
+    project_root,
 )
 
 log = logging.getLogger(__name__)
@@ -136,13 +140,30 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     # ------------------------------------------------------------------
 
     async def index(request: web.Request) -> web.Response:
-        # Serve Vite build output if available, else raw frontend
+        if not getattr(sys, "frozen", False):
+            try:
+                await loop.run_in_executor(
+                    None,
+                    lambda: ensure_frontend_dist_ready(
+                        project_root(),
+                        FRONTEND_DIR,
+                        DIST_DIR,
+                        logger=log,
+                    ),
+                )
+            except FrontendBuildError as exc:
+                log.error("Unable to refresh frontend build: %s", exc)
+                return web.Response(status=500, text=str(exc), content_type="text/plain")
+
         if (DIST_DIR / "index.html").exists():
             return web.FileResponse(DIST_DIR / "index.html")
-        if (FRONTEND_DIR / "index.html").exists():
-            return web.FileResponse(FRONTEND_DIR / "index.html")
-        raise web.HTTPInternalServerError(
-            reason="Frontend build not found. Run `npm run build` before launching the packaged app."
+        return web.Response(
+            status=500,
+            text=(
+                "Frontend build not found. Run `npm run build` from the repo root, "
+                "or use `npm run dev` for the Vite development server."
+            ),
+            content_type="text/plain",
         )
 
     async def get_nodes(request: web.Request) -> web.Response:
@@ -264,12 +285,19 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
             def on_start(node_id: str) -> None:
                 broadcast({"type": "executing", "data": {"node": node_id, "prompt_id": prompt_id}})
 
+            def on_done(node_id: str, elapsed_ms: float) -> None:
+                broadcast({
+                    "type": "node_timing",
+                    "data": {"node_id": node_id, "elapsed_ms": elapsed_ms},
+                })
+
             try:
                 await loop.run_in_executor(
                     None,
                     lambda: engine.execute(
                         prompt,
                         on_node_start=on_start,
+                        on_node_done=on_done,
                         on_preview=on_preview,
                         on_table=on_table,
                         on_mesh=on_mesh,
