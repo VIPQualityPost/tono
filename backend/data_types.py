@@ -39,6 +39,34 @@ class MeasureTable(list):
     """Named scalar measurements, typically rows of quantity/value/unit."""
 
 
+@dataclass
+class LineData:
+    data: np.ndarray
+    x_axis: np.ndarray | None = None
+    x_unit: str = ""
+    y_unit: str = ""
+
+    def __post_init__(self) -> None:
+        self.data = np.asarray(self.data, dtype=np.float64).ravel()
+        if self.x_axis is not None:
+            axis = np.asarray(self.x_axis, dtype=np.float64).ravel()
+            self.x_axis = axis[: len(self.data)]
+        else:
+            self.x_axis = None
+
+    def __array__(self, dtype=None):
+        return np.asarray(self.data, dtype=dtype) if dtype is not None else self.data
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+
 def _normalize_hex_color(color: Any, default: str = "#000000") -> str:
     if isinstance(color, str):
         text = color.strip()

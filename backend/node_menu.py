@@ -20,6 +20,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "Number",
         "RangeSlider",
         "Coordinate",
+        "CoordinatePair",
         "Font",
     ],
     "Output": [
@@ -55,10 +56,10 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "FixZero",
     ],
     "Measure": [
-        "Statistics",
-        "Histogram",
         "CrossSection",
+        "Histogram",
         "Cursors",
+        "Statistics",
         "Stats",
     ],
     "Mask": [

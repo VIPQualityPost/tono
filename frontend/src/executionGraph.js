@@ -1,7 +1,4 @@
-const DATA_TYPES = new Set([
-  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
-]);
+import { DATA_TYPES } from './constants';
 
 function getInputName(handleId) {
   return handleId.split('::')[1];

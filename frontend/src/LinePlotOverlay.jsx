@@ -214,14 +214,14 @@ export default function LinePlotOverlay({
       onLostPointerCapture={onPointerUp}
     >
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="lineplot-svg">
-        <rect x="0" y="0" width={width} height={height} fill="#0f172a" />
+        <rect x="0" y="0" width={width} height={height} fill="var(--bg-deep)" />
 
         {xTicks.map((tick) => {
           const x = scaleX(tick);
           return (
             <g key={`x-${tick}`}>
-              <line x1={x} y1={plotTop} x2={x} y2={plotTop + plotHeight} stroke="#334155" strokeWidth={gridStroke} opacity="0.45" />
-              <text x={x} y={height - 10} textAnchor="middle" fontSize="11" fill="#94a3b8">
+              <line x1={x} y1={plotTop} x2={x} y2={plotTop + plotHeight} stroke="var(--border-default)" strokeWidth={gridStroke} opacity="0.45" />
+              <text x={x} y={height - 10} textAnchor="middle" fontSize="11" fill="var(--text-secondary)">
                 {formatTick(tick)}
               </text>
             </g>
@@ -232,22 +232,22 @@ export default function LinePlotOverlay({
           const y = scaleY(tick);
           return (
             <g key={`y-${tick}`}>
-              <line x1={plotLeft} y1={y} x2={plotLeft + plotWidth} y2={y} stroke="#334155" strokeWidth={gridStroke} opacity="0.45" />
-              <text x={plotLeft - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#94a3b8">
+              <line x1={plotLeft} y1={y} x2={plotLeft + plotWidth} y2={y} stroke="var(--border-default)" strokeWidth={gridStroke} opacity="0.45" />
+              <text x={plotLeft - 10} y={y + 4} textAnchor="end" fontSize="11" fill="var(--text-secondary)">
                 {formatTick(tick)}
               </text>
             </g>
           );
         })}
 
-        <rect x={plotLeft} y={plotTop} width={plotWidth} height={plotHeight} fill="none" stroke="#334155" strokeWidth={gridStroke + 0.3} />
-        <path d={path} fill="none" stroke="#ff9800" strokeWidth={plotStroke} strokeLinecap="round" strokeLinejoin="round" />
+        <rect x={plotLeft} y={plotTop} width={plotWidth} height={plotHeight} fill="none" stroke="var(--border-default)" strokeWidth={gridStroke + 0.3} />
+        <path d={path} fill="none" stroke="var(--plot-line)" strokeWidth={plotStroke} strokeLinecap="round" strokeLinejoin="round" />
 
         {interactive && (
           <>
-            <line x1={cursorA.x} y1={plotTop} x2={cursorA.x} y2={plotTop + plotHeight} stroke="#ffd700" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
-            <line x1={cursorB.x} y1={plotTop} x2={cursorB.x} y2={plotTop + plotHeight} stroke="#ffd700" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
-            <line x1={cursorA.x} y1={cursorA.y} x2={cursorB.x} y2={cursorB.y} stroke="#90caf9" strokeWidth={measureStroke} opacity="0.95" />
+            <line x1={cursorA.x} y1={plotTop} x2={cursorA.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
+            <line x1={cursorB.x} y1={plotTop} x2={cursorB.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
+            <line x1={cursorA.x} y1={cursorA.y} x2={cursorB.x} y2={cursorB.y} stroke="var(--accent-light)" strokeWidth={measureStroke} opacity="0.95" />
 
             <circle
               cx={cursorA.x}

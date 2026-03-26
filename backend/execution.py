@@ -272,7 +272,7 @@ class ExecutionEngine:
         """
         import numpy as np
         from backend.data_types import (
-            DataField, image_to_uint8, encode_preview, render_datafield_preview,
+            DataField, LineData, image_to_uint8, encode_preview, render_datafield_preview,
         )
         from backend.nodes.io import Image, ImageDemo
 
@@ -302,7 +302,7 @@ class ExecutionEngine:
                 on_preview(node_id, encode_preview(arr))
                 return
 
-            if type_name == "LINE" and isinstance(value, np.ndarray) and on_preview:
+            if type_name == "LINE" and isinstance(value, (np.ndarray, LineData)) and on_preview:
                 preview = self._render_line_preview(cls, slot, result)
                 if preview:
                     on_preview(node_id, preview)
@@ -354,6 +354,7 @@ class ExecutionEngine:
     ) -> dict | None:
         """Return structured LINE preview data for responsive frontend rendering."""
         import numpy as np
+        from backend.data_types import LineData
 
         return_types = getattr(cls, "RETURN_TYPES", ())
 
@@ -374,7 +375,10 @@ class ExecutionEngine:
             matplotlib.use("Agg")
             import matplotlib.pyplot as plt
 
+            y_meta = y if isinstance(y, LineData) else None
             y = np.asarray(y, dtype=np.float64).ravel()
+            if x is None and y_meta is not None and y_meta.x_axis is not None:
+                x = y_meta.x_axis
             if x is None:
                 x = np.arange(len(y), dtype=np.float64)
             else:

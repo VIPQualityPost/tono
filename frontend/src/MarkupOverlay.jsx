@@ -6,7 +6,9 @@ function clampFraction(value) {
   return Math.max(0, Math.min(1, numeric));
 }
 
-function sanitizeColor(color, fallback = '#ffd54f') {
+const SHAPE_DEFAULT_COLOR = '#ffd54f';
+
+function sanitizeColor(color, fallback = SHAPE_DEFAULT_COLOR) {
   if (typeof color !== 'string') return fallback;
   const value = color.trim();
   return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : fallback;

@@ -23,42 +23,9 @@ import {
   hasBlockingAutoRunInput,
 } from './executionGraph';
 
-// ── Constants ─────────────────────────────────────────────────────────
-
-const DATA_TYPES = new Set([
-  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
-]);
-
-const SOCKET_COMPATIBILITY = {
-  STATS_SOURCE: new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'RECORD_TABLE']),
-  CURSOR_SOURCE: new Set(['DATA_FIELD', 'LINE']),
-  ANY_TABLE: new Set(['MEASURE_TABLE', 'RECORD_TABLE']),
-  VALUE_SOURCE: new Set(['FLOAT', 'MEASURE_TABLE']),
-  SAVE_LAYER: new Set(['DATA_FIELD', 'IMAGE']),
-  FLOAT: new Set(['INT']),
-  INT: new Set(['FLOAT']),
-};
-
-const TYPE_COLORS = {
-  DATA_FIELD: '#ff002f',
-  IMAGE:      '#00ff08a0',
-  LINE:       '#ffbe5c',
-  MEASURE_TABLE:'#35e2fd',
-  RECORD_TABLE:'#fbbf24',
-  ANY_TABLE:  '#67e8f9',
-  COORD:      '#e91ed1',
-  FLOAT:      '#7dd3fc',
-  INT:        '#38bdf8',
-  STATS_SOURCE:'#c084fc',
-  CURSOR_SOURCE:'#a78bfa',
-  VALUE_SOURCE:'#60a5fa',
-  COLORMAP:   '#f472b6',
-  SAVE_LAYER: '#22c55e',
-  FONT:       '#fb7185',
-  FILE_PATH:  '#f59e0b',
-  DIRECTORY:  '#f97316',
-};
+import {
+  DATA_TYPES, SOCKET_COMPATIBILITY, TYPE_COLORS, CAT_COLORS, CANVAS_COLORS,
+} from './constants';
 
 const NODE_TYPES = { custom: CustomNode };
 
@@ -378,7 +345,7 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
   if (categories.length === 0) {
     return (
       <div className="context-menu" ref={menuRef} style={{ left: menuPos.x, top: menuPos.y }} onClick={(e) => e.stopPropagation()}>
-        <div className="context-item" style={{ color: '#64748b' }}>No compatible nodes</div>
+        <div className="context-item" style={{ color: 'var(--text-muted)' }}>No compatible nodes</div>
       </div>
     );
   }
@@ -415,7 +382,7 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
         {searchResults ? (
           <div className="ctx-list">
             {searchResults.length === 0 ? (
-              <div className="context-item" style={{ color: '#64748b' }}>No matches</div>
+              <div className="context-item" style={{ color: 'var(--text-muted)' }}>No matches</div>
             ) : (
               searchResults.map(({ className, def }) => (
                 <div
@@ -655,7 +622,7 @@ function Flow() {
 
   const onConnect = useCallback((params) => {
     const type = getHandleType(params.sourceHandle);
-    const color = TYPE_COLORS[type] || '#999';
+    const color = TYPE_COLORS[type] || 'var(--fallback-type)';
 
     setEdges((eds) => {
       // Enforce single connection per input handle
@@ -864,7 +831,7 @@ function Flow() {
             return type;
           })();
           const targetHandle = `input::${inputName}::${targetType}`;
-          const color = TYPE_COLORS[filterType] || '#999';
+          const color = TYPE_COLORS[filterType] || 'var(--fallback-type)';
           setEdges((eds) => addEdge({
             source: contextMenu.pendingNodeId,
             sourceHandle: contextMenu.pendingHandleId,
@@ -879,7 +846,7 @@ function Flow() {
         if (outputIdx !== -1) {
           const outputType = def.output[outputIdx];
           const sourceHandle = `output::${outputIdx}::${outputType}`;
-          const color = TYPE_COLORS[outputType] || '#999';
+          const color = TYPE_COLORS[outputType] || 'var(--fallback-type)';
           setEdges((eds) => addEdge({
             source: newNodeId,
             sourceHandle,
@@ -1021,7 +988,7 @@ function Flow() {
     const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
 
     const blob = await captureWorkflowViewportBlob(viewportEl, {
-      backgroundColor: '#1a1a1a',
+      backgroundColor: CANVAS_COLORS.bgDeep,
       width: imageWidth,
       height: imageHeight,
       style: {
@@ -1274,11 +1241,7 @@ function Flow() {
             <MiniMap
               nodeColor={(n) => {
                 const cat = n.data?.definition?.category;
-                const colors = {
-                  io: '#37474f', filters: '#1a237e', level: '#1b5e20',
-                  analysis: '#4a148c', particles: '#bf360c', display: '#212121',
-                };
-                return colors[cat] || '#333';
+                return CAT_COLORS[cat] || 'var(--fallback-cat)';
               }}
             />
           </ReactFlow>

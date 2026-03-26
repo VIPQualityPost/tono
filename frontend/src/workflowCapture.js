@@ -1,4 +1,5 @@
 import { toBlob } from 'html-to-image';
+import { CANVAS_COLORS } from './constants';
 
 export const OVERLAY_CAPTURE_SELECTORS = [
   '.lineplot-overlay',
@@ -115,7 +116,7 @@ async function renderElementToDataUrl(el, toBlobImpl) {
   const blob = await toBlobImpl(el, {
     width,
     height,
-    backgroundColor: '#0f172a',
+    backgroundColor: CANVAS_COLORS.bgDeep,
     style: {
       width: `${width}px`,
       height: `${height}px`,

@@ -13,7 +13,7 @@ from __future__ import annotations
 from functools import lru_cache
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, LineData
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +251,15 @@ class FFTFilter1D:
 
         # Inverse FFT
         filtered = np.fft.irfft(Z, n=n)
+        if isinstance(line, LineData):
+            return (
+                LineData(
+                    data=filtered,
+                    x_axis=line.x_axis.copy() if line.x_axis is not None else None,
+                    x_unit=line.x_unit,
+                    y_unit=line.y_unit,
+                ),
+            )
         return (filtered,)
 
 

@@ -8,43 +8,9 @@ const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
 const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 
-// ── Constants ─────────────────────────────────────────────────────────
-
-const DATA_TYPES = new Set([
-  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
-]);
-const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
-
-const TYPE_COLORS = {
-  DATA_FIELD: '#3a7abf',
-  IMAGE:      '#4caf50',
-  LINE:       '#ff9800',
-  MEASURE_TABLE:'#35e2fd',
-  RECORD_TABLE:'#fbbf24',
-  ANY_TABLE:  '#67e8f9',
-  COORD:      '#e91e63',
-  FLOAT:      '#7dd3fc',
-  INT:        '#38bdf8',
-  STATS_SOURCE:'#c084fc',
-  CURSOR_SOURCE:'#a78bfa',
-  VALUE_SOURCE:'#60a5fa',
-  COLORMAP:   '#f472b6',
-  SAVE_LAYER: '#22c55e',
-  FONT:       '#fb7185',
-  FILE_PATH:  '#f59e0b',
-  DIRECTORY:  '#f97316',
-};
-
-const CAT_COLORS = {
-  io:       '#37474f',
-  filters:  '#1a237e',
-  modify:   '#0f766e',
-  level:    '#1b5e20',
-  analysis: '#4a148c',
-  particles:'#bf360c',
-  display:  '#212121',
-};
+import {
+  DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
+} from './constants';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 
@@ -84,7 +50,7 @@ class PreviewBoundary extends React.Component {
     }
 
     return (
-      <div className="node-preview" style={{ color: '#94a3b8', padding: 8 }}>
+      <div className="node-preview" style={{ color: 'var(--text-secondary)', padding: 8 }}>
         Preview unavailable.
       </div>
     );
@@ -440,6 +406,58 @@ function getConnectedOutputInfo(store, nodeId, inputName) {
   };
 }
 
+/**
+ * Resolve live COORDPAIR values by walking edges back to upstream Coordinate
+ * nodes' widget values.  Returns [x1, y1, x2, y2] (a flat array for stable
+ * equality comparison) or null if the chain can't be fully resolved.
+ *
+ * Uses store.nodes (the reactive array) rather than nodeLookup so that
+ * upstream widgetValues changes trigger re-renders.
+ */
+function resolveLiveCoordPair(store, nodeId, coordPairInputName) {
+  const nodes = store.nodes;
+  const edges = store.edges;
+  if (!nodes || !edges) return null;
+
+  const findNode = (nid) => nodes.find((n) => n.id === nid);
+
+  // 1. Find the edge feeding this node's COORDPAIR input
+  const cpEdge = edges.find(
+    (e) => e.target === nodeId && e.targetHandle?.startsWith(`input::${coordPairInputName}::`)
+  );
+  if (!cpEdge) return null;
+
+  const cpNode = findNode(cpEdge.source);
+  if (!cpNode) return null;
+
+  // If the source node is a CoordinatePair, walk one more level to Coordinate nodes
+  if (cpNode.data?.className === 'CoordinatePair') {
+    const resolveCoord = (inputName) => {
+      const edge = edges.find(
+        (e) => e.target === cpNode.id && e.targetHandle?.startsWith(`input::${inputName}::`)
+      );
+      if (!edge) return null;
+      const srcNode = findNode(edge.source);
+      if (!srcNode?.data?.widgetValues) return null;
+      const x = srcNode.data.widgetValues.x;
+      const y = srcNode.data.widgetValues.y;
+      return (x != null && y != null) ? [x, y] : null;
+    };
+    const a = resolveCoord('a');
+    const b = resolveCoord('b');
+    if (!a || !b) return null;
+    return [a[0], a[1], b[0], b[1]];
+  }
+
+  // If the source is a node with x1/y1/x2/y2 widgets (e.g. another CrossSection output)
+  const wv = cpNode.data?.widgetValues;
+  if (wv && wv.x1 != null && wv.y1 != null && wv.x2 != null && wv.y2 != null) {
+    return [wv.x1, wv.y1, wv.x2, wv.y2];
+  }
+
+  return null;
+}
+
 function getBasename(value) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
@@ -732,6 +750,29 @@ function CustomNode({ id, data }) {
     useCallback((s) => getConnectedOutputInfo(s, id, 'path'), [id]),
   );
 
+  // Find the COORDPAIR input name (if any) so we can resolve live upstream positions
+  const coordPairInputName = React.useMemo(() => {
+    const allInputs = { ...def.input.required, ...def.input.optional };
+    for (const [name, spec] of Object.entries(allInputs)) {
+      const type = Array.isArray(spec) ? spec[0] : spec;
+      if (type === 'COORDPAIR') return name;
+    }
+    return null;
+  }, [def]);
+
+  // Returns [x1, y1, x2, y2] or null — flat array for cheap equality check
+  const liveCoordPair = useStore(
+    useCallback(
+      (s) => coordPairInputName ? resolveLiveCoordPair(s, id, coordPairInputName) : null,
+      [id, coordPairInputName],
+    ),
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+    },
+  );
+
   // Parse inputs into data handles and widgets
   const required = def.input.required || {};
   const optional = def.input.optional || {};
@@ -846,7 +887,7 @@ function CustomNode({ id, data }) {
     slot: i,
   }));
 
-  const catColor = CAT_COLORS[def.category] || '#333';
+  const catColor = CAT_COLORS[def.category] || 'var(--fallback-cat)';
   const maxIORows = Math.max(renderedDataInputs.length, outputs.length);
   const hasInteractiveLineOverlay = data.overlay?.kind === 'line_plot' && hiddenWidgets.has('x1');
   const hasInteractiveOverlay = !!data.overlay && (
@@ -904,7 +945,7 @@ function CustomNode({ id, data }) {
                       position={Position.Left}
                       id={`input::${socketName}::${socketType}`}
                       className="typed-handle"
-                      style={{ background: TYPE_COLORS[socketType] || '#999' }}
+                      style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
                     />
                   );
                 })()}
@@ -939,7 +980,7 @@ function CustomNode({ id, data }) {
                       position={Position.Left}
                       id={`input::${inp.name}::${inp.type}`}
                       className="typed-handle"
-                      style={{ background: TYPE_COLORS[inp.type] || '#999' }}
+                      style={{ background: TYPE_COLORS[inp.type] || 'var(--fallback-type)' }}
                     />
                     <span className="io-label">{inp.label || inp.name}</span>
                     {inlineWidgetsByInput.has(inp.name) && (
@@ -967,7 +1008,7 @@ function CustomNode({ id, data }) {
                       position={Position.Right}
                       id={`output::${out.slot}::${out.type}`}
                       className="typed-handle"
-                      style={{ background: TYPE_COLORS[out.type] || '#999' }}
+                      style={{ background: TYPE_COLORS[out.type] || 'var(--fallback-type)' }}
                     />
                   </>
                 )}
@@ -1002,7 +1043,7 @@ function CustomNode({ id, data }) {
                 position={Position.Left}
                 id={`input::${w.name}::${w.socketType}`}
                 className="typed-handle"
-                style={{ background: TYPE_COLORS[w.socketType] || '#999' }}
+                style={{ background: TYPE_COLORS[w.socketType] || 'var(--fallback-type)' }}
               />
             )}
             <WidgetControl
@@ -1033,7 +1074,7 @@ function CustomNode({ id, data }) {
         {/* Interactive 3D surface view */}
         {data.meshData && (
           <CollapsibleSection title="3D View" defaultOpen={true}>
-            <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading 3D...</div>}>
+            <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading 3D...</div>}>
               <SurfaceView meshData={data.meshData} />
             </Suspense>
           </CollapsibleSection>
@@ -1068,12 +1109,12 @@ function CustomNode({ id, data }) {
         {/* Interactive cross-section overlay */}
         {hasInteractiveOverlay && (
           <CollapsibleSection title={overlayTitle} defaultOpen={true}>
-            <Suspense fallback={<div className="node-preview" style={{color:'#64748b',padding:4}}>Loading...</div>}>
+            <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading...</div>}>
               {data.overlay.kind === 'line_plot' ? (
                 <LinePlotOverlay
                   overlay={data.overlay}
-                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
                   aLocked={data.overlay.a_locked}
                   bLocked={data.overlay.b_locked}
                   nodeId={id}
@@ -1082,10 +1123,10 @@ function CustomNode({ id, data }) {
               ) : data.overlay.kind === 'crop_box' ? (
                 <CropBoxOverlay
                   image={data.overlay.image}
-                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
-                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
+                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  y1={data.overlay.a_locked ? (liveCoordPair?.[1] ?? data.overlay.y1) : (data.widgetValues.y1 ?? data.overlay.y1)}
+                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  y2={data.overlay.b_locked ? (liveCoordPair?.[3] ?? data.overlay.y2) : (data.widgetValues.y2 ?? data.overlay.y2)}
                   aLocked={data.overlay.a_locked}
                   bLocked={data.overlay.b_locked}
                   nodeId={id}
@@ -1094,10 +1135,10 @@ function CustomNode({ id, data }) {
               ) : data.overlay.kind === 'cursor_points' ? (
                 <CrossSectionOverlay
                   image={data.overlay.image}
-                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
-                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
+                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  y1={data.overlay.a_locked ? (liveCoordPair?.[1] ?? data.overlay.y1) : (data.widgetValues.y1 ?? data.overlay.y1)}
+                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  y2={data.overlay.b_locked ? (liveCoordPair?.[3] ?? data.overlay.y2) : (data.widgetValues.y2 ?? data.overlay.y2)}
                   aLocked={data.overlay.a_locked}
                   bLocked={data.overlay.b_locked}
                   nodeId={id}
@@ -1365,7 +1406,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   if (type === 'STRING' && opts?.color_picker) {
     const normalized = typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val)
       ? val
-      : '#ffd54f';
+      : 'var(--shape-default)';
     return (
       <>
         {!hideLabel && <label>{label}</label>}

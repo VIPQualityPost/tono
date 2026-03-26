@@ -68,7 +68,7 @@ export default function CrossSectionOverlay({
           <line
             x1={`${x1 * 100}%`} y1={`${y1 * 100}%`}
             x2={`${x2 * 100}%`} y2={`${y2 * 100}%`}
-            stroke="#ffd700" strokeWidth="2" strokeDasharray="6 3"
+            stroke="var(--marker)" strokeWidth="2" strokeDasharray="6 3"
           />
         </svg>
       )}
@@ -78,12 +78,12 @@ export default function CrossSectionOverlay({
         className={`cs-marker ${aLocked ? 'cs-marker-locked' : ''}`}
         style={{ left: `${x1 * 100}%`, top: `${y1 * 100}%` }}
         onPointerDown={onPointerDown('p1')}
-      />
+      >A</div>
       <div
         className={`cs-marker ${bLocked ? 'cs-marker-locked' : ''}`}
         style={{ left: `${x2 * 100}%`, top: `${y2 * 100}%` }}
         onPointerDown={onPointerDown('p2')}
-      />
+      >B</div>
     </div>
   );
 }

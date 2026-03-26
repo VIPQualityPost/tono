@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, ".")
-from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8, render_datafield_preview
+from backend.data_types import DataField, LineData, MeasureTable, RecordTable, datafield_to_uint8, render_datafield_preview
 
 
 def make_field(data=None, shape=(64, 64), xreal=1e-6, yreal=1e-6):
@@ -518,7 +518,7 @@ def test_height_histogram():
     Histogram._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
     Histogram._current_node_id = "test"
 
-    table, = node.process(
+    table, coord_pair = node.process(
         field,
         n_bins=10,
         y_scale="linear",
@@ -527,6 +527,7 @@ def test_height_histogram():
         x2=0.8,
         y2=0.5,
     )
+    assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
     measurements = {row["quantity"]: row for row in table}
     assert "A position" in measurements
     assert "A count" in measurements
@@ -565,24 +566,30 @@ def test_cross_section():
     field = make_field(data=data, xreal=1e-6, yreal=1e-6)
 
     # Horizontal cross section at y=0.5
-    (profile,) = node.process(
+    profile, marker_pair = node.process(
         field, x1=0.0, y1=0.5, x2=1.0, y2=0.5,
         extend="none", n_samples=100,
     )
+    assert isinstance(marker_pair, tuple) and len(marker_pair) == 2
+    assert isinstance(profile, LineData)
     assert len(profile) == 100
+    assert profile.x_unit == field.si_unit_xy
+    assert profile.y_unit == field.si_unit_z
+    assert np.isclose(profile.x_axis[0], 0.0)
+    assert np.isclose(profile.x_axis[-1], field.xreal)
     # Profile should be a linear ramp from ~0 to ~10
     assert profile[0] < 0.5, f"Start of profile: {profile[0]}"
     assert profile[-1] > 9.5, f"End of profile: {profile[-1]}"
 
     # n_samples=0 should auto-calculate
-    (profile_auto,) = node.process(
+    profile_auto, _ = node.process(
         field, x1=0.0, y1=0.5, x2=1.0, y2=0.5,
         extend="none", n_samples=0,
     )
     assert len(profile_auto) >= 2
 
     # Test extend to edges — a short segment should be extended
-    (profile_ext,) = node.process(
+    profile_ext, _ = node.process(
         field, x1=0.3, y1=0.5, x2=0.7, y2=0.5,
         extend="to_edges", n_samples=100,
     )
@@ -591,11 +598,29 @@ def test_cross_section():
     assert profile_ext[-1] > 9.5
 
     # Diagonal cross section
-    (profile_diag,) = node.process(
+    profile_diag, _ = node.process(
         field, x1=0.0, y1=0.0, x2=1.0, y2=1.0,
         extend="none", n_samples=50,
     )
     assert len(profile_diag) == 50
+
+    from backend.nodes.analysis import Cursors, Stats
+
+    cursors = Cursors()
+    table, _ = cursors.process(profile, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
+    rows = {row["quantity"]: row for row in table}
+    assert rows["dx"]["unit"] == field.si_unit_xy
+    assert rows["dy"]["unit"] == field.si_unit_z
+
+    captured = []
+    Stats._broadcast_value_fn = lambda nid, payload: captured.append(payload)
+    Stats._current_node_id = "test"
+    stats = Stats()
+    mean_value, = stats.process(profile, operation="mean", column="value")
+    assert mean_value > 0
+    assert captured[-1]["unit"] == field.si_unit_z
+    Stats._broadcast_value_fn = None
+
     print("  PASS\n")
 
 
@@ -1629,7 +1654,8 @@ def test_line_cursors():
     Cursors._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
     Cursors._current_node_id = "test"
 
-    table, = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
+    table, coord_pair = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
+    assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
 
     # Should produce a 6-row table
     assert len(table) == 6
@@ -1656,9 +1682,9 @@ def test_line_cursors():
     assert 0.0 <= overlays[0]["x1"] <= 1.0
     assert 0.0 <= overlays[0]["x2"] <= 1.0
 
-    # With x_axis provided
-    x_axis = np.linspace(0, 1, 100).astype(np.float64)
-    table2, = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5, x_axis=x_axis)
+    # With LineData input (which carries its own x_axis)
+    line_data = LineData(data=line, x_axis=np.linspace(0, 1, 100))
+    table2, _ = node.process(line_data, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
     assert len(table2) == 6
 
     # Field input should report dx/dy/dz and broadcast an image overlay
@@ -1670,7 +1696,7 @@ def test_line_cursors():
         si_unit_z="nm",
     )
     overlays.clear()
-    table3, = node.process(field, x1=0.2, y1=0.25, x2=0.7, y2=0.75)
+    table3, _ = node.process(field, x1=0.2, y1=0.25, x2=0.7, y2=0.75)
     assert len(table3) == 9
     field_rows = {row["quantity"]: row for row in table3}
     assert field_rows["dx"]["unit"] == "um"

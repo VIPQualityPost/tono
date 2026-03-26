@@ -12,7 +12,8 @@ from __future__ import annotations
 import numpy as np
 from typing import Callable
 from backend.node_registry import register_node
-from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8, encode_preview, render_datafield_preview
+from backend.data_types import DataField, LineData, MeasureTable, RecordTable, datafield_to_uint8, encode_preview, render_datafield_preview
+from backend.nodes.io import Coordinate, CoordinatePair
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ class Statistics:
 # Histogram
 # ---------------------------------------------------------------------------
 
-@register_node(display_name="Height Histogram")
+@register_node(display_name="Histogram")
 class Histogram:
     @classmethod
     def INPUT_TYPES(cls):
@@ -78,8 +79,8 @@ class Histogram:
             }
         }
 
-    RETURN_TYPES = ("MEASURE_TABLE",)
-    RETURN_NAMES = ("measurements",)
+    RETURN_TYPES = ("MEASURE_TABLE", "COORDPAIR",)
+    RETURN_NAMES = ("measurements", "marker pair",)
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
@@ -155,7 +156,7 @@ class Histogram:
             {"quantity": "delta X",    "value": xb - xa, "unit": field.si_unit_z},
             {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
         ])
-        return (table,)
+        return (table, ((x1, y1), (x2, y2)))
 
 
 # ---------------------------------------------------------------------------
@@ -177,12 +178,12 @@ class Cursors:
                 "y2": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
             },
             "optional": {
-                "x_axis": ("LINE",),
+                "coord_pair": ("COORDPAIR", {"label": "coord pair"}),
             },
         }
 
-    RETURN_TYPES = ("MEASURE_TABLE",)
-    RETURN_NAMES = ("measurement",)
+    RETURN_TYPES = ("MEASURE_TABLE","COORDPAIR",)
+    RETURN_NAMES = ("measurement","coord pair",)
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
@@ -196,12 +197,17 @@ class Cursors:
 
     def process(
         self, line, x1: float, y1: float, x2: float, y2: float,
-        x_axis=None,
+        coord_pair=None,
     ) -> tuple:
-        if isinstance(line, DataField):
-            return self._process_field(line, x1=x1, y1=y1, x2=x2, y2=y2)
+        if coord_pair is not None:
+            (x1, y1), (x2, y2) = coord_pair
 
-        return self._process_line(line, x1=x1, y1=y1, x2=x2, y2=y2, x_axis=x_axis)
+        locked = coord_pair is not None
+
+        if isinstance(line, DataField):
+            return self._process_field(line, x1=x1, y1=y1, x2=x2, y2=y2, locked=locked)
+
+        return self._process_line(line, x1=x1, y1=y1, x2=x2, y2=y2, locked=locked)
 
     def _process_line(
         self,
@@ -210,12 +216,14 @@ class Cursors:
         y1: float,
         x2: float,
         y2: float,
-        x_axis=None,
+        locked: bool = False,
     ) -> tuple:
         y = np.asarray(line, dtype=np.float64).ravel()
+        x_unit = line.x_unit if isinstance(line, LineData) else ""
+        y_unit = line.y_unit if isinstance(line, LineData) else ""
         n = len(y)
-        if x_axis is not None:
-            x = np.asarray(x_axis, dtype=np.float64).ravel()[:n]
+        if isinstance(line, LineData) and line.x_axis is not None:
+            x = np.asarray(line.x_axis, dtype=np.float64).ravel()[:n]
         else:
             x = np.arange(n, dtype=np.float64)
         x1 = float(np.clip(x1, 0.0, 1.0))
@@ -251,21 +259,21 @@ class Cursors:
                     "x2": x2,
                     "y1": float(y1),
                     "y2": float(y2),
-                    "a_locked": False,
-                    "b_locked": False,
+                    "a_locked": locked,
+                    "b_locked": locked,
                 },
             )
 
         # --- Output table ---
         table = MeasureTable([
-            {"quantity": "A x", "value": xa, "unit": ""},
-            {"quantity": "A y", "value": ya, "unit": ""},
-            {"quantity": "B x", "value": xb, "unit": ""},
-            {"quantity": "B y", "value": yb, "unit": ""},
-            {"quantity": "dx",  "value": xb - xa, "unit": ""},
-            {"quantity": "dy",  "value": yb - ya, "unit": ""},
+            {"quantity": "A x", "value": xa, "unit": x_unit},
+            {"quantity": "A y", "value": ya, "unit": y_unit},
+            {"quantity": "B x", "value": xb, "unit": x_unit},
+            {"quantity": "B y", "value": yb, "unit": y_unit},
+            {"quantity": "dx",  "value": xb - xa, "unit": x_unit},
+            {"quantity": "dy",  "value": yb - ya, "unit": y_unit},
         ])
-        return (table,)
+        return (table, ((x1, y1), (x2, y2)))
 
     def _process_field(
         self,
@@ -274,6 +282,7 @@ class Cursors:
         y1: float,
         x2: float,
         y2: float,
+        locked: bool = False,
     ) -> tuple:
         from scipy.ndimage import map_coordinates
 
@@ -306,8 +315,8 @@ class Cursors:
                     "y1": y1,
                     "x2": x2,
                     "y2": y2,
-                    "a_locked": False,
-                    "b_locked": False,
+                    "a_locked": locked,
+                    "b_locked": locked,
                 },
             )
 
@@ -322,7 +331,7 @@ class Cursors:
             {"quantity": "dy", "value": by - ay, "unit": field.si_unit_xy},
             {"quantity": "dz", "value": z2 - z1, "unit": field.si_unit_z},
         ])
-        return (table,)
+        return (table, ((x1, y1), (x2, y2)))
 
 
 # ---------------------------------------------------------------------------
@@ -642,13 +651,12 @@ class CrossSection:
                 "n_samples": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 1}),
             },
             "optional": {
-                "marker_A": ("COORD",),
-                "marker_B": ("COORD",),
+                "marker_pair": ("COORDPAIR", {"label": "marker pair"}),
             },
         }
 
-    RETURN_TYPES = ("LINE",)
-    RETURN_NAMES = ("profile",)
+    RETURN_TYPES = ("LINE", "COORDPAIR",)
+    RETURN_NAMES = ("profile", "marker pair",)
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
@@ -664,15 +672,13 @@ class CrossSection:
         self, field: DataField,
         x1: float, y1: float, x2: float, y2: float,
         extend: str, n_samples: int,
-        marker_A=None, marker_B=None,
+        marker_pair=None,
     ) -> tuple:
         from scipy.ndimage import map_coordinates
 
-        # COORD inputs override widget values
-        if marker_A is not None:
-            x1, y1 = float(marker_A[0]), float(marker_A[1])
-        if marker_B is not None:
-            x2, y2 = float(marker_B[0]), float(marker_B[1])
+        # COORDPAIR input overrides widget values
+        if marker_pair is not None:
+            (x1, y1), (x2, y2) = marker_pair
 
         # Remember marker positions (before extend)
         marker_x1, marker_y1 = float(x1), float(y1)
@@ -714,12 +720,24 @@ class CrossSection:
                     "image": image_uri,
                     "x1": marker_x1, "y1": marker_y1,
                     "x2": marker_x2, "y2": marker_y2,
-                    "a_locked": marker_A is not None,
-                    "b_locked": marker_B is not None,
+                    "a_locked": marker_pair is not None,
+                    "b_locked": marker_pair is not None,
                 },
             )
 
-        return (profile.astype(np.float64),)
+        dx_real = (x2 - x1) * field.xreal
+        dy_real = (y2 - y1) * field.yreal
+        distance_axis = np.linspace(0.0, float(np.hypot(dx_real, dy_real)), n_samples, dtype=np.float64)
+
+        return (
+            LineData(
+                data=profile.astype(np.float64),
+                x_axis=distance_axis,
+                x_unit=field.si_unit_xy,
+                y_unit=field.si_unit_z,
+            ),
+            ((marker_x1, marker_y1), (marker_x2, marker_y2)),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1028,7 +1046,11 @@ class Stats:
         if source_type == "LINE":
             line_entry = LINE_OPS.get(operation)
             explicit_unit = line_entry[1] if isinstance(line_entry, tuple) and len(line_entry) > 1 else ""
-            return _apply_scalar_unit(explicit_unit, operation)
+            if explicit_unit:
+                return _apply_scalar_unit(explicit_unit, operation)
+            if isinstance(input_value, LineData):
+                return _apply_scalar_unit(input_value.y_unit, operation)
+            return ""
 
         if source_type == "RECORD_TABLE" and isinstance(input_value, list) and column:
             return _apply_scalar_unit(_common_table_unit(input_value, column), operation)
@@ -1051,6 +1073,12 @@ class Stats:
             if not values:
                 raise ValueError(f"Column '{column_name}' has no numeric values.")
             return ("RECORD_TABLE", np.asarray(values, dtype=np.float64), column_name)
+
+        if isinstance(input_value, LineData):
+            values = np.asarray(input_value.data, dtype=np.float64)
+            if values.size == 0:
+                raise ValueError("Stats requires a non-empty input.")
+            return ("LINE", values.ravel(), None)
 
         if isinstance(input_value, np.ndarray):
             values = np.asarray(input_value, dtype=np.float64)

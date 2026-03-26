@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { CANVAS_COLORS } from './constants';
 
 function clampFraction(value) {
   const numeric = Number(value);
@@ -52,8 +53,8 @@ function drawStroke(ctx, stroke, width, height, imageWidth, imageHeight, styles 
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = styles.strokeStyle || '#ffffff';
-  ctx.fillStyle = styles.fillStyle || '#ffffff';
+  ctx.strokeStyle = styles.strokeStyle || CANVAS_COLORS.maskStroke;
+  ctx.fillStyle = styles.fillStyle || CANVAS_COLORS.maskStroke;
   ctx.lineWidth = lineWidth;
 
   const points = stroke.points.map((point) => ({
@@ -160,7 +161,7 @@ export default function MaskPaintOverlay({
       cssHeight,
       imageWidth,
       imageHeight,
-      { strokeStyle: '#ffffff', fillStyle: '#ffffff' },
+      { strokeStyle: CANVAS_COLORS.maskStroke, fillStyle: CANVAS_COLORS.maskStroke },
     );
 
     for (const stroke of committedStrokes) {
@@ -172,7 +173,7 @@ export default function MaskPaintOverlay({
 
     ctx.drawImage(maskCanvas, 0, 0);
     ctx.globalCompositeOperation = 'source-in';
-    ctx.fillStyle = 'rgba(255, 59, 59, 0.16)';
+    ctx.fillStyle = CANVAS_COLORS.maskOverlay;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = 'source-over';
   }, [imageHeight, imageWidth]);
