@@ -651,7 +651,7 @@ class CrossSection:
 
 
 # ---------------------------------------------------------------------------
-# LineMath — single scalar measurement from a LINE profile
+# Shared line-stat helpers used by Stats
 # ---------------------------------------------------------------------------
 
 def _safe_rq(d):
@@ -755,7 +755,7 @@ def _op_da(z):
 
 
 # ---------------------------------------------------------------------------
-# TableMath — scalar measurement from a numeric record-table column
+# Shared record-table helpers used by Stats
 # ---------------------------------------------------------------------------
 
 TABLE_OPS: dict[str, Callable[[np.ndarray], float]] = {
@@ -879,9 +879,9 @@ def resolve_table_column_name(table: list, column: str) -> str:
     if len(numeric_columns) == 1:
         return numeric_columns[0]
     if not numeric_columns:
-        raise ValueError("Table Math could not find any numeric columns in the input table.")
+        raise ValueError("Stats could not find any numeric columns in the input table.")
     raise ValueError(
-        "Table Math found multiple numeric columns; set the column name explicitly."
+        "Stats found multiple numeric columns; set the column name explicitly."
     )
 
 

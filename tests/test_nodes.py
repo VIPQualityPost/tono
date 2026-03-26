@@ -830,14 +830,14 @@ def test_particle_analysis():
 
 def test_load_file():
     print("=== Test: Image ===")
-    from backend.nodes.io import Image
-    from PIL import Image
-    node = Image()
+    from backend.nodes.io import Image as ImageNode
+    from PIL import Image as PILImage
+    node = ImageNode()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Test loading a grayscale PNG → single DataField output
         arr = np.random.default_rng(1).integers(0, 256, (48, 64), dtype=np.uint8)
-        img = Image.fromarray(arr, mode="L")
+        img = PILImage.fromarray(arr, mode="L")
         path = os.path.join(tmpdir, "test_gray.png")
         img.save(path)
 
@@ -849,7 +849,7 @@ def test_load_file():
 
         # Test loading an RGB PNG (should average to grayscale)
         arr_rgb = np.random.default_rng(2).integers(0, 256, (32, 32, 3), dtype=np.uint8)
-        img_rgb = Image.fromarray(arr_rgb, mode="RGB")
+        img_rgb = PILImage.fromarray(arr_rgb, mode="RGB")
         path_rgb = os.path.join(tmpdir, "test_rgb.png")
         img_rgb.save(path_rgb)
 
@@ -1333,17 +1333,17 @@ def test_load_file_unsupported():
 
 def test_load_file_warning():
     print("=== Test: Image warning for uncalibrated data ===")
-    from backend.nodes.io import Image
-    from PIL import Image
+    from backend.nodes.io import Image as ImageNode
+    from PIL import Image as PILImage
 
-    node = Image()
+    node = ImageNode()
     warnings = []
-    Image._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
-    Image._current_node_id = "test"
+    ImageNode._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
+    ImageNode._current_node_id = "test"
 
     with tempfile.TemporaryDirectory() as tmpdir:
         arr = np.random.default_rng(10).integers(0, 256, (16, 16), dtype=np.uint8)
-        img = Image.fromarray(arr)
+        img = PILImage.fromarray(arr)
         path = os.path.join(tmpdir, "test.png")
         img.save(path)
 
@@ -1352,7 +1352,7 @@ def test_load_file_warning():
         assert len(warnings) == 1
         assert "Uncalibrated" in warnings[0]
 
-    Image._broadcast_warning_fn = None
+    ImageNode._broadcast_warning_fn = None
     print("  PASS\n")
 
 
@@ -1725,159 +1725,6 @@ def test_fft2d():
 
 
 # =========================================================================
-# Analysis — LineMath
-# =========================================================================
-
-def test_line_math():
-    print("=== Test: LineMath ===")
-    from backend.nodes.analysis import LineMath
-
-    node = LineMath()
-    line = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-
-    # Basic stats
-    table, = node.process(line, operation="min")
-    assert table[0]["value"] == 1.0
-
-    table, = node.process(line, operation="max")
-    assert table[0]["value"] == 5.0
-
-    table, = node.process(line, operation="mean")
-    assert table[0]["value"] == 3.0
-
-    table, = node.process(line, operation="median")
-    assert table[0]["value"] == 3.0
-
-    table, = node.process(line, operation="sum")
-    assert table[0]["value"] == 15.0
-
-    table, = node.process(line, operation="range")
-    assert table[0]["value"] == 4.0
-
-    table, = node.process(line, operation="length")
-    assert table[0]["value"] == 5.0
-
-    # RMS of [1,2,3,4,5]
-    table, = node.process(line, operation="rms")
-    expected_rms = np.sqrt(np.mean(line ** 2))
-    assert abs(table[0]["value"] - expected_rms) < 1e-10
-
-    # Roughness parameters
-    table, = node.process(line, operation="Ra")
-    d = line - line.mean()
-    expected_ra = float(np.mean(np.abs(d)))
-    assert abs(table[0]["value"] - expected_ra) < 1e-10
-
-    table, = node.process(line, operation="Rq")
-    expected_rq = float(np.sqrt(np.mean(d ** 2)))
-    assert abs(table[0]["value"] - expected_rq) < 1e-10
-
-    # Rp = max of (z - mean)
-    table, = node.process(line, operation="Rp")
-    assert abs(table[0]["value"] - d.max()) < 1e-10
-
-    # Rv = -(min of (z - mean))
-    table, = node.process(line, operation="Rv")
-    assert abs(table[0]["value"] - (-d.min())) < 1e-10
-
-    # Rt = Rp + Rv = range of (z - mean)
-    table, = node.process(line, operation="Rt")
-    assert abs(table[0]["value"] - (d.max() - d.min())) < 1e-10
-
-    # Constant line: roughness parameters should all be zero
-    const_line = np.ones(10) * 7.0
-    table, = node.process(const_line, operation="Ra")
-    assert table[0]["value"] == 0.0
-    table, = node.process(const_line, operation="Rq")
-    assert table[0]["value"] == 0.0
-    table, = node.process(const_line, operation="Rsk")
-    assert table[0]["value"] == 0.0
-    table, = node.process(const_line, operation="Rku")
-    assert table[0]["value"] == 0.0
-
-    # Slope-based: Dq and Da
-    table, = node.process(line, operation="Dq")
-    dz = np.diff(line)
-    expected_dq = float(np.sqrt(np.mean(dz * dz)))
-    assert abs(table[0]["value"] - expected_dq) < 1e-10
-
-    table, = node.process(line, operation="Da")
-    expected_da = float(np.mean(np.abs(dz)))
-    assert abs(table[0]["value"] - expected_da) < 1e-10
-
-    print("  PASS\n")
-
-
-# =========================================================================
-# Analysis — TableMath
-# =========================================================================
-
-def test_table_math():
-    print("=== Test: TableMath ===")
-    from backend.nodes.analysis import TableMath
-
-    node = TableMath()
-    captured = []
-    TableMath._broadcast_value_fn = lambda node_id, value: captured.append((node_id, value))
-    TableMath._current_node_id = "test"
-    table = RecordTable([
-        {"label": "a", "value": 1.0, "other": 10},
-        {"label": "b", "value": 5.0, "other": 20},
-        {"label": "c", "value": "3.0", "other": 30},
-        {"label": "d", "value": "bad", "other": 40},
-    ])
-
-    result, = node.process(table, column="value", operation="max")
-    assert result == 5.0
-    assert captured[-1] == ("test", 5.0)
-
-    result, = node.process(table, column="value", operation="min")
-    assert result == 1.0
-
-    result, = node.process(table, column="value", operation="avg")
-    assert np.isclose(result, 3.0)
-
-    result, = node.process(table, column="value", operation="median")
-    assert np.isclose(result, 3.0)
-
-    result, = node.process(table, column="other", operation="sum")
-    assert result == 100.0
-
-    result, = node.process(table, column="other", operation="count")
-    assert result == 4.0
-
-    # Blank column name should fall back to the common "value" column.
-    result, = node.process(table, column="", operation="range")
-    assert result == 4.0
-
-    try:
-        node.process(table, column="missing", operation="max")
-        raise AssertionError("Expected missing numeric column to raise ValueError")
-    except ValueError:
-        pass
-
-    try:
-        node.process([{"label": "only text"}], column="label", operation="max")
-        raise AssertionError("Expected non-numeric column to raise ValueError")
-    except ValueError:
-        pass
-
-    try:
-        node.process(
-            MeasureTable([{"quantity": "A position", "value": 1.0, "unit": "m"}]),
-            column="value",
-            operation="max",
-        )
-        raise AssertionError("Expected measurement table input to raise ValueError")
-    except ValueError:
-        pass
-
-    TableMath._broadcast_value_fn = None
-
-    print("  PASS\n")
-
-
-# =========================================================================
 # Analysis — Stats
 # =========================================================================
 
@@ -1894,6 +1741,8 @@ def test_stats():
     result, = node.process(line, operation="mean", column="value")
     assert np.isclose(result, 2.5)
     assert captured[-1] == ("test", {"value": result})
+    roughness, = node.process(line, operation="Rq", column="value")
+    assert np.isclose(roughness, np.sqrt(np.mean((line - line.mean()) ** 2)))
 
     table = RecordTable([
         {"name": "a", "value": 3.0, "unit": "m", "other": 10.0},
@@ -1902,6 +1751,10 @@ def test_stats():
     result, = node.process(table, operation="max", column="value")
     assert result == 7.0
     assert captured[-1] == ("test", {"value": 7.0, "unit": "m"})
+    count, = node.process(table, operation="count", column="other")
+    assert count == 2.0
+    auto_column_range, = node.process(table, operation="range", column="")
+    assert auto_column_range == 4.0
 
     field = make_field(data=np.array([[1.0, 5.0], [2.0, 4.0]], dtype=np.float64))
     result, = node.process(field, operation="range", column="value")
@@ -1916,6 +1769,12 @@ def test_stats():
     try:
         node.process(table, operation="Rq", column="value")
         raise AssertionError("Expected invalid TABLE operation to raise ValueError")
+    except ValueError:
+        pass
+
+    try:
+        node.process([{"label": "only text"}], operation="max", column="label")
+        raise AssertionError("Expected non-numeric record-table input to raise ValueError")
     except ValueError:
         pass
 
@@ -2008,8 +1867,6 @@ if __name__ == "__main__":
     test_cross_section()
     test_line_cursors()
     test_fft2d()
-    test_line_math()
-    test_table_math()
     test_stats()
 
     # Mask
