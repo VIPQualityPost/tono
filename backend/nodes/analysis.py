@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Callable
 from backend.node_registry import register_node
-from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8, encode_preview
+from backend.data_types import DataField, MeasureTable, RecordTable, datafield_to_uint8, encode_preview, render_datafield_preview
 
 
 # ---------------------------------------------------------------------------
@@ -159,18 +159,18 @@ class Histogram:
 
 
 # ---------------------------------------------------------------------------
-# LineCursors — interactive measurement cursors on any LINE plot
+# Cursors — interactive measurement cursors on lines or fields
 # ---------------------------------------------------------------------------
 
-@register_node(display_name="Line Cursors")
-class LineCursors:
-    """Place two draggable cursors on any LINE plot to measure values and deltas."""
+@register_node(display_name="Cursors")
+class Cursors:
+    """Place two draggable cursors on a line plot or field to measure deltas."""
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "line": ("LINE",),
+                "line": ("CURSOR_SOURCE", {"label": "input"}),
                 "x1": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "y1": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "x2": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
@@ -186,8 +186,9 @@ class LineCursors:
     FUNCTION = "process"
     CATEGORY = "analysis"
     DESCRIPTION = (
-        "Place two cursors on any line plot (histogram, cross section, profile) "
-        "to measure positions, values, and deltas. Drag the markers to reposition."
+        "Place two cursors on a line plot or 2D field. "
+        "On lines it reports x/y positions and dx/dy. "
+        "On fields it reports x/y/z at both markers plus dx/dy/dz."
     )
 
     _broadcast_overlay_fn = None
@@ -195,6 +196,20 @@ class LineCursors:
 
     def process(
         self, line, x1: float, y1: float, x2: float, y2: float,
+        x_axis=None,
+    ) -> tuple:
+        if isinstance(line, DataField):
+            return self._process_field(line, x1=x1, y1=y1, x2=x2, y2=y2)
+
+        return self._process_line(line, x1=x1, y1=y1, x2=x2, y2=y2, x_axis=x_axis)
+
+    def _process_line(
+        self,
+        line,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
         x_axis=None,
     ) -> tuple:
         y = np.asarray(line, dtype=np.float64).ravel()
@@ -224,12 +239,12 @@ class LineCursors:
         xb, yb = float(x[idx_b]), float(y[idx_b])
 
         # --- Broadcast overlay ---
-        if LineCursors._broadcast_overlay_fn is not None:
-            LineCursors._broadcast_overlay_fn(
-                LineCursors._current_node_id,
+        if Cursors._broadcast_overlay_fn is not None:
+            Cursors._broadcast_overlay_fn(
+                Cursors._current_node_id,
                 {
                     "kind": "line_plot",
-                    "section_title": "Line Cursors",
+                    "section_title": "Cursors",
                     "line": y.tolist(),
                     "x_axis": x.tolist(),
                     "x1": x1,
@@ -243,12 +258,69 @@ class LineCursors:
 
         # --- Output table ---
         table = MeasureTable([
-            {"quantity": "A position", "value": xa, "unit": ""},
-            {"quantity": "A value",    "value": ya, "unit": ""},
-            {"quantity": "B position", "value": xb, "unit": ""},
-            {"quantity": "B value",    "value": yb, "unit": ""},
-            {"quantity": "delta X",    "value": xb - xa, "unit": ""},
-            {"quantity": "delta Y",    "value": yb - ya, "unit": ""},
+            {"quantity": "A x", "value": xa, "unit": ""},
+            {"quantity": "A y", "value": ya, "unit": ""},
+            {"quantity": "B x", "value": xb, "unit": ""},
+            {"quantity": "B y", "value": yb, "unit": ""},
+            {"quantity": "dx",  "value": xb - xa, "unit": ""},
+            {"quantity": "dy",  "value": yb - ya, "unit": ""},
+        ])
+        return (table,)
+
+    def _process_field(
+        self,
+        field: DataField,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+    ) -> tuple:
+        from scipy.ndimage import map_coordinates
+
+        x1 = float(np.clip(x1, 0.0, 1.0))
+        y1 = float(np.clip(y1, 0.0, 1.0))
+        x2 = float(np.clip(x2, 0.0, 1.0))
+        y2 = float(np.clip(y2, 0.0, 1.0))
+
+        px1 = x1 * max(field.xres - 1, 0)
+        py1 = y1 * max(field.yres - 1, 0)
+        px2 = x2 * max(field.xres - 1, 0)
+        py2 = y2 * max(field.yres - 1, 0)
+
+        z1 = float(map_coordinates(field.data, [[py1], [px1]], order=1, mode="nearest")[0])
+        z2 = float(map_coordinates(field.data, [[py2], [px2]], order=1, mode="nearest")[0])
+
+        ax = float(field.xoff + x1 * field.xreal)
+        ay = float(field.yoff + y1 * field.yreal)
+        bx = float(field.xoff + x2 * field.xreal)
+        by = float(field.yoff + y2 * field.yreal)
+
+        if Cursors._broadcast_overlay_fn is not None:
+            Cursors._broadcast_overlay_fn(
+                Cursors._current_node_id,
+                {
+                    "kind": "cursor_points",
+                    "section_title": "Cursors",
+                    "image": encode_preview(render_datafield_preview(field, field.colormap)),
+                    "x1": x1,
+                    "y1": y1,
+                    "x2": x2,
+                    "y2": y2,
+                    "a_locked": False,
+                    "b_locked": False,
+                },
+            )
+
+        table = MeasureTable([
+            {"quantity": "A x", "value": ax, "unit": field.si_unit_xy},
+            {"quantity": "A y", "value": ay, "unit": field.si_unit_xy},
+            {"quantity": "A z", "value": z1, "unit": field.si_unit_z},
+            {"quantity": "B x", "value": bx, "unit": field.si_unit_xy},
+            {"quantity": "B y", "value": by, "unit": field.si_unit_xy},
+            {"quantity": "B z", "value": z2, "unit": field.si_unit_z},
+            {"quantity": "dx", "value": bx - ax, "unit": field.si_unit_xy},
+            {"quantity": "dy", "value": by - ay, "unit": field.si_unit_xy},
+            {"quantity": "dz", "value": z2 - z1, "unit": field.si_unit_z},
         ])
         return (table,)
 
@@ -570,8 +642,8 @@ class CrossSection:
                 "n_samples": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 1}),
             },
             "optional": {
-                "point_a": ("COORD",),
-                "point_b": ("COORD",),
+                "marker_A": ("COORD",),
+                "marker_B": ("COORD",),
             },
         }
 
@@ -592,15 +664,15 @@ class CrossSection:
         self, field: DataField,
         x1: float, y1: float, x2: float, y2: float,
         extend: str, n_samples: int,
-        point_a=None, point_b=None,
+        marker_A=None, marker_B=None,
     ) -> tuple:
         from scipy.ndimage import map_coordinates
 
         # COORD inputs override widget values
-        if point_a is not None:
-            x1, y1 = float(point_a[0]), float(point_a[1])
-        if point_b is not None:
-            x2, y2 = float(point_b[0]), float(point_b[1])
+        if marker_A is not None:
+            x1, y1 = float(marker_A[0]), float(marker_A[1])
+        if marker_B is not None:
+            x2, y2 = float(marker_B[0]), float(marker_B[1])
 
         # Remember marker positions (before extend)
         marker_x1, marker_y1 = float(x1), float(y1)
@@ -642,8 +714,8 @@ class CrossSection:
                     "image": image_uri,
                     "x1": marker_x1, "y1": marker_y1,
                     "x2": marker_x2, "y2": marker_y2,
-                    "a_locked": point_a is not None,
-                    "b_locked": point_b is not None,
+                    "a_locked": marker_A is not None,
+                    "b_locked": marker_B is not None,
                 },
             )
 

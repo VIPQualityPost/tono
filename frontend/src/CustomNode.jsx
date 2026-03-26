@@ -12,7 +12,7 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 
 const DATA_TYPES = new Set([
   'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
+  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
 ]);
 const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
 
@@ -27,6 +27,7 @@ const TYPE_COLORS = {
   FLOAT:      '#7dd3fc',
   INT:        '#38bdf8',
   STATS_SOURCE:'#c084fc',
+  CURSOR_SOURCE:'#a78bfa',
   VALUE_SOURCE:'#60a5fa',
   COLORMAP:   '#f472b6',
   SAVE_LAYER: '#22c55e',
@@ -861,6 +862,8 @@ function CustomNode({ id, data }) {
       ? 'Markup'
       : data.overlay?.kind === 'crop_box'
       ? 'Crop'
+      : data.overlay?.kind === 'cursor_points'
+      ? 'Cursors'
       : data.overlay?.kind === 'line_plot'
         ? 'Line Plot'
       : 'Cross Section');
@@ -1087,6 +1090,19 @@ function CustomNode({ id, data }) {
                   bLocked={data.overlay.b_locked}
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : data.overlay.kind === 'cursor_points' ? (
+                <CrossSectionOverlay
+                  image={data.overlay.image}
+                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
+                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
+                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
+                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
+                  aLocked={data.overlay.a_locked}
+                  bLocked={data.overlay.b_locked}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                  showLine={false}
                 />
               ) : data.overlay.kind === 'mask_paint' ? (
                 <MaskPaintOverlay

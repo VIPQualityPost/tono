@@ -219,7 +219,7 @@ class ExecutionEngine:
     ) -> None:
         """Wire up broadcast callbacks on display node classes."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay, Markup
-        from backend.nodes.analysis import CrossSection, LineCursors, Stats, Histogram
+        from backend.nodes.analysis import CrossSection, Cursors, Stats, Histogram
         from backend.nodes.modify import CropResizeField, RotateField
         from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
         from backend.nodes.io import SaveImage, Image, ImageDemo
@@ -236,7 +236,7 @@ class ExecutionEngine:
         Stats._broadcast_value_fn = on_value
         Histogram._broadcast_overlay_fn = on_overlay
         CrossSection._broadcast_overlay_fn = on_overlay
-        LineCursors._broadcast_overlay_fn = on_overlay
+        Cursors._broadcast_overlay_fn = on_overlay
         CropResizeField._broadcast_overlay_fn = on_overlay
         RotateField._broadcast_warning_fn = on_warning
         Markup._broadcast_overlay_fn = on_overlay
@@ -247,11 +247,11 @@ class ExecutionEngine:
     def _set_node_id_on_display(self, cls: type, node_id: str) -> None:
         """Inform display nodes of their current node_id for WS tagging."""
         from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay, Markup
-        from backend.nodes.analysis import CrossSection, LineCursors, Stats, Histogram
+        from backend.nodes.analysis import CrossSection, Cursors, Stats, Histogram
         from backend.nodes.modify import CropResizeField, RotateField
         from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
         from backend.nodes.io import Image, ImageDemo, SaveImage
-        if cls in (PreviewImage, PrintTable, View3D, ValueDisplay, Stats, Histogram, CrossSection, LineCursors, CropResizeField, RotateField, Markup,
+        if cls in (PreviewImage, PrintTable, View3D, ValueDisplay, Stats, Histogram, CrossSection, Cursors, CropResizeField, RotateField, Markup,
                    ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask,
                    Image, ImageDemo, SaveImage):
             cls._current_node_id = node_id

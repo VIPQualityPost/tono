@@ -57,8 +57,8 @@ MENU_LAYOUT: dict[str, list[str]] = {
     "Measure": [
         "Statistics",
         "Histogram",
-        "LineCursors",
         "CrossSection",
+        "Cursors",
         "Stats",
     ],
     "Mask": [

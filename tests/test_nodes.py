@@ -1612,40 +1612,40 @@ def test_execution_engine_numeric_socket_coercion():
 
 
 # =========================================================================
-# Analysis — LineCursors
+# Analysis — Cursors
 # =========================================================================
 
 def test_line_cursors():
-    print("=== Test: LineCursors ===")
-    from backend.nodes.analysis import LineCursors
+    print("=== Test: Cursors ===")
+    from backend.nodes.analysis import Cursors
 
-    node = LineCursors()
+    node = Cursors()
 
     # Create a simple linear ramp
     line = np.linspace(0, 10, 100).astype(np.float64)
 
     # Capture overlay
     overlays = []
-    LineCursors._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
-    LineCursors._current_node_id = "test"
+    Cursors._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
+    Cursors._current_node_id = "test"
 
     table, = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
 
     # Should produce a 6-row table
     assert len(table) == 6
     quantities = {row["quantity"] for row in table}
-    assert "A position" in quantities
-    assert "B position" in quantities
-    assert "delta X" in quantities
-    assert "delta Y" in quantities
+    assert "A x" in quantities
+    assert "B x" in quantities
+    assert "dx" in quantities
+    assert "dy" in quantities
 
     # B should be at a later position than A
-    a_pos = next(r["value"] for r in table if r["quantity"] == "A position")
-    b_pos = next(r["value"] for r in table if r["quantity"] == "B position")
+    a_pos = next(r["value"] for r in table if r["quantity"] == "A x")
+    b_pos = next(r["value"] for r in table if r["quantity"] == "B x")
     assert b_pos > a_pos
 
     # Delta Y should reflect the height difference along the ramp
-    dy = next(r["value"] for r in table if r["quantity"] == "delta Y")
+    dy = next(r["value"] for r in table if r["quantity"] == "dy")
     assert dy > 0  # ramp goes upward
 
     # Overlay should have been broadcast
@@ -1661,7 +1661,28 @@ def test_line_cursors():
     table2, = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5, x_axis=x_axis)
     assert len(table2) == 6
 
-    LineCursors._broadcast_overlay_fn = None
+    # Field input should report dx/dy/dz and broadcast an image overlay
+    field = DataField(
+        data=np.arange(100, dtype=np.float64).reshape(10, 10),
+        xreal=2.0,
+        yreal=4.0,
+        si_unit_xy="um",
+        si_unit_z="nm",
+    )
+    overlays.clear()
+    table3, = node.process(field, x1=0.2, y1=0.25, x2=0.7, y2=0.75)
+    assert len(table3) == 9
+    field_rows = {row["quantity"]: row for row in table3}
+    assert field_rows["dx"]["unit"] == "um"
+    assert field_rows["dy"]["unit"] == "um"
+    assert field_rows["dz"]["unit"] == "nm"
+    assert np.isclose(field_rows["dx"]["value"], 1.0)
+    assert np.isclose(field_rows["dy"]["value"], 2.0)
+    assert len(overlays) == 1
+    assert overlays[0]["kind"] == "cursor_points"
+    assert overlays[0]["image"].startswith("data:image/png;base64,")
+
+    Cursors._broadcast_overlay_fn = None
     print("  PASS\n")
 
 

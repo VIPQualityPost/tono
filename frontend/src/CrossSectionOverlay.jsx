@@ -12,6 +12,7 @@ export default function CrossSectionOverlay({
   image, x1, y1, x2, y2,
   aLocked, bLocked,
   nodeId, onWidgetChange,
+  showLine = true,
 }) {
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null); // 'p1' or 'p2'
@@ -62,13 +63,15 @@ export default function CrossSectionOverlay({
       <img src={image} alt="field" draggable={false} className="cs-image" />
 
       {/* Line connecting the two markers */}
-      <svg className="cs-svg">
-        <line
-          x1={`${x1 * 100}%`} y1={`${y1 * 100}%`}
-          x2={`${x2 * 100}%`} y2={`${y2 * 100}%`}
-          stroke="#ffd700" strokeWidth="2" strokeDasharray="6 3"
-        />
-      </svg>
+      {showLine && (
+        <svg className="cs-svg">
+          <line
+            x1={`${x1 * 100}%`} y1={`${y1 * 100}%`}
+            x2={`${x2 * 100}%`} y2={`${y2 * 100}%`}
+            stroke="#ffd700" strokeWidth="2" strokeDasharray="6 3"
+          />
+        </svg>
+      )}
 
       {/* Endpoint markers — locked markers get a different style */}
       <div
