@@ -12,7 +12,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
     {
       id: '1',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {
           input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
           manual_trigger: false,
@@ -34,7 +34,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
     {
       id: '3',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {
           input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
           manual_trigger: false,
@@ -56,7 +56,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
 
   assert.deepEqual(prompt, {
     '1': {
-      class_type: 'LoadFile',
+      class_type: 'Image',
       inputs: { filename: 'scan.gwy' },
     },
     '2': {
@@ -72,7 +72,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
     {
       id: '1',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {
           input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
           manual_trigger: false,
@@ -94,7 +94,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
     {
       id: '3',
       data: {
-        className: 'LoadDemo',
+        className: 'ImageDemo',
         definition: {
           input: { required: { name: [['demo.npy'], {}] }, optional: {} },
           manual_trigger: false,
@@ -105,7 +105,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
     {
       id: '4',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {
           input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
           manual_trigger: false,
@@ -127,7 +127,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
 
   assert.deepEqual(prompt, {
     '1': {
-      class_type: 'LoadFile',
+      class_type: 'Image',
       inputs: { filename: 'first.gwy' },
     },
     '2': {
@@ -135,19 +135,19 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
       inputs: { field: ['1', 0] },
     },
     '3': {
-      class_type: 'LoadDemo',
+      class_type: 'ImageDemo',
       inputs: { name: 'demo.npy' },
     },
   });
   assert.equal('4' in prompt, false);
 });
 
-test('serializeExecutionGraph allows a singleton LoadFile graph so previews can run', () => {
+test('serializeExecutionGraph allows a singleton Image graph so previews can run', () => {
   const nodes = [
     {
       id: '1',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {
           input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
           manual_trigger: false,
@@ -161,18 +161,18 @@ test('serializeExecutionGraph allows a singleton LoadFile graph so previews can 
 
   assert.deepEqual(prompt, {
     '1': {
-      class_type: 'LoadFile',
+      class_type: 'Image',
       inputs: { filename: 'scan.gwy' },
     },
   });
 });
 
-test('serializeExecutionGraph allows a singleton LoadDemo graph so previews can run', () => {
+test('serializeExecutionGraph allows a singleton ImageDemo graph so previews can run', () => {
   const nodes = [
     {
       id: '1',
       data: {
-        className: 'LoadDemo',
+        className: 'ImageDemo',
         definition: {
           input: { required: { name: [['demo.npy'], {}] }, optional: {} },
           manual_trigger: false,
@@ -186,7 +186,7 @@ test('serializeExecutionGraph allows a singleton LoadDemo graph so previews can 
 
   assert.deepEqual(prompt, {
     '1': {
-      class_type: 'LoadDemo',
+      class_type: 'ImageDemo',
       inputs: { name: 'demo.npy' },
     },
   });
@@ -214,10 +214,10 @@ test('getAutoRunnableNodes ignores disconnected nodes when deciding what can aut
 
 test('getAutoRunnableNodes includes isolated preview-load nodes with selections', () => {
   const nodes = [
-    { id: '1', data: { className: 'LoadFile', definition: {}, widgetValues: { filename: 'first.gwy' } } },
+    { id: '1', data: { className: 'Image', definition: {}, widgetValues: { filename: 'first.gwy' } } },
     { id: '2', data: { className: 'PreviewImage', definition: {}, widgetValues: {} } },
-    { id: '3', data: { className: 'LoadDemo', definition: {}, widgetValues: { name: 'demo.npy' } } },
-    { id: '4', data: { className: 'LoadFile', definition: {}, widgetValues: { filename: '' } } },
+    { id: '3', data: { className: 'ImageDemo', definition: {}, widgetValues: { name: 'demo.npy' } } },
+    { id: '4', data: { className: 'Image', definition: {}, widgetValues: { filename: '' } } },
   ];
   const edges = [
     {
@@ -233,12 +233,12 @@ test('getAutoRunnableNodes includes isolated preview-load nodes with selections'
   assert.deepEqual(runnable.map((node) => node.id), ['1', '2', '3']);
 });
 
-test('getAutoRunnableNodes allows a singleton LoadFile graph', () => {
+test('getAutoRunnableNodes allows a singleton Image graph', () => {
   const nodes = [
     {
       id: '1',
       data: {
-        className: 'LoadFile',
+        className: 'Image',
         definition: {},
         widgetValues: { filename: 'scan.gwy' },
       },
@@ -250,12 +250,12 @@ test('getAutoRunnableNodes allows a singleton LoadFile graph', () => {
   assert.deepEqual(runnable.map((node) => node.id), ['1']);
 });
 
-test('getAutoRunnableNodes allows a singleton LoadDemo graph', () => {
+test('getAutoRunnableNodes allows a singleton ImageDemo graph', () => {
   const nodes = [
     {
       id: '1',
       data: {
-        className: 'LoadDemo',
+        className: 'ImageDemo',
         definition: {},
         widgetValues: { name: 'demo.npy' },
       },

@@ -868,10 +868,10 @@ function CustomNode({ id, data }) {
     if (data.className === 'Folder') {
       return getBasename(data.widgetValues?.folder);
     }
-    if (data.className === 'LoadFile') {
+    if (data.className === 'Image') {
       return getBasename(connectedPathInfo?.path || data.widgetValues?.filename);
     }
-    if (data.className === 'LoadDemo') {
+    if (data.className === 'ImageDemo') {
       return getBasename(data.widgetValues?.name);
     }
     return '';

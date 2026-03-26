@@ -9,6 +9,8 @@ the execution engine and the /nodes REST endpoint.
 from __future__ import annotations
 from typing import Any
 
+from backend.node_menu import get_menu_metadata
+
 NODE_CLASS_MAPPINGS: dict[str, type] = {}
 NODE_DISPLAY_NAME_MAPPINGS: dict[str, str] = {}
 
@@ -37,11 +39,14 @@ def get_node_info(class_name: str) -> dict[str, Any]:
     """
     cls = NODE_CLASS_MAPPINGS[class_name]
     input_types: dict = cls.INPUT_TYPES()
+    menu_metadata = get_menu_metadata(class_name, getattr(cls, "CATEGORY", "uncategorized"))
 
     return {
         "name": class_name,
         "display_name": NODE_DISPLAY_NAME_MAPPINGS.get(class_name, class_name),
-        "category": getattr(cls, "CATEGORY", "uncategorized"),
+        "category": menu_metadata["category"],
+        "category_order": menu_metadata["category_order"],
+        "menu_order": menu_metadata["menu_order"],
         "input": input_types,
         "input_order": {k: list(v.keys()) for k, v in input_types.items()},
         "output": list(cls.RETURN_TYPES),

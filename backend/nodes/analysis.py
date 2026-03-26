@@ -2,8 +2,8 @@
 Analysis nodes — statistics, histograms, FFT, cross sections.
 
 Gwyddion equivalents:
-  StatisticsNode  → gwy_data_field_get_min/max/avg/rms (libprocess/stats.h)
-  HeightHistogram → DH (height distribution), gwy_data_field_dh
+  Statistics  → gwy_data_field_get_min/max/avg/rms (libprocess/stats.h)
+  Histogram → DH (height distribution), gwy_data_field_dh
   FFT2D           → gwy_data_field_2dfft + gwy_data_field_2dpsdf
   CrossSection    → gwy_data_field_get_profile (libprocess/datafield.c)
 """
@@ -16,11 +16,11 @@ from backend.data_types import DataField, MeasureTable, RecordTable, datafield_t
 
 
 # ---------------------------------------------------------------------------
-# StatisticsNode
+# Statistics
 # ---------------------------------------------------------------------------
 
 @register_node(display_name="Statistics")
-class StatisticsNode:
+class Statistics:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -59,11 +59,11 @@ class StatisticsNode:
 
 
 # ---------------------------------------------------------------------------
-# HeightHistogram
+# Histogram
 # ---------------------------------------------------------------------------
 
 @register_node(display_name="Height Histogram")
-class HeightHistogram:
+class Histogram:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -130,9 +130,9 @@ class HeightHistogram:
         yb = float(counts[idx_b]) if len(counts) else 0.0
         count_unit = "count" if y_scale == "linear" else "log10(1+count)"
 
-        if HeightHistogram._broadcast_overlay_fn is not None:
-            HeightHistogram._broadcast_overlay_fn(
-                HeightHistogram._current_node_id,
+        if Histogram._broadcast_overlay_fn is not None:
+            Histogram._broadcast_overlay_fn(
+                Histogram._current_node_id,
                 {
                     "kind": "line_plot",
                     "section_title": "Histogram",
@@ -754,36 +754,6 @@ def _op_da(z):
     return float(np.mean(np.abs(np.diff(z))))
 
 
-@register_node(display_name="Line Math")
-class LineMath:
-    """Compute a single scalar value from a LINE profile."""
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "line": ("LINE",),
-                "operation": (list(LINE_OPS.keys()),),
-            }
-        }
-
-    RETURN_TYPES = ("MEASURE_TABLE",)
-    RETURN_NAMES = ("result",)
-    FUNCTION = "process"
-    CATEGORY = "analysis"
-    DESCRIPTION = (
-        "Compute a single scalar measurement from a LINE profile. "
-        "Includes basic stats and Gwyddion-convention roughness parameters."
-    )
-
-    def process(self, line, operation: str) -> tuple:
-        z = np.asarray(line, dtype=np.float64).ravel()
-        fn, unit = LINE_OPS[operation]
-        value = fn(z)
-        table = MeasureTable([{"quantity": operation, "value": value, "unit": unit}])
-        return (table,)
-
-
 # ---------------------------------------------------------------------------
 # TableMath — scalar measurement from a numeric record-table column
 # ---------------------------------------------------------------------------
@@ -867,56 +837,6 @@ def _scalar_payload(value: float, unit: str = "") -> dict:
     if isinstance(unit, str) and unit.strip():
         payload["unit"] = unit.strip()
     return payload
-
-
-@register_node(display_name="Table Math")
-class TableMath:
-    """Compute a scalar reduction over one numeric column in a record table."""
-
-    _broadcast_value_fn = None
-    _current_node_id: str = ""
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "table": ("RECORD_TABLE",),
-                "column": ("STRING", {
-                    "default": "value",
-                    "choices_from_table_input": "table",
-                }),
-                "operation": (list(TABLE_OPS.keys()),),
-            }
-        }
-
-    RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "process"
-    CATEGORY = "analysis"
-    DESCRIPTION = (
-        "Compute a scalar reduction over one numeric record-table column. "
-        "Useful for max, min, avg, median, sum, range, std, variance, and count."
-    )
-
-    def process(self, table: list, column: str, operation: str) -> tuple:
-        if isinstance(table, MeasureTable):
-            raise ValueError("Table Math only accepts record tables, not measurement tables.")
-        if not isinstance(table, list) or not table:
-            raise ValueError("Table Math requires a non-empty record table input.")
-
-        column_name = resolve_table_column_name(table, column)
-        values = extract_numeric_table_values(table, column_name)
-        if not values:
-            raise ValueError(f"Column '{column_name}' has no numeric values.")
-
-        op = TABLE_OPS.get(operation)
-        if op is None:
-            raise ValueError(f"Unsupported table operation: {operation}")
-
-        result = op(np.asarray(values, dtype=np.float64))
-        if TableMath._broadcast_value_fn is not None:
-            TableMath._broadcast_value_fn(TableMath._current_node_id, result)
-        return (result,)
 
 
 def extract_numeric_table_values(table: list, column: str) -> list[float]:

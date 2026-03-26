@@ -21,14 +21,14 @@ export function getConnectedNodeIds(edges) {
 }
 
 function isPreviewLoadNode(node) {
-  return ['LoadFile', 'LoadDemo'].includes(node?.data?.className);
+  return ['Image', 'ImageDemo'].includes(node?.data?.className);
 }
 
 function hasPreviewLoadSelection(node) {
-  if (node?.data?.className === 'LoadFile') {
+  if (node?.data?.className === 'Image') {
     return !!String(node.data?.widgetValues?.filename || '').trim();
   }
-  if (node?.data?.className === 'LoadDemo') {
+  if (node?.data?.className === 'ImageDemo') {
     return !!String(node.data?.widgetValues?.name || '').trim();
   }
   return false;

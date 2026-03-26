@@ -476,9 +476,9 @@ def test_fix_zero():
 # =========================================================================
 
 def test_statistics():
-    print("=== Test: StatisticsNode ===")
-    from backend.nodes.analysis import StatisticsNode
-    node = StatisticsNode()
+    print("=== Test: Statistics ===")
+    from backend.nodes.analysis import Statistics
+    node = Statistics()
 
     data = np.array([[1, 2], [3, 4]], dtype=np.float64)
     field = make_field(data=data)
@@ -506,17 +506,17 @@ def test_statistics():
 
 
 def test_height_histogram():
-    print("=== Test: HeightHistogram ===")
-    from backend.nodes.analysis import HeightHistogram
-    node = HeightHistogram()
+    print("=== Test: Histogram ===")
+    from backend.nodes.analysis import Histogram
+    node = Histogram()
 
     # Uniform data should give a roughly flat histogram
     data = np.linspace(0, 1, 1000).reshape(25, 40)
     field = make_field(data=data)
 
     overlays = []
-    HeightHistogram._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
-    HeightHistogram._current_node_id = "test"
+    Histogram._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
+    Histogram._current_node_id = "test"
 
     table, = node.process(
         field,
@@ -549,7 +549,7 @@ def test_height_histogram():
         measurements["B count"]["value"] - measurements["A count"]["value"],
     )
 
-    HeightHistogram._broadcast_overlay_fn = None
+    Histogram._broadcast_overlay_fn = None
     print("  PASS\n")
 
 
@@ -829,10 +829,10 @@ def test_particle_analysis():
 # =========================================================================
 
 def test_load_file():
-    print("=== Test: LoadFile ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image ===")
+    from backend.nodes.io import Image
     from PIL import Image
-    node = LoadFile()
+    node = Image()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Test loading a grayscale PNG → single DataField output
@@ -1247,10 +1247,10 @@ def test_value_display():
 # =========================================================================
 
 def test_load_file_ibw():
-    print("=== Test: LoadFile IBW multi-channel ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image IBW multi-channel ===")
+    from backend.nodes.io import Image
 
-    node = LoadFile()
+    node = Image()
     ibw_path = os.path.join(os.path.dirname(__file__), "..", "demo", "BR_New20012.ibw")
     ibw_path = os.path.abspath(ibw_path)
     if not os.path.exists(ibw_path):
@@ -1283,10 +1283,10 @@ def test_load_file_ibw():
 
 
 def test_load_file_npz():
-    print("=== Test: LoadFile .npz ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image .npz ===")
+    from backend.nodes.io import Image
 
-    node = LoadFile()
+    node = Image()
     with tempfile.TemporaryDirectory() as tmpdir:
         data = np.random.default_rng(99).standard_normal((30, 40))
         path = os.path.join(tmpdir, "test.npz")
@@ -1300,10 +1300,10 @@ def test_load_file_npz():
 
 
 def test_load_file_not_found():
-    print("=== Test: LoadFile not found ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image not found ===")
+    from backend.nodes.io import Image
 
-    node = LoadFile()
+    node = Image()
     try:
         node.load(filename="/nonexistent/path/file.png")
         assert False, "Should have raised FileNotFoundError"
@@ -1314,10 +1314,10 @@ def test_load_file_not_found():
 
 
 def test_load_file_unsupported():
-    print("=== Test: LoadFile unsupported format ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image unsupported format ===")
+    from backend.nodes.io import Image
 
-    node = LoadFile()
+    node = Image()
     with tempfile.TemporaryDirectory() as tmpdir:
         path = os.path.join(tmpdir, "test.xyz")
         with open(path, "w") as f:
@@ -1332,14 +1332,14 @@ def test_load_file_unsupported():
 
 
 def test_load_file_warning():
-    print("=== Test: LoadFile warning for uncalibrated data ===")
-    from backend.nodes.io import LoadFile
+    print("=== Test: Image warning for uncalibrated data ===")
+    from backend.nodes.io import Image
     from PIL import Image
 
-    node = LoadFile()
+    node = Image()
     warnings = []
-    LoadFile._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
-    LoadFile._current_node_id = "test"
+    Image._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
+    Image._current_node_id = "test"
 
     with tempfile.TemporaryDirectory() as tmpdir:
         arr = np.random.default_rng(10).integers(0, 256, (16, 16), dtype=np.uint8)
@@ -1352,7 +1352,7 @@ def test_load_file_warning():
         assert len(warnings) == 1
         assert "Uncalibrated" in warnings[0]
 
-    LoadFile._broadcast_warning_fn = None
+    Image._broadcast_warning_fn = None
     print("  PASS\n")
 
 
@@ -1428,14 +1428,14 @@ def test_list_channels():
 
 
 # =========================================================================
-# I/O — LoadDemo
+# I/O — ImageDemo
 # =========================================================================
 
 def test_load_demo():
-    print("=== Test: LoadDemo ===")
-    from backend.nodes.io import LoadDemo
+    print("=== Test: ImageDemo ===")
+    from backend.nodes.io import ImageDemo
 
-    node = LoadDemo()
+    node = ImageDemo()
 
     # Should be able to load a demo file by name
     result = node.load(name="nanoparticles.npy")
@@ -1460,14 +1460,14 @@ def test_load_demo():
 
 
 def test_load_demo_multi_layer_preview_payload():
-    print("=== Test: LoadDemo multi-layer preview payload ===")
+    print("=== Test: ImageDemo multi-layer preview payload ===")
     from backend.execution import ExecutionEngine
     import backend.nodes  # noqa: F401
 
     previews = []
     prompt = {
         "1": {
-            "class_type": "LoadDemo",
+            "class_type": "ImageDemo",
             "inputs": {
                 "name": "whiskers.ibw",
                 "colormap": "viridis",

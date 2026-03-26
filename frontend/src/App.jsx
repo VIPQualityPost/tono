@@ -80,6 +80,23 @@ function sameStringArray(a = [], b = []) {
   return a.every((item, index) => item === b[index]);
 }
 
+function compareMenuNodes(a, b) {
+  const orderA = Number.isFinite(a?.def?.menu_order) ? a.def.menu_order : Number.MAX_SAFE_INTEGER;
+  const orderB = Number.isFinite(b?.def?.menu_order) ? b.def.menu_order : Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) return orderA - orderB;
+
+  const nameA = (a?.def?.display_name || a?.className || '').toLowerCase();
+  const nameB = (b?.def?.display_name || b?.className || '').toLowerCase();
+  return nameA.localeCompare(nameB);
+}
+
+function compareMenuCategories(a, b) {
+  const orderA = Number.isFinite(a?.order) ? a.order : Number.MAX_SAFE_INTEGER;
+  const orderB = Number.isFinite(b?.order) ? b.order : Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) return orderA - orderB;
+  return String(a?.name || '').localeCompare(String(b?.name || ''));
+}
+
 function socketTypesCompatible(sourceType, targetType) {
   if (sourceType === targetType) return true;
   const accepted = SOCKET_COMPATIBILITY[targetType];
@@ -272,10 +289,25 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
         }
       }
       const cat = def.category || 'uncategorized';
-      if (!cats[cat]) cats[cat] = [];
-      cats[cat].push({ className, def });
+      if (!cats[cat]) {
+        cats[cat] = {
+          name: cat,
+          order: Number.isFinite(def.category_order) ? def.category_order : Number.MAX_SAFE_INTEGER,
+          items: [],
+        };
+      }
+      cats[cat].order = Math.min(
+        cats[cat].order,
+        Number.isFinite(def.category_order) ? def.category_order : Number.MAX_SAFE_INTEGER,
+      );
+      cats[cat].items.push({ className, def });
     }
-    return cats;
+    return Object.values(cats)
+      .map((category) => ({
+        ...category,
+        items: [...category.items].sort(compareMenuNodes),
+      }))
+      .sort(compareMenuCategories);
   }, [nodeDefs, filterType, filterDirection]);
 
   // Flat filtered list for search
@@ -283,8 +315,8 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
     if (!search.trim()) return null;
     const q = search.toLowerCase();
     const results = [];
-    for (const items of Object.values(categories)) {
-      for (const { className, def } of items) {
+    for (const category of categories) {
+      for (const { className, def } of category.items) {
         const name = (def.display_name || className).toLowerCase();
         if (name.includes(q)) results.push({ className, def });
       }
@@ -341,7 +373,7 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
     setOpenCat(cat);
   }, []);
 
-  if (Object.keys(categories).length === 0) {
+  if (categories.length === 0) {
     return (
       <div className="context-menu" ref={menuRef} style={{ left: menuPos.x, top: menuPos.y }} onClick={(e) => e.stopPropagation()}>
         <div className="context-item" style={{ color: '#64748b' }}>No compatible nodes</div>
@@ -349,7 +381,8 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
     );
   }
 
-  const catNames = Object.keys(categories).sort();
+  const catNames = categories.map((category) => category.name);
+  const categoryMap = Object.fromEntries(categories.map((category) => [category.name, category.items]));
 
   return (
     <>
@@ -411,7 +444,7 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
       </div>
 
       {/* Submenu rendered as a sibling, positioned at computed screen coords */}
-      {openCat && categories[openCat] && (
+      {openCat && categoryMap[openCat] && (
         <div
           className="context-menu ctx-submenu"
           ref={subMenuRef}
@@ -423,7 +456,7 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
             setOpenCat(null);
           }}
         >
-          {categories[openCat].map(({ className, def }) => (
+          {categoryMap[openCat].map(({ className, def }) => (
             <div
               key={className}
               className="context-item"
@@ -512,9 +545,9 @@ function Flow() {
       resolvedPath = getResolvedPathInput(nodeId);
     }
     if (!resolvedPath) {
-      if (node.data.className === 'LoadFile') {
+      if (node.data.className === 'Image') {
         resolvedPath = node.data.widgetValues?.filename || '';
-      } else if (node.data.className === 'LoadDemo') {
+      } else if (node.data.className === 'ImageDemo') {
         resolvedPath = node.data.widgetValues?.name || '';
       }
     }
@@ -707,7 +740,7 @@ function Flow() {
       refreshFolderNodeOutputs(nodeId, value);
     }
 
-    if (node && (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo') && (name === 'filename' || name === 'name')) {
+    if (node && (node.data.className === 'Image' || node.data.className === 'ImageDemo') && (name === 'filename' || name === 'name')) {
       refreshLoadNodeOutputs(nodeId, value);
     }
 
@@ -803,11 +836,11 @@ function Flow() {
       refreshFolderNodeOutputs(newNodeId, widgetValues.folder);
     }
 
-    // For LoadFile/LoadDemo, auto-fetch channels for the default value
-    if (className === 'LoadDemo' && widgetValues.name) {
+    // For Image/ImageDemo, auto-fetch channels for the default value
+    if (className === 'ImageDemo' && widgetValues.name) {
       refreshLoadNodeOutputs(newNodeId, widgetValues.name);
     }
-    if (className === 'LoadFile' && widgetValues.filename) {
+    if (className === 'Image' && widgetValues.filename) {
       refreshLoadNodeOutputs(newNodeId, widgetValues.filename);
     }
 
@@ -924,7 +957,7 @@ function Flow() {
         }
       });
       hydrated.nodes.forEach((node) => {
-        if (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo') {
+        if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
           refreshLoadNodeOutputs(node.id);
         }
       });

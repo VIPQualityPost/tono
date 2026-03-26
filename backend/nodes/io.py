@@ -125,11 +125,11 @@ def list_folder_paths(folderpath: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# LoadFile  (unified loader — replaces LoadImage + LoadSPM)
+# Image  (unified loader — replaces LoadImage + LoadSPM)
 # ---------------------------------------------------------------------------
 
-@register_node(display_name="Load File")
-class LoadFile:
+@register_node(display_name="Image")
+class Image:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -185,8 +185,8 @@ class LoadFile:
         return (field,)
 
     def _send_warning(self, message: str):
-        fn = LoadFile._broadcast_warning_fn
-        nid = LoadFile._current_node_id
+        fn = Image._broadcast_warning_fn
+        nid = Image._current_node_id
         if fn and nid:
             fn(nid, message)
 
@@ -353,7 +353,7 @@ class LoadFile:
 
 
 # ---------------------------------------------------------------------------
-# LoadDemo
+# ImageDemo
 # ---------------------------------------------------------------------------
 
 def _list_demo_files() -> list[str]:
@@ -366,8 +366,8 @@ def _list_demo_files() -> list[str]:
     )
 
 
-@register_node(display_name="Load Demo File")
-class LoadDemo:
+@register_node(display_name="Image (Demo)")
+class ImageDemo:
     @classmethod
     def INPUT_TYPES(cls):
         choices = _list_demo_files() or ["(no demo files found)"]
@@ -388,7 +388,7 @@ class LoadDemo:
     DESCRIPTION = "Load a bundled demo file so you can try the app without providing your own data."
 
     def load(self, name: str = "", colormap: str = "viridis", colormap_map=None):
-        loader = LoadFile()
+        loader = Image()
         demo_path = DEMO_DIR / name
         if not demo_path.exists():
             raise FileNotFoundError(f"Demo file not found: {name}")

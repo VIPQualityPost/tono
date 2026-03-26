@@ -103,7 +103,7 @@ test('hydrateWorkflowState clears shared path widgets while restoring saved dyna
         id: '12',
         position: { x: 40, y: 80 },
         data: {
-          className: 'LoadFile',
+          className: 'Image',
           widgetValues: { filename: 'scan.ibw', colormap: 'viridis' },
           output: ['DATA_FIELD', 'DATA_FIELD'],
           output_name: ['Height', 'Phase'],
@@ -123,7 +123,7 @@ test('hydrateWorkflowState clears shared path widgets while restoring saved dyna
   };
 
   const defs = {
-    LoadFile: {
+    Image: {
       category: 'io',
       input: { required: { filename: ['FILE_PICKER', {}], colormap: [['viridis', 'gray'], {}] } },
       output: ['DATA_FIELD'],
@@ -138,13 +138,13 @@ test('hydrateWorkflowState clears shared path widgets while restoring saved dyna
   assert.deepEqual(hydrated.edges, saved.edges);
   assert.equal(hydrated.nodes[0].type, 'custom');
   assert.equal(hydrated.nodes[0].dragHandle, '.drag-handle');
-  assert.equal(hydrated.nodes[0].data.label, 'LoadFile');
+  assert.equal(hydrated.nodes[0].data.label, 'Image');
   assert.equal(hydrated.nodes[0].data.previewImage, null);
   assert.equal(hydrated.nodes[0].data.widgetValues.filename, '');
   assert.equal(hydrated.nodes[0].data.widgetValues.colormap, 'viridis');
   assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD']);
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Height', 'Phase']);
-  assert.deepEqual(hydrated.nodes[0].data.definition.input, defs.LoadFile.input);
+  assert.deepEqual(hydrated.nodes[0].data.definition.input, defs.Image.input);
 });
 
 test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets but preserve other metadata', () => {
@@ -153,8 +153,8 @@ test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets bu
       id: '7',
       position: { x: 10, y: 20 },
       data: {
-        label: 'Load File',
-        className: 'LoadFile',
+        label: 'Image',
+        className: 'Image',
         widgetValues: { filename: 'scan.gwy', colormap: 'gray' },
         definition: {
           category: 'io',
@@ -176,7 +176,7 @@ test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets bu
     },
   ];
   const defs = {
-    LoadFile: {
+    Image: {
       category: 'io',
       input: { required: { filename: ['FILE_PICKER', {}], colormap: [['gray', 'viridis'], {}] } },
       output: ['DATA_FIELD'],
