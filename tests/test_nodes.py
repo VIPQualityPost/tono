@@ -758,7 +758,7 @@ def test_draw_mask():
 
 def test_particle_analysis():
     print("=== Test: ParticleAnalysis ===")
-    from backend.nodes.grains import ParticleAnalysis
+    from backend.nodes.particless import ParticleAnalysis
     node = ParticleAnalysis()
 
     # Create a field with two distinct particles

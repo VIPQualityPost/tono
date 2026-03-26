@@ -9,6 +9,7 @@ Gwyddion equivalents:
 """
 
 from __future__ import annotations
+from functools import lru_cache
 import json
 import numpy as np
 from backend.node_registry import register_node
@@ -21,13 +22,36 @@ def _mask_overlay(field: DataField, mask: np.ndarray) -> np.ndarray:
     Returns (H, W, 3) uint8 array.
     """
     grey = datafield_to_uint8(field, "gray")  # (H, W, 3) uint8
-    overlay = grey.astype(np.float64)
-    mask_bool = mask == 255
-    alpha = 0.45
-    overlay[mask_bool, 0] = overlay[mask_bool, 0] * (1 - alpha) + 255 * alpha
-    overlay[mask_bool, 1] = overlay[mask_bool, 1] * (1 - alpha)
-    overlay[mask_bool, 2] = overlay[mask_bool, 2] * (1 - alpha)
-    return np.clip(overlay, 0, 255).astype(np.uint8)
+    mask_bool = mask > 127
+    if not np.any(mask_bool):
+        return grey
+
+    overlay = grey.copy()
+    red = overlay[..., 0]
+    green = overlay[..., 1]
+    blue = overlay[..., 2]
+
+    # Integer alpha blend equivalent to a 45% red overlay, without float64 work.
+    red_vals = red[mask_bool].astype(np.uint16)
+    green_vals = green[mask_bool].astype(np.uint16)
+    blue_vals = blue[mask_bool].astype(np.uint16)
+    red[mask_bool] = ((red_vals * 55) + (255 * 45) + 50) // 100
+    green[mask_bool] = ((green_vals * 55) + 50) // 100
+    blue[mask_bool] = ((blue_vals * 55) + 50) // 100
+    return overlay
+
+
+@lru_cache(maxsize=128)
+def _mask_structure(radius: int, shape: str) -> np.ndarray:
+    radius = max(1, int(radius))
+    if shape == "disk":
+        y, x = np.ogrid[-radius:radius + 1, -radius:radius + 1]
+        struct = (x * x + y * y) <= radius * radius
+    else:
+        size = 2 * radius + 1
+        struct = np.ones((size, size), dtype=bool)
+    struct.setflags(write=False)
+    return struct
 
 
 def _clamp_fraction(value) -> float:
@@ -285,31 +309,19 @@ class MaskMorphology:
 
     def process(self, mask: np.ndarray, operation: str, radius: int, shape: str,
                 field: DataField | None = None) -> tuple:
-        from scipy.ndimage import binary_dilation, binary_erosion
+        from scipy.ndimage import binary_closing, binary_dilation, binary_erosion, binary_opening
 
         binary = mask > 127
-
-        if shape == "disk":
-            y, x = np.ogrid[-radius:radius + 1, -radius:radius + 1]
-            struct = (x * x + y * y) <= radius * radius
-        else:
-            size = 2 * radius + 1
-            struct = np.ones((size, size), dtype=bool)
+        struct = _mask_structure(radius, shape)
 
         if operation == "dilate":
             result = binary_dilation(binary, structure=struct)
         elif operation == "erode":
             result = binary_erosion(binary, structure=struct)
         elif operation == "open":
-            result = binary_dilation(
-                binary_erosion(binary, structure=struct),
-                structure=struct,
-            )
+            result = binary_opening(binary, structure=struct)
         elif operation == "close":
-            result = binary_erosion(
-                binary_dilation(binary, structure=struct),
-                structure=struct,
-            )
+            result = binary_closing(binary, structure=struct)
         else:
             raise ValueError(f"Unknown morphological operation: {operation}")
 

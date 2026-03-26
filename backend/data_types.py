@@ -13,6 +13,7 @@ DataField mirrors Gwyddion's GwyDataField structure:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 import numpy as np
 
 
@@ -141,14 +142,21 @@ def datafield_to_uint8(df: DataField, colormap: str = "gray") -> np.ndarray:
     Normalize a DataField to a uint8 (H, W, 3) RGB array using matplotlib colormap.
     Returns shape (H, W, 3) uint8.
     """
-    import matplotlib.cm as cm
     normalized = normalize_for_colormap(
         df.data,
         offset=df.display_offset,
         scale=df.display_scale,
     )
 
-    cmap = cm.get_cmap(colormap)
+    if colormap == "gray":
+        grey = np.rint(normalized * 255.0).astype(np.uint8)
+        rgb = np.empty(grey.shape + (3,), dtype=np.uint8)
+        rgb[..., 0] = grey
+        rgb[..., 1] = grey
+        rgb[..., 2] = grey
+        return rgb
+
+    cmap = _get_colormap(colormap)
     rgba = cmap(normalized)                     # (H, W, 4) float [0,1]
     rgb = (rgba[:, :, :3] * 255).astype(np.uint8)
     return rgb
@@ -180,6 +188,12 @@ def encode_preview(arr: np.ndarray) -> str:
 
     img = Image.fromarray(arr)
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG", compress_level=1, optimize=False)
     b64 = base64.b64encode(buf.getvalue()).decode()
     return f"data:image/png;base64,{b64}"
+
+
+@lru_cache(maxsize=len(COLORMAPS))
+def _get_colormap(colormap: str):
+    import matplotlib.cm as cm
+    return cm.get_cmap(colormap)

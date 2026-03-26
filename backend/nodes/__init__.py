@@ -4,4 +4,4 @@ from . import io, filters, modify, level, analysis, mask, display
 try:
     from . import particle
 except ImportError:
-    from . import grains
+    from . import particless
