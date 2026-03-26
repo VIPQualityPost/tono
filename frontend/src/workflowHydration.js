@@ -34,6 +34,26 @@ function getInputType(definition, inputName) {
   return getSocketType(required[inputName] ?? optional[inputName]);
 }
 
+function getInputEntries(definition) {
+  return [
+    ...Object.entries(definition?.input?.required || {}),
+    ...Object.entries(definition?.input?.optional || {}),
+  ];
+}
+
+function sanitizeWidgetValues(widgetValues, definition) {
+  const nextValues = { ...(widgetValues || {}) };
+
+  getInputEntries(definition).forEach(([inputName, inputDef]) => {
+    const type = getSocketType(inputDef);
+    if (type === 'FILE_PICKER' || type === 'FOLDER_PICKER') {
+      nextValues[inputName] = '';
+    }
+  });
+
+  return nextValues;
+}
+
 function remapLegacyHandle(handleId, kind, nodeData) {
   if (typeof handleId !== 'string') return handleId;
 
@@ -63,22 +83,26 @@ export function hydrateWorkflowState(data, defs = {}) {
   const loadedNodes = Array.isArray(data?.nodes) ? data.nodes : [];
   const loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
 
-  const nodes = loadedNodes.map((node) => ({
-    ...node,
-    type: node.type || 'custom',
-    dragHandle: node.dragHandle || '.drag-handle',
-    data: {
-      ...node.data,
-      label: node.data?.label || node.data?.className || 'Node',
-      widgetValues: node.data?.widgetValues || {},
-      definition: mergeDefinition(node.data, defs),
-      previewImage: null,
-      tableRows: null,
-      meshData: null,
-      overlay: null,
-      scalarValue: null,
-    },
-  }));
+  const nodes = loadedNodes.map((node) => {
+    const definition = mergeDefinition(node.data, defs);
+
+    return {
+      ...node,
+      type: node.type || 'custom',
+      dragHandle: node.dragHandle || '.drag-handle',
+      data: {
+        ...node.data,
+        label: node.data?.label || node.data?.className || 'Node',
+        widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition),
+        definition,
+        previewImage: null,
+        tableRows: null,
+        meshData: null,
+        overlay: null,
+        scalarValue: null,
+      },
+    };
+  });
 
   const nodeById = new Map(nodes.map((node) => [String(node.id), node.data]));
 

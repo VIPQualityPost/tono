@@ -95,7 +95,7 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
   assert.equal('selected' in serialized.edges[0], false);
 });
 
-test('hydrateWorkflowState restores saved dynamic outputs on top of current node definitions', () => {
+test('hydrateWorkflowState clears shared path widgets while restoring saved dynamic outputs', () => {
   const saved = {
     version: 1,
     nodes: [
@@ -140,12 +140,14 @@ test('hydrateWorkflowState restores saved dynamic outputs on top of current node
   assert.equal(hydrated.nodes[0].dragHandle, '.drag-handle');
   assert.equal(hydrated.nodes[0].data.label, 'LoadFile');
   assert.equal(hydrated.nodes[0].data.previewImage, null);
+  assert.equal(hydrated.nodes[0].data.widgetValues.filename, '');
+  assert.equal(hydrated.nodes[0].data.widgetValues.colormap, 'viridis');
   assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD']);
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Height', 'Phase']);
   assert.deepEqual(hydrated.nodes[0].data.definition.input, defs.LoadFile.input);
 });
 
-test('serializeWorkflowState and hydrateWorkflowState preserve reload-critical metadata for dynamic nodes', () => {
+test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets but preserve other metadata', () => {
   const nodes = [
     {
       id: '7',
@@ -185,8 +187,42 @@ test('serializeWorkflowState and hydrateWorkflowState preserve reload-critical m
   const serialized = serializeWorkflowState(nodes, edges);
   const hydrated = hydrateWorkflowState(serialized, defs);
 
-  assert.deepEqual(hydrated.nodes[0].data.widgetValues, nodes[0].data.widgetValues);
+  assert.deepEqual(hydrated.nodes[0].data.widgetValues, { filename: '', colormap: 'gray' });
   assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD', 'DATA_FIELD']);
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Topography', 'Error', 'Mask']);
   assert.deepEqual(hydrated.edges, edges);
+});
+
+test('hydrateWorkflowState clears saved folder selections on shared workflows', () => {
+  const saved = {
+    version: 1,
+    nodes: [
+      {
+        id: '21',
+        position: { x: 0, y: 0 },
+        data: {
+          className: 'Folder',
+          widgetValues: { folder: '/Users/alice/Desktop/shared-dataset' },
+          output: ['PATH', 'PATH'],
+          output_name: ['scan1.png', 'scan2.png'],
+        },
+      },
+    ],
+    edges: [],
+  };
+
+  const defs = {
+    Folder: {
+      category: 'io',
+      input: { required: { folder: ['FOLDER_PICKER', {}] } },
+      output: ['PATH'],
+      output_name: ['path'],
+    },
+  };
+
+  const hydrated = hydrateWorkflowState(saved, defs);
+
+  assert.equal(hydrated.nodes[0].data.widgetValues.folder, '');
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['PATH', 'PATH']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['scan1.png', 'scan2.png']);
 });

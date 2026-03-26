@@ -143,6 +143,7 @@ class CropResizeField:
             yreal=(py1 - py0) * field.dy,
             xoff=field.xoff + px0 * field.dx,
             yoff=field.yoff + py0 * field.dy,
+            overlays=[],
         )
 
         target_width, target_height = self._resolve_target_shape(
@@ -217,6 +218,9 @@ class RotateField:
         "Optionally expand the canvas to keep the full rotated field while preserving the field center."
     )
 
+    _broadcast_warning_fn = None
+    _current_node_id: str = ""
+
     def process(
         self,
         field: DataField,
@@ -224,6 +228,9 @@ class RotateField:
         interpolation: str,
         expand_canvas: bool,
     ) -> tuple:
+        if field.overlays:
+            self._send_warning("Rotate clears annotation/markup overlays!")
+
         angle = float(angle)
         order_map = {
             "nearest": 0,
@@ -264,8 +271,15 @@ class RotateField:
             yreal=new_yreal,
             xoff=center_x - new_xreal / 2.0,
             yoff=center_y - new_yreal / 2.0,
+            overlays=[],
         )
         return (result,)
+
+    def _send_warning(self, message: str):
+        fn = RotateField._broadcast_warning_fn
+        nid = RotateField._current_node_id
+        if fn and nid:
+            fn(nid, message)
 
     @staticmethod
     def _rotated_extents(field: DataField, angle: float, expand_canvas: bool) -> tuple[float, float]:

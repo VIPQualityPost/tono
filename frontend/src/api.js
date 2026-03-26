@@ -40,6 +40,12 @@ export async function getChannels(filepath) {
   return r.json();
 }
 
+export async function getFolderFiles(folderpath) {
+  const r = await fetch(`/folder-files?folder=${encodeURIComponent(folderpath)}`);
+  if (!r.ok) return [];
+  return r.json();
+}
+
 export async function runPrompt(prompt) {
   const r = await fetch('/prompt', {
     method: 'POST',

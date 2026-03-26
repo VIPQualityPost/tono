@@ -6,14 +6,15 @@ const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
 const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
+const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 
 // ── Constants ─────────────────────────────────────────────────────────
 
 const DATA_TYPES = new Set([
   'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE',
+  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
 ]);
-const SOCKET_WIDGET_TYPES = new Set(['FLOAT']);
+const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
 
 const TYPE_COLORS = {
   DATA_FIELD: '#3a7abf',
@@ -24,8 +25,14 @@ const TYPE_COLORS = {
   ANY_TABLE:  '#67e8f9',
   COORD:      '#e91e63',
   FLOAT:      '#7dd3fc',
+  INT:        '#38bdf8',
   STATS_SOURCE:'#c084fc',
   VALUE_SOURCE:'#60a5fa',
+  COLORMAP:   '#f472b6',
+  SAVE_LAYER: '#22c55e',
+  FONT:       '#fb7185',
+  FILE_PATH:  '#f59e0b',
+  DIRECTORY:  '#f97316',
 };
 
 const CAT_COLORS = {
@@ -128,6 +135,21 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
     }
   }, [display]);
 
+  const onWheel = useCallback((e) => {
+    if (editing) return;
+    e.preventDefault();
+
+    const baseStep = Number(step) || 1;
+    const multiplier = e.shiftKey ? 10 : 1;
+    const delta = (e.deltaY < 0 ? 1 : -1) * baseStep * multiplier;
+    const startVal = Number(value);
+    const raw = (Number.isFinite(startVal) ? startVal : 0) + delta;
+    const rounded = precision != null
+      ? parseFloat(raw.toFixed(precision))
+      : Math.round(raw);
+    onChange(clamp(rounded));
+  }, [editing, step, value, precision, onChange, clamp]);
+
   const commitEdit = useCallback(() => {
     setEditing(false);
     const parsed = parseFloat(editText);
@@ -155,6 +177,7 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onWheel={onWheel}
     >
       <span className="drag-number-val">{display}</span>
     </div>
@@ -175,6 +198,57 @@ function CollapsibleSection({ title, defaultOpen, children }) {
         {title}
       </button>
       {open && children}
+    </div>
+  );
+}
+
+function LayerGalleryPreview({ overlay }) {
+  const layers = Array.isArray(overlay?.layers) ? overlay.layers : [];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [overlay]);
+
+  useEffect(() => {
+    if (layers.length === 0) {
+      setIndex(0);
+      return;
+    }
+    if (index >= layers.length) {
+      setIndex(layers.length - 1);
+    }
+  }, [index, layers.length]);
+
+  if (layers.length === 0) return null;
+
+  const active = layers[index] || layers[0];
+
+  return (
+    <div className="layer-gallery">
+      <div className="layer-gallery-toolbar">
+        <button
+          className="layer-gallery-btn nodrag"
+          onClick={() => setIndex((current) => (current - 1 + layers.length) % layers.length)}
+        >
+          {'<'}
+        </button>
+        <div className="layer-gallery-name" title={active.name || `Layer ${index + 1}`}>
+          {active.name || `Layer ${index + 1}`}
+        </div>
+        <button
+          className="layer-gallery-btn nodrag"
+          onClick={() => setIndex((current) => (current + 1) % layers.length)}
+        >
+          {'>'}
+        </button>
+      </div>
+      <div className="layer-gallery-count">
+        {index + 1} / {layers.length}
+      </div>
+      <div className="node-preview">
+        <img src={active.image} alt={active.name || `layer ${index + 1}`} draggable={false} />
+      </div>
     </div>
   );
 }
@@ -352,6 +426,28 @@ function getSourceNodeForInput(store, nodeId, inputName) {
   return store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
 }
 
+function getConnectedOutputInfo(store, nodeId, inputName) {
+  const targetHandle = `input::${inputName}::`;
+  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  if (!edge?.sourceHandle) return null;
+  const sourceNode = store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
+  const slot = Number.parseInt(edge.sourceHandle.split('::')[1], 10);
+  if (!sourceNode || !Number.isInteger(slot)) return null;
+  return {
+    path: sourceNode.data?.definition?.output_paths?.[slot] || null,
+    name: sourceNode.data?.definition?.output_name?.[slot] || null,
+  };
+}
+
+function getBasename(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.replace(/\\/g, '/').replace(/\/+$/, '');
+  const parts = normalized.split('/');
+  return parts[parts.length - 1] || '';
+}
+
 function getWidgetSourceInputName(opts) {
   return opts?.source_type_input
     || opts?.choices_from_table_input
@@ -366,6 +462,197 @@ function widgetVisibleForSourceType(widget, sourceType) {
   const allowed = Array.isArray(rules[inputName]) ? rules[inputName] : [];
   if (allowed.length === 0) return true;
   return allowed.includes(sourceType);
+}
+
+function widgetVisibleForWidgetValues(widget, widgetValues) {
+  const rules = widget?.opts?.show_when_widget_value;
+  if (!rules || typeof rules !== 'object') return true;
+
+  for (const [widgetName, allowedValues] of Object.entries(rules)) {
+    const allowed = Array.isArray(allowedValues) ? allowedValues.map(String) : [];
+    if (allowed.length === 0) continue;
+    if (!allowed.includes(String(widgetValues?.[widgetName] ?? ''))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function widgetHiddenByConnectedInput(widget, connectedInputs) {
+  const raw = widget?.opts?.hide_when_input_connected;
+  if (!raw || !connectedInputs) return false;
+  const inputs = Array.isArray(raw) ? raw : [raw];
+  return inputs.some((inputName) => connectedInputs.has(String(inputName)));
+}
+
+function widgetVisibleForInputVisibility(widget, visibleInputs) {
+  const raw = widget?.opts?.show_when_input_visible;
+  if (!raw) return true;
+  const inputs = Array.isArray(raw) ? raw : [raw];
+  return inputs.some((inputName) => visibleInputs?.has(String(inputName)));
+}
+
+function getWidgetInlineInputName(widget) {
+  const raw = widget?.opts?.inline_with_input;
+  if (!raw) return null;
+  return String(Array.isArray(raw) ? raw[0] : raw);
+}
+
+const DEFAULT_COLORMAP_STOPS = [
+  { position: 0, color: '#440154' },
+  { position: 1, color: '#fde725' },
+];
+
+function normalizeHexColor(color, fallback = '#000000') {
+  if (typeof color !== 'string') return fallback;
+  let text = color.trim();
+  if (text.startsWith('#') && text.length === 4) {
+    text = `#${text.slice(1).split('').map((ch) => `${ch}${ch}`).join('')}`;
+  }
+  if (/^#[0-9a-fA-F]{6}$/.test(text)) {
+    return text.toLowerCase();
+  }
+  return fallback;
+}
+
+function parseColorMapStops(raw) {
+  let parsed = raw;
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = DEFAULT_COLORMAP_STOPS;
+    }
+  }
+
+  if (!Array.isArray(parsed)) {
+    parsed = DEFAULT_COLORMAP_STOPS;
+  }
+
+  const stops = parsed
+    .map((stop) => {
+      const position = Number(stop?.position);
+      return {
+        position: Number.isFinite(position) ? Math.max(0, Math.min(1, position)) : 0,
+        color: normalizeHexColor(stop?.color, '#000000'),
+      };
+    })
+    .sort((a, b) => a.position - b.position);
+
+  if (stops.length < 2) {
+    return DEFAULT_COLORMAP_STOPS.map((stop) => ({ ...stop }));
+  }
+
+  stops[0].position = 0;
+  stops[stops.length - 1].position = 1;
+  return stops;
+}
+
+function serializeColorMapStops(stops) {
+  return JSON.stringify(stops.map((stop, index) => ({
+    position: index === 0 ? 0 : index === stops.length - 1 ? 1 : Number(stop.position.toFixed(4)),
+    color: normalizeHexColor(stop.color, '#000000'),
+  })));
+}
+
+function colorMapGradient(stops) {
+  return `linear-gradient(90deg, ${stops.map((stop) => `${stop.color} ${Math.round(stop.position * 1000) / 10}%`).join(', ')})`;
+}
+
+function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
+  const stops = parseColorMapStops(value);
+
+  const commitStops = useCallback((nextStops) => {
+    const ordered = [...nextStops].sort((a, b) => a.position - b.position);
+    if (ordered.length < 2) return;
+    ordered[0] = { ...ordered[0], position: 0 };
+    ordered[ordered.length - 1] = { ...ordered[ordered.length - 1], position: 1 };
+    onChange(nodeId, name, serializeColorMapStops(ordered));
+  }, [name, nodeId, onChange]);
+
+  const updateStop = useCallback((index, patch) => {
+    const next = stops.map((stop, stopIndex) => (stopIndex === index ? { ...stop, ...patch } : { ...stop }));
+    if (index > 0 && index < next.length - 1) {
+      const prev = next[index - 1].position + 0.001;
+      const after = next[index + 1].position - 0.001;
+      next[index].position = Math.max(prev, Math.min(after, next[index].position));
+    }
+    commitStops(next);
+  }, [commitStops, stops]);
+
+  const removeStop = useCallback((index) => {
+    if (stops.length <= 2) return;
+    commitStops(stops.filter((_, stopIndex) => stopIndex !== index));
+  }, [commitStops, stops]);
+
+  const addStop = useCallback(() => {
+    let gapIndex = 0;
+    let gapSize = -1;
+    for (let i = 0; i < stops.length - 1; i += 1) {
+      const gap = stops[i + 1].position - stops[i].position;
+      if (gap > gapSize) {
+        gapIndex = i;
+        gapSize = gap;
+      }
+    }
+
+    const left = stops[gapIndex];
+    const right = stops[gapIndex + 1];
+    const newStop = {
+      position: Number((((left.position + right.position) / 2)).toFixed(4)),
+      color: left.color,
+    };
+    const next = [...stops];
+    next.splice(gapIndex + 1, 0, newStop);
+    commitStops(next);
+  }, [commitStops, stops]);
+
+  return (
+    <div className="colormap-editor">
+      <div className="colormap-preview" style={{ backgroundImage: colorMapGradient(stops) }} />
+      <div className="colormap-stop-list">
+        {stops.map((stop, index) => {
+          const isEndpoint = index === 0 || index === stops.length - 1;
+          return (
+            <div className="colormap-stop-row" key={`${index}-${stop.position}-${stop.color}`}>
+              <span className="colormap-stop-label">{isEndpoint ? (index === 0 ? 'min' : 'max') : `stop ${index}`}</span>
+              <input
+                className="nodrag colormap-stop-color"
+                type="color"
+                value={normalizeHexColor(stop.color, '#000000')}
+                onChange={(e) => updateStop(index, { color: e.target.value })}
+              />
+              {isEndpoint ? (
+                <span className="colormap-stop-boundary">{index === 0 ? '0%' : '100%'}</span>
+              ) : (
+                <input
+                  className="nodrag colormap-stop-position"
+                  type="number"
+                  min="0.001"
+                  max="0.999"
+                  step="0.01"
+                  value={Number(stop.position.toFixed(4))}
+                  onChange={(e) => updateStop(index, { position: Number(e.target.value) })}
+                />
+              )}
+              <button
+                className="nodrag colormap-stop-action"
+                type="button"
+                disabled={isEndpoint}
+                onClick={() => removeStop(index)}
+              >
+                Remove
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <button className="nodrag widget-button colormap-add-stop" type="button" onClick={addStop}>
+        Add Stop
+      </button>
+    </div>
+  );
 }
 
 function NodeTable({ rows }) {
@@ -440,6 +727,9 @@ function CustomNode({ id, data }) {
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
+  const connectedPathInfo = useStore(
+    useCallback((s) => getConnectedOutputInfo(s, id, 'path'), [id]),
+  );
 
   // Parse inputs into data handles and widgets
   const required = def.input.required || {};
@@ -447,13 +737,15 @@ function CustomNode({ id, data }) {
 
   const dataInputs = [];
   const widgets = [];
+  const visibleInputNames = new Set();
 
   const hiddenWidgets = new Set();
 
   for (const [name, spec] of Object.entries(required)) {
     const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
     if (DATA_TYPES.has(type)) {
-      dataInputs.push({ name, type });
+      dataInputs.push({ name, type, label: opts?.label || name });
+      visibleInputNames.add(name);
     } else if (opts?.hidden) {
       hiddenWidgets.add(name);
     } else {
@@ -467,7 +759,6 @@ function CustomNode({ id, data }) {
   const connectedInputs = useStore(
     useCallback(
       (s) => {
-        if (!isProgressive) return null;
         const set = new Set();
         for (const e of s.edges) {
           if (e.target === id) {
@@ -477,7 +768,7 @@ function CustomNode({ id, data }) {
         }
         return set;
       },
-      [id, isProgressive],
+      [id],
     ),
   );
 
@@ -503,7 +794,8 @@ function CustomNode({ id, data }) {
       if (match) {
         const idx = parseInt(match[1], 10);
         if (idx === 0 || (connectedInputs && connectedInputs.has(`field_${idx - 1}`))) {
-          dataInputs.push({ name, type });
+          dataInputs.push({ name, type, label: opts?.label || name });
+          visibleInputNames.add(name);
         }
         continue;
       }
@@ -511,9 +803,39 @@ function CustomNode({ id, data }) {
     if (opts?.hidden) {
       hiddenWidgets.add(name);
     } else if (DATA_TYPES.has(type)) {
-      dataInputs.push({ name, type });
+      dataInputs.push({ name, type, label: opts?.label || name });
+      visibleInputNames.add(name);
     } else {
       widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
+    }
+  }
+
+  const visibleWidgets = widgets.filter((w) => (
+    widgetVisibleForSourceType(w, connectedSourceTypes?.[getWidgetSourceInputName(w.opts)])
+    && widgetVisibleForWidgetValues(w, data.widgetValues)
+    && widgetVisibleForInputVisibility(w, visibleInputNames)
+    && !widgetHiddenByConnectedInput(w, connectedInputs)
+  ));
+
+  const combinedTopInputNames = new Set(
+    visibleWidgets
+      .map((widget) => widget?.opts?.top_socket_input)
+      .filter((name) => typeof name === 'string' && name.length > 0),
+  );
+  const renderedDataInputs = dataInputs.filter((input) => !combinedTopInputNames.has(input.name));
+  const dataInputByName = new Map(dataInputs.map((input) => [input.name, input]));
+
+  const inlineWidgetsByInput = new Map();
+  const topWidgets = [];
+  const standaloneWidgets = [];
+  for (const widget of visibleWidgets) {
+    const inlineInputName = getWidgetInlineInputName(widget);
+    if (inlineInputName) {
+      inlineWidgetsByInput.set(inlineInputName, widget);
+    } else if (widget.opts?.placement === 'top') {
+      topWidgets.push(widget);
+    } else {
+      standaloneWidgets.push(widget);
     }
   }
 
@@ -524,30 +846,85 @@ function CustomNode({ id, data }) {
   }));
 
   const catColor = CAT_COLORS[def.category] || '#333';
-  const maxIORows = Math.max(dataInputs.length, outputs.length);
+  const maxIORows = Math.max(renderedDataInputs.length, outputs.length);
   const hasInteractiveLineOverlay = data.overlay?.kind === 'line_plot' && hiddenWidgets.has('x1');
-  const hasInteractiveOverlay = !!data.overlay && (hiddenWidgets.has('x1') || data.overlay.kind === 'mask_paint');
-  const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint';
+  const hasInteractiveOverlay = !!data.overlay && (
+    hiddenWidgets.has('x1')
+    || data.overlay.kind === 'mask_paint'
+    || data.overlay.kind === 'markup'
+  );
+  const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
     || (data.overlay?.kind === 'mask_paint'
       ? 'Mask'
+      : data.overlay?.kind === 'markup'
+      ? 'Markup'
       : data.overlay?.kind === 'crop_box'
       ? 'Crop'
       : data.overlay?.kind === 'line_plot'
         ? 'Line Plot'
-        : 'Cross Section');
+      : 'Cross Section');
+  const headerMeta = (() => {
+    if (data.className === 'Folder') {
+      return getBasename(data.widgetValues?.folder);
+    }
+    if (data.className === 'LoadFile') {
+      return getBasename(connectedPathInfo?.path || data.widgetValues?.filename);
+    }
+    if (data.className === 'LoadDemo') {
+      return getBasename(data.widgetValues?.name);
+    }
+    return '';
+  })();
 
   return (
     <div className="custom-node">
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
-        {data.label}
+        <span className="node-title-main">{data.label}</span>
+        {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
       </div>
 
       <div className="node-body">
+        {topWidgets.length > 0 && (
+          <div className="top-widget-section">
+            {topWidgets.map((w) => (
+              <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
+                {(w.socketType || w.opts?.top_socket_input) && (() => {
+                  const socketInput = w.opts?.top_socket_input ? dataInputByName.get(w.opts.top_socket_input) : null;
+                  const socketType = w.socketType || socketInput?.type;
+                  const socketName = w.socketType ? w.name : socketInput?.name;
+                  if (!socketType || !socketName) return null;
+                  return (
+                    <Handle
+                      type="target"
+                      position={Position.Left}
+                      id={`input::${socketName}::${socketType}`}
+                      className="typed-handle"
+                      style={{ background: TYPE_COLORS[socketType] || '#999' }}
+                    />
+                  );
+                })()}
+                <WidgetControl
+                  widget={w}
+                  nodeId={id}
+                  value={data.widgetValues[w.name]}
+                  widgetValues={data.widgetValues}
+                  onChange={ctx.onWidgetChange}
+                  openFileBrowser={ctx.openFileBrowser}
+                  connected={!!(
+                    (w.socketType && connectedInputs?.has(w.name))
+                    || (w.opts?.top_socket_input && connectedInputs?.has(w.opts.top_socket_input))
+                  )}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* I/O rows — pair inputs[i] with outputs[i] */}
         {Array.from({ length: maxIORows }, (_, i) => {
-          const inp = dataInputs[i];
+          const inp = renderedDataInputs[i];
           const out = outputs[i];
           return (
             <div className="io-row" key={`io-${i}`}>
@@ -561,7 +938,20 @@ function CustomNode({ id, data }) {
                       className="typed-handle"
                       style={{ background: TYPE_COLORS[inp.type] || '#999' }}
                     />
-                    <span className="io-label">{inp.name}</span>
+                    <span className="io-label">{inp.label || inp.name}</span>
+                    {inlineWidgetsByInput.has(inp.name) && (
+                      <div className="io-inline-widget">
+                        <WidgetControl
+                          widget={inlineWidgetsByInput.get(inp.name)}
+                          nodeId={id}
+                          value={data.widgetValues[inlineWidgetsByInput.get(inp.name).name]}
+                          widgetValues={data.widgetValues}
+                          onChange={ctx.onWidgetChange}
+                          openFileBrowser={ctx.openFileBrowser}
+                          hideLabel={true}
+                        />
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -601,7 +991,7 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Widget rows */}
-        {widgets.filter((w) => widgetVisibleForSourceType(w, connectedSourceTypes?.[getWidgetSourceInputName(w.opts)])).map((w) => (
+        {standaloneWidgets.map((w) => (
           <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
             {w.socketType && (
               <Handle
@@ -619,6 +1009,7 @@ function CustomNode({ id, data }) {
               widgetValues={data.widgetValues}
               onChange={ctx.onWidgetChange}
               openFileBrowser={ctx.openFileBrowser}
+              connected={!!(w.socketType && connectedInputs?.has(w.name))}
             />
           </div>
         ))}
@@ -654,6 +1045,7 @@ function CustomNode({ id, data }) {
               resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
                 kind: data.previewImage.kind,
                 len: data.previewImage.line?.length,
+                layers: data.previewImage.layers?.length,
               })}
               fallbackImage={typeof data.previewImage === 'object' ? data.previewImage.fallback_image : null}
             >
@@ -661,6 +1053,8 @@ function CustomNode({ id, data }) {
                 <div className="node-preview">
                   <img src={data.previewImage} alt="preview" draggable={false} />
                 </div>
+              ) : data.previewImage.kind === 'layer_gallery' ? (
+                <LayerGalleryPreview overlay={data.previewImage} />
               ) : data.previewImage.kind === 'line_plot' ? (
                 <LinePlotOverlay overlay={data.previewImage} interactive={false} />
               ) : null}
@@ -704,6 +1098,16 @@ function CustomNode({ id, data }) {
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
                 />
+              ) : data.overlay.kind === 'markup' ? (
+                <MarkupOverlay
+                  image={data.overlay.image}
+                  shape={data.widgetValues.shape ?? data.overlay.shape}
+                  strokeColor={data.widgetValues.stroke_color ?? data.overlay.stroke_color}
+                  strokeWidth={data.widgetValues.stroke_width ?? data.overlay.stroke_width}
+                  markupShapes={data.widgetValues.markup_shapes}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
               ) : (
                 <CrossSectionOverlay
                   image={data.overlay.image}
@@ -739,9 +1143,11 @@ function CustomNode({ id, data }) {
 
 // ── Widget renderer ───────────────────────────────────────────────────
 
-function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser }) {
+function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, connected = false, hideLabel = false }) {
   const { name, type, opts } = widget;
+  const label = opts?.label || name;
   const val = value ?? opts?.default ?? '';
+  const placeholder = opts?.placeholder || '';
   const dynamicSourceType = useStore(
     useCallback(
       (s) => {
@@ -818,11 +1224,34 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     onChange(nodeId, name, dynamicTypeChoices[0]);
   }, [dynamicTypeChoices, name, nodeId, onChange, val]);
 
+  if (connected) {
+    return (
+      <>
+        {!hideLabel && <label>{label}</label>}
+        <div className="widget-linked-state">Connected</div>
+      </>
+    );
+  }
+
+  if (opts?.colormap_stops) {
+    return (
+      <>
+        {!hideLabel && <label>{label}</label>}
+        <ColorMapStopsEditor
+          nodeId={nodeId}
+          name={name}
+          value={val}
+          onChange={onChange}
+        />
+      </>
+    );
+  }
+
   // Combo / enum — type itself is the array of options
   if (Array.isArray(type)) {
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <select
           className="nodrag"
           value={val || type[0]}
@@ -840,7 +1269,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     const selected = dynamicTypeChoices.includes(String(val)) ? String(val) : dynamicTypeChoices[0];
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <select
           className="nodrag"
           value={selected}
@@ -858,7 +1287,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     const selected = dynamicTableColumns.includes(String(val)) ? String(val) : dynamicTableColumns[0];
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <select
           className="nodrag"
           value={selected}
@@ -876,7 +1305,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     const selected = dynamicMeasurementChoices.includes(String(val)) ? String(val) : dynamicMeasurementChoices[0];
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <select
           className="nodrag"
           value={selected}
@@ -890,25 +1319,46 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     );
   }
 
-  if (type === 'FILE_PICKER') {
+  if (type === 'FILE_PICKER' || type === 'FOLDER_PICKER') {
+    const isFolderPicker = type === 'FOLDER_PICKER';
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <div className="file-picker-row">
           <input
             className="nodrag"
             type="text"
             value={val}
             onChange={(e) => onChange(nodeId, name, e.target.value)}
-            placeholder="Select file…"
+            placeholder={placeholder || (isFolderPicker ? 'Select folder…' : 'Select file…')}
           />
           <button
             className="nodrag browse-btn"
-            onClick={() => openFileBrowser((path) => onChange(nodeId, name, path))}
+            onClick={() => openFileBrowser(
+              (path) => onChange(nodeId, name, path),
+              { selectionMode: isFolderPicker ? 'folder' : 'file' },
+            )}
           >
             Browse
           </button>
         </div>
+      </>
+    );
+  }
+
+  if (type === 'STRING' && opts?.color_picker) {
+    const normalized = typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val)
+      ? val
+      : '#ffd54f';
+    return (
+      <>
+        {!hideLabel && <label>{label}</label>}
+        <input
+          className="nodrag widget-color-input"
+          type="color"
+          value={normalized}
+          onChange={(e) => onChange(nodeId, name, e.target.value)}
+        />
       </>
     );
   }
@@ -950,7 +1400,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
 
       return (
         <>
-          <label>{name}</label>
+          {!hideLabel && <label>{label}</label>}
           <div className="slider-control">
             <input
               className="nodrag slider-input"
@@ -969,7 +1419,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
 
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <DraggableNumber
           value={val || 0}
           step={opts?.step ?? 0.01}
@@ -985,7 +1435,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   if (type === 'INT') {
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <DraggableNumber
           value={val || 0}
           step={opts?.step ?? 1}
@@ -1001,7 +1451,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   if (type === 'BOOLEAN') {
     return (
       <>
-        <label>{name}</label>
+        {!hideLabel && <label>{label}</label>}
         <input
           className="nodrag"
           type="checkbox"
@@ -1015,11 +1465,12 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   // STRING and anything else
   return (
     <>
-      <label>{name}</label>
+      {!hideLabel && <label>{label}</label>}
       <input
         className="nodrag"
         type="text"
         value={val}
+        placeholder={placeholder}
         onChange={(e) => onChange(nodeId, name, e.target.value)}
       />
     </>

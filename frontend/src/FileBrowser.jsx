@@ -5,10 +5,10 @@ import * as api from './api';
  * Server-side file browser modal.
  *
  * Props:
- *   onSelect(absolutePath) — called when user picks a file
+ *   onSelect(absolutePath) — called when user picks a file or folder
  *   onClose()              — called when user dismisses the dialog
  */
-export default function FileBrowser({ onSelect, onClose }) {
+export default function FileBrowser({ onSelect, onClose, selectionMode = 'file' }) {
   const [path, setPath] = useState('');
   const [parent, setParent] = useState(null);
   const [dirs, setDirs] = useState([]);
@@ -43,6 +43,11 @@ export default function FileBrowser({ onSelect, onClose }) {
         {/* Header */}
         <div className="fb-header">
           <span className="fb-path">{path}</span>
+          {selectionMode === 'folder' && (
+            <button className="fb-select-btn" onClick={() => { onSelect(path); onClose(); }}>
+              Select Folder
+            </button>
+          )}
           <button className="fb-close" onClick={onClose}>✕</button>
         </div>
 
@@ -75,8 +80,12 @@ export default function FileBrowser({ onSelect, onClose }) {
               {files.map((f) => (
                 <div
                   key={f}
-                  className="fb-entry fb-file"
-                  onClick={() => { onSelect(path + '/' + f); onClose(); }}
+                  className={`fb-entry fb-file${selectionMode === 'folder' ? ' fb-file-disabled' : ''}`}
+                  onClick={() => {
+                    if (selectionMode === 'folder') return;
+                    onSelect(path + '/' + f);
+                    onClose();
+                  }}
                 >
                   {f}
                 </div>

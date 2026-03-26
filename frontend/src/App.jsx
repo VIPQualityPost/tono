@@ -16,18 +16,27 @@ import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
+import { loadDefaultWorkflowAsset } from './defaultWorkflow';
+import {
+  serializeExecutionGraph,
+  getAutoRunnableNodes,
+  hasBlockingAutoRunInput,
+} from './executionGraph';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
 const DATA_TYPES = new Set([
   'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE',
+  'COORD', 'STATS_SOURCE', 'VALUE_SOURCE', 'COLORMAP', 'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY',
 ]);
 
 const SOCKET_COMPATIBILITY = {
   STATS_SOURCE: new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'RECORD_TABLE']),
   ANY_TABLE: new Set(['MEASURE_TABLE', 'RECORD_TABLE']),
   VALUE_SOURCE: new Set(['FLOAT', 'MEASURE_TABLE']),
+  SAVE_LAYER: new Set(['DATA_FIELD', 'IMAGE']),
+  FLOAT: new Set(['INT']),
+  INT: new Set(['FLOAT']),
 };
 
 const TYPE_COLORS = {
@@ -39,8 +48,14 @@ const TYPE_COLORS = {
   ANY_TABLE:  '#67e8f9',
   COORD:      '#e91ed1',
   FLOAT:      '#7dd3fc',
+  INT:        '#38bdf8',
   STATS_SOURCE:'#c084fc',
   VALUE_SOURCE:'#60a5fa',
+  COLORMAP:   '#f472b6',
+  SAVE_LAYER: '#22c55e',
+  FONT:       '#fb7185',
+  FILE_PATH:  '#f59e0b',
+  DIRECTORY:  '#f97316',
 };
 
 const NODE_TYPES = { custom: CustomNode };
@@ -57,6 +72,12 @@ function getInputName(handleId) {
 
 function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
+}
+
+function sameStringArray(a = [], b = []) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  return a.every((item, index) => item === b[index]);
 }
 
 function socketTypesCompatible(sourceType, targetType) {
@@ -219,43 +240,6 @@ async function captureViewportBlob(viewportEl, options) {
   } finally {
     restorers.reverse().forEach((restore) => restore());
   }
-}
-
-// ── Graph serialisation → backend prompt format ───────────────────────
-
-function serializeGraph(nodes, edges, { excludeManualTrigger = false } = {}) {
-  const prompt = {};
-
-  for (const node of nodes) {
-    const { className, definition, widgetValues } = node.data;
-    if (!definition) continue;
-    if (excludeManualTrigger && definition.manual_trigger) continue;
-
-    const inputs = {};
-
-    // Widget (scalar) values
-    const required = definition.input.required || {};
-    for (const [name, spec] of Object.entries(required)) {
-      const [type] = Array.isArray(spec) ? spec : [spec];
-      if (DATA_TYPES.has(type)) continue; // socket, handled via edges
-      if (type === 'BUTTON') continue; // UI-only widget, not a backend input
-      if (widgetValues[name] !== undefined) {
-        inputs[name] = widgetValues[name];
-      }
-    }
-
-    // Connected (socket) inputs from edges
-    const incoming = edges.filter((e) => e.target === node.id);
-    for (const edge of incoming) {
-      const inputName = getInputName(edge.targetHandle);
-      const outputSlot = getOutputSlot(edge.sourceHandle);
-      inputs[inputName] = [edge.source, outputSlot];
-    }
-
-    prompt[node.id] = { class_type: className, inputs };
-  }
-
-  return prompt;
 }
 
 // ── Context menu component ────────────────────────────────────────────
@@ -461,24 +445,14 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
   const [contextMenu, setContextMenu] = useState(null);
-  const [fileBrowserCb, setFileBrowserCb] = useState(null);
+  const [fileBrowserState, setFileBrowserState] = useState(null);
 
   const nodeDefsRef = useRef({});
   const nextIdRef = useRef(1);
   const autoRunTimer = useRef(null);
   const autoRunRef = useRef(null);
+  const defaultWorkflowLoadAttemptedRef = useRef(false);
   const reactFlow = useReactFlow();
-
-  // ── Load node definitions ───────────────────────────────────────────
-
-  useEffect(() => {
-    api.getNodes().then((defs) => {
-      nodeDefsRef.current = defs;
-      setStatus({ text: `Loaded ${Object.keys(defs).length} nodes.`, level: 'info' });
-    }).catch((err) => {
-      setStatus({ text: 'Failed to load nodes: ' + err.message, level: 'error' });
-    });
-  }, []);
 
   // ── WebSocket ───────────────────────────────────────────────────────
 
@@ -487,6 +461,96 @@ function Flow() {
       n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } }
     ));
   }, [setNodes]);
+
+  const setNodeOutputs = useCallback((nodeId, output, outputName, extraDefinitionPatch = {}) => {
+    setNodes((prev) => prev.map((node) => {
+      if (node.id !== nodeId) return node;
+      const currentDefinition = node.data.definition || {};
+      const nextDefinition = {
+        ...currentDefinition,
+        ...extraDefinitionPatch,
+        output,
+        output_name: outputName,
+      };
+      const sameOutputs = sameStringArray(currentDefinition.output, output);
+      const sameNames = sameStringArray(currentDefinition.output_name, outputName);
+      const sameOutputPaths = sameStringArray(currentDefinition.output_paths, nextDefinition.output_paths);
+      if (sameOutputs && sameNames && sameOutputPaths) {
+        return node;
+      }
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          definition: nextDefinition,
+        },
+      };
+    }));
+    reactFlow.updateNodeInternals(nodeId);
+  }, [reactFlow, setNodes]);
+
+  const getResolvedPathInput = useCallback((nodeId) => {
+    const edge = reactFlow.getEdges().find(
+      (e) => e.target === nodeId && getInputName(e.targetHandle) === 'path'
+    );
+    if (!edge) return null;
+    const sourceNode = reactFlow.getNode(edge.source);
+    const outputPaths = sourceNode?.data?.definition?.output_paths;
+    const outputSlot = getOutputSlot(edge.sourceHandle);
+    if (Array.isArray(outputPaths) && typeof outputPaths[outputSlot] === 'string') {
+      return outputPaths[outputSlot];
+    }
+    return null;
+  }, [reactFlow]);
+
+  const refreshLoadNodeOutputs = useCallback(async (nodeId, explicitPath = null) => {
+    const node = reactFlow.getNode(nodeId);
+    if (!node) return;
+
+    let resolvedPath = typeof explicitPath === 'string' && explicitPath ? explicitPath : null;
+    if (!resolvedPath) {
+      resolvedPath = getResolvedPathInput(nodeId);
+    }
+    if (!resolvedPath) {
+      if (node.data.className === 'LoadFile') {
+        resolvedPath = node.data.widgetValues?.filename || '';
+      } else if (node.data.className === 'LoadDemo') {
+        resolvedPath = node.data.widgetValues?.name || '';
+      }
+    }
+
+    if (!resolvedPath) {
+      setNodeOutputs(nodeId, ['DATA_FIELD'], ['field'], { output_paths: [] });
+      return;
+    }
+
+    const channels = await api.getChannels(resolvedPath);
+    setNodeOutputs(
+      nodeId,
+      channels.map((channel) => channel.type),
+      channels.map((channel) => channel.name),
+      { output_paths: [] },
+    );
+  }, [getResolvedPathInput, reactFlow, setNodeOutputs]);
+
+  const refreshFolderNodeOutputs = useCallback(async (nodeId, folderPath) => {
+    const entries = folderPath ? await api.getFolderFiles(folderPath) : [];
+    setNodeOutputs(
+      nodeId,
+      entries.map((entry) => entry.type),
+      entries.map((entry) => entry.name),
+      { output_paths: entries.map((entry) => entry.path) },
+    );
+
+    const downstreamPathEdges = reactFlow.getEdges().filter(
+      (edge) => edge.source === nodeId && getInputName(edge.targetHandle) === 'path'
+    );
+    for (const edge of downstreamPathEdges) {
+      const outputSlot = getOutputSlot(edge.sourceHandle);
+      const resolvedPath = entries[outputSlot]?.path || null;
+      await refreshLoadNodeOutputs(edge.target, resolvedPath);
+    }
+  }, [reactFlow, refreshLoadNodeOutputs, setNodeOutputs]);
 
   useEffect(() => {
     api.setMessageHandler((msg) => {
@@ -532,7 +596,7 @@ function Flow() {
         case 'overlay':
           updateNodeData(
             msg.data.node_id,
-            msg.data.overlay?.kind === 'mask_paint'
+            msg.data.overlay?.kind === 'mask_paint' || msg.data.overlay?.kind === 'markup'
               ? { overlay: msg.data.overlay, previewImage: null }
               : { overlay: msg.data.overlay },
           );
@@ -568,8 +632,36 @@ function Flow() {
         filtered
       );
     });
+    if (getInputName(params.targetHandle) === 'path') {
+      setTimeout(() => {
+        refreshLoadNodeOutputs(params.target);
+      }, 0);
+    }
     scheduleAutoRun();
-  }, [setEdges]);
+  }, [refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
+
+  const handleEdgesChange = useCallback((changes) => {
+    const currentEdges = reactFlow.getEdges();
+    onEdgesChange(changes);
+
+    const affectedPathTargets = new Set();
+    for (const change of changes) {
+      if (change.type !== 'remove') continue;
+      const removedEdge = currentEdges.find((edge) => edge.id === change.id);
+      if (!removedEdge) continue;
+      if (getInputName(removedEdge.targetHandle) === 'path') {
+        affectedPathTargets.add(removedEdge.target);
+      }
+    }
+
+    if (affectedPathTargets.size > 0) {
+      setTimeout(() => {
+        affectedPathTargets.forEach((nodeId) => {
+          refreshLoadNodeOutputs(nodeId);
+        });
+      }, 0);
+    }
+  }, [onEdgesChange, reactFlow, refreshLoadNodeOutputs]);
 
   // ── Drop-on-blank: open filtered context menu ──────────────────────
 
@@ -610,44 +702,35 @@ function Flow() {
       };
     }));
 
-    // If this is a filename/name change on a LoadFile/LoadDemo node, fetch channels
-    if ((name === 'filename' || name === 'name') && value) {
-      const node = reactFlow.getNode(nodeId);
-      if (node && (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo')) {
-        api.getChannels(value).then((channels) => {
-          setNodes((prev) => prev.map((n) => {
-            if (n.id !== nodeId) return n;
-            return {
-              ...n,
-              data: {
-                ...n.data,
-                definition: {
-                  ...n.data.definition,
-                  output: channels.map((c) => c.type),
-                  output_name: channels.map((c) => c.name),
-                },
-              },
-            };
-          }));
-          reactFlow.updateNodeInternals(nodeId);
-        });
-      }
+    const node = reactFlow.getNode(nodeId);
+    if (node && node.data.className === 'Folder' && name === 'folder') {
+      refreshFolderNodeOutputs(nodeId, value);
+    }
+
+    if (node && (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo') && (name === 'filename' || name === 'name')) {
+      refreshLoadNodeOutputs(nodeId, value);
     }
 
     scheduleAutoRun();
-  }, [setNodes]); // scheduleAutoRun is stable (no deps)
+  }, [reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes]); // scheduleAutoRun is stable (no deps)
 
   // ── File browser ────────────────────────────────────────────────────
 
-  const openFileBrowser = useCallback((callback) => {
+  const openFileBrowser = useCallback((callback, { selectionMode = 'file' } = {}) => {
+    if (selectionMode === 'folder' && window.pywebview?.api?.open_folder_dialog) {
+      window.pywebview.api.open_folder_dialog().then((path) => {
+        if (path) callback(path);
+      });
+      return;
+    }
     // Use native file picker when running inside pywebview (desktop app)
-    if (window.pywebview?.api?.open_file_dialog) {
+    if (selectionMode === 'file' && window.pywebview?.api?.open_file_dialog) {
       window.pywebview.api.open_file_dialog().then((path) => {
         if (path) callback(path);
       });
       return;
     }
-    setFileBrowserCb(() => callback);
+    setFileBrowserState({ callback, selectionMode });
   }, []);
 
   // ── Node context value (stable) ─────────────────────────────────────
@@ -656,7 +739,7 @@ function Flow() {
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
     // Include ALL nodes (no excludeManualTrigger) so the save node is in the prompt
-    const prompt = serializeGraph(currentNodes, currentEdges);
+    const prompt = serializeExecutionGraph(currentNodes, currentEdges);
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Saving…', level: 'info' });
     api.runPrompt(prompt).catch((err) => {
@@ -715,25 +798,17 @@ function Flow() {
 
     setNodes((ns) => [...ns, newNode]);
 
+    // Initialize dynamic outputs for nodes that depend on the selected path/folder.
+    if (className === 'Folder' && widgetValues.folder) {
+      refreshFolderNodeOutputs(newNodeId, widgetValues.folder);
+    }
+
     // For LoadFile/LoadDemo, auto-fetch channels for the default value
     if (className === 'LoadDemo' && widgetValues.name) {
-      api.getChannels(widgetValues.name).then((channels) => {
-        setNodes((prev) => prev.map((n) => {
-          if (n.id !== newNodeId) return n;
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              definition: {
-                ...n.data.definition,
-                output: channels.map((c) => c.type),
-                output_name: channels.map((c) => c.name),
-              },
-            },
-          };
-        }));
-        reactFlow.updateNodeInternals(newNodeId);
-      });
+      refreshLoadNodeOutputs(newNodeId, widgetValues.name);
+    }
+    if (className === 'LoadFile' && widgetValues.filename) {
+      refreshLoadNodeOutputs(newNodeId, widgetValues.filename);
     }
 
     // Auto-connect if this was triggered by dropping a connection on blank space
@@ -783,7 +858,7 @@ function Flow() {
 
     setContextMenu(null);
     scheduleAutoRun();
-  }, [contextMenu, reactFlow, setNodes, setEdges]);
+  }, [contextMenu, reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]); // scheduleAutoRun is stable (no deps)
 
   // ── Toolbar actions ─────────────────────────────────────────────────
 
@@ -791,7 +866,7 @@ function Flow() {
     // Read current state via functional ref to avoid stale closure
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
-    const prompt = serializeGraph(currentNodes, currentEdges);
+    const prompt = serializeExecutionGraph(currentNodes, currentEdges);
 
     if (!prompt || Object.keys(prompt).length === 0) {
       setStatus({ text: 'Graph is empty — add some nodes first.', level: 'error' });
@@ -809,28 +884,15 @@ function Flow() {
   autoRunRef.current = () => {
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
+    const runnableNodes = getAutoRunnableNodes(currentNodes, currentEdges);
 
     // Don't run if any non-manual node has unconnected required data inputs
     // or any FILE_PICKER widget is empty
-    for (const node of currentNodes) {
-      const def = node.data?.definition;
-      if (!def || def.manual_trigger) continue; // skip manual-trigger nodes
-      const required = def.input.required || {};
-      for (const [name, spec] of Object.entries(required)) {
-        const [type] = Array.isArray(spec) ? spec : [spec];
-        if (type === 'FILE_PICKER') {
-          if (!node.data.widgetValues?.[name]) return; // no file selected, skip
-          continue;
-        }
-        if (!DATA_TYPES.has(type)) continue;
-        const hasEdge = currentEdges.some(
-          (e) => e.target === node.id && getInputName(e.targetHandle) === name
-        );
-        if (!hasEdge) return; // incomplete graph, skip auto-run
-      }
+    for (const node of runnableNodes) {
+      if (hasBlockingAutoRunInput(node, currentEdges)) return;
     }
 
-    const prompt = serializeGraph(currentNodes, currentEdges, { excludeManualTrigger: true });
+    const prompt = serializeExecutionGraph(currentNodes, currentEdges, { excludeManualTrigger: true });
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Running…', level: 'info' });
     api.runPrompt(prompt).catch((err) => {
@@ -855,7 +917,57 @@ function Flow() {
     setNodes(hydrated.nodes);
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
-  }, [setNodes, setEdges]);
+    setTimeout(() => {
+      hydrated.nodes.forEach((node) => {
+        if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
+          refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
+        }
+      });
+      hydrated.nodes.forEach((node) => {
+        if (node.data.className === 'LoadFile' || node.data.className === 'LoadDemo') {
+          refreshLoadNodeOutputs(node.id);
+        }
+      });
+    }, 0);
+  }, [refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]);
+
+  const loadDefaultWorkflow = useCallback(async () => {
+    if (defaultWorkflowLoadAttemptedRef.current) return;
+    defaultWorkflowLoadAttemptedRef.current = true;
+
+    const graphHasContent = () => {
+      const currentNodes = reactFlow.getNodes();
+      const currentEdges = reactFlow.getEdges();
+      return currentNodes.length > 0 || currentEdges.length > 0;
+    };
+
+    if (graphHasContent()) return;
+
+    try {
+      const loaded = await loadDefaultWorkflowAsset();
+      if (!loaded || graphHasContent()) return;
+
+      applyWorkflowData(loaded.workflow);
+      setStatus({ text: `Loaded default workflow from ${loaded.source}.`, level: 'info' });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scheduleAutoRun());
+      });
+    } catch (err) {
+      setStatus({ text: 'Default workflow failed to load: ' + err.message, level: 'error' });
+    }
+  }, [applyWorkflowData, reactFlow, scheduleAutoRun]);
+
+  // ── Load node definitions ───────────────────────────────────────────
+
+  useEffect(() => {
+    api.getNodes().then((defs) => {
+      nodeDefsRef.current = defs;
+      setStatus({ text: `Loaded ${Object.keys(defs).length} nodes.`, level: 'info' });
+      loadDefaultWorkflow();
+    }).catch((err) => {
+      setStatus({ text: 'Failed to load nodes: ' + err.message, level: 'error' });
+    });
+  }, [loadDefaultWorkflow]);
 
   const getWorkflowBlob = useCallback(async () => {
     const viewportEl = document.querySelector('.react-flow__viewport');
@@ -1112,7 +1224,7 @@ function Flow() {
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
             onConnectEnd={onConnectEnd}
             isValidConnection={isValidConnection}
@@ -1150,10 +1262,11 @@ function Flow() {
         </div>
 
         {/* File browser modal */}
-        {fileBrowserCb && (
+        {fileBrowserState && (
           <FileBrowser
-            onSelect={(path) => { fileBrowserCb(path); setFileBrowserCb(null); }}
-            onClose={() => setFileBrowserCb(null)}
+            selectionMode={fileBrowserState.selectionMode}
+            onSelect={(path) => { fileBrowserState.callback(path); setFileBrowserState(null); }}
+            onClose={() => setFileBrowserState(null)}
           />
         )}
       </div>

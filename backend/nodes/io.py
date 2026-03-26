@@ -4,11 +4,12 @@ I/O nodes: load and save images and SPM data.
 
 from __future__ import annotations
 import os
+import re
 import numpy as np
 from pathlib import Path
 
 from backend.node_registry import register_node
-from backend.data_types import DataField, COLORMAPS, encode_preview, image_to_uint8
+from backend.data_types import COLORMAPS, DataField, encode_preview, image_to_uint8, resolve_colormap_input
 from backend.runtime_paths import demo_dir, input_dir, output_dir
 
 # Resolved at server startup so nodes know where to look
@@ -22,6 +23,7 @@ _DEMO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".npy", ".npz",
 _SPM_EXTENSIONS = {".gwy", ".sxm", ".ibw"}
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp"}
 _ARRAY_EXTENSIONS = {".npy", ".npz"}
+_PATH_COMPATIBLE_EXTENSIONS = _IMAGE_EXTENSIONS | _ARRAY_EXTENSIONS | _SPM_EXTENSIONS
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +107,23 @@ def list_channels(filepath: str) -> list[dict]:
     return [{"name": "field", "type": "DATA_FIELD"}]
 
 
+def list_folder_paths(folderpath: str) -> list[dict]:
+    """Return a folder DIRECTORY plus compatible image/array/SPM FILE_PATH outputs."""
+    path = _resolve_path(folderpath)
+    if not path.exists() or not path.is_dir():
+        return []
+
+    resolved_dir = str(path.resolve())
+    results = [{"name": "directory", "type": "DIRECTORY", "path": resolved_dir}]
+    for entry in sorted(path.iterdir(), key=lambda p: p.name.lower()):
+        if not entry.is_file() or entry.name.startswith("."):
+            continue
+        if entry.suffix.lower() not in _PATH_COMPATIBLE_EXTENSIONS:
+            continue
+        results.append({"name": entry.name, "type": "FILE_PATH", "path": str(entry.resolve())})
+    return results
+
+
 # ---------------------------------------------------------------------------
 # LoadFile  (unified loader — replaces LoadImage + LoadSPM)
 # ---------------------------------------------------------------------------
@@ -115,9 +134,13 @@ class LoadFile:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "filename": ("FILE_PICKER", {"default": ""}),
-                "colormap": (list(COLORMAPS),),
-            }
+                "filename": ("FILE_PICKER", {"default": "", "hide_when_input_connected": "path"}),
+                "colormap": (list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
+            },
+            "optional": {
+                "colormap_map": ("COLORMAP", {"label": "colormap"}),
+                "path": ("FILE_PATH", {"label": "path"}),
+            },
         }
 
     # Default outputs — overridden dynamically by the frontend for multi-channel files
@@ -136,26 +159,28 @@ class LoadFile:
     _broadcast_warning_fn = None
     _current_node_id = None
 
-    def load(self, filename: str, colormap: str = "viridis"):
-        if not filename or not filename.strip():
+    def load(self, filename: str = "", colormap: str = "viridis", colormap_map=None, path: str | None = None):
+        selected_path = str(path).strip() if path is not None else str(filename).strip()
+        if not selected_path:
             raise ValueError("No file selected — use Browse to pick a file.")
-        path = _resolve_path(filename)
-        if not path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
-        if path.is_dir():
-            raise IsADirectoryError(f"Expected a file, got a directory: {path}")
+        path_obj = _resolve_path(selected_path)
+        if not path_obj.exists():
+            raise FileNotFoundError(f"File not found: {path_obj}")
+        if path_obj.is_dir():
+            raise IsADirectoryError(f"Expected a file, got a directory: {path_obj}")
 
-        ext = path.suffix.lower()
+        ext = path_obj.suffix.lower()
+        resolved_colormap = resolve_colormap_input(colormap, colormap_input=colormap_map, default="viridis")
 
         if ext in _SPM_EXTENSIONS:
-            fields = self._load_spm_all(path, ext)
+            fields = self._load_spm_all(path_obj, ext)
             for f in fields:
-                f.colormap = colormap
+                f.colormap = resolved_colormap
             return tuple(fields)
 
         # Image or array — uncalibrated, single output
-        field = self._load_image_or_array(path, ext)
-        field.colormap = colormap
+        field = self._load_image_or_array(path_obj, ext)
+        field.colormap = resolved_colormap
         self._send_warning("Uncalibrated data — no physical dimensions.")
         return (field,)
 
@@ -349,8 +374,11 @@ class LoadDemo:
         return {
             "required": {
                 "name": (choices,),
-                "colormap": (list(COLORMAPS),),
-            }
+                "colormap": (list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
+            },
+            "optional": {
+                "colormap_map": ("COLORMAP", {"label": "colormap"}),
+            },
         }
 
     RETURN_TYPES = ("DATA_FIELD",)
@@ -359,13 +387,38 @@ class LoadDemo:
     CATEGORY = "io"
     DESCRIPTION = "Load a bundled demo file so you can try the app without providing your own data."
 
-    def load(self, name: str, colormap: str = "viridis"):
-        path = DEMO_DIR / name
-        if not path.exists():
-            raise FileNotFoundError(f"Demo file not found: {name}")
-
+    def load(self, name: str = "", colormap: str = "viridis", colormap_map=None):
         loader = LoadFile()
-        return loader.load(filename=str(path), colormap=colormap)
+        demo_path = DEMO_DIR / name
+        if not demo_path.exists():
+            raise FileNotFoundError(f"Demo file not found: {name}")
+        return loader.load(filename=str(demo_path), colormap=colormap, colormap_map=colormap_map)
+
+
+@register_node(display_name="Folder")
+class Folder:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "folder": ("FOLDER_PICKER", {"default": "", "placement": "top"}),
+            }
+        }
+
+    RETURN_TYPES = ("DIRECTORY",)
+    RETURN_NAMES = ("directory",)
+    FUNCTION = "list_files"
+    CATEGORY = "io"
+    DESCRIPTION = (
+        "Pick a folder and output its directory path plus one file socket per compatible image, array, or SPM file inside it. "
+        "Supported files include common images, .npy/.npz arrays, and .gwy/.sxm/.ibw scans."
+    )
+
+    def list_files(self, folder: str) -> tuple:
+        entries = list_folder_paths(folder)
+        if not entries:
+            return tuple()
+        return tuple(item["path"] for item in entries)
 
 
 # ---------------------------------------------------------------------------
@@ -393,6 +446,36 @@ class Coordinate:
 
     def process(self, x: float, y: float) -> tuple:
         return ((float(x), float(y)),)
+
+
+# ---------------------------------------------------------------------------
+# Number
+# ---------------------------------------------------------------------------
+
+@register_node(display_name="Number")
+class Number:
+    """Provide a fixed scalar value that can feed FLOAT or INT widget sockets."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": ("FLOAT", {"default": 0.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "process"
+    CATEGORY = "io"
+    DESCRIPTION = (
+        "Output a fixed numeric value. "
+        "When connected to FLOAT inputs the exact value is used; "
+        "INT inputs round to the nearest integer at execution time."
+    )
+
+    def process(self, value: float) -> tuple:
+        return (float(value),)
 
 
 # ---------------------------------------------------------------------------
@@ -445,12 +528,32 @@ _MAX_SAVE_FIELDS = 8
 class SaveImage:
     @classmethod
     def INPUT_TYPES(cls):
-        optional = {}
+        optional = {
+            "directory": ("DIRECTORY", {"label": "directory"}),
+        }
         for i in range(_MAX_SAVE_FIELDS):
-            optional[f"field_{i}"] = ("DATA_FIELD",)
+            optional[f"field_{i}"] = ("SAVE_LAYER", {"label": f"layer {i + 1}"})
+            optional[f"layer_name_{i}"] = ("STRING", {
+                "default": "",
+                "placeholder": "name",
+                "show_when_input_visible": f"field_{i}",
+                "inline_with_input": f"field_{i}",
+                "hide_label": True,
+            })
         return {
             "required": {
-                "filename": ("FILE_PICKER", {"default": ""}),
+                "filename": ("STRING", {
+                    "default": "",
+                    "placeholder": "filename",
+                    "placement": "top",
+                }),
+                "directory_path": ("FOLDER_PICKER", {
+                    "default": "",
+                    "label": "directory",
+                    "placement": "top",
+                    "hide_when_input_connected": "directory",
+                    "top_socket_input": "directory",
+                    }),
                 "format": (["TIFF", "NPZ"],),
             },
             "optional": optional,
@@ -462,58 +565,129 @@ class SaveImage:
     OUTPUT_NODE = True
     MANUAL_TRIGGER = True
     DESCRIPTION = (
-        "Save one or more DATA_FIELD layers to a single file. "
-        "Connect fields to the inputs — a new slot appears as each is filled. "
-        "TIFF writes float32 multi-page; NPZ writes float64 named arrays. "
+        "Save one or more layers to a single file. "
+        "Each layer input accepts either a DATA_FIELD or an IMAGE, including annotated images. "
+        "Optionally drive the output directory from a folder/path node, while keeping the filename widget for the file name. "
+        "A new slot appears as each one is filled, with a matching per-layer name field. "
+        "TIFF writes multi-page data and stores layer names as page descriptions; "
+        "NPZ writes named arrays using those layer names as keys. "
         "Click Save to write (does not auto-run)."
     )
 
     _broadcast_warning_fn = None
     _current_node_id = None
 
-    def save(self, filename: str, format: str = "TIFF", **kwargs):
-        # Collect connected fields in order
-        fields = []
+    def save(
+        self,
+        filename: str,
+        directory_path: str = "",
+        format: str = "TIFF",
+        directory: str | None = None,
+        **kwargs,
+    ):
+        layers = []
+        layer_names = []
         for i in range(_MAX_SAVE_FIELDS):
-            f = kwargs.get(f"field_{i}")
-            if f is not None:
-                fields.append(f)
+            layer = kwargs.get(f"field_{i}")
+            if layer is not None:
+                layers.append(layer)
+                layer_names.append(self._resolve_layer_name(kwargs.get(f"layer_name_{i}"), i))
 
-        if not fields:
-            raise ValueError("No fields connected — connect at least one DATA_FIELD input.")
+        if not layers:
+            raise ValueError("No layers connected — connect at least one DATA_FIELD or IMAGE input.")
 
-        if not filename or not filename.strip():
-            raise ValueError("No output path selected — use Browse to pick a location.")
-
-        path = Path(filename)
-        # Ensure parent directory exists
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Force correct extension
-        ext = ".tiff" if format == "TIFF" else ".npz"
-        if path.suffix.lower() != ext:
-            path = path.with_suffix(ext)
+        path = self._resolve_save_path(filename, format, directory, directory_path)
 
         if format == "TIFF":
-            self._save_tiff(path, fields)
+            self._save_tiff(path, layers, layer_names)
         else:
-            self._save_npz(path, fields)
+            self._save_npz(path, layers, layer_names)
 
-        self._send_warning(f"Saved {len(fields)} layer(s) to {path.name}")
+        self._send_warning(f"Saved {len(layers)} layer(s) to {path.name}")
         return ()
 
-    def _save_tiff(self, path: Path, fields: list[DataField]):
-        from PIL import Image
-        images = []
-        for f in fields:
-            images.append(Image.fromarray(f.data.astype(np.float32)))
-        images[0].save(str(path), save_all=True, append_images=images[1:])
+    def _save_tiff(self, path: Path, layers: list[DataField | np.ndarray], layer_names: list[str]):
+        import tifffile
 
-    def _save_npz(self, path: Path, fields: list[DataField]):
+        with tifffile.TiffWriter(str(path)) as tif:
+            for layer, layer_name in zip(layers, layer_names):
+                tif.write(self._layer_array_for_tiff(layer), description=layer_name)
+
+    def _save_npz(self, path: Path, layers: list[DataField | np.ndarray], layer_names: list[str]):
         arrays = {}
-        for i, f in enumerate(fields):
-            arrays[f"layer_{i}"] = f.data
+        used_keys = set()
+        for i, (layer, layer_name) in enumerate(zip(layers, layer_names)):
+            arrays[self._unique_npz_key(layer_name, used_keys, i)] = self._layer_array_for_npz(layer)
         np.savez(str(path), **arrays)
+
+    def _resolve_layer_name(self, raw_name: object, index: int) -> str:
+        text = str(raw_name).strip() if raw_name is not None else ""
+        return text or f"layer_{index}"
+
+    def _resolve_save_path(
+        self,
+        filename: str,
+        format: str,
+        directory: str | None,
+        directory_path: str = "",
+    ) -> Path:
+        ext = ".tiff" if format == "TIFF" else ".npz"
+        raw_filename = str(filename).strip() if filename is not None else ""
+        raw_directory = str(directory).strip() if directory is not None else ""
+        if not raw_directory:
+            raw_directory = str(directory_path).strip() if directory_path is not None else ""
+
+        if raw_directory:
+            dir_path = Path(raw_directory).expanduser()
+            if dir_path.exists() and not dir_path.is_dir():
+                raise ValueError("Directory input expects a folder path, not a file path.")
+            if not dir_path.exists():
+                if dir_path.suffix:
+                    raise ValueError("Directory input expects a folder path, not a file path.")
+                dir_path.mkdir(parents=True, exist_ok=True)
+
+            filename_part = Path(raw_filename).name if raw_filename else ""
+            if not filename_part:
+                raise ValueError("No output filename selected — enter a file name when using a directory input.")
+            path = dir_path / filename_part
+        else:
+            if not raw_filename:
+                raise ValueError("No output path selected — use Browse to pick a location.")
+            path = Path(raw_filename).expanduser()
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+        if path.suffix.lower() != ext:
+            path = path.with_suffix(ext)
+        return path
+
+    def _unique_npz_key(self, raw_name: str, used_keys: set[str], index: int) -> str:
+        key = re.sub(r"[^0-9A-Za-z_]+", "_", str(raw_name).strip()).strip("_")
+        if not key:
+            key = f"layer_{index}"
+        if key[0].isdigit():
+            key = f"layer_{key}"
+
+        candidate = key
+        suffix = 2
+        while candidate in used_keys:
+            candidate = f"{key}_{suffix}"
+            suffix += 1
+        used_keys.add(candidate)
+        return candidate
+
+    def _layer_array_for_tiff(self, layer: DataField | np.ndarray) -> np.ndarray:
+        if isinstance(layer, DataField):
+            return np.asarray(layer.data, dtype=np.float32)
+        if isinstance(layer, np.ndarray):
+            return image_to_uint8(layer)
+        raise ValueError(f"Unsupported save layer type: {type(layer).__name__}")
+
+    def _layer_array_for_npz(self, layer: DataField | np.ndarray) -> np.ndarray:
+        if isinstance(layer, DataField):
+            return np.asarray(layer.data)
+        if isinstance(layer, np.ndarray):
+            return np.asarray(layer)
+        raise ValueError(f"Unsupported save layer type: {type(layer).__name__}")
 
     def _send_warning(self, message: str):
         fn = SaveImage._broadcast_warning_fn

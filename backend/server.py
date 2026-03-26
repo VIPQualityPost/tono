@@ -215,6 +215,13 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
             content_type="application/json",
         )
 
+    async def get_folder_files(request: web.Request) -> web.Response:
+        folder_path = request.query.get("folder", "")
+        from backend.nodes.io import list_folder_paths
+        loop = asyncio.get_running_loop()
+        entries = await loop.run_in_executor(None, list_folder_paths, folder_path)
+        return web.Response(text=_dumps(entries), content_type="application/json")
+
     async def upload_file(request: web.Request) -> web.Response:
         reader = await request.multipart()
         field = await reader.next()
@@ -346,6 +353,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
     app.router.add_get("/nodes", get_nodes)
     app.router.add_get("/files", list_files)
     app.router.add_get("/browse", browse_dir)
+    app.router.add_get("/folder-files", get_folder_files)
     app.router.add_post("/upload", upload_file)
     app.router.add_post("/download", download_file)
     app.router.add_post("/save-workflow-png", save_workflow_png)

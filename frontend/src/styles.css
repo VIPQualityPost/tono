@@ -141,6 +141,10 @@ html, body, #root {
 
 .node-title {
   padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-weight: 600;
   font-size: 12px;
   color: white;
@@ -148,10 +152,34 @@ html, body, #root {
   border-bottom: 1px solid rgba(0, 0, 0, 0.3);
 }
 
+.node-title-main {
+  min-width: 0;
+}
+
+.node-title-meta {
+  max-width: 48%;
+  min-width: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.28);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .node-body {
   padding: 4px 0;
   display: flex;
   flex-direction: column;
+}
+
+.top-widget-section {
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.35);
+  margin-bottom: 2px;
 }
 
 .node-warning {
@@ -226,6 +254,11 @@ html, body, #root {
   gap: 4px;
 }
 
+.io-left {
+  flex: 1;
+  min-width: 0;
+}
+
 .io-label {
   font-size: 10px;
   color: #94a3b8;
@@ -280,8 +313,36 @@ html, body, #root {
   flex-shrink: 0;
 }
 
+.io-inline-widget {
+  flex: 1;
+  min-width: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.io-inline-widget .widget-row,
+.io-inline-widget label {
+  display: none;
+}
+
+.io-inline-widget input[type="text"],
+.io-inline-widget input[type="number"],
+.io-inline-widget input[type="color"],
+.io-inline-widget select {
+  background: #0f172a;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+}
+
 .widget-row input[type="text"],
 .widget-row input[type="number"],
+.widget-row input[type="color"],
 .widget-row select {
   background: #0f172a;
   color: #e0e0e0;
@@ -291,6 +352,11 @@ html, body, #root {
   font-size: 11px;
   flex: 1;
   min-width: 0;
+}
+
+.widget-row input[type="color"] {
+  padding: 2px;
+  height: 24px;
 }
 
 .widget-row input[type="checkbox"] {
@@ -312,6 +378,87 @@ html, body, #root {
 .widget-button:hover {
   background: #1a4a8a;
   border-color: #3a7abf;
+}
+
+.widget-linked-state {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px dashed rgba(244, 114, 182, 0.45);
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.55);
+  color: #f9a8d4;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.colormap-editor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.colormap-preview {
+  width: 100%;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background-color: #0f172a;
+}
+
+.colormap-stop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.colormap-stop-row {
+  display: grid;
+  grid-template-columns: 34px 34px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.colormap-stop-label,
+.colormap-stop-boundary {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.colormap-stop-color {
+  width: 34px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  background: #0f172a;
+}
+
+.colormap-stop-position {
+  width: 100%;
+}
+
+.colormap-stop-action {
+  background: #172554;
+  color: #dbeafe;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.colormap-stop-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.colormap-add-stop {
+  margin-top: 2px;
 }
 
 .slider-control {
@@ -436,6 +583,54 @@ html, body, #root {
   width: 100%;
   max-width: 100%;
   display: block;
+}
+
+.layer-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.layer-gallery-toolbar {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 6px;
+  align-items: center;
+}
+
+.layer-gallery-btn {
+  height: 26px;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.layer-gallery-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.layer-gallery-name {
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #cbd5e1;
+  font-size: 10px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-gallery-count {
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
 }
 
 /* ── Cross-section overlay ────────────────────────────────────────── */
@@ -607,6 +802,60 @@ html, body, #root {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 2;
+}
+
+.markup-overlay {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  cursor: crosshair;
+}
+
+.markup-overlay-drawing {
+  cursor: crosshair;
+}
+
+.markup-image {
+  width: 100%;
+  display: block;
+}
+
+.markup-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.markup-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.markup-tool-btn {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.markup-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* ── 3D surface view ──────────────────────────────────────────────── */
@@ -830,7 +1079,7 @@ html, body, #root {
 .fb-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 10px 14px;
   border-bottom: 1px solid #0f3460;
 }
@@ -852,6 +1101,17 @@ html, body, #root {
   padding: 2px 6px;
 }
 .fb-close:hover { color: #e94560; }
+.fb-select-btn {
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fb-select-btn:hover { background: #1a4a8a; }
 .fb-list {
   overflow-y: auto;
   padding: 6px 0;
@@ -868,6 +1128,13 @@ html, body, #root {
 .fb-entry:hover { background: #0f3460; }
 .fb-dir  { color: #90caf9; }
 .fb-file { color: #e0e0e0; }
+.fb-file-disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.fb-file-disabled:hover {
+  background: transparent;
+}
 .fb-loading {
   padding: 16px;
   text-align: center;
