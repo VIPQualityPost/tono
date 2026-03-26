@@ -1184,7 +1184,7 @@ function CustomNode({ id, data }) {
 
         {/* Collapsible table data */}
         {data.tableRows && data.tableRows.length > 0 && (
-          <CollapsibleSection title="Table" defaultOpen={true}>
+          <CollapsibleSection title="Table" defaultOpen={false}>
             <NodeTable rows={data.tableRows} />
           </CollapsibleSection>
         )}
