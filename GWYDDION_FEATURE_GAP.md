@@ -21,7 +21,7 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 | 11 | Grain Distance Transform | mask_edt.c | Euclidean distance from grain boundaries. Useful for spatial distribution analysis. |
 | 12 | Watershed Segmentation | grain_wshed.c | Automatic grain detection without manual threshold. More robust than simple thresholding. |
 | 13 | Rotate / Flip | rotate.c, basicops.c | Basic geometric transforms (90°, arbitrary angle, mirror). |
-| 14 | Crop | crop.c | Extract sub-region of a field. |
+| ~~14~~ | ~~Crop~~ | ~~crop.c~~ | ~~Extract sub-region of a field.~~ **DONE** |
 
 ## Medium Value
 

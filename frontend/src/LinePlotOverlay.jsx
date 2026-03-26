@@ -164,8 +164,10 @@ export default function LinePlotOverlay({
   const cursorB = pickCursorPoint(x2 ?? overlay?.x2 ?? 0.75);
 
   const path = yValues.map((y, i) => `${i === 0 ? 'M' : 'L'} ${scaleX(xValues[i])} ${scaleY(y)}`).join(' ');
-  const xTicks = makeTicks(xMin, xMax);
-  const yTicks = makeTicks(yMin, yMax);
+  const xTickCount = Math.max(2, Math.min(5, Math.floor(plotWidth / 70)));
+  const yTickCount = Math.max(2, Math.min(5, Math.floor(plotHeight / 40)));
+  const xTicks = makeTicks(xMin, xMax, xTickCount);
+  const yTicks = makeTicks(yMin, yMax, yTickCount);
   const plotStroke = clamp(plotWidth / 240, 1.4, 2.6);
   const gridStroke = clamp(plotWidth / 900, 0.6, 1.1);
   const cursorStroke = clamp(plotWidth / 220, 1.4, 2.2);
