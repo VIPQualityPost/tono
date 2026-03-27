@@ -1,3 +1,5 @@
+import { sortNodesForParentOrder } from './nodeHierarchy.js';
+
 export const NODE_CLIPBOARD_KIND = 'argonode/node-selection';
 export const NODE_CLIPBOARD_MIME = 'application/x-argonode-node-selection';
 
@@ -151,9 +153,12 @@ export function instantiateNodeClipboardPayload(
   const idMap = new Map();
   let currentId = Number(nextNodeId) || 1;
 
-  const nodes = payload.nodes.map((node) => {
-    const newId = String(currentId++);
-    idMap.set(String(node.id), newId);
+  payload.nodes.forEach((node) => {
+    idMap.set(String(node.id), String(currentId++));
+  });
+
+  const nodes = sortNodesForParentOrder(payload.nodes.map((node) => {
+    const newId = idMap.get(String(node.id));
     const className = node.data?.className || '';
     const definition = className ? defs[className] || null : null;
 
@@ -187,7 +192,7 @@ export function instantiateNodeClipboardPayload(
         warning: null,
       },
     };
-  });
+  }));
 
   const edges = payload.edges
     .filter((edge) => (

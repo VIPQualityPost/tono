@@ -16,6 +16,7 @@ import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
+import { sortNodesForParentOrder } from './nodeHierarchy.js';
 import {
   buildNodeClipboardPayload,
   buildNodeClipboardPayloadForIds,
@@ -182,6 +183,18 @@ function getNodeCenter(node, nodeMap) {
   };
 }
 
+function getNodeRect(node, nodeMap) {
+  const pos = getNodeAbsolutePosition(node, nodeMap);
+  const width = Number(getNodeDimension(node, 'width')) || 200;
+  const height = Number(getNodeDimension(node, 'height')) || 120;
+  return {
+    left: pos.x,
+    top: pos.y,
+    right: pos.x + width,
+    bottom: pos.y + height,
+  };
+}
+
 function rectContainsPoint(rect, point) {
   return point.x >= rect.left
     && point.x <= rect.right
@@ -189,13 +202,60 @@ function rectContainsPoint(rect, point) {
     && point.y <= rect.bottom;
 }
 
-function findExpandedGroupDropTarget(nodes, draggedNodeIds, anchorNodeId) {
+function getEventClientPosition(event) {
+  if (!event) return null;
+  const point = 'changedTouches' in event && event.changedTouches?.[0]
+    ? event.changedTouches[0]
+    : ('touches' in event && event.touches?.[0] ? event.touches[0] : event);
+  if (!Number.isFinite(point?.clientX) || !Number.isFinite(point?.clientY)) return null;
+  return { x: point.clientX, y: point.clientY };
+}
+
+function getEventFlowPosition(event, reactFlow) {
+  const clientPosition = getEventClientPosition(event);
+  if (!clientPosition || typeof reactFlow?.screenToFlowPosition !== 'function') return null;
+  return reactFlow.screenToFlowPosition(clientPosition);
+}
+
+function getDragIntent(event, reactFlow, dragState) {
+  if (!dragState?.pointerOffset || !dragState?.anchorStartAbsolute) return null;
+  const pointerFlowPos = getEventFlowPosition(event, reactFlow);
+  if (!pointerFlowPos) return null;
+
+  const anchorAbsolute = {
+    x: pointerFlowPos.x - dragState.pointerOffset.x,
+    y: pointerFlowPos.y - dragState.pointerOffset.y,
+  };
+  const delta = {
+    x: anchorAbsolute.x - (Number(dragState.anchorStartAbsolute.x) || 0),
+    y: anchorAbsolute.y - (Number(dragState.anchorStartAbsolute.y) || 0),
+  };
+  const absolutePositions = new Map(
+    Object.entries(dragState.absolutePositions || {}).map(([id, pos]) => [
+      id,
+      {
+        x: (Number(pos?.x) || 0) + delta.x,
+        y: (Number(pos?.y) || 0) + delta.y,
+      },
+    ]),
+  );
+
+  return {
+    pointerFlowPos,
+    anchorAbsolute,
+    absolutePositions,
+  };
+}
+
+function findExpandedGroupDropTarget(nodes, draggedNodeIds, anchorNodeId, anchorPoint = null) {
   const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
   const anchorNode = nodeMap.get(String(anchorNodeId));
   if (!anchorNode) return null;
 
   const draggedIdSet = new Set((draggedNodeIds || []).map((id) => String(id)));
-  const anchorCenter = getNodeCenter(anchorNode, nodeMap);
+  const anchorCenter = anchorPoint && Number.isFinite(anchorPoint.x) && Number.isFinite(anchorPoint.y)
+    ? anchorPoint
+    : getNodeCenter(anchorNode, nodeMap);
 
   return (nodes || [])
     .filter((node) => (
@@ -712,6 +772,7 @@ function Flow() {
   const lastPastedClipboardTextRef = useRef('');
   const pasteRepeatCountRef = useRef(0);
   const duplicateDragRef = useRef(null);
+  const dragStateRef = useRef(null);
   const activeDragNodeIdRef = useRef(null);
   const reactFlow = useReactFlow();
 
@@ -999,8 +1060,9 @@ function Flow() {
       groupNode,
     ];
 
-    setNodes(nextNodes);
-    setTimeout(() => refreshGroupNode(groupId, nextNodes, reactFlow.getEdges()), 0);
+    const orderedNodes = sortNodesForParentOrder(nextNodes);
+    setNodes(orderedNodes);
+    setTimeout(() => refreshGroupNode(groupId, orderedNodes, reactFlow.getEdges()), 0);
   }, [reactFlow, refreshGroupNode, setNodes]);
 
   const setNodeOutputs = useCallback((nodeId, output, outputName, extraDefinitionPatch = {}) => {
@@ -1639,10 +1701,10 @@ function Flow() {
 
     nextIdRef.current = pasted.nextNodeId;
 
-    setNodes((existing) => [
+    setNodes((existing) => sortNodesForParentOrder([
       ...existing.map((node) => ({ ...node, selected: false })),
       ...pasted.nodes,
-    ]);
+    ]));
     setEdges((existing) => [
       ...existing.map((edge) => ({ ...edge, selected: false })),
       ...pasted.edges,
@@ -1682,7 +1744,7 @@ function Flow() {
 
   const applyWorkflowData = useCallback((data) => {
     const hydrated = hydrateWorkflowState(data, nodeDefsRef.current);
-    setNodes(hydrated.nodes);
+    setNodes(sortNodesForParentOrder(hydrated.nodes));
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
     initializeDynamicNodes(hydrated.nodes);
@@ -1912,11 +1974,40 @@ function Flow() {
 
   const onNodeDragStart = useCallback((event, node) => {
     activeDragNodeIdRef.current = String(node.id);
+    dragStateRef.current = null;
 
     if (!(event.ctrlKey || event.metaKey)) {
       duplicateDragRef.current = null;
+      const currentNodes = reactFlow.getNodes();
+      const draggedNodes = node.data?.className === 'Group'
+        ? []
+        : (
+          node.selected
+            ? currentNodes.filter((candidate) => candidate.selected && candidate.data?.className !== 'Group')
+            : currentNodes.filter((candidate) => candidate.id === node.id)
+        );
+      const pointerFlowPos = getEventFlowPosition(event, reactFlow);
+      if (draggedNodes.length > 0 && pointerFlowPos) {
+        const nodeMap = new Map(currentNodes.map((candidate) => [String(candidate.id), candidate]));
+        const absolutePositions = Object.fromEntries(
+          draggedNodes.map((candidate) => [
+            String(candidate.id),
+            getNodeAbsolutePosition(candidate, nodeMap),
+          ]),
+        );
+        const anchorAbsolute = absolutePositions[String(node.id)] || getNodeAbsolutePosition(node, nodeMap);
+        dragStateRef.current = {
+          anchorId: String(node.id),
+          anchorStartAbsolute: anchorAbsolute,
+          absolutePositions,
+          pointerOffset: {
+            x: pointerFlowPos.x - anchorAbsolute.x,
+            y: pointerFlowPos.y - anchorAbsolute.y,
+          },
+        };
+      }
       if (node.data?.className === 'Group') {
-        const descendantIds = collectGroupDescendantIds(reactFlow.getNodes(), node.id);
+        const descendantIds = collectGroupDescendantIds(currentNodes, node.id);
         if (descendantIds.size > 0) {
           setNodes((existing) => existing.map((candidate) => (
             descendantIds.has(String(candidate.id))
@@ -1974,10 +2065,10 @@ function Flow() {
       duplicateSourceById,
     };
 
-    setNodes((existing) => [
+    setNodes((existing) => sortNodesForParentOrder([
       ...existing.map((candidate) => ({ ...candidate, selected: false })),
       ...duplicated.nodes,
-    ]);
+    ]));
     setEdges((existing) => [
       ...existing.map((edge) => ({ ...edge, selected: false })),
       ...duplicated.edges,
@@ -2036,6 +2127,8 @@ function Flow() {
     if (String(node.id) !== activeDragNodeIdRef.current) return;
     activeDragNodeIdRef.current = null;
 
+    const dragState = dragStateRef.current;
+    dragStateRef.current = null;
     const duplicateState = duplicateDragRef.current;
     duplicateDragRef.current = null;
     if (duplicateState) {
@@ -2089,6 +2182,7 @@ function Flow() {
     }
 
     const currentNodes = reactFlow.getNodes();
+    const dragIntent = getDragIntent(event, reactFlow, dragState);
     const touchedGroupIds = new Set();
     let nextNodes = currentNodes;
     let changed = false;
@@ -2103,9 +2197,23 @@ function Flow() {
 
     if (draggedNodes.length > 0) {
       const draggedIdSet = new Set(draggedNodes.map((candidate) => String(candidate.id)));
-      const targetGroup = findExpandedGroupDropTarget(nextNodes, Array.from(draggedIdSet), node.id);
+      const nodeMap = new Map(nextNodes.map((candidate) => [String(candidate.id), candidate]));
+      const anchorNode = nodeMap.get(String(dragState?.anchorId || node.id));
+      const intendedAnchorAbsolute = dragIntent?.absolutePositions.get(String(anchorNode?.id || node.id))
+        || (anchorNode ? getNodeAbsolutePosition(anchorNode, nodeMap) : null);
+      const intendedAnchorCenter = anchorNode && intendedAnchorAbsolute
+        ? {
+          x: intendedAnchorAbsolute.x + (Number(getNodeDimension(anchorNode, 'width')) || 200) / 2,
+          y: intendedAnchorAbsolute.y + (Number(getNodeDimension(anchorNode, 'height')) || 120) / 2,
+        }
+        : null;
+      const targetGroup = findExpandedGroupDropTarget(
+        nextNodes,
+        Array.from(draggedIdSet),
+        node.id,
+        intendedAnchorCenter,
+      );
       if (targetGroup) {
-        const nodeMap = new Map(nextNodes.map((candidate) => [String(candidate.id), candidate]));
         const targetRect = getGroupWorkspaceBounds(targetGroup, nodeMap);
         const targetAbs = getNodeAbsolutePosition(targetGroup, nodeMap);
         let joinedCount = 0;
@@ -2113,10 +2221,15 @@ function Flow() {
         nextNodes = nextNodes.map((candidate) => {
           if (!draggedIdSet.has(String(candidate.id))) return candidate;
 
-          const center = getNodeCenter(candidate, nodeMap);
+          const intendedAbsolute = dragIntent?.absolutePositions.get(String(candidate.id));
+          const width = Number(getNodeDimension(candidate, 'width')) || 200;
+          const height = Number(getNodeDimension(candidate, 'height')) || 120;
+          const center = intendedAbsolute
+            ? { x: intendedAbsolute.x + width / 2, y: intendedAbsolute.y + height / 2 }
+            : getNodeCenter(candidate, nodeMap);
           if (!rectContainsPoint(targetRect, center)) return candidate;
 
-          const absolute = getNodeAbsolutePosition(candidate, nodeMap);
+          const absolute = intendedAbsolute || getNodeAbsolutePosition(candidate, nodeMap);
           const nextPosition = {
             x: absolute.x - targetAbs.x,
             y: absolute.y - targetAbs.y,
@@ -2147,12 +2260,47 @@ function Flow() {
             level: 'info',
           });
         }
+      } else {
+        const pointerFlowPos = dragIntent?.pointerFlowPos || getEventFlowPosition(event, reactFlow);
+        let removedCount = 0;
+
+        nextNodes = nextNodes.map((candidate) => {
+          if (!draggedIdSet.has(String(candidate.id)) || !candidate.parentId) return candidate;
+
+          const parentId = String(candidate.parentId);
+          const parentNode = nodeMap.get(parentId);
+          if (!parentNode || parentNode.data?.className !== 'Group') return candidate;
+          if (!pointerFlowPos) return candidate;
+          if (rectContainsPoint(getNodeRect(parentNode, nodeMap), pointerFlowPos)) {
+            return candidate;
+          }
+
+          const absolute = dragIntent?.absolutePositions.get(String(candidate.id))
+            || getNodeAbsolutePosition(candidate, nodeMap);
+          touchedGroupIds.add(parentId);
+          removedCount += 1;
+          changed = true;
+          return {
+            ...candidate,
+            parentId: undefined,
+            extent: undefined,
+            hidden: false,
+            position: absolute,
+          };
+        });
+
+        if (removedCount > 0) {
+          setStatus({
+            text: `Removed ${removedCount} node${removedCount === 1 ? '' : 's'} from group.`,
+            level: 'info',
+          });
+        }
       }
     }
 
     if (!changed) return;
 
-    setNodes(nextNodes);
+    setNodes(sortNodesForParentOrder(nextNodes));
     setTimeout(() => {
       touchedGroupIds.forEach((groupId) => {
         if (groupId) refreshGroupNode(groupId, nextNodes, reactFlow.getEdges());

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from backend.node_registry import register_node
 from backend.data_types import COLORMAPS, DataField, resolve_colormap_input
-from backend.nodes.helpers import _resolve_path, _SPM_EXTENSIONS
+from backend.nodes.helpers import _resolve_path, _SPM_EXTENSIONS, _import_ibw_loader
 
 
 @register_node(display_name="Image")
@@ -149,11 +149,7 @@ class Image:
 
     @staticmethod
     def _load_ibw_all(path: Path) -> list[DataField]:
-        try:
-            from igor.binarywave import load as load_ibw
-        except ImportError:
-            raise ImportError("Install 'igor' package to load .ibw files: pip install igor")
-
+        load_ibw = _import_ibw_loader()
         wave = load_ibw(str(path))
         wdata = wave["wave"]
         header = wdata["wave_header"]

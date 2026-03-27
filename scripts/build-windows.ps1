@@ -38,6 +38,10 @@ $pythonExe = if (Test-Path ".\.venv\Scripts\python.exe") {
 $frontendDist = Join-Path $repoRoot "frontend\dist"
 $demoDir = Join-Path $repoRoot "demo"
 
+Write-Host "Removing cached frontend and desktop build artifacts..."
+node scripts\clean-build-artifacts.mjs --mode=native
+Assert-LastExitCode "Artifact cleanup"
+
 Write-Host "Building frontend bundle..."
 npm run build
 Assert-LastExitCode "Frontend build"

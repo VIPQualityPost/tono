@@ -7,8 +7,8 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --force",
+    "build": "vite build --emptyOutDir",
     "preview": "vite preview",
     "test": "node --test tests/**/*.test.mjs"
   },

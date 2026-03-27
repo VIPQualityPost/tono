@@ -1,3 +1,5 @@
+import { sortNodesForParentOrder } from './nodeHierarchy.js';
+
 function mergeDefinition(nodeData, defs) {
   const savedData = nodeData || {};
   const registryDefinition = savedData.className ? defs[savedData.className] : null;
@@ -34,7 +36,7 @@ export function hydrateWorkflowState(data, defs = {}) {
   const loadedNodes = Array.isArray(data?.nodes) ? data.nodes : [];
   const loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
 
-  const nodes = loadedNodes.map((node) => {
+  const nodes = sortNodesForParentOrder(loadedNodes.map((node) => {
     const definition = mergeDefinition(node.data, defs);
 
     return {
@@ -62,7 +64,7 @@ export function hydrateWorkflowState(data, defs = {}) {
         warning: null,
       },
     };
-  });
+  }));
 
   const edges = loadedEdges.map((edge) => ({ ...edge }));
 
