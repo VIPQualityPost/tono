@@ -95,7 +95,7 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
   assert.equal('selected' in serialized.edges[0], false);
 });
 
-test('hydrateWorkflowState clears shared path widgets while restoring saved dynamic outputs', () => {
+test('hydrateWorkflowState clears shared path widgets and uses registry definitions', () => {
   const saved = {
     version: 1,
     nodes: [
@@ -142,12 +142,12 @@ test('hydrateWorkflowState clears shared path widgets while restoring saved dyna
   assert.equal(hydrated.nodes[0].data.previewImage, null);
   assert.equal(hydrated.nodes[0].data.widgetValues.filename, '');
   assert.equal(hydrated.nodes[0].data.widgetValues.colormap, 'viridis');
-  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD']);
-  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Height', 'Phase']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['field']);
   assert.deepEqual(hydrated.nodes[0].data.definition.input, defs.Image.input);
 });
 
-test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets but preserve other metadata', () => {
+test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets without restoring saved outputs', () => {
   const nodes = [
     {
       id: '7',
@@ -188,8 +188,8 @@ test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets bu
   const hydrated = hydrateWorkflowState(serialized, defs);
 
   assert.deepEqual(hydrated.nodes[0].data.widgetValues, { filename: '', colormap: 'gray' });
-  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD', 'DATA_FIELD', 'DATA_FIELD']);
-  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['Topography', 'Error', 'Mask']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['field']);
   assert.deepEqual(hydrated.edges, edges);
 });
 
@@ -223,6 +223,6 @@ test('hydrateWorkflowState clears saved folder selections on shared workflows', 
   const hydrated = hydrateWorkflowState(saved, defs);
 
   assert.equal(hydrated.nodes[0].data.widgetValues.folder, '');
-  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['PATH', 'PATH']);
-  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['scan1.png', 'scan2.png']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output, ['PATH']);
+  assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['path']);
 });

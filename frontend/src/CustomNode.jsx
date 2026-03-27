@@ -1075,7 +1075,13 @@ function CustomNode({ id, data }) {
         {data.meshData && (
           <CollapsibleSection title="3D View" defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading 3D...</div>}>
-              <SurfaceView meshData={data.meshData} />
+              <SurfaceView
+                meshData={data.meshData}
+                nodeId={id}
+                widgetValues={data.widgetValues}
+                runtimeValues={data.runtimeValues}
+                onRuntimeValuesChange={ctx.onRuntimeValuesChange}
+              />
             </Suspense>
           </CollapsibleSection>
         )}

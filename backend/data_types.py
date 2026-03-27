@@ -67,6 +67,43 @@ class LineData:
         return self.data[item]
 
 
+@dataclass
+class MeshModel:
+    vertices: np.ndarray
+    faces: np.ndarray
+    colors: np.ndarray | None = None
+
+    def __post_init__(self) -> None:
+        self.vertices = np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3)
+        self.faces = np.asarray(self.faces, dtype=np.int32).reshape(-1, 3)
+        if self.colors is not None:
+            self.colors = np.asarray(self.colors, dtype=np.uint8).reshape(-1, 3)
+            if len(self.colors) != len(self.vertices):
+                raise ValueError("MeshModel.colors must have one RGB triplet per vertex.")
+
+
+class ImageData(np.ndarray):
+    def __new__(cls, data: Any, metadata: dict[str, Any] | None = None):
+        obj = np.asarray(data).view(cls)
+        obj.metadata = deepcopy(metadata) if isinstance(metadata, dict) else {}
+        return obj
+
+    def __array_finalize__(self, obj):
+        self.metadata = deepcopy(getattr(obj, "metadata", {})) if obj is not None else {}
+
+    def copy_with_metadata(self, *, data: Any | None = None, metadata: dict[str, Any] | None = None) -> "ImageData":
+        base = np.asarray(self if data is None else data)
+        merged = deepcopy(self.metadata)
+        if isinstance(metadata, dict):
+            merged.update(deepcopy(metadata))
+        return ImageData(base, metadata=merged)
+
+
+def image_metadata(image: Any) -> dict[str, Any]:
+    metadata = getattr(image, "metadata", None)
+    return deepcopy(metadata) if isinstance(metadata, dict) else {}
+
+
 def _normalize_hex_color(color: Any, default: str = "#000000") -> str:
     if isinstance(color, str):
         text = color.strip()
@@ -638,10 +675,28 @@ def _sanitize_markup_shapes(shapes: Any) -> list[dict[str, Any]]:
     return parsed
 
 
-def _apply_annotation_overlay(
+def _annotation_context_from_field(field: DataField, colormap: Any) -> dict[str, Any]:
+    legend_min, legend_mid, legend_max = _display_value_range(field)
+    return {
+        "xreal": float(field.xreal),
+        "si_unit_xy": str(field.si_unit_xy),
+        "legend_min": float(legend_min),
+        "legend_mid": float(legend_mid),
+        "legend_max": float(legend_max),
+        "legend_unit": str(field.si_unit_z),
+        "colormap": normalize_colormap_spec(colormap, fallback=field.colormap),
+    }
+
+
+def _annotation_context_from_image(image: Any) -> dict[str, Any] | None:
+    metadata = image_metadata(image)
+    context = metadata.get("annotation_context")
+    return deepcopy(context) if isinstance(context, dict) else None
+
+
+def _apply_annotation_overlay_from_context(
     image: np.ndarray,
-    field: DataField,
-    colormap: Any,
+    context: dict[str, Any],
     spec: dict[str, Any],
 ) -> np.ndarray:
     from PIL import Image, ImageDraw
@@ -657,8 +712,7 @@ def _apply_annotation_overlay(
         current = np.repeat(current[:, :, np.newaxis], 3, axis=2)
 
     height, current_width = current.shape[:2]
-    field_width = max(1, int(field.xres))
-    legend_width = max(72, int(round(field_width * 0.18))) if show_color_map else 0
+    legend_width = max(72, int(round(current_width * 0.18))) if show_color_map else 0
     canvas_width = current_width + legend_width
     canvas = np.full((height, canvas_width, 3), 255, dtype=np.uint8)
     canvas[:, :current_width] = current
@@ -667,20 +721,40 @@ def _apply_annotation_overlay(
     draw = ImageDraw.Draw(pil_image)
     base_font_px = max(6, int(round(text_size)))
 
-    if show_scale_bar and field_width > 0 and np.isfinite(field.xreal) and field.xreal > 0:
-        target_real = field.xreal / 5.0
+    xreal_raw = context.get("xreal")
+    xreal = float(xreal_raw) if xreal_raw is not None else 0.0
+    si_unit_xy = str(context.get("si_unit_xy", "") or "")
+    legend_unit = str(context.get("legend_unit", "") or "")
+    legend_min_raw = context.get("legend_min")
+    legend_mid_raw = context.get("legend_mid")
+    legend_max_raw = context.get("legend_max")
+    legend_min = float(legend_min_raw) if legend_min_raw is not None else 0.0
+    legend_mid = float(legend_mid_raw) if legend_mid_raw is not None else 0.0
+    legend_max = float(legend_max_raw) if legend_max_raw is not None else 0.0
+    colormap = normalize_colormap_spec(context.get("colormap", "gray"), fallback="gray")
+    has_scale_bar = np.isfinite(xreal) and xreal > 0 and bool(si_unit_xy)
+    has_color_legend = (
+        np.isfinite(legend_min)
+        and np.isfinite(legend_mid)
+        and np.isfinite(legend_max)
+        and bool(legend_unit)
+    )
+
+    if show_scale_bar and has_scale_bar and current_width > 0:
+        target_real = xreal / 5.0
         bar_real = _nice_length(target_real)
-        if bar_real > 0 and np.isfinite(field.dx) and field.dx > 0:
-            bar_px = max(1, int(round(bar_real / field.dx)))
-            margin_x = max(8, field_width // 24)
+        if bar_real > 0:
+            px_per_real = current_width / xreal
+            bar_px = max(1, int(round(bar_real * px_per_real)))
+            margin_x = max(8, current_width // 24)
             margin_y = max(8, height // 24)
             bar_height = max(3, int(round(height * 0.012)))
-            bar_px = min(bar_px, max(1, field_width - 2 * margin_x))
+            bar_px = min(bar_px, max(1, current_width - 2 * margin_x))
             x0 = margin_x
             x1 = x0 + bar_px
             y1 = height - margin_y
             y0 = y1 - bar_height
-            text = _format_with_unit(bar_real, field.si_unit_xy)
+            text = _format_with_unit(bar_real, si_unit_xy)
             text_image = _render_overlay_text(text, base_font_px, (255, 255, 255), font_spec=font_spec)
             text_w, text_h = text_image.size
             label_pad = 2
@@ -692,7 +766,7 @@ def _apply_annotation_overlay(
             draw.rectangle((x0, y0, x1, y1), fill=(255, 255, 255))
             pil_image.paste(text_image, (x0, bg_top + label_pad), text_image)
 
-    if show_color_map and legend_width > 0:
+    if show_color_map and has_color_legend and legend_width > 0:
         panel_x0 = current_width
         draw.rectangle((panel_x0, 0, canvas_width, height), fill=(245, 245, 245))
         grad_x0 = panel_x0 + max(8, legend_width // 7)
@@ -706,7 +780,6 @@ def _apply_annotation_overlay(
         pil_image.paste(Image.fromarray(gradient_rgb), (grad_x0, grad_y0))
         draw.rectangle((grad_x0, grad_y0, grad_x0 + grad_w, grad_y1), outline=(40, 40, 40), width=1)
 
-        legend_min, legend_mid, legend_max = _display_value_range(field)
         labels = [
             (legend_max, grad_y0),
             (legend_mid, grad_y0 + grad_h // 2),
@@ -715,7 +788,7 @@ def _apply_annotation_overlay(
         text_x = grad_x0 + grad_w + 8
         for value, y_center in labels:
             text_image = _render_overlay_text(
-                _format_with_unit(value, field.si_unit_z),
+                _format_with_unit(value, legend_unit),
                 base_font_px,
                 (20, 20, 20),
                 font_spec=font_spec,
@@ -727,7 +800,20 @@ def _apply_annotation_overlay(
     return np.asarray(pil_image, dtype=np.uint8)
 
 
-def _apply_markup_overlay(image: np.ndarray, field: DataField, spec: dict[str, Any]) -> np.ndarray:
+def _apply_annotation_overlay(
+    image: np.ndarray,
+    field: DataField,
+    colormap: Any,
+    spec: dict[str, Any],
+) -> np.ndarray:
+    return _apply_annotation_overlay_from_context(
+        image,
+        _annotation_context_from_field(field, colormap),
+        spec,
+    )
+
+
+def _apply_markup_overlay(image: np.ndarray, field: DataField | None, spec: dict[str, Any]) -> np.ndarray:
     from PIL import Image, ImageDraw
 
     current = np.asarray(image, dtype=np.uint8)
@@ -736,8 +822,8 @@ def _apply_markup_overlay(image: np.ndarray, field: DataField, spec: dict[str, A
 
     pil_image = Image.fromarray(current.copy())
     draw = ImageDraw.Draw(pil_image)
-    field_width = max(1, int(field.xres))
-    field_height = max(1, int(field.yres))
+    field_width = max(1, int(field.xres)) if isinstance(field, DataField) else max(1, current.shape[1])
+    field_height = max(1, int(field.yres)) if isinstance(field, DataField) else max(1, current.shape[0])
 
     for shape in _sanitize_markup_shapes(spec.get("shapes")):
         x1 = float(shape["x1"]) * field_width

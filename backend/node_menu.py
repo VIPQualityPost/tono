@@ -25,6 +25,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     ],
     "Output": [
         "PreviewImage",
+        "Save",
         "SaveImage",
         "View3D",
         "PrintTable",

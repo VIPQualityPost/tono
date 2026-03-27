@@ -1,4 +1,5 @@
 from __future__ import annotations
+from functools import lru_cache
 import numpy as np
 from pathlib import Path
 
@@ -48,17 +49,21 @@ class Image:
 
         ext = path_obj.suffix.lower()
         resolved_colormap = resolve_colormap_input(colormap, colormap_input=colormap_map, default="viridis")
+        stat = path_obj.stat()
+        cached_fields = Image._load_fields_cached(
+            str(path_obj.resolve()),
+            int(stat.st_mtime_ns),
+            int(stat.st_size),
+        )
+        fields = tuple(field.copy() for field in cached_fields)
 
-        if ext in _SPM_EXTENSIONS:
-            fields = self._load_spm_all(path_obj, ext)
-            for f in fields:
-                f.colormap = resolved_colormap
-            return tuple(fields)
+        for field in fields:
+            field.colormap = resolved_colormap
 
-        field = self._load_image_or_array(path_obj, ext)
-        field.colormap = resolved_colormap
-        self._send_warning("Uncalibrated data — no physical dimensions.")
-        return (field,)
+        if ext not in _SPM_EXTENSIONS:
+            self._send_warning("Uncalibrated data — no physical dimensions.")
+
+        return fields
 
     def _send_warning(self, message: str):
         fn = Image._broadcast_warning_fn
@@ -66,17 +71,28 @@ class Image:
         if fn and nid:
             fn(nid, message)
 
-    def _load_spm_all(self, path: Path, ext: str) -> list[DataField]:
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def _load_fields_cached(path_str: str, mtime_ns: int, size_bytes: int) -> tuple[DataField, ...]:
+        path = Path(path_str)
+        ext = path.suffix.lower()
+        if ext in _SPM_EXTENSIONS:
+            return tuple(Image._load_spm_all(path, ext))
+        return (Image._load_image_or_array(path, ext),)
+
+    @staticmethod
+    def _load_spm_all(path: Path, ext: str) -> list[DataField]:
         if ext == ".gwy":
-            return self._load_gwy_all(path)
+            return Image._load_gwy_all(path)
         elif ext == ".sxm":
-            return self._load_sxm_all(path)
+            return Image._load_sxm_all(path)
         elif ext == ".ibw":
-            return self._load_ibw_all(path)
+            return Image._load_ibw_all(path)
         else:
             raise ValueError(f"Unsupported SPM format: {ext}")
 
-    def _load_gwy_all(self, path: Path) -> list[DataField]:
+    @staticmethod
+    def _load_gwy_all(path: Path) -> list[DataField]:
         try:
             import gwyfile
         except ImportError:
@@ -101,7 +117,8 @@ class Image:
             ))
         return fields
 
-    def _load_sxm_all(self, path: Path) -> list[DataField]:
+    @staticmethod
+    def _load_sxm_all(path: Path) -> list[DataField]:
         try:
             import nanonispy as nap
         except ImportError:
@@ -130,7 +147,8 @@ class Image:
             ))
         return fields
 
-    def _load_ibw_all(self, path: Path) -> list[DataField]:
+    @staticmethod
+    def _load_ibw_all(path: Path) -> list[DataField]:
         try:
             from igor.binarywave import load as load_ibw
         except ImportError:
@@ -193,7 +211,8 @@ class Image:
 
         return fields
 
-    def _load_image_or_array(self, path: Path, ext: str) -> DataField:
+    @staticmethod
+    def _load_image_or_array(path: Path, ext: str) -> DataField:
         if ext == ".npy":
             arr = np.load(str(path)).astype(np.float64)
         elif ext == ".npz":

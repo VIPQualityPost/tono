@@ -49,11 +49,11 @@ class SaveImage:
     OUTPUT_NODE = True
     MANUAL_TRIGGER = True
     DESCRIPTION = (
-        "Save one or more layers to a single file. "
+        "Save one or more image/field layers to a single file. "
         "Each layer input accepts either a DATA_FIELD or an IMAGE, including annotated images. "
         "Optionally drive the output directory from a folder/path node, while keeping the filename widget for the file name. "
         "A new slot appears as each one is filled, with a matching per-layer name field. "
-        "TIFF writes multi-page data and stores layer names as page descriptions; "
+        "Use this for composing multi-channel stacks. TIFF writes multi-page data and stores layer names as page descriptions; "
         "NPZ writes named arrays using those layer names as keys. "
         "Click Save to write (does not auto-run)."
     )

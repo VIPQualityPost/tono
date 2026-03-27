@@ -221,6 +221,7 @@ class ExecutionEngine:
         from backend.nodes.preview_image import PreviewImage
         from backend.nodes.print_table import PrintTable
         from backend.nodes.view_3d import View3D
+        from backend.nodes.annotations import Annotations
         from backend.nodes.value_display import ValueDisplay
         from backend.nodes.markup import Markup
         from backend.nodes.cross_section import CrossSection
@@ -234,6 +235,7 @@ class ExecutionEngine:
         from backend.nodes.mask_invert import MaskInvert
         from backend.nodes.mask_combine import MaskCombine
         from backend.nodes.draw_mask import DrawMask
+        from backend.nodes.save import Save
         from backend.nodes.save_image import SaveImage
         from backend.nodes.image import Image
         from backend.nodes.image_demo import ImageDemo
@@ -245,6 +247,7 @@ class ExecutionEngine:
         MaskCombine._broadcast_fn = on_preview
         DrawMask._broadcast_overlay_fn = on_overlay
         View3D._broadcast_mesh_fn = on_mesh
+        Annotations._broadcast_warning_fn = on_warning
         PrintTable._broadcast_table_fn = on_table
         ValueDisplay._broadcast_value_fn = on_value
         Stats._broadcast_value_fn = on_value
@@ -256,6 +259,7 @@ class ExecutionEngine:
         Markup._broadcast_overlay_fn = on_overlay
         Image._broadcast_warning_fn = on_warning
         ImageDemo._broadcast_warning_fn = on_warning
+        Save._broadcast_warning_fn = on_warning
         SaveImage._broadcast_warning_fn = on_warning
 
     def _set_node_id_on_display(self, cls: type, node_id: str) -> None:
@@ -263,6 +267,7 @@ class ExecutionEngine:
         from backend.nodes.preview_image import PreviewImage
         from backend.nodes.print_table import PrintTable
         from backend.nodes.view_3d import View3D
+        from backend.nodes.annotations import Annotations
         from backend.nodes.value_display import ValueDisplay
         from backend.nodes.markup import Markup
         from backend.nodes.cross_section import CrossSection
@@ -278,10 +283,11 @@ class ExecutionEngine:
         from backend.nodes.draw_mask import DrawMask
         from backend.nodes.image import Image
         from backend.nodes.image_demo import ImageDemo
+        from backend.nodes.save import Save
         from backend.nodes.save_image import SaveImage
-        if cls in (PreviewImage, PrintTable, View3D, ValueDisplay, Stats, Histogram, CrossSection, Cursors, CropResizeField, RotateField, Markup,
+        if cls in (PreviewImage, PrintTable, View3D, Annotations, ValueDisplay, Stats, Histogram, CrossSection, Cursors, CropResizeField, RotateField, Markup,
                    ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask,
-                   Image, ImageDemo, SaveImage):
+                   Image, ImageDemo, Save, SaveImage):
             cls._current_node_id = node_id
 
     def _auto_preview(
@@ -330,6 +336,16 @@ class ExecutionEngine:
                 arr = image_to_uint8(value)
                 on_preview(node_id, encode_preview(arr))
                 return
+
+            if type_name == "ANNOTATION_SOURCE" and on_preview:
+                if isinstance(value, DataField):
+                    arr = render_datafield_preview(value, value.colormap)
+                    on_preview(node_id, encode_preview(arr))
+                    return
+                if isinstance(value, np.ndarray):
+                    arr = image_to_uint8(value)
+                    on_preview(node_id, encode_preview(arr))
+                    return
 
             if type_name == "LINE" and isinstance(value, (np.ndarray, LineData)) and on_preview:
                 preview = self._render_line_preview(cls, slot, result)

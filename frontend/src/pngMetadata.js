@@ -3,7 +3,7 @@
  *
  * PNG files are composed of chunks: [4-byte length][4-byte type][data][4-byte CRC].
  * We add an iTXt chunk with key "workflow" containing the JSON-serialised graph,
- * inserted just before the IEND chunk. We still read legacy tEXt chunks.
+ * inserted just before the IEND chunk.
  */
 
 // ── CRC32 (PNG uses CRC-32/ISO 3309) ────────────────────────────────
@@ -71,10 +71,6 @@ function parseTextChunk(type, chunkData) {
   const keyword = decoder.decode(chunkData.subarray(0, keywordEnd));
   if (keyword !== 'workflow') return null;
 
-  if (type === 'tEXt') {
-    return JSON.parse(decoder.decode(chunkData.subarray(keywordEnd + 1)));
-  }
-
   if (type !== 'iTXt') return null;
 
   const compressionFlagIdx = keywordEnd + 1;
@@ -139,7 +135,7 @@ export async function embedWorkflow(pngBlob, workflow) {
 }
 
 /**
- * Extract the workflow object from a PNG blob's iTXt/tEXt chunks.
+ * Extract the workflow object from a PNG blob's iTXt chunks.
  * Returns the parsed object, or null if no "workflow" key is found.
  */
 export async function extractWorkflow(pngBlob) {
@@ -154,7 +150,7 @@ export async function extractWorkflow(pngBlob) {
     if (pos + 12 + len > data.length) break;
     const type = chunkType(data, pos);
 
-    if (type === 'tEXt' || type === 'iTXt') {
+    if (type === 'iTXt') {
       const chunkData = data.subarray(pos + 8, pos + 8 + len);
       const parsed = parseTextChunk(type, chunkData);
       if (parsed) found = parsed;

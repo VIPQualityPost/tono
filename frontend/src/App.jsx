@@ -16,6 +16,12 @@ import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
+import {
+  buildNodeClipboardPayload,
+  instantiateNodeClipboardPayload,
+  NODE_CLIPBOARD_MIME,
+  parseNodeClipboardPayload,
+} from './nodeClipboard';
 import { loadDefaultWorkflowAsset } from './defaultWorkflow';
 import {
   serializeExecutionGraph,
@@ -47,6 +53,12 @@ function sameStringArray(a = [], b = []) {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
   return a.every((item, index) => item === b[index]);
+}
+
+function isEditableTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  if (target.closest('input, textarea, select')) return true;
+  return target.closest('[contenteditable="true"]') !== null;
 }
 
 function compareMenuNodes(a, b) {
@@ -254,7 +266,11 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
           });
           if (!hasMatch) continue;
         } else {
-          if (!def.output.some((type) => socketTypesCompatible(type, filterType))) continue;
+          const hasMatch = def.output.some((type) =>
+            socketTypesCompatible(type, filterType)
+            || (type === 'ANNOTATION_SOURCE' && (filterType === 'DATA_FIELD' || filterType === 'IMAGE'))
+          );
+          if (!hasMatch) continue;
         }
       }
       const cat = def.category || 'uncategorized';
@@ -454,6 +470,8 @@ function Flow() {
   const autoRunTimer = useRef(null);
   const autoRunRef = useRef(null);
   const defaultWorkflowLoadAttemptedRef = useRef(false);
+  const lastPastedClipboardTextRef = useRef('');
+  const pasteRepeatCountRef = useRef(0);
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -554,6 +572,24 @@ function Flow() {
     }
   }, [reactFlow, refreshLoadNodeOutputs, setNodeOutputs]);
 
+  const refreshAnnotationNodeOutputs = useCallback((nodeId) => {
+    const node = reactFlow.getNode(nodeId);
+    if (!node) return;
+
+    const inputEdge = reactFlow.getEdges().find(
+      (edge) => edge.target === nodeId && getInputName(edge.targetHandle) === 'input'
+    );
+    const outputType = inputEdge ? getHandleType(inputEdge.sourceHandle) : 'ANNOTATION_SOURCE';
+    setNodeOutputs(nodeId, [outputType], ['Output']);
+
+    if (!inputEdge || outputType === 'ANNOTATION_SOURCE') return;
+
+    setEdges((prev) => prev.filter((edge) => {
+      if (edge.source !== nodeId) return true;
+      return socketTypesCompatible(outputType, getHandleType(edge.targetHandle));
+    }));
+  }, [reactFlow, setEdges, setNodeOutputs]);
+
   useEffect(() => {
     api.setMessageHandler((msg) => {
       console.log('[argonode] WS:', msg.type, msg.data?.node_id || msg.data?.node || '');
@@ -639,20 +675,33 @@ function Flow() {
         refreshLoadNodeOutputs(params.target);
       }, 0);
     }
+    const targetNode = reactFlow.getNode(params.target);
+    if (targetNode && (targetNode.data.className === 'Annotations' || targetNode.data.className === 'Markup')) {
+      setTimeout(() => {
+        refreshAnnotationNodeOutputs(params.target);
+      }, 0);
+    }
     scheduleAutoRun();
-  }, [refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
+  }, [reactFlow, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
 
   const handleEdgesChange = useCallback((changes) => {
     const currentEdges = reactFlow.getEdges();
     onEdgesChange(changes);
 
     const affectedPathTargets = new Set();
+    const affectedAnnotationTargets = new Set();
     for (const change of changes) {
       if (change.type !== 'remove') continue;
       const removedEdge = currentEdges.find((edge) => edge.id === change.id);
       if (!removedEdge) continue;
       if (getInputName(removedEdge.targetHandle) === 'path') {
         affectedPathTargets.add(removedEdge.target);
+      }
+      if (getInputName(removedEdge.targetHandle) === 'input') {
+        const targetNode = reactFlow.getNode(removedEdge.target);
+        if (targetNode && (targetNode.data.className === 'Annotations' || targetNode.data.className === 'Markup')) {
+          affectedAnnotationTargets.add(removedEdge.target);
+        }
       }
     }
 
@@ -663,7 +712,14 @@ function Flow() {
         });
       }, 0);
     }
-  }, [onEdgesChange, reactFlow, refreshLoadNodeOutputs]);
+    if (affectedAnnotationTargets.size > 0) {
+      setTimeout(() => {
+        affectedAnnotationTargets.forEach((nodeId) => {
+          refreshAnnotationNodeOutputs(nodeId);
+        });
+      }, 0);
+    }
+  }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs]);
 
   // ── Drop-on-blank: open filtered context menu ──────────────────────
 
@@ -749,12 +805,6 @@ function Flow() {
     });
   }, [reactFlow]);
 
-  const contextValue = useMemo(() => ({
-    onWidgetChange,
-    openFileBrowser,
-    onManualTrigger,
-  }), [onWidgetChange, openFileBrowser, onManualTrigger]);
-
   // ── Add node from context menu ──────────────────────────────────────
 
   const addNode = useCallback((className, def) => {
@@ -789,6 +839,7 @@ function Flow() {
         className,
         definition: def,
         widgetValues,
+        runtimeValues: {},
         previewImage: null,
         tableRows: null,
         meshData: null,
@@ -842,9 +893,12 @@ function Flow() {
         }
       } else {
         // Dragged from an input → connect from the first matching output on the new node
-        const outputIdx = def.output.findIndex((type) => socketTypesCompatible(type, filterType));
+        const outputIdx = def.output.findIndex((type) =>
+          socketTypesCompatible(type, filterType)
+          || (type === 'ANNOTATION_SOURCE' && (filterType === 'DATA_FIELD' || filterType === 'IMAGE'))
+        );
         if (outputIdx !== -1) {
-          const outputType = def.output[outputIdx];
+          const outputType = def.output[outputIdx] === 'ANNOTATION_SOURCE' ? filterType : def.output[outputIdx];
           const sourceHandle = `output::${outputIdx}::${outputType}`;
           const color = TYPE_COLORS[outputType] || 'var(--fallback-type)';
           setEdges((eds) => addEdge({
@@ -907,6 +961,101 @@ function Flow() {
     autoRunTimer.current = setTimeout(() => autoRunRef.current?.(), 300);
   }, []);
 
+  const onRuntimeValuesChange = useCallback((nodeId, patch, { scheduleRun = false } = {}) => {
+    if (!patch || typeof patch !== 'object') return;
+
+    setNodes((ns) => ns.map((n) => {
+      if (n.id !== nodeId) return n;
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          runtimeValues: { ...(n.data.runtimeValues || {}), ...patch },
+        },
+      };
+    }));
+
+    if (scheduleRun) {
+      scheduleAutoRun();
+    }
+  }, [setNodes, scheduleAutoRun]);
+
+  const pasteClipboardSelection = useCallback((clipboardText) => {
+    const payload = parseNodeClipboardPayload(clipboardText);
+    if (!payload) return false;
+
+    if (clipboardText === lastPastedClipboardTextRef.current) {
+      pasteRepeatCountRef.current += 1;
+    } else {
+      lastPastedClipboardTextRef.current = clipboardText;
+      pasteRepeatCountRef.current = 1;
+    }
+
+    const offsetAmount = 36 * pasteRepeatCountRef.current;
+    const pasted = instantiateNodeClipboardPayload(
+      payload,
+      nodeDefsRef.current,
+      nextIdRef.current,
+      { x: offsetAmount, y: offsetAmount },
+    );
+
+    if (pasted.nodes.length === 0) return false;
+
+    nextIdRef.current = pasted.nextNodeId;
+
+    setNodes((existing) => [
+      ...existing.map((node) => ({ ...node, selected: false })),
+      ...pasted.nodes,
+    ]);
+    setEdges((existing) => [
+      ...existing.map((edge) => ({ ...edge, selected: false })),
+      ...pasted.edges,
+    ]);
+
+    setTimeout(() => {
+      pasted.nodes.forEach((node) => {
+        if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
+          refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
+        }
+      });
+      pasted.nodes.forEach((node) => {
+        if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
+          refreshLoadNodeOutputs(node.id);
+        }
+      });
+      pasted.nodes.forEach((node) => {
+        if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
+          refreshAnnotationNodeOutputs(node.id);
+        }
+      });
+      pasted.nodes.forEach((node) => {
+        reactFlow.updateNodeInternals(node.id);
+      });
+    }, 0);
+
+    setStatus({
+      text: `Pasted ${pasted.nodes.length} node${pasted.nodes.length === 1 ? '' : 's'}.`,
+      level: 'info',
+    });
+    scheduleAutoRun();
+    return true;
+  }, [
+    reactFlow,
+    refreshAnnotationNodeOutputs,
+    refreshFolderNodeOutputs,
+    refreshLoadNodeOutputs,
+    scheduleAutoRun,
+    setEdges,
+    setNodes,
+  ]);
+
+  const contextValue = useMemo(() => ({
+    onWidgetChange,
+    onRuntimeValuesChange,
+    openFileBrowser,
+    onManualTrigger,
+  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger]);
+
   const clearGraph = useCallback(() => {
     setNodes([]);
     setEdges([]);
@@ -930,8 +1079,13 @@ function Flow() {
           refreshLoadNodeOutputs(node.id);
         }
       });
+      hydrated.nodes.forEach((node) => {
+        if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
+          refreshAnnotationNodeOutputs(node.id);
+        }
+      });
     }, 0);
-  }, [refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]);
+  }, [refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]);
 
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
@@ -1167,6 +1321,45 @@ function Flow() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [runWorkflow]);
+
+  useEffect(() => {
+    const handleCopy = (event) => {
+      if (isEditableTarget(event.target)) return;
+
+      const payload = buildNodeClipboardPayload(reactFlow.getNodes(), reactFlow.getEdges());
+      if (!payload) return;
+
+      const serialized = JSON.stringify(payload);
+      event.preventDefault();
+      event.clipboardData?.setData(NODE_CLIPBOARD_MIME, serialized);
+      event.clipboardData?.setData('text/plain', serialized);
+      setStatus({
+        text: `Copied ${payload.nodes.length} node${payload.nodes.length === 1 ? '' : 's'}.`,
+        level: 'info',
+      });
+    };
+
+    const handlePaste = (event) => {
+      if (isEditableTarget(event.target)) return;
+
+      const clipboardText = event.clipboardData?.getData(NODE_CLIPBOARD_MIME)
+        || event.clipboardData?.getData('text/plain')
+        || '';
+      if (!clipboardText) return;
+
+      const pasted = pasteClipboardSelection(clipboardText);
+      if (pasted) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('copy', handleCopy);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('copy', handleCopy);
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [pasteClipboardSelection, reactFlow]);
 
   // ── Context menu ────────────────────────────────────────────────────
 

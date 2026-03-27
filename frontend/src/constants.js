@@ -2,8 +2,8 @@
 
 export const DATA_TYPES = new Set([
   'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'COLORMAP',
-  'SAVE_LAYER', 'FONT', 'FILE_PATH', 'DIRECTORY', 'COORDPAIR',
+  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'ANNOTATION_SOURCE', 'COLORMAP',
+  'SAVE_LAYER', 'SAVE_VALUE', 'MESH_MODEL', 'FONT', 'FILE_PATH', 'DIRECTORY', 'COORDPAIR',
 ]);
 
 export const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
@@ -22,8 +22,11 @@ export const TYPE_COLORS = {
   STATS_SOURCE:  '#c084fc',
   CURSOR_SOURCE: '#a78bfa',
   VALUE_SOURCE:  '#60a5fa',
+  ANNOTATION_SOURCE: '#06b6d4',
   COLORMAP:      '#f472b6',
   SAVE_LAYER:    '#22c55e',
+  SAVE_VALUE:    '#4ade80',
+  MESH_MODEL:    '#14b8a6',
   FONT:          '#fb7185',
   FILE_PATH:     '#f59e0b',
   DIRECTORY:     '#f97316',
@@ -44,7 +47,9 @@ export const SOCKET_COMPATIBILITY = {
   CURSOR_SOURCE: new Set(['DATA_FIELD', 'LINE']),
   ANY_TABLE:     new Set(['MEASURE_TABLE', 'RECORD_TABLE']),
   VALUE_SOURCE:  new Set(['FLOAT', 'MEASURE_TABLE']),
+  ANNOTATION_SOURCE: new Set(['DATA_FIELD', 'IMAGE']),
   SAVE_LAYER:    new Set(['DATA_FIELD', 'IMAGE']),
+  SAVE_VALUE:    new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'MESH_MODEL', 'FLOAT']),
   FLOAT:         new Set(['INT']),
   INT:           new Set(['FLOAT']),
   LINE:          new Set(['COORDPAIR']),

@@ -1107,9 +1107,13 @@ def test_annotations():
     print("=== Test: Annotations ===")
     from backend.nodes.annotations import Annotations
     from backend.nodes.font_node import Font
+    from backend.data_types import ImageData
 
     node = Annotations()
     font_node = Font()
+    warnings = []
+    Annotations._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
+    Annotations._current_node_id = "test"
     field = DataField(
         data=np.linspace(0.0, 1.0, 64 * 64, dtype=np.float64).reshape(64, 64),
         xreal=1e-6,
@@ -1123,7 +1127,7 @@ def test_annotations():
     plain_preview = render_datafield_preview(field, "viridis")
     assert np.array_equal(plain_preview, base)
 
-    plain_field, = node.render(field, colormap="auto", show_scale_bar=False, show_color_map=False)
+    plain_field, = node.render(input=field, colormap="auto", show_scale_bar=False, show_color_map=False)
     assert isinstance(plain_field, DataField)
     assert np.array_equal(plain_field.data, field.data)
     assert plain_field.colormap == "viridis"
@@ -1132,19 +1136,19 @@ def test_annotations():
     assert plain.shape == base.shape
     assert np.array_equal(plain, base)
 
-    with_scale_field, = node.render(field, colormap="auto", show_scale_bar=True, show_color_map=False)
+    with_scale_field, = node.render(input=field, colormap="auto", show_scale_bar=True, show_color_map=False)
     with_scale = render_datafield_preview(with_scale_field, with_scale_field.colormap)
     assert with_scale.shape == base.shape
     assert not np.array_equal(with_scale, base)
 
-    with_legend_field, = node.render(field, colormap="auto", show_scale_bar=False, show_color_map=True)
+    with_legend_field, = node.render(input=field, colormap="auto", show_scale_bar=False, show_color_map=True)
     with_legend = render_datafield_preview(with_legend_field, with_legend_field.colormap)
     assert with_legend.shape[0] == base.shape[0]
     assert with_legend.shape[1] > base.shape[1]
     assert with_legend.shape[2] == 3
 
     larger_legend_field, = node.render(
-        field,
+        input=field,
         colormap="auto",
         show_scale_bar=False,
         show_color_map=True,
@@ -1156,7 +1160,7 @@ def test_annotations():
 
     annotation_font, = font_node.build("Arial")
     with_font_field, = node.render(
-        field,
+        input=field,
         colormap="auto",
         show_scale_bar=False,
         show_color_map=True,
@@ -1167,10 +1171,54 @@ def test_annotations():
     with_font = render_datafield_preview(with_font_field, with_font_field.colormap)
     assert with_font.shape == with_legend.shape
 
-    with_both_field, = node.render(field, colormap="auto", show_scale_bar=True, show_color_map=True)
+    with_both_field, = node.render(input=field, colormap="auto", show_scale_bar=True, show_color_map=True)
     with_both = render_datafield_preview(with_both_field, with_both_field.colormap)
     assert with_both.shape == with_legend.shape
     assert not np.array_equal(with_both[:, :base.shape[1]], base)
+
+    viewport_image = ImageData(
+        np.zeros((48, 64, 3), dtype=np.uint8),
+        metadata={
+            "annotation_context": {
+                "xreal": 2e-6,
+                "si_unit_xy": "m",
+                "legend_min": -1.5,
+                "legend_mid": 0.0,
+                "legend_max": 1.5,
+                "legend_unit": "V",
+                "colormap": "viridis",
+            },
+        },
+    )
+    annotated_image, = node.render(
+        input=viewport_image,
+        colormap="auto",
+        show_scale_bar=True,
+        show_color_map=True,
+        text_size=18.0,
+    )
+    assert isinstance(annotated_image, ImageData)
+    assert annotated_image.shape[0] == viewport_image.shape[0]
+    assert annotated_image.shape[1] > viewport_image.shape[1]
+    assert annotated_image.metadata["annotation_context"]["legend_unit"] == "V"
+    assert not np.array_equal(np.asarray(annotated_image)[:, :viewport_image.shape[1]], np.asarray(viewport_image))
+    assert warnings == []
+
+    plain_image = ImageData(np.zeros((32, 40, 3), dtype=np.uint8))
+    passthrough_image, = node.render(
+        input=plain_image,
+        colormap="auto",
+        show_scale_bar=True,
+        show_color_map=True,
+        text_size=18.0,
+    )
+    assert isinstance(passthrough_image, ImageData)
+    assert passthrough_image.shape == plain_image.shape
+    assert np.array_equal(np.asarray(passthrough_image), np.asarray(plain_image))
+    assert len(warnings) == 1
+    assert "no scale metadata" in warnings[0]
+
+    Annotations._broadcast_warning_fn = None
 
     print("  PASS\n")
 
@@ -1178,7 +1226,7 @@ def test_annotations():
 def test_markup():
     print("=== Test: Markup ===")
     from backend.nodes.markup import Markup
-    from backend.data_types import _preview_markup_stroke_width
+    from backend.data_types import ImageData, _preview_markup_stroke_width
 
     node = Markup()
     field = make_field(data=np.linspace(0.0, 1.0, 48 * 48, dtype=np.float64).reshape(48, 48))
@@ -1192,7 +1240,7 @@ def test_markup():
     Markup._current_node_id = "test"
 
     plain_field, = node.process(
-        field=field,
+        input=field,
         shape="line",
         stroke_color="#ffd54f",
         stroke_width=3,
@@ -1212,7 +1260,7 @@ def test_markup():
         {"kind": "arrow", "x1": 0.15, "y1": 0.85, "x2": 0.85, "y2": 0.2, "width": 4, "color": "#ffffff"},
     ])
     marked_field, = node.process(
-        field=field,
+        input=field,
         shape="arrow",
         stroke_color="#ffffff",
         stroke_width=4,
@@ -1221,6 +1269,23 @@ def test_markup():
     marked = render_datafield_preview(marked_field, marked_field.colormap)
     assert marked.shape == base.shape
     assert not np.array_equal(marked, base)
+
+    viewport_image = ImageData(
+        np.zeros((48, 48, 3), dtype=np.uint8),
+        metadata={"annotation_context": {"xreal": 1e-6, "si_unit_xy": "m"}},
+    )
+    image_markup, = node.process(
+        input=viewport_image,
+        shape="line",
+        stroke_color="#ff0000",
+        stroke_width=4,
+        markup_shapes=json.dumps([
+            {"kind": "line", "x1": 0.1, "y1": 0.2, "x2": 0.9, "y2": 0.8, "width": 4, "color": "#ff0000"},
+        ]),
+    )
+    assert isinstance(image_markup, ImageData)
+    assert image_markup.metadata["annotation_context"]["si_unit_xy"] == "m"
+    assert not np.array_equal(np.asarray(image_markup), np.asarray(viewport_image))
 
     Markup._broadcast_overlay_fn = None
     print("  PASS\n")
@@ -1323,6 +1388,36 @@ def test_load_file_npz():
         assert len(result) == 1
         assert np.allclose(result[0].data, data)
 
+    print("  PASS\n")
+
+
+def test_load_file_cache():
+    print("=== Test: Image cache ===")
+    from unittest.mock import patch
+    from backend.nodes.image import Image
+
+    node = Image()
+    Image._load_fields_cached.cache_clear()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        data = np.arange(16, dtype=np.float64).reshape(4, 4)
+        path = os.path.join(tmpdir, "cached.npy")
+        np.save(path, data)
+
+        with patch.object(Image, "_load_image_or_array", wraps=Image._load_image_or_array) as loader:
+            first, = node.load(filename=path)
+            second, = node.load(filename=path)
+            assert loader.call_count == 1
+
+        assert np.allclose(first.data, data)
+        assert np.allclose(second.data, data)
+        assert first is not second
+        first.data[0, 0] = -999.0
+
+        third, = node.load(filename=path)
+        assert third.data[0, 0] == data[0, 0]
+
+    Image._load_fields_cached.cache_clear()
     print("  PASS\n")
 
 
@@ -1484,6 +1579,31 @@ def test_load_demo():
     except FileNotFoundError:
         pass
 
+    print("  PASS\n")
+
+
+def test_load_demo_cache():
+    print("=== Test: ImageDemo cache ===")
+    from unittest.mock import patch
+    from backend.nodes.image import Image
+    from backend.nodes.image_demo import ImageDemo
+
+    node = ImageDemo()
+    Image._load_fields_cached.cache_clear()
+
+    with patch.object(Image, "_load_image_or_array", wraps=Image._load_image_or_array) as loader:
+        first, = node.load(name="nanoparticles.npy")
+        second, = node.load(name="nanoparticles.npy")
+        assert loader.call_count == 1
+
+    assert np.allclose(first.data, second.data)
+    assert first is not second
+    first.data[0, 0] = -999.0
+
+    third, = node.load(name="nanoparticles.npy")
+    assert third.data[0, 0] != -999.0
+
+    Image._load_fields_cached.cache_clear()
     print("  PASS\n")
 
 
@@ -1849,6 +1969,10 @@ def test_stats():
 def test_view3d():
     print("=== Test: View3D ===")
     from backend.nodes.view_3d import View3D
+    from backend.data_types import ImageData, MeshModel
+    import base64
+    import io
+    from PIL import Image
 
     node = View3D()
     field = make_field()
@@ -1857,8 +1981,25 @@ def test_view3d():
     View3D._broadcast_mesh_fn = lambda nid, mesh: captured.append(mesh)
     View3D._current_node_id = "test"
 
-    result = node.render(field, colormap="viridis", z_scale=2.0, resolution=64)
-    assert result == ()
+    preview_image = Image.new("RGB", (12, 10), (255, 0, 0))
+    preview_buffer = io.BytesIO()
+    preview_image.save(preview_buffer, format="PNG")
+    viewport_snapshot = "data:image/png;base64," + base64.b64encode(preview_buffer.getvalue()).decode()
+
+    result = node.render(
+        field,
+        colormap="viridis",
+        z_scale=2.0,
+        resolution=64,
+        make_solid=False,
+        viewport_snapshot=viewport_snapshot,
+    )
+    assert len(result) == 2
+    assert isinstance(result[0], MeshModel)
+    assert isinstance(result[1], ImageData)
+    assert result[1].shape == (10, 12, 3)
+    assert np.all(result[1][0, 0] == np.array([255, 0, 0], dtype=np.uint8))
+    assert result[1].metadata["annotation_context"]["si_unit_xy"] == field.si_unit_xy
     assert len(captured) == 1
 
     mesh = captured[0]
@@ -1873,7 +2014,6 @@ def test_view3d():
     assert mesh["z_min"] < mesh["z_max"]
 
     # Verify base64 data can be decoded
-    import base64
     z_bytes = base64.b64decode(mesh["z_data"])
     assert len(z_bytes) == mesh["width"] * mesh["height"] * 4  # float32
 
@@ -1883,11 +2023,175 @@ def test_view3d():
     # High-res input should be downsampled
     big_field = make_field(shape=(256, 256))
     captured.clear()
-    node.render(big_field, colormap="hot", z_scale=1.0, resolution=64)
+    node.render(big_field, colormap="hot", z_scale=1.0, resolution=64, make_solid=False)
     assert captured[0]["width"] <= 64
     assert captured[0]["height"] <= 64
 
+    # Separate map input should affect colors without changing mesh geometry
+    mesh_field = make_field(data=np.zeros((64, 64), dtype=np.float64), xreal=2.0, yreal=3.0)
+    map_field = make_field(data=np.tile(np.linspace(0.0, 1.0, 64, dtype=np.float64), (64, 1)), xreal=2.0, yreal=3.0)
+    captured.clear()
+    mapped_result = node.render(mesh_field, map_field=map_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
+    mapped_mesh = captured[0]
+    assert mapped_mesh["x_range"] == [float(mesh_field.xoff), float(mesh_field.xoff + mesh_field.xreal)]
+    assert mapped_mesh["y_range"] == [float(mesh_field.yoff), float(mesh_field.yoff + mesh_field.yreal)]
+    mapped_z = np.frombuffer(base64.b64decode(mapped_mesh["z_data"]), dtype=np.float32)
+    assert np.allclose(mapped_z, 0.0)
+    mapped_colors = np.frombuffer(base64.b64decode(mapped_mesh["colors"]), dtype=np.uint8)
+
+    captured.clear()
+    node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
+    mesh_only = captured[0]
+    mesh_only_colors = np.frombuffer(base64.b64decode(mesh_only["colors"]), dtype=np.uint8)
+    assert not np.array_equal(mapped_colors, mesh_only_colors)
+
+    # make_solid should add extra geometry beyond the top surface grid
+    solid_mesh = mapped_result[0]
+    assert isinstance(solid_mesh, MeshModel)
+    captured.clear()
+    solid_result = node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=16, make_solid=True)
+    assert len(solid_result[0].vertices) > 16 * 16
+    assert len(solid_result[0].faces) > (15 * 15 * 2)
+    solid_payload = captured[0]
+    assert solid_payload["make_solid"] is True
+    assert "positions" in solid_payload
+    assert "indices" in solid_payload
+    assert "vertex_colors" in solid_payload
+
     View3D._broadcast_mesh_fn = None
+    print("  PASS\n")
+
+
+def test_save_generic():
+    print("=== Test: Save ===")
+    from backend.nodes.save import Save
+    from backend.data_types import DataField, LineData, MeasureTable, MeshModel, RecordTable
+    import tifffile
+    from PIL import Image as PILImage
+
+    node = Save()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save scalar as TXT and JSON
+        node.save(filename="scalar", directory_path=tmpdir, format="TXT", value=3.5)
+        assert Path(tmpdir, "scalar.txt").read_text(encoding="utf-8").strip() == "3.5"
+        node.save(filename="scalar_json", directory_path=tmpdir, format="JSON", value=3.5)
+        assert json.loads(Path(tmpdir, "scalar_json.json").read_text(encoding="utf-8")) == {"value": 3.5}
+
+        # Save line as CSV, NPZ, and JSON
+        line = LineData(data=np.array([1.0, 2.0, 3.0]), x_axis=np.array([0.0, 0.5, 1.0]), x_unit="um", y_unit="nm")
+        node.save(filename="profile", directory_path=tmpdir, format="CSV", value=line)
+        csv_text = Path(tmpdir, "profile.csv").read_text(encoding="utf-8")
+        assert "x,y,x_unit,y_unit" in csv_text
+        assert "um" in csv_text and "nm" in csv_text
+        node.save(filename="profile_npz", directory_path=tmpdir, format="NPZ", value=line)
+        line_npz = np.load(Path(tmpdir, "profile_npz.npz"))
+        assert np.allclose(line_npz["x"], line.x_axis)
+        assert np.allclose(line_npz["y"], line.data)
+        node.save(filename="profile_json", directory_path=tmpdir, format="JSON", value=line)
+        line_json = json.loads(Path(tmpdir, "profile_json.json").read_text(encoding="utf-8"))
+        assert line_json["x_unit"] == "um"
+        assert line_json["y_unit"] == "nm"
+        assert line_json["x"] == [0.0, 0.5, 1.0]
+        assert line_json["y"] == [1.0, 2.0, 3.0]
+
+        # Save DATA_FIELD as TIFF, PNG, and NPZ
+        field = DataField(
+            data=np.array([[1.0, 2.0], [3.0, 4.5]], dtype=np.float64),
+            xreal=2e-6,
+            yreal=1e-6,
+            si_unit_xy="m",
+            si_unit_z="m",
+            colormap="viridis",
+        )
+        node.save(filename="field_tiff", directory_path=tmpdir, format="TIFF", value=field)
+        field_tiff = tifffile.imread(Path(tmpdir, "field_tiff.tiff"))
+        assert field_tiff.shape == field.data.shape
+        assert field_tiff.dtype == np.float32
+        assert np.allclose(field_tiff, field.data.astype(np.float32))
+
+        node.save(filename="field_png", directory_path=tmpdir, format="PNG", value=field)
+        field_png = np.asarray(PILImage.open(Path(tmpdir, "field_png.png")))
+        assert field_png.shape == (2, 2, 3)
+        assert field_png.dtype == np.uint8
+
+        node.save(filename="field_npz", directory_path=tmpdir, format="NPZ", value=field)
+        field_npz = np.load(Path(tmpdir, "field_npz.npz"))
+        assert np.allclose(field_npz["field"], field.data)
+
+        # Save IMAGE as PNG, TIFF, and NPZ
+        image = np.array(
+            [
+                [[255, 0, 0], [0, 255, 0]],
+                [[0, 0, 255], [255, 255, 0]],
+            ],
+            dtype=np.uint8,
+        )
+        node.save(filename="image_png", directory_path=tmpdir, format="PNG", value=image)
+        image_png = np.asarray(PILImage.open(Path(tmpdir, "image_png.png")))
+        assert image_png.shape == image.shape
+        assert np.array_equal(image_png, image)
+
+        node.save(filename="image_tiff", directory_path=tmpdir, format="TIFF", value=image)
+        image_tiff = tifffile.imread(Path(tmpdir, "image_tiff.tiff"))
+        assert image_tiff.shape == image.shape
+        assert image_tiff.dtype == np.uint8
+        assert np.array_equal(image_tiff, image)
+
+        node.save(filename="image_npz", directory_path=tmpdir, format="NPZ", value=image)
+        image_npz = np.load(Path(tmpdir, "image_npz.npz"))
+        assert np.array_equal(image_npz["image"], image)
+
+        # Save tables as CSV and JSON
+        measure_table = MeasureTable([
+            {"quantity": "Rq", "value": 1.23, "unit": "nm"},
+            {"quantity": "Ra", "value": 0.98, "unit": "nm"},
+        ])
+        node.save(filename="measurements_csv", directory_path=tmpdir, format="CSV", value=measure_table)
+        measure_csv = Path(tmpdir, "measurements_csv.csv").read_text(encoding="utf-8")
+        assert "quantity,value,unit" in measure_csv
+        assert "Rq,1.23,nm" in measure_csv
+        node.save(filename="measurements_json", directory_path=tmpdir, format="JSON", value=measure_table)
+        assert json.loads(Path(tmpdir, "measurements_json.json").read_text(encoding="utf-8")) == list(measure_table)
+
+        record_table = RecordTable([
+            {"label": "particle-1", "height": 12.0, "area": 44.0},
+            {"label": "particle-2", "height": 8.0, "area": 21.0},
+        ])
+        node.save(filename="records_csv", directory_path=tmpdir, format="CSV", value=record_table)
+        record_csv = Path(tmpdir, "records_csv.csv").read_text(encoding="utf-8")
+        assert "label,height,area" in record_csv
+        assert "particle-1,12.0,44.0" in record_csv
+        node.save(filename="records_json", directory_path=tmpdir, format="JSON", value=record_table)
+        assert json.loads(Path(tmpdir, "records_json.json").read_text(encoding="utf-8")) == list(record_table)
+
+        # Save mesh as OBJ and STL
+        mesh = MeshModel(
+            vertices=np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32),
+            faces=np.array([[0, 1, 2]], dtype=np.int32),
+        )
+        node.save(filename="triangle", directory_path=tmpdir, format="OBJ", value=mesh)
+        obj_text = Path(tmpdir, "triangle.obj").read_text(encoding="utf-8")
+        assert "v 0.0 0.0 0.0" in obj_text
+        assert "f 1 2 3" in obj_text
+
+        node.save(filename="triangle", directory_path=tmpdir, format="STL", value=mesh)
+        stl_text = Path(tmpdir, "triangle.stl").read_text(encoding="utf-8")
+        assert stl_text.startswith("solid argonode")
+        assert "facet normal" in stl_text
+
+        try:
+            node.save(filename="triangle", directory_path=tmpdir, format="PNG", value=mesh)
+            assert False, "Mesh should only be saveable as OBJ or STL"
+        except ValueError:
+            pass
+
+        try:
+            node.save(filename="field_bad", directory_path=tmpdir, format="CSV", value=field)
+            assert False, "DATA_FIELD should reject unsupported save formats"
+        except ValueError:
+            pass
+
     print("  PASS\n")
 
 
@@ -1940,6 +2244,7 @@ if __name__ == "__main__":
     test_load_demo()
     test_coordinate()
     test_range_slider()
+    test_save_generic()
     test_save_image()
 
     # Display

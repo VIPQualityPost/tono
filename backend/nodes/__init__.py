@@ -8,6 +8,7 @@ from backend.nodes import (
     coordinate_pair,
     number,
     range_slider,
+    save,
     save_image,
     # Filters
     gaussian_filter,

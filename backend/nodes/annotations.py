@@ -1,16 +1,28 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import COLORMAPS, DataField, normalize_font_spec, resolve_colormap_input
+from backend.data_types import (
+    COLORMAPS,
+    DataField,
+    ImageData,
+    _apply_annotation_overlay_from_context,
+    _annotation_context_from_image,
+    image_to_uint8,
+    normalize_font_spec,
+    resolve_colormap_input,
+)
 
 
 @register_node(display_name="Annotations")
 class Annotations:
+    _broadcast_warning_fn = None
+    _current_node_id: str = ""
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "field": ("DATA_FIELD",),
+                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
                 "colormap": (["auto"] + list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
                 "show_scale_bar": ("BOOLEAN", {"default": True}),
                 "show_color_map": ("BOOLEAN", {"default": True}),
@@ -27,18 +39,18 @@ class Annotations:
             },
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("annotated",)
+    RETURN_TYPES = ("ANNOTATION_SOURCE",)
+    RETURN_NAMES = ("Output",)
     FUNCTION = "render"
 
     DESCRIPTION = (
-        "Attach optional publication-style annotations to a DATA_FIELD without flattening the raw data. "
-        "The preview shows a scale bar and/or side colour legend, while downstream field operations keep the underlying AFM values."
+        "Attach optional publication-style annotations to a DATA_FIELD without flattening the raw data, "
+        "or annotate an IMAGE that carries viewport metadata from View3D."
     )
 
     def render(
         self,
-        field: DataField,
+        input,
         colormap: str,
         show_scale_bar: bool,
         show_color_map: bool,
@@ -46,24 +58,69 @@ class Annotations:
         colormap_map=None,
         font=None,
     ) -> tuple:
+        annotation_spec = {
+            "kind": "annotation",
+            "show_scale_bar": bool(show_scale_bar),
+            "show_color_map": bool(show_color_map),
+            "text_size": float(np.clip(text_size, 6.0, 96.0)) if np.isfinite(text_size) else 14.0,
+            "font": normalize_font_spec(font),
+        }
+
+        if isinstance(input, DataField):
+            resolved_colormap = resolve_colormap_input(
+                colormap,
+                colormap_input=colormap_map,
+                inherited=input.colormap,
+                default="gray",
+            )
+            out = input.replace(
+                colormap=resolved_colormap,
+                overlays=[
+                    *input.overlays,
+                    annotation_spec,
+                ],
+            )
+            return (out,)
+
+        context = _annotation_context_from_image(input)
+        if context is None:
+            self._send_warning(
+                "Annotations image input has no scale metadata, so scale bar and color-map legend cannot be added."
+            )
+            return (ImageData(image_to_uint8(input)),)
+
         resolved_colormap = resolve_colormap_input(
             colormap,
             colormap_input=colormap_map,
-            inherited=field.colormap,
+            inherited=context.get("colormap"),
             default="gray",
         )
-        text_size = float(np.clip(text_size, 6.0, 96.0)) if np.isfinite(text_size) else 14.0
-        out = field.replace(
-            colormap=resolved_colormap,
-            overlays=[
-                *field.overlays,
-                {
-                    "kind": "annotation",
-                    "show_scale_bar": bool(show_scale_bar),
-                    "show_color_map": bool(show_color_map),
-                    "text_size": text_size,
-                    "font": normalize_font_spec(font),
-                },
-            ],
+        context["colormap"] = resolved_colormap
+        missing_features = []
+        xreal = context.get("xreal")
+        if bool(show_scale_bar) and not (isinstance(xreal, (int, float)) and np.isfinite(float(xreal)) and float(xreal) > 0 and str(context.get("si_unit_xy", "")).strip()):
+            missing_features.append("scale bar")
+        if bool(show_color_map):
+            legend_values = (context.get("legend_min"), context.get("legend_mid"), context.get("legend_max"))
+            has_legend_values = all(
+                isinstance(value, (int, float)) and np.isfinite(float(value))
+                for value in legend_values
+            )
+            if not (has_legend_values and str(context.get("legend_unit", "")).strip()):
+                missing_features.append("color-map legend")
+        if missing_features:
+            self._send_warning(
+                f"Annotations image input is missing metadata for: {', '.join(missing_features)}."
+            )
+        annotated = _apply_annotation_overlay_from_context(
+            image_to_uint8(input),
+            context,
+            annotation_spec,
         )
-        return (out,)
+        return (ImageData(annotated, metadata={"annotation_context": context}),)
+
+    def _send_warning(self, message: str):
+        fn = Annotations._broadcast_warning_fn
+        nid = Annotations._current_node_id
+        if fn and nid:
+            fn(nid, message)

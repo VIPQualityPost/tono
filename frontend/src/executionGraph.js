@@ -52,11 +52,12 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
   for (const node of nodes) {
     if (!runnableNodeIds.has(node.id)) continue;
 
-    const { className, definition, widgetValues } = node.data;
+    const { className, definition, widgetValues, runtimeValues } = node.data;
     if (!definition) continue;
     if (excludeManualTrigger && definition.manual_trigger) continue;
 
     const inputs = {};
+    const valueBag = { ...(widgetValues || {}), ...(runtimeValues || {}) };
 
     const allWidgets = {
       ...(definition.input.required || {}),
@@ -66,8 +67,8 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
       const [type] = Array.isArray(spec) ? spec : [spec];
       if (DATA_TYPES.has(type)) continue;
       if (type === 'BUTTON') continue;
-      if (widgetValues[name] !== undefined) {
-        inputs[name] = widgetValues[name];
+      if (valueBag[name] !== undefined) {
+        inputs[name] = valueBag[name];
       }
     }
 

@@ -1,6 +1,14 @@
 from __future__ import annotations
 from backend.node_registry import register_node
-from backend.data_types import DataField, datafield_to_uint8, encode_preview
+from backend.data_types import (
+    DataField,
+    ImageData,
+    _apply_markup_overlay,
+    encode_preview,
+    image_metadata,
+    image_to_uint8,
+    render_datafield_preview,
+)
 from backend.nodes.helpers import _parse_markup_shapes, _normalize_markup_color
 
 
@@ -12,7 +20,7 @@ class Markup:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "field": ("DATA_FIELD",),
+                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
                 "shape": (["line", "rectangle", "circle", "arrow"], {"default": "line"}),
                 "stroke_color": ("STRING", {"default": "#ffd54f", "color_picker": True}),
                 "stroke_width": ("INT", {"default": 3, "min": 1, "max": 64, "step": 1}),
@@ -21,13 +29,13 @@ class Markup:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("annotated",)
+    RETURN_TYPES = ("ANNOTATION_SOURCE",)
+    RETURN_NAMES = ("Output",)
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Draw simple vector markup over a DATA_FIELD without flattening the underlying data. "
-        "Choose a shape mode, colour, and stroke width, then drag directly on the preview to place lines, rectangles, circles, or arrows."
+        "Draw simple vector markup over a DATA_FIELD without flattening the underlying data, "
+        "or rasterize markup directly onto an IMAGE."
     )
 
     _broadcast_overlay_fn = None
@@ -35,22 +43,32 @@ class Markup:
 
     def process(
         self,
-        field: DataField,
+        input,
         shape: str,
         stroke_color: str,
         stroke_width: int,
         markup_shapes: str,
     ) -> tuple:
         shapes = _parse_markup_shapes(markup_shapes)
-        out = field.replace(
-            overlays=[
-                *field.overlays,
-                {
-                    "kind": "markup",
-                    "shapes": shapes,
-                },
-            ],
-        )
+        markup_spec = {
+            "kind": "markup",
+            "shapes": shapes,
+        }
+
+        if isinstance(input, DataField):
+            out = input.replace(
+                overlays=[
+                    *input.overlays,
+                    markup_spec,
+                ],
+            )
+            preview_base = render_datafield_preview(input, input.colormap)
+        else:
+            preview_base = image_to_uint8(input)
+            out = ImageData(
+                _apply_markup_overlay(preview_base, None, markup_spec),
+                metadata=image_metadata(input),
+            )
 
         if Markup._broadcast_overlay_fn is not None:
             Markup._broadcast_overlay_fn(
@@ -58,7 +76,7 @@ class Markup:
                 {
                     "kind": "markup",
                     "section_title": "Markup",
-                    "image": encode_preview(datafield_to_uint8(field, field.colormap)),
+                    "image": encode_preview(preview_base),
                     "shape": str(shape),
                     "stroke_color": _normalize_markup_color(stroke_color),
                     "stroke_width": max(1, int(stroke_width)),
