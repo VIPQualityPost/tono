@@ -30,7 +30,7 @@ class ColormapAdjust:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("field",)
     FUNCTION = "process"
-    CATEGORY = "modify"
+
     DESCRIPTION = (
         "Adjust how a DATA_FIELD maps into its colormap without changing the underlying data. "
         "offset and scale operate in normalized display coordinates; Auto resets to the full data range."
@@ -71,7 +71,7 @@ class CropResizeField:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("field",)
     FUNCTION = "process"
-    CATEGORY = "modify"
+
     DESCRIPTION = (
         "Crop a DATA_FIELD with a draggable rectangle defined by two corners, then optionally resize it. "
         "Incoming COORD inputs can lock either corner. Cropping updates physical extents and offsets; "
@@ -212,7 +212,7 @@ class RotateField:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("field",)
     FUNCTION = "process"
-    CATEGORY = "modify"
+
     DESCRIPTION = (
         "Rotate a DATA_FIELD counterclockwise by an angle in degrees. "
         "Optionally expand the canvas to keep the full rotated field while preserving the field center."

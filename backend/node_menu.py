@@ -86,14 +86,13 @@ for category, class_names in MENU_LAYOUT.items():
         }
 
 
-def get_menu_metadata(class_name: str, fallback_category: str = "uncategorized") -> dict[str, Any]:
+def get_menu_metadata(class_name: str) -> dict[str, Any]:
     metadata = _NODE_METADATA.get(class_name)
     if metadata is not None:
         return dict(metadata)
 
-    fallback_order = _CATEGORY_ORDER.get(fallback_category, len(_CATEGORY_ORDER))
     return {
-        "category": fallback_category,
-        "category_order": fallback_order,
+        "category": "Unsorted",
+        "category_order": len(_CATEGORY_ORDER),
         "menu_order": 10_000,
     }

@@ -173,7 +173,7 @@ class DrawMask:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "process"
-    CATEGORY = "mask"
+
     DESCRIPTION = (
         "Paint a binary mask directly over an image preview. "
         "Pen size controls newly drawn strokes, the overlay lets you clear the mask, "
@@ -227,7 +227,7 @@ class ThresholdMask:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "process"
-    CATEGORY = "mask"
+
     DESCRIPTION = (
         "Create a binary mask by thresholding data. "
         "Otsu automatically finds the optimal threshold. "
@@ -295,7 +295,7 @@ class MaskMorphology:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "process"
-    CATEGORY = "mask"
+
     DESCRIPTION = (
         "Apply morphological operations to a binary mask. "
         "Dilate expands regions, erode shrinks them, "
@@ -358,7 +358,7 @@ class MaskInvert:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "process"
-    CATEGORY = "mask"
+
     DESCRIPTION = "Invert a binary mask — swap masked and unmasked regions."
 
     _broadcast_fn = None
@@ -400,7 +400,7 @@ class MaskCombine:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "process"
-    CATEGORY = "mask"
+
     DESCRIPTION = (
         "Combine two binary masks with a boolean operation. "
         "AND keeps overlap, OR merges, XOR keeps non-overlapping regions, "

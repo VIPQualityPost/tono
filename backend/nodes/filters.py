@@ -34,7 +34,7 @@ class GaussianFilter:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("filtered",)
     FUNCTION = "process"
-    CATEGORY = "filters"
+
     DESCRIPTION = "Apply a Gaussian blur. Equivalent to gwy_data_field_filter_gaussian."
 
     def process(self, field: DataField, sigma: float) -> tuple:
@@ -61,7 +61,7 @@ class MedianFilter:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("filtered",)
     FUNCTION = "process"
-    CATEGORY = "filters"
+
     DESCRIPTION = "Apply a median filter. Equivalent to gwy_data_field_filter_median."
 
     def process(self, field: DataField, size: int) -> tuple:
@@ -90,7 +90,7 @@ class EdgeDetect:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("edges",)
     FUNCTION = "process"
-    CATEGORY = "filters"
+
     DESCRIPTION = (
         "Detect edges using Sobel, Prewitt, Laplacian, or LoG operators. "
         "Equivalent to gwy_data_field_filter_sobel / gwy_data_field_filter_laplacian."
@@ -229,7 +229,7 @@ class FFTFilter1D:
     RETURN_TYPES = ("LINE",)
     RETURN_NAMES = ("filtered",)
     FUNCTION = "process"
-    CATEGORY = "filters"
+
     DESCRIPTION = (
         "Frequency-domain filtering of a 1-D line profile. "
         "Supports lowpass, highpass, bandpass, and notch (band-reject) modes "
@@ -295,7 +295,7 @@ class FFTFilter2D:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("filtered",)
     FUNCTION = "process"
-    CATEGORY = "filters"
+
     DESCRIPTION = (
         "Frequency-domain filtering of a 2-D data field. "
         "Supports lowpass, highpass, bandpass, and notch (band-reject) modes "

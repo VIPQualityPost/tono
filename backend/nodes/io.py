@@ -147,7 +147,7 @@ class Image:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("field",)
     FUNCTION = "load"
-    CATEGORY = "io"
+
     DESCRIPTION = (
         "Load any supported file. "
         "SPM formats (.gwy, .sxm, .ibw) provide calibrated dimensions; "
@@ -384,7 +384,7 @@ class ImageDemo:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("field",)
     FUNCTION = "load"
-    CATEGORY = "io"
+
     DESCRIPTION = "Load a bundled demo file so you can try the app without providing your own data."
 
     def load(self, name: str = "", colormap: str = "viridis", colormap_map=None):
@@ -408,7 +408,7 @@ class Folder:
     RETURN_TYPES = ("DIRECTORY",)
     RETURN_NAMES = ("directory",)
     FUNCTION = "list_files"
-    CATEGORY = "io"
+
     DESCRIPTION = (
         "Pick a folder and output its directory path plus one file socket per compatible image, array, or SPM file inside it. "
         "Supported files include common images, .npy/.npz arrays, and .gwy/.sxm/.ibw scans."
@@ -441,7 +441,7 @@ class Coordinate:
     RETURN_TYPES = ("COORD",)
     RETURN_NAMES = ("point",)
     FUNCTION = "process"
-    CATEGORY = "io"
+
     DESCRIPTION = "Output a fractional (x, y) coordinate pair in [0, 1]."
 
     def process(self, x: float, y: float) -> tuple:
@@ -464,7 +464,7 @@ class CoordinatePair:
     RETURN_TYPES = ("COORDPAIR",)
     RETURN_NAMES = ("coord pair",)
     FUNCTION = "process"
-    CATEGORY = "io"
+
     DESCRIPTION = "Output a pair of coordinates."
 
     def process(self, a: tuple, b: tuple) -> tuple:
@@ -490,7 +490,7 @@ class Number:
     RETURN_TYPES = ("FLOAT",)
     RETURN_NAMES = ("value",)
     FUNCTION = "process"
-    CATEGORY = "io"
+
     DESCRIPTION = (
         "Output a fixed numeric value. "
         "When connected to FLOAT inputs the exact value is used; "
@@ -528,7 +528,7 @@ class RangeSlider:
     RETURN_TYPES = ("FLOAT",)
     RETURN_NAMES = ("value",)
     FUNCTION = "process"
-    CATEGORY = "io"
+
     DESCRIPTION = (
         "Interactive float slider. Set min and max bounds, then drag the slider to output a FLOAT value."
     )
@@ -584,7 +584,7 @@ class SaveImage:
 
     RETURN_TYPES = ()
     FUNCTION = "save"
-    CATEGORY = "io"
+
     OUTPUT_NODE = True
     MANUAL_TRIGGER = True
     DESCRIPTION = (

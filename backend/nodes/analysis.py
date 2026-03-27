@@ -33,7 +33,7 @@ class Statistics:
     RETURN_TYPES = ("MEASURE_TABLE",)
     RETURN_NAMES = ("stats",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Compute basic surface statistics: min, max, mean, RMS roughness, median, "
         "and skewness. Equivalent to gwy_data_field_get_min/max/avg/rms."
@@ -82,7 +82,7 @@ class Histogram:
     RETURN_TYPES = ("MEASURE_TABLE", "COORDPAIR",)
     RETURN_NAMES = ("measurements", "marker pair",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Compute the height distribution histogram (DH). "
         "Use log scale to reveal small peaks next to a dominant background. "
@@ -185,7 +185,7 @@ class Cursors:
     RETURN_TYPES = ("MEASURE_TABLE","COORDPAIR",)
     RETURN_NAMES = ("measurement","coord pair",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Place two cursors on a line plot or 2D field. "
         "On lines it reports x/y positions and dx/dy. "
@@ -353,7 +353,7 @@ class FFT2D:
     RETURN_TYPES = ("DATA_FIELD", "DATA_FIELD", "DATA_FIELD", "DATA_FIELD")
     RETURN_NAMES = ("log_magnitude", "magnitude", "phase", "psdf")
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Compute the 2D FFT with optional windowing and mean/plane subtraction. "
         "Outputs log magnitude, magnitude, phase, and PSDF as separate channels. "
@@ -511,7 +511,7 @@ class InverseFFT2D:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("image",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Reconstruct a spatial-domain image from a 2D frequency spectrum. "
         "For exact reconstruction, connect magnitude/phase (or log magnitude/phase, "
@@ -658,7 +658,7 @@ class CrossSection:
     RETURN_TYPES = ("LINE", "COORDPAIR",)
     RETURN_NAMES = ("profile", "marker pair",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Extract a cross-section profile along a line between two points. "
         "Drag the markers on the image to set the line endpoints. "
@@ -1010,7 +1010,7 @@ class Stats:
     RETURN_TYPES = ("FLOAT",)
     RETURN_NAMES = ("value",)
     FUNCTION = "process"
-    CATEGORY = "analysis"
+
     DESCRIPTION = (
         "Compute a contextual scalar statistic from a LINE, record table, DATA_FIELD, or IMAGE. "
         "The available operations adapt to the connected input type."

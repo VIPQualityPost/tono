@@ -30,7 +30,7 @@ class ParticleAnalysis:
     RETURN_TYPES = ("RECORD_TABLE",)
     RETURN_NAMES = ("particle_stats",)
     FUNCTION = "process"
-    CATEGORY = "particles"
+
     DESCRIPTION = (
         "Label connected particle regions in a binary mask and compute per-particle "
         "statistics: area, equivalent diameter, mean/max height, bounding box. "

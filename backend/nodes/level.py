@@ -33,7 +33,7 @@ class PlaneLevelField:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("leveled",)
     FUNCTION = "process"
-    CATEGORY = "level"
+
     DESCRIPTION = (
         "Fit and subtract a least-squares plane from the data. "
         "Equivalent to gwy_data_field_fit_plane + gwy_data_field_plane_level."
@@ -83,7 +83,7 @@ class PolyLevelField:
     RETURN_TYPES = ("DATA_FIELD", "DATA_FIELD")
     RETURN_NAMES = ("leveled", "background")
     FUNCTION = "process"
-    CATEGORY = "level"
+
     DESCRIPTION = (
         "Fit and subtract a polynomial background of given degree in x and y. "
         "Equivalent to gwy_data_field_fit_polynom."
@@ -131,7 +131,7 @@ class FixZero:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("zeroed",)
     FUNCTION = "process"
-    CATEGORY = "level"
+
     DESCRIPTION = (
         "Shift data so that the minimum (or mean/median) is zero. "
         "Equivalent to fix_zero in Gwyddion's level.c."

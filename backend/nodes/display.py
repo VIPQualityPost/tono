@@ -348,7 +348,7 @@ class ColorMap:
     RETURN_TYPES = ("COLORMAP",)
     RETURN_NAMES = ("colormap",)
     FUNCTION = "build"
-    CATEGORY = "display"
+
     DESCRIPTION = (
         "Build a reusable colormap. Choose a preset, or create a custom gradient with min/max colours "
         "and any number of intermediate stops."
@@ -389,7 +389,7 @@ class Font:
     RETURN_TYPES = ("FONT",)
     RETURN_NAMES = ("font",)
     FUNCTION = "build"
-    CATEGORY = "display"
+
     DESCRIPTION = (
         "Build a reusable font spec for annotation overlays. Choose a discovered system font, "
         "use the default fallback stack, or point to a custom font file."
@@ -429,7 +429,7 @@ class Annotations:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("annotated",)
     FUNCTION = "render"
-    CATEGORY = "display"
+
     DESCRIPTION = (
         "Attach optional publication-style annotations to a DATA_FIELD without flattening the raw data. "
         "The preview shows a scale bar and/or side colour legend, while downstream field operations keep the underlying AFM values."
@@ -488,7 +488,7 @@ class Markup:
     RETURN_TYPES = ("DATA_FIELD",)
     RETURN_NAMES = ("annotated",)
     FUNCTION = "process"
-    CATEGORY = "display"
+
     DESCRIPTION = (
         "Draw simple vector markup over a DATA_FIELD without flattening the underlying data. "
         "Choose a shape mode, colour, and stroke width, then drag directly on the preview to place lines, rectangles, circles, or arrows."
@@ -549,7 +549,7 @@ class PreviewImage:
 
     RETURN_TYPES = ()
     FUNCTION = "preview"
-    CATEGORY = "display"
+
     OUTPUT_NODE = True
     DESCRIPTION = "Display an IMAGE or DATA_FIELD as a coloured thumbnail. Connect either input."
 
@@ -614,7 +614,7 @@ class View3D:
 
     RETURN_TYPES = ()
     FUNCTION = "render"
-    CATEGORY = "display"
+
     OUTPUT_NODE = True
     DESCRIPTION = (
         "Interactive 3D surface view of a DATA_FIELD. "
@@ -691,7 +691,7 @@ class PrintTable:
 
     RETURN_TYPES = ()
     FUNCTION = "print_table"
-    CATEGORY = "display"
+
     OUTPUT_NODE = True
     DESCRIPTION = "Send a measurement or record table to the browser as a WebSocket message for display."
 
@@ -724,7 +724,7 @@ class ValueDisplay:
     RETURN_TYPES = ("FLOAT",)
     RETURN_NAMES = ("value",)
     FUNCTION = "display_value"
-    CATEGORY = "display"
+
     DESCRIPTION = "Display a FLOAT, or a selected numeric row from a measurement table, and pass the value through unchanged."
 
     _broadcast_value_fn = None
