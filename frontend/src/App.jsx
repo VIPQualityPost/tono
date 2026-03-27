@@ -1318,63 +1318,38 @@ function Flow() {
     );
     if (!payload) return;
 
-    duplicateDragRef.current = {
-      draggedIds,
-      originPositions: Object.fromEntries(
-        draggedNodes.map((candidate) => [
-          String(candidate.id),
-          {
-            x: Number(candidate.position?.x) || 0,
-            y: Number(candidate.position?.y) || 0,
-          },
-        ]),
-      ),
-      payload,
-    };
-  }, [reactFlow]);
-
-  const onNodeDragStop = useCallback((_event, node) => {
-    const duplicateState = duplicateDragRef.current;
-    duplicateDragRef.current = null;
-    if (!duplicateState) return;
-
-    const currentNodes = reactFlow.getNodes();
-    const anchorId = duplicateState.draggedIds.includes(String(node.id))
-      ? String(node.id)
-      : duplicateState.draggedIds[0];
-    const anchorNode = currentNodes.find((candidate) => String(candidate.id) === anchorId);
-    const anchorOrigin = duplicateState.originPositions[anchorId];
-    if (!anchorNode || !anchorOrigin) return;
-
-    const offset = {
-      x: (Number(anchorNode.position?.x) || 0) - anchorOrigin.x,
-      y: (Number(anchorNode.position?.y) || 0) - anchorOrigin.y,
-    };
-
     const duplicated = instantiateNodeClipboardPayload(
-      duplicateState.payload,
+      payload,
       nodeDefsRef.current,
       nextIdRef.current,
-      offset,
+      { x: 0, y: 0 },
       { keepExternalSources: true },
     );
     if (duplicated.nodes.length === 0) return;
 
     nextIdRef.current = duplicated.nextNodeId;
-    const draggedIdSet = new Set(duplicateState.draggedIds);
+
+    const originPositions = Object.fromEntries(
+      draggedNodes.map((candidate) => [
+        String(candidate.id),
+        {
+          x: Number(candidate.position?.x) || 0,
+          y: Number(candidate.position?.y) || 0,
+        },
+      ]),
+    );
+    const duplicateSourceById = Object.fromEntries(
+      payload.nodes.map((candidate, index) => [duplicated.nodes[index]?.id, String(candidate.id)]).filter(([id]) => !!id),
+    );
+
+    duplicateDragRef.current = {
+      draggedIds,
+      originPositions,
+      duplicateSourceById,
+    };
 
     setNodes((existing) => [
-      ...existing.map((candidate) => {
-        const originalPosition = duplicateState.originPositions[String(candidate.id)];
-        if (!draggedIdSet.has(String(candidate.id)) || !originalPosition) {
-          return { ...candidate, selected: false };
-        }
-        return {
-          ...candidate,
-          selected: false,
-          position: originalPosition,
-        };
-      }),
+      ...existing.map((candidate) => ({ ...candidate, selected: false })),
       ...duplicated.nodes,
     ]);
     setEdges((existing) => [
@@ -1383,12 +1358,107 @@ function Flow() {
     ]);
 
     initializeDynamicNodes(duplicated.nodes);
+  }, [initializeDynamicNodes, reactFlow, setEdges, setNodes]);
+
+  const onNodeDrag = useCallback((_event, node) => {
+    const duplicateState = duplicateDragRef.current;
+    if (!duplicateState) return;
+
+    const anchorId = duplicateState.draggedIds.includes(String(node.id))
+      ? String(node.id)
+      : duplicateState.draggedIds[0];
+    const anchorOrigin = duplicateState.originPositions[anchorId];
+    if (!anchorOrigin) return;
+
+    const offset = {
+      x: (Number(node.position?.x) || 0) - anchorOrigin.x,
+      y: (Number(node.position?.y) || 0) - anchorOrigin.y,
+    };
+    const draggedIdSet = new Set(duplicateState.draggedIds);
+
+    setNodes((existing) => existing.map((candidate) => {
+      const candidateId = String(candidate.id);
+      const originalPosition = duplicateState.originPositions[candidateId];
+      if (draggedIdSet.has(candidateId) && originalPosition) {
+        return {
+          ...candidate,
+          selected: false,
+          position: originalPosition,
+        };
+      }
+
+      const sourceId = duplicateState.duplicateSourceById[candidateId];
+      if (sourceId) {
+        const sourceOrigin = duplicateState.originPositions[sourceId];
+        if (!sourceOrigin) return candidate;
+        return {
+          ...candidate,
+          selected: true,
+          position: {
+            x: sourceOrigin.x + offset.x,
+            y: sourceOrigin.y + offset.y,
+          },
+        };
+      }
+
+      return candidate;
+    }));
+  }, [setNodes]);
+
+  const onNodeDragStop = useCallback((_event, node) => {
+    const duplicateState = duplicateDragRef.current;
+    duplicateDragRef.current = null;
+    if (!duplicateState) return;
+
+    const anchorId = duplicateState.draggedIds.includes(String(node.id))
+      ? String(node.id)
+      : duplicateState.draggedIds[0];
+    const anchorOrigin = duplicateState.originPositions[anchorId];
+    if (!anchorOrigin) return;
+
+    const offset = {
+      x: (Number(node.position?.x) || 0) - anchorOrigin.x,
+      y: (Number(node.position?.y) || 0) - anchorOrigin.y,
+    };
+    const draggedIdSet = new Set(duplicateState.draggedIds);
+
+    setNodes((existing) => existing.map((candidate) => {
+      const candidateId = String(candidate.id);
+      const originalPosition = duplicateState.originPositions[candidateId];
+      if (draggedIdSet.has(candidateId) && originalPosition) {
+        return {
+          ...candidate,
+          selected: false,
+          position: originalPosition,
+        };
+      }
+
+      const sourceId = duplicateState.duplicateSourceById[candidateId];
+      if (sourceId) {
+        const sourceOrigin = duplicateState.originPositions[sourceId];
+        if (!sourceOrigin) return candidate;
+        return {
+          ...candidate,
+          selected: true,
+          position: {
+            x: sourceOrigin.x + offset.x,
+            y: sourceOrigin.y + offset.y,
+          },
+        };
+      }
+
+      return {
+        ...candidate,
+        selected: false,
+      };
+    }));
+
     setStatus({
-      text: `Duplicated ${duplicated.nodes.length} node${duplicated.nodes.length === 1 ? '' : 's'}.`,
+      text: `Duplicated ${Object.keys(duplicateState.duplicateSourceById).length} node${Object.keys(duplicateState.duplicateSourceById).length === 1 ? '' : 's'}.`,
       level: 'info',
     });
     scheduleAutoRun();
-  }, [initializeDynamicNodes, reactFlow, scheduleAutoRun, setEdges, setNodes]);
+  }, [scheduleAutoRun, setNodes]);
 
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
@@ -1502,6 +1572,7 @@ function Flow() {
             onNodesChange={onNodesChange}
             onEdgesChange={handleEdgesChange}
             onNodeDragStart={onNodeDragStart}
+            onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onConnect={onConnect}
             onConnectEnd={onConnectEnd}
