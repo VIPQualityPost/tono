@@ -18,6 +18,7 @@ import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
 import {
   buildNodeClipboardPayload,
+  buildNodeClipboardPayloadForIds,
   instantiateNodeClipboardPayload,
   NODE_CLIPBOARD_MIME,
   parseNodeClipboardPayload,
@@ -472,6 +473,7 @@ function Flow() {
   const defaultWorkflowLoadAttemptedRef = useRef(false);
   const lastPastedClipboardTextRef = useRef('');
   const pasteRepeatCountRef = useRef(0);
+  const duplicateDragRef = useRef(null);
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -980,6 +982,29 @@ function Flow() {
     }
   }, [setNodes, scheduleAutoRun]);
 
+  const initializeDynamicNodes = useCallback((nodesToInitialize) => {
+    setTimeout(() => {
+      nodesToInitialize.forEach((node) => {
+        if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
+          refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
+        }
+      });
+      nodesToInitialize.forEach((node) => {
+        if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
+          refreshLoadNodeOutputs(node.id);
+        }
+      });
+      nodesToInitialize.forEach((node) => {
+        if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
+          refreshAnnotationNodeOutputs(node.id);
+        }
+      });
+      nodesToInitialize.forEach((node) => {
+        reactFlow.updateNodeInternals(node.id);
+      });
+    }, 0);
+  }, [reactFlow, refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs]);
+
   const pasteClipboardSelection = useCallback((clipboardText) => {
     const payload = parseNodeClipboardPayload(clipboardText);
     if (!payload) return false;
@@ -1012,26 +1037,7 @@ function Flow() {
       ...pasted.edges,
     ]);
 
-    setTimeout(() => {
-      pasted.nodes.forEach((node) => {
-        if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
-          refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
-        }
-      });
-      pasted.nodes.forEach((node) => {
-        if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
-          refreshLoadNodeOutputs(node.id);
-        }
-      });
-      pasted.nodes.forEach((node) => {
-        if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
-          refreshAnnotationNodeOutputs(node.id);
-        }
-      });
-      pasted.nodes.forEach((node) => {
-        reactFlow.updateNodeInternals(node.id);
-      });
-    }, 0);
+    initializeDynamicNodes(pasted.nodes);
 
     setStatus({
       text: `Pasted ${pasted.nodes.length} node${pasted.nodes.length === 1 ? '' : 's'}.`,
@@ -1040,10 +1046,8 @@ function Flow() {
     scheduleAutoRun();
     return true;
   }, [
+    initializeDynamicNodes,
     reactFlow,
-    refreshAnnotationNodeOutputs,
-    refreshFolderNodeOutputs,
-    refreshLoadNodeOutputs,
     scheduleAutoRun,
     setEdges,
     setNodes,
@@ -1068,24 +1072,8 @@ function Flow() {
     setNodes(hydrated.nodes);
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
-    setTimeout(() => {
-      hydrated.nodes.forEach((node) => {
-        if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
-          refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
-        }
-      });
-      hydrated.nodes.forEach((node) => {
-        if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
-          refreshLoadNodeOutputs(node.id);
-        }
-      });
-      hydrated.nodes.forEach((node) => {
-        if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
-          refreshAnnotationNodeOutputs(node.id);
-        }
-      });
-    }, 0);
-  }, [refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]);
+    initializeDynamicNodes(hydrated.nodes);
+  }, [initializeDynamicNodes, setNodes, setEdges]);
 
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
@@ -1309,6 +1297,99 @@ function Flow() {
     }
   }, []);
 
+  const onNodeDragStart = useCallback((event, node) => {
+    if (!(event.ctrlKey || event.metaKey)) {
+      duplicateDragRef.current = null;
+      return;
+    }
+
+    const currentNodes = reactFlow.getNodes();
+    const draggedNodes = node.selected
+      ? currentNodes.filter((candidate) => candidate.selected)
+      : currentNodes.filter((candidate) => candidate.id === node.id);
+    if (draggedNodes.length === 0) return;
+
+    const draggedIds = draggedNodes.map((candidate) => String(candidate.id));
+    const payload = buildNodeClipboardPayloadForIds(
+      currentNodes,
+      reactFlow.getEdges(),
+      draggedIds,
+      { includeIncomingExternalEdges: true },
+    );
+    if (!payload) return;
+
+    duplicateDragRef.current = {
+      draggedIds,
+      originPositions: Object.fromEntries(
+        draggedNodes.map((candidate) => [
+          String(candidate.id),
+          {
+            x: Number(candidate.position?.x) || 0,
+            y: Number(candidate.position?.y) || 0,
+          },
+        ]),
+      ),
+      payload,
+    };
+  }, [reactFlow]);
+
+  const onNodeDragStop = useCallback((_event, node) => {
+    const duplicateState = duplicateDragRef.current;
+    duplicateDragRef.current = null;
+    if (!duplicateState) return;
+
+    const currentNodes = reactFlow.getNodes();
+    const anchorId = duplicateState.draggedIds.includes(String(node.id))
+      ? String(node.id)
+      : duplicateState.draggedIds[0];
+    const anchorNode = currentNodes.find((candidate) => String(candidate.id) === anchorId);
+    const anchorOrigin = duplicateState.originPositions[anchorId];
+    if (!anchorNode || !anchorOrigin) return;
+
+    const offset = {
+      x: (Number(anchorNode.position?.x) || 0) - anchorOrigin.x,
+      y: (Number(anchorNode.position?.y) || 0) - anchorOrigin.y,
+    };
+
+    const duplicated = instantiateNodeClipboardPayload(
+      duplicateState.payload,
+      nodeDefsRef.current,
+      nextIdRef.current,
+      offset,
+      { keepExternalSources: true },
+    );
+    if (duplicated.nodes.length === 0) return;
+
+    nextIdRef.current = duplicated.nextNodeId;
+    const draggedIdSet = new Set(duplicateState.draggedIds);
+
+    setNodes((existing) => [
+      ...existing.map((candidate) => {
+        const originalPosition = duplicateState.originPositions[String(candidate.id)];
+        if (!draggedIdSet.has(String(candidate.id)) || !originalPosition) {
+          return { ...candidate, selected: false };
+        }
+        return {
+          ...candidate,
+          selected: false,
+          position: originalPosition,
+        };
+      }),
+      ...duplicated.nodes,
+    ]);
+    setEdges((existing) => [
+      ...existing.map((edge) => ({ ...edge, selected: false })),
+      ...duplicated.edges,
+    ]);
+
+    initializeDynamicNodes(duplicated.nodes);
+    setStatus({
+      text: `Duplicated ${duplicated.nodes.length} node${duplicated.nodes.length === 1 ? '' : 's'}.`,
+      level: 'info',
+    });
+    scheduleAutoRun();
+  }, [initializeDynamicNodes, reactFlow, scheduleAutoRun, setEdges, setNodes]);
+
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
   useEffect(() => {
@@ -1420,12 +1501,15 @@ function Flow() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={handleEdgesChange}
+            onNodeDragStart={onNodeDragStart}
+            onNodeDragStop={onNodeDragStop}
             onConnect={onConnect}
             onConnectEnd={onConnectEnd}
             isValidConnection={isValidConnection}
             nodeTypes={NODE_TYPES}
             onPaneContextMenu={onPaneContextMenu}
             colorMode="dark"
+            multiSelectionKeyCode={['Shift']}
             deleteKeyCode={['Backspace', 'Delete']}
             defaultEdgeOptions={{ type: 'default' }}
           >

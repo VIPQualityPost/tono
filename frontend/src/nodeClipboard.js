@@ -18,13 +18,26 @@ function clonePlainObject(value) {
   return cloneValue(value) || {};
 }
 
-export function buildNodeClipboardPayload(nodes, edges) {
-  const selectedNodes = Array.isArray(nodes) ? nodes.filter((node) => node?.selected) : [];
+export function buildNodeClipboardPayloadForIds(
+  nodes,
+  edges,
+  nodeIds,
+  { includeIncomingExternalEdges = false } = {},
+) {
+  const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id)));
+  const selectedNodes = Array.isArray(nodes)
+    ? nodes.filter((node) => selectedIdSet.has(String(node.id)))
+    : [];
   if (selectedNodes.length === 0) return null;
 
-  const selectedIds = new Set(selectedNodes.map((node) => String(node.id)));
-  const internalEdges = Array.isArray(edges)
-    ? edges.filter((edge) => selectedIds.has(String(edge.source)) && selectedIds.has(String(edge.target)))
+  const capturedEdges = Array.isArray(edges)
+    ? edges.filter((edge) => (
+      selectedIdSet.has(String(edge.target))
+      && (
+        selectedIdSet.has(String(edge.source))
+        || (includeIncomingExternalEdges && !selectedIdSet.has(String(edge.source)))
+      )
+    ))
     : [];
 
   return {
@@ -45,7 +58,7 @@ export function buildNodeClipboardPayload(nodes, edges) {
         runtimeValues: clonePlainObject(node.data?.runtimeValues),
       },
     })),
-    edges: internalEdges.map((edge) => ({
+    edges: capturedEdges.map((edge) => ({
       source: String(edge.source),
       sourceHandle: edge.sourceHandle,
       target: String(edge.target),
@@ -53,6 +66,13 @@ export function buildNodeClipboardPayload(nodes, edges) {
       ...(edge.style ? { style: { ...edge.style } } : {}),
     })),
   };
+}
+
+export function buildNodeClipboardPayload(nodes, edges) {
+  const selectedIds = Array.isArray(nodes)
+    ? nodes.filter((node) => node?.selected).map((node) => String(node.id))
+    : [];
+  return buildNodeClipboardPayloadForIds(nodes, edges, selectedIds);
 }
 
 export function parseNodeClipboardPayload(text) {
@@ -68,7 +88,13 @@ export function parseNodeClipboardPayload(text) {
   }
 }
 
-export function instantiateNodeClipboardPayload(payload, defs = {}, nextNodeId = 1, offset = { x: 40, y: 40 }) {
+export function instantiateNodeClipboardPayload(
+  payload,
+  defs = {},
+  nextNodeId = 1,
+  offset = { x: 40, y: 40 },
+  { keepExternalSources = false } = {},
+) {
   if (!payload || !Array.isArray(payload.nodes) || payload.nodes.length === 0) {
     return { nodes: [], edges: [], nextNodeId };
   }
@@ -109,10 +135,13 @@ export function instantiateNodeClipboardPayload(payload, defs = {}, nextNodeId =
   });
 
   const edges = payload.edges
-    .filter((edge) => idMap.has(String(edge.source)) && idMap.has(String(edge.target)))
+    .filter((edge) => (
+      idMap.has(String(edge.target))
+      && (idMap.has(String(edge.source)) || keepExternalSources)
+    ))
     .map((edge, index) => ({
-      id: `e${idMap.get(String(edge.source))}-${idMap.get(String(edge.target))}-${index}`,
-      source: idMap.get(String(edge.source)),
+      id: `e${idMap.get(String(edge.source)) || String(edge.source)}-${idMap.get(String(edge.target))}-${index}`,
+      source: idMap.get(String(edge.source)) || String(edge.source),
       sourceHandle: edge.sourceHandle,
       target: idMap.get(String(edge.target)),
       targetHandle: edge.targetHandle,

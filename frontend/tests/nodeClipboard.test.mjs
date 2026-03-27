@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildNodeClipboardPayload,
+  buildNodeClipboardPayloadForIds,
   instantiateNodeClipboardPayload,
   NODE_CLIPBOARD_KIND,
   parseNodeClipboardPayload,
@@ -143,6 +144,93 @@ test('instantiateNodeClipboardPayload remaps ids, offsets positions, and hydrate
       targetHandle: 'input::field::DATA_FIELD',
       selected: false,
       style: { stroke: '#abc', strokeWidth: 2 },
+    },
+  ]);
+});
+
+test('buildNodeClipboardPayloadForIds can include upstream external edges for duplicated nodes', () => {
+  const nodes = [
+    { id: '1', position: { x: 0, y: 0 }, data: { className: 'Image' } },
+    { id: '2', position: { x: 100, y: 0 }, data: { className: 'Preview' } },
+    { id: '3', position: { x: 200, y: 0 }, data: { className: 'Save' } },
+  ];
+
+  const edges = [
+    {
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '2',
+      targetHandle: 'input::field::DATA_FIELD',
+    },
+    {
+      source: '2',
+      sourceHandle: 'output::0::IMAGE',
+      target: '3',
+      targetHandle: 'input::value::SAVE_VALUE',
+    },
+  ];
+
+  const payload = buildNodeClipboardPayloadForIds(nodes, edges, ['2'], {
+    includeIncomingExternalEdges: true,
+  });
+
+  assert.equal(payload.nodes.length, 1);
+  assert.deepEqual(payload.edges, [
+    {
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '2',
+      targetHandle: 'input::field::DATA_FIELD',
+    },
+  ]);
+});
+
+test('instantiateNodeClipboardPayload can keep external upstream sources when duplicating nodes', () => {
+  const payload = {
+    kind: NODE_CLIPBOARD_KIND,
+    version: 1,
+    nodes: [
+      {
+        id: '2',
+        position: { x: 100, y: 0 },
+        data: {
+          label: 'Preview',
+          className: 'Preview',
+          widgetValues: { colormap: 'viridis' },
+        },
+      },
+    ],
+    edges: [
+      {
+        source: '1',
+        sourceHandle: 'output::0::DATA_FIELD',
+        target: '2',
+        targetHandle: 'input::field::DATA_FIELD',
+      },
+    ],
+  };
+
+  const defs = {
+    Preview: { output: ['IMAGE'], output_name: ['preview'] },
+  };
+
+  const instantiated = instantiateNodeClipboardPayload(
+    payload,
+    defs,
+    7,
+    { x: 50, y: 25 },
+    { keepExternalSources: true },
+  );
+
+  assert.deepEqual(instantiated.nodes.map((node) => node.id), ['7']);
+  assert.deepEqual(instantiated.edges, [
+    {
+      id: 'e1-7-0',
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '7',
+      targetHandle: 'input::field::DATA_FIELD',
+      selected: false,
     },
   ]);
 });
