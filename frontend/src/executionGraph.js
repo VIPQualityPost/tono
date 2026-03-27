@@ -1,4 +1,4 @@
-import { DATA_TYPES } from './constants';
+import { DATA_TYPES } from './constants.js';
 
 function getInputName(handleId) {
   return handleId.split('::')[1];
@@ -8,11 +8,24 @@ function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
 }
 
+function resolveExecutionEdge(edge) {
+  const original = edge?.data?.groupProxyOriginal;
+  if (!original) return edge;
+  return {
+    ...edge,
+    source: original.source || edge.source,
+    sourceHandle: original.sourceHandle || edge.sourceHandle,
+    target: original.target || edge.target,
+    targetHandle: original.targetHandle || edge.targetHandle,
+  };
+}
+
 export function getConnectedNodeIds(edges) {
   const connectedNodeIds = new Set();
   for (const edge of edges) {
-    connectedNodeIds.add(edge.source);
-    connectedNodeIds.add(edge.target);
+    const resolved = resolveExecutionEdge(edge);
+    connectedNodeIds.add(resolved.source);
+    connectedNodeIds.add(resolved.target);
   }
   return connectedNodeIds;
 }
@@ -53,6 +66,7 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
     if (!runnableNodeIds.has(node.id)) continue;
 
     const { className, definition, widgetValues, runtimeValues } = node.data;
+    if (className === 'Group') continue;
     if (!definition) continue;
     if (excludeManualTrigger && definition.manual_trigger) continue;
 
@@ -72,7 +86,9 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
       }
     }
 
-    const incoming = edges.filter((edge) => edge.target === node.id);
+    const incoming = edges
+      .map(resolveExecutionEdge)
+      .filter((edge) => edge.target === node.id);
     for (const edge of incoming) {
       const inputName = getInputName(edge.targetHandle);
       const outputSlot = getOutputSlot(edge.sourceHandle);
@@ -97,12 +113,15 @@ export function hasBlockingAutoRunInput(node, edges) {
   const required = def.input.required || {};
   for (const [name, spec] of Object.entries(required)) {
     const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-    const hiddenByConnectedInput = (() => {
-      const raw = opts?.hide_when_input_connected;
-      if (!raw) return false;
-      const inputs = Array.isArray(raw) ? raw : [raw];
-      return inputs.some((inputName) => edges.some(
-        (edge) => edge.target === node.id && getInputName(edge.targetHandle) === String(inputName)
+      const hiddenByConnectedInput = (() => {
+        const raw = opts?.hide_when_input_connected;
+        if (!raw) return false;
+        const inputs = Array.isArray(raw) ? raw : [raw];
+        return inputs.some((inputName) => edges.some(
+          (edge) => {
+            const resolved = resolveExecutionEdge(edge);
+            return resolved.target === node.id && getInputName(resolved.targetHandle) === String(inputName);
+          }
       ));
     })();
 
@@ -114,7 +133,10 @@ export function hasBlockingAutoRunInput(node, edges) {
     }
     if (!DATA_TYPES.has(type)) continue;
     const hasEdge = edges.some(
-      (edge) => edge.target === node.id && getInputName(edge.targetHandle) === name
+      (edge) => {
+        const resolved = resolveExecutionEdge(edge);
+        return resolved.target === node.id && getInputName(resolved.targetHandle) === name;
+      }
     );
     if (!hasEdge) return true;
   }

@@ -36,6 +36,13 @@ import {
 
 const NODE_TYPES = { custom: CustomNode };
 
+const GROUP_PADDING_X = 24;
+const GROUP_PADDING_Y = 24;
+const GROUP_HEADER_HEIGHT = 36;
+const GROUP_WORKSPACE_INSET = 12;
+const GROUP_MIN_WIDTH = 260;
+const GROUP_MIN_HEIGHT = 180;
+
 // ── Handle ID helpers ─────────────────────────────────────────────────
 
 function getHandleType(handleId) {
@@ -48,6 +55,228 @@ function getInputName(handleId) {
 
 function getOutputSlot(handleId) {
   return parseInt(handleId.split('::')[1], 10);
+}
+
+function encodeProxyHandleRef(handleId) {
+  return encodeURIComponent(String(handleId || ''));
+}
+
+function decodeProxyHandleRef(encoded) {
+  try {
+    return decodeURIComponent(String(encoded || ''));
+  } catch {
+    return String(encoded || '');
+  }
+}
+
+function parseGroupProxyHandle(handleId) {
+  const text = String(handleId || '');
+  if (!text.startsWith('group-proxy::')) return null;
+  const parts = text.split('::');
+  if (parts.length < 5) return null;
+  return {
+    direction: parts[1],
+    nodeId: parts[2],
+    type: parts[3],
+    realHandle: decodeProxyHandleRef(parts.slice(4).join('::')),
+  };
+}
+
+function getConnectionHandleType(handleId) {
+  const proxy = parseGroupProxyHandle(handleId);
+  return proxy?.type || getHandleType(handleId);
+}
+
+function getNodeDimension(node, axis) {
+  if (axis === 'width') return node.measured?.width || node.width || node.style?.width || 200;
+  return node.measured?.height || node.height || node.style?.height || 120;
+}
+
+function getNodeAbsolutePosition(node, nodeMap) {
+  if (node?.positionAbsolute) {
+    return {
+      x: Number(node.positionAbsolute.x) || 0,
+      y: Number(node.positionAbsolute.y) || 0,
+    };
+  }
+  const local = {
+    x: Number(node?.position?.x) || 0,
+    y: Number(node?.position?.y) || 0,
+  };
+  if (!node?.parentId) return local;
+  const parent = nodeMap.get(String(node.parentId));
+  if (!parent) return local;
+  const parentPos = getNodeAbsolutePosition(parent, nodeMap);
+  return { x: parentPos.x + local.x, y: parentPos.y + local.y };
+}
+
+function collectGroupDescendantIds(nodes, groupId) {
+  const allNodes = Array.isArray(nodes) ? nodes : [];
+  const result = new Set();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of allNodes) {
+      const parentId = node?.parentId ? String(node.parentId) : null;
+      const nodeId = String(node?.id);
+      if (!parentId) continue;
+      if ((parentId === String(groupId) || result.has(parentId)) && !result.has(nodeId)) {
+        result.add(nodeId);
+        changed = true;
+      }
+    }
+  }
+  return result;
+}
+
+function getGroupMembers(nodes, groupId) {
+  const descendants = collectGroupDescendantIds(nodes, groupId);
+  return Array.from(descendants);
+}
+
+function getGroupDisplayBounds(nodes, selectedIds) {
+  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const id of selectedIds) {
+    const node = nodeMap.get(String(id));
+    if (!node) continue;
+    const pos = getNodeAbsolutePosition(node, nodeMap);
+    const width = Number(getNodeDimension(node, 'width')) || 200;
+    const height = Number(getNodeDimension(node, 'height')) || 120;
+    minX = Math.min(minX, pos.x);
+    minY = Math.min(minY, pos.y);
+    maxX = Math.max(maxX, pos.x + width);
+    maxY = Math.max(maxY, pos.y + height);
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+function getGroupWorkspaceBounds(groupNode, nodeMap) {
+  const pos = getNodeAbsolutePosition(groupNode, nodeMap);
+  const width = Number(getNodeDimension(groupNode, 'width')) || 200;
+  const height = Number(getNodeDimension(groupNode, 'height')) || 120;
+  return {
+    left: pos.x + GROUP_WORKSPACE_INSET,
+    top: pos.y + GROUP_HEADER_HEIGHT + GROUP_WORKSPACE_INSET,
+    right: pos.x + width - GROUP_WORKSPACE_INSET,
+    bottom: pos.y + height - GROUP_WORKSPACE_INSET,
+  };
+}
+
+function getNodeCenter(node, nodeMap) {
+  const pos = getNodeAbsolutePosition(node, nodeMap);
+  const width = Number(getNodeDimension(node, 'width')) || 200;
+  const height = Number(getNodeDimension(node, 'height')) || 120;
+  return {
+    x: pos.x + width / 2,
+    y: pos.y + height / 2,
+  };
+}
+
+function rectContainsPoint(rect, point) {
+  return point.x >= rect.left
+    && point.x <= rect.right
+    && point.y >= rect.top
+    && point.y <= rect.bottom;
+}
+
+function findExpandedGroupDropTarget(nodes, draggedNodeIds, anchorNodeId) {
+  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+  const anchorNode = nodeMap.get(String(anchorNodeId));
+  if (!anchorNode) return null;
+
+  const draggedIdSet = new Set((draggedNodeIds || []).map((id) => String(id)));
+  const anchorCenter = getNodeCenter(anchorNode, nodeMap);
+
+  return (nodes || [])
+    .filter((node) => (
+      node?.data?.className === 'Group'
+      && !node?.data?.collapsed
+      && !draggedIdSet.has(String(node.id))
+    ))
+    .map((node) => {
+      const rect = getGroupWorkspaceBounds(node, nodeMap);
+      return {
+        node,
+        rect,
+        area: Math.max(1, rect.right - rect.left) * Math.max(1, rect.bottom - rect.top),
+      };
+    })
+    .filter(({ rect }) => rectContainsPoint(rect, anchorCenter))
+    .sort((a, b) => a.area - b.area)[0]?.node || null;
+}
+
+function getInputLabelForNode(node, inputName) {
+  const inputs = {
+    ...(node?.data?.definition?.input?.required || {}),
+    ...(node?.data?.definition?.input?.optional || {}),
+  };
+  const spec = inputs[inputName];
+  if (!spec) return inputName;
+  const [, opts] = Array.isArray(spec) ? spec : [spec, {}];
+  return opts?.label || inputName;
+}
+
+function getOutputLabelForNode(node, slot, handleId) {
+  const outputNames = node?.data?.definition?.output_name || [];
+  const outputTypes = node?.data?.definition?.output || [];
+  if (Number.isInteger(slot) && outputNames[slot]) return outputNames[slot];
+  const proxy = parseGroupProxyHandle(handleId);
+  return proxy?.realHandle ? getOutputLabelForNode(node, getOutputSlot(proxy.realHandle), proxy.realHandle) : outputTypes[slot] || 'output';
+}
+
+function buildGroupProxyData(groupId, nodes, edges) {
+  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+  const memberIds = new Set(getGroupMembers(nodes, groupId));
+  const proxyInputs = [];
+  const proxyOutputs = [];
+  const seenInputs = new Set();
+  const seenOutputs = new Set();
+
+  for (const edge of edges || []) {
+    const original = edge?.data?.groupProxyOriginal || {};
+    const sourceId = String(original.source || edge.source);
+    const targetId = String(original.target || edge.target);
+    const sourceHandle = original.sourceHandle || edge.sourceHandle;
+    const targetHandle = original.targetHandle || edge.targetHandle;
+    const sourceInside = memberIds.has(sourceId);
+    const targetInside = memberIds.has(targetId);
+
+    if (!sourceInside && targetInside) {
+      const key = `${targetId}::${targetHandle}`;
+      if (seenInputs.has(key)) continue;
+      seenInputs.add(key);
+      proxyInputs.push({
+        key,
+        type: getHandleType(targetHandle),
+        label: getInputLabelForNode(nodeMap.get(targetId), getInputName(targetHandle)),
+        handleId: `group-proxy::in::${targetId}::${getHandleType(targetHandle)}::${encodeProxyHandleRef(targetHandle)}`,
+      });
+    }
+
+    if (sourceInside && !targetInside) {
+      const key = `${sourceId}::${sourceHandle}`;
+      if (seenOutputs.has(key)) continue;
+      seenOutputs.add(key);
+      proxyOutputs.push({
+        key,
+        type: getHandleType(sourceHandle),
+        label: getOutputLabelForNode(nodeMap.get(sourceId), getOutputSlot(sourceHandle), sourceHandle),
+        handleId: `group-proxy::out::${sourceId}::${getHandleType(sourceHandle)}::${encodeProxyHandleRef(sourceHandle)}`,
+      });
+    }
+  }
+
+  return { proxyInputs, proxyOutputs, childCount: memberIds.size };
 }
 
 function sameStringArray(a = [], b = []) {
@@ -243,7 +472,7 @@ async function captureViewportBlob(viewportEl, options) {
 
 // ── Context menu component ────────────────────────────────────────────
 
-function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirection }) {
+function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirection, selectedNodeCount = 0, onCreateGroup = null }) {
   const [openCat, setOpenCat] = useState(null);
   const [search, setSearch] = useState('');
   const menuRef = useRef(null);
@@ -396,6 +625,15 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
           />
         </div>
 
+        {!filterType && selectedNodeCount > 1 && typeof onCreateGroup === 'function' && (
+          <div
+            className="context-item"
+            onClick={() => { onCreateGroup(); onClose(); }}
+          >
+            create group
+          </div>
+        )}
+
         {searchResults ? (
           <div className="ctx-list">
             {searchResults.length === 0 ? (
@@ -474,6 +712,7 @@ function Flow() {
   const lastPastedClipboardTextRef = useRef('');
   const pasteRepeatCountRef = useRef(0);
   const duplicateDragRef = useRef(null);
+  const activeDragNodeIdRef = useRef(null);
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -483,6 +722,286 @@ function Flow() {
       n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } }
     ));
   }, [setNodes]);
+
+  const refreshGroupNode = useCallback((groupId, explicitNodes = null, explicitEdges = null) => {
+    const currentNodes = explicitNodes || reactFlow.getNodes();
+    const currentEdges = explicitEdges || reactFlow.getEdges();
+    const groupNode = currentNodes.find((node) => node.id === groupId && node.data?.className === 'Group');
+    if (!groupNode) return;
+
+    const { proxyInputs, proxyOutputs, childCount } = buildGroupProxyData(groupId, currentNodes, currentEdges);
+    setNodes((prev) => prev.map((node) => (
+      node.id !== groupId
+        ? node
+        : {
+          ...node,
+          className: 'group-shell',
+          data: {
+            ...node.data,
+            proxyInputs,
+            proxyOutputs,
+            childCount,
+          },
+        }
+    )));
+    reactFlow.updateNodeInternals(groupId);
+  }, [reactFlow, setNodes]);
+
+  const toggleGroupCollapse = useCallback((groupId) => {
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    const groupNode = currentNodes.find((node) => node.id === groupId && node.data?.className === 'Group');
+    if (!groupNode) return;
+
+    const memberIds = new Set(getGroupMembers(currentNodes, groupId));
+    const collapsed = !groupNode.data?.collapsed;
+    const proxyData = buildGroupProxyData(groupId, currentNodes, currentEdges);
+
+    const nextNodes = currentNodes.map((node) => {
+      if (memberIds.has(String(node.id))) {
+        return { ...node, hidden: collapsed };
+      }
+      if (node.id !== groupId) return node;
+      const expandedSize = groupNode.data?.expandedSize || {
+        width: Number(groupNode.style?.width) || 320,
+        height: Number(groupNode.style?.height) || 240,
+      };
+      const collapsedHeight = Math.max(74, 38 + Math.max(proxyData.proxyInputs.length, proxyData.proxyOutputs.length, 1) * 24 + 26);
+      return {
+        ...node,
+        style: collapsed
+          ? { ...(node.style || {}), width: 260, height: collapsedHeight }
+          : { ...(node.style || {}), width: expandedSize.width, height: expandedSize.height },
+        data: {
+          ...node.data,
+          collapsed,
+          expandedSize,
+          proxyInputs: proxyData.proxyInputs,
+          proxyOutputs: proxyData.proxyOutputs,
+          childCount: proxyData.childCount,
+        },
+      };
+    });
+
+    const nextEdges = currentEdges.map((edge) => {
+      if (collapsed) {
+        if (edge.data?.groupProxyOwner === groupId || edge.data?.groupInternalHiddenBy === groupId) {
+          return edge;
+        }
+        const sourceInside = memberIds.has(String(edge.source));
+        const targetInside = memberIds.has(String(edge.target));
+        if (sourceInside && targetInside) {
+          return {
+            ...edge,
+            hidden: true,
+            data: { ...(edge.data || {}), groupInternalHiddenBy: groupId },
+          };
+        }
+        if (!sourceInside && targetInside) {
+          return {
+            ...edge,
+            target: groupId,
+            targetHandle: `group-proxy::in::${edge.target}::${getHandleType(edge.targetHandle)}::${encodeProxyHandleRef(edge.targetHandle)}`,
+            data: {
+              ...(edge.data || {}),
+              groupProxyOwner: groupId,
+              groupProxyOriginal: {
+                target: edge.target,
+                targetHandle: edge.targetHandle,
+              },
+            },
+          };
+        }
+        if (sourceInside && !targetInside) {
+          return {
+            ...edge,
+            source: groupId,
+            sourceHandle: `group-proxy::out::${edge.source}::${getHandleType(edge.sourceHandle)}::${encodeProxyHandleRef(edge.sourceHandle)}`,
+            data: {
+              ...(edge.data || {}),
+              groupProxyOwner: groupId,
+              groupProxyOriginal: {
+                source: edge.source,
+                sourceHandle: edge.sourceHandle,
+              },
+            },
+          };
+        }
+        return edge;
+      }
+
+      if (edge.data?.groupInternalHiddenBy === groupId) {
+        const nextData = { ...(edge.data || {}) };
+        delete nextData.groupInternalHiddenBy;
+        return {
+          ...edge,
+          hidden: false,
+          data: Object.keys(nextData).length > 0 ? nextData : undefined,
+        };
+      }
+      if (edge.data?.groupProxyOwner === groupId) {
+        const nextData = { ...(edge.data || {}) };
+        const original = nextData.groupProxyOriginal || {};
+        delete nextData.groupProxyOwner;
+        delete nextData.groupProxyOriginal;
+        return {
+          ...edge,
+          source: original.source || edge.source,
+          sourceHandle: original.sourceHandle || edge.sourceHandle,
+          target: original.target || edge.target,
+          targetHandle: original.targetHandle || edge.targetHandle,
+          data: Object.keys(nextData).length > 0 ? nextData : undefined,
+        };
+      }
+      return edge;
+    });
+
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setTimeout(() => refreshGroupNode(groupId, nextNodes, nextEdges), 0);
+  }, [reactFlow, refreshGroupNode, setEdges, setNodes]);
+
+  const ungroupGroup = useCallback((groupId) => {
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    const nodeMap = new Map(currentNodes.map((node) => [String(node.id), node]));
+    const groupNode = nodeMap.get(String(groupId));
+    if (!groupNode || groupNode.data?.className !== 'Group') return;
+
+    const memberIds = new Set(getGroupMembers(currentNodes, groupId));
+    const groupSelected = !!groupNode.selected;
+
+    const nextNodes = currentNodes
+      .filter((node) => String(node.id) !== String(groupId))
+      .map((node) => {
+        if (!memberIds.has(String(node.id))) return node;
+        const absolute = getNodeAbsolutePosition(node, nodeMap);
+        return {
+          ...node,
+          parentId: undefined,
+          extent: undefined,
+          hidden: false,
+          selected: groupSelected,
+          position: absolute,
+        };
+      });
+
+    const nextEdges = currentEdges
+      .map((edge) => {
+        if (edge.data?.groupInternalHiddenBy === groupId) {
+          const nextData = { ...(edge.data || {}) };
+          delete nextData.groupInternalHiddenBy;
+          return {
+            ...edge,
+            hidden: false,
+            data: Object.keys(nextData).length > 0 ? nextData : undefined,
+          };
+        }
+        if (edge.data?.groupProxyOwner === groupId) {
+          const nextData = { ...(edge.data || {}) };
+          const original = nextData.groupProxyOriginal || {};
+          delete nextData.groupProxyOwner;
+          delete nextData.groupProxyOriginal;
+          return {
+            ...edge,
+            source: original.source || edge.source,
+            sourceHandle: original.sourceHandle || edge.sourceHandle,
+            target: original.target || edge.target,
+            targetHandle: original.targetHandle || edge.targetHandle,
+            hidden: false,
+            data: Object.keys(nextData).length > 0 ? nextData : undefined,
+          };
+        }
+        return edge;
+      })
+      .filter((edge) => String(edge.source) !== String(groupId) && String(edge.target) !== String(groupId));
+
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setTimeout(() => {
+      reactFlow.getNodes()
+        .filter((node) => node.data?.className === 'Group')
+        .forEach((node) => refreshGroupNode(node.id, nextNodes, nextEdges));
+    }, 0);
+  }, [reactFlow, refreshGroupNode, setEdges, setNodes]);
+
+  const createGroupFromSelection = useCallback(() => {
+    const currentNodes = reactFlow.getNodes();
+    const selectedNodes = currentNodes.filter((node) => node.selected && node.data?.className !== 'Group');
+    if (selectedNodes.length < 2) return;
+
+    const selectedIds = selectedNodes.map((node) => String(node.id));
+    const bounds = getGroupDisplayBounds(currentNodes, selectedIds);
+    if (!bounds) return;
+
+    const groupId = String(nextIdRef.current++);
+    const groupPosition = {
+      x: bounds.minX - GROUP_PADDING_X,
+      y: bounds.minY - (GROUP_HEADER_HEIGHT + GROUP_PADDING_Y),
+    };
+    const groupWidth = Math.max(
+      GROUP_MIN_WIDTH,
+      Math.round(bounds.maxX - bounds.minX + GROUP_PADDING_X * 2),
+    );
+    const groupHeight = Math.max(
+      GROUP_MIN_HEIGHT,
+      Math.round(bounds.maxY - bounds.minY + GROUP_HEADER_HEIGHT + GROUP_PADDING_Y * 2),
+    );
+
+    const groupNode = {
+      id: groupId,
+      type: 'custom',
+      className: 'group-shell',
+      position: groupPosition,
+      dragHandle: '.drag-handle',
+      style: { width: groupWidth, height: groupHeight },
+      data: {
+        label: 'group',
+        className: 'Group',
+        definition: null,
+        widgetValues: {},
+        runtimeValues: {},
+        collapsed: false,
+        expandedSize: { width: groupWidth, height: groupHeight },
+        proxyInputs: [],
+        proxyOutputs: [],
+        childCount: selectedNodes.length,
+        previewImage: null,
+        tableRows: null,
+        meshData: null,
+        overlay: null,
+        scalarValue: null,
+        processingTimeMs: null,
+        warning: null,
+      },
+      selected: true,
+    };
+
+    const nodeMap = new Map(currentNodes.map((node) => [String(node.id), node]));
+    const nextNodes = [
+      ...currentNodes.map((node) => {
+        if (!selectedIds.includes(String(node.id))) {
+          return { ...node, selected: false };
+        }
+        const absolute = getNodeAbsolutePosition(node, nodeMap);
+        return {
+          ...node,
+          selected: false,
+          parentId: groupId,
+          extent: 'parent',
+          hidden: false,
+          position: {
+            x: absolute.x - groupPosition.x,
+            y: absolute.y - groupPosition.y,
+          },
+        };
+      }),
+      groupNode,
+    ];
+
+    setNodes(nextNodes);
+    setTimeout(() => refreshGroupNode(groupId, nextNodes, reactFlow.getEdges()), 0);
+  }, [reactFlow, refreshGroupNode, setNodes]);
 
   const setNodeOutputs = useCallback((nodeId, output, outputName, extraDefinitionPatch = {}) => {
     setNodes((prev) => prev.map((node) => {
@@ -516,9 +1035,12 @@ function Flow() {
       (e) => e.target === nodeId && getInputName(e.targetHandle) === 'path'
     );
     if (!edge) return null;
-    const sourceNode = reactFlow.getNode(edge.source);
+    const original = edge.data?.groupProxyOriginal || {};
+    const sourceId = original.source || edge.source;
+    const sourceHandle = original.sourceHandle || edge.sourceHandle;
+    const sourceNode = reactFlow.getNode(sourceId);
     const outputPaths = sourceNode?.data?.definition?.output_paths;
-    const outputSlot = getOutputSlot(edge.sourceHandle);
+    const outputSlot = getOutputSlot(sourceHandle);
     if (Array.isArray(outputPaths) && typeof outputPaths[outputSlot] === 'string') {
       return outputPaths[outputSlot];
     }
@@ -653,38 +1175,66 @@ function Flow() {
   // ── Connection handling ─────────────────────────────────────────────
 
   const isValidConnection = useCallback((connection) => {
-    const srcType = getHandleType(connection.sourceHandle);
-    const tgtType = getHandleType(connection.targetHandle);
+    const srcType = getConnectionHandleType(connection.sourceHandle);
+    const tgtType = getConnectionHandleType(connection.targetHandle);
     return socketTypesCompatible(srcType, tgtType);
   }, []);
 
   const onConnect = useCallback((params) => {
-    const type = getHandleType(params.sourceHandle);
+    const sourceProxy = parseGroupProxyHandle(params.sourceHandle);
+    const targetProxy = parseGroupProxyHandle(params.targetHandle);
+    const type = getConnectionHandleType(params.sourceHandle);
     const color = TYPE_COLORS[type] || 'var(--fallback-type)';
+
+    const edgePayload = {
+      ...params,
+      style: { stroke: color, strokeWidth: 2 },
+    };
+    const proxyOriginal = {};
+    if (sourceProxy) {
+      proxyOriginal.source = sourceProxy.nodeId;
+      proxyOriginal.sourceHandle = sourceProxy.realHandle;
+    }
+    if (targetProxy) {
+      proxyOriginal.target = targetProxy.nodeId;
+      proxyOriginal.targetHandle = targetProxy.realHandle;
+    }
+    if (Object.keys(proxyOriginal).length > 0) {
+      edgePayload.data = {
+        ...(edgePayload.data || {}),
+        groupProxyOwner: sourceProxy?.direction === 'out' ? params.source : params.target,
+        groupProxyOriginal: proxyOriginal,
+      };
+    }
 
     setEdges((eds) => {
       // Enforce single connection per input handle
       const filtered = eds.filter(
         (e) => !(e.target === params.target && e.targetHandle === params.targetHandle)
       );
-      return addEdge(
-        { ...params, style: { stroke: color, strokeWidth: 2 } },
-        filtered
-      );
+      return addEdge(edgePayload, filtered);
     });
-    if (getInputName(params.targetHandle) === 'path') {
+    const effectiveTargetHandle = targetProxy?.realHandle || params.targetHandle;
+    const effectiveTargetNode = targetProxy?.nodeId || params.target;
+    if (getInputName(effectiveTargetHandle) === 'path') {
       setTimeout(() => {
-        refreshLoadNodeOutputs(params.target);
+        refreshLoadNodeOutputs(effectiveTargetNode);
       }, 0);
     }
-    const targetNode = reactFlow.getNode(params.target);
+    const targetNode = reactFlow.getNode(effectiveTargetNode);
     if (targetNode && (targetNode.data.className === 'Annotations' || targetNode.data.className === 'Markup')) {
       setTimeout(() => {
-        refreshAnnotationNodeOutputs(params.target);
+        refreshAnnotationNodeOutputs(effectiveTargetNode);
       }, 0);
     }
+    if (sourceProxy) {
+      setTimeout(() => refreshGroupNode(params.source), 0);
+    }
+    if (targetProxy) {
+      setTimeout(() => refreshGroupNode(params.target), 0);
+    }
     scheduleAutoRun();
-  }, [reactFlow, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
+  }, [reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
 
   const handleEdgesChange = useCallback((changes) => {
     const currentEdges = reactFlow.getEdges();
@@ -721,7 +1271,68 @@ function Flow() {
         });
       }, 0);
     }
-  }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs]);
+    setTimeout(() => {
+      reactFlow.getNodes()
+        .filter((node) => node.data?.className === 'Group')
+        .forEach((node) => refreshGroupNode(node.id));
+    }, 0);
+  }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs]);
+
+  const handleNodesChange = useCallback((changes) => {
+    const currentNodes = reactFlow.getNodes();
+    const selectedGroupIds = new Set(
+      changes
+        .filter((change) => change.type === 'select' && change.selected)
+        .map((change) => String(change.id))
+        .filter((id) => currentNodes.some((node) => String(node.id) === id && node.data?.className === 'Group')),
+    );
+    const removedIds = new Set(
+      changes
+        .filter((change) => change.type === 'remove')
+        .map((change) => String(change.id)),
+    );
+
+    onNodesChange(changes);
+
+    if (selectedGroupIds.size > 0) {
+      const deselectedDescendantIds = new Set();
+      selectedGroupIds.forEach((groupId) => {
+        collectGroupDescendantIds(currentNodes, groupId).forEach((id) => deselectedDescendantIds.add(id));
+      });
+
+      if (deselectedDescendantIds.size > 0) {
+        setNodes((existing) => existing.map((node) => (
+          deselectedDescendantIds.has(String(node.id))
+            ? { ...node, selected: false }
+            : node
+        )));
+      }
+    }
+
+    if (removedIds.size === 0) return;
+
+    const groupIds = currentNodes
+      .filter((node) => removedIds.has(String(node.id)) && node.data?.className === 'Group')
+      .map((node) => String(node.id));
+    const removedWithDescendants = new Set(removedIds);
+    for (const groupId of groupIds) {
+      collectGroupDescendantIds(currentNodes, groupId).forEach((id) => removedWithDescendants.add(id));
+    }
+
+    if (groupIds.length > 0) {
+      setNodes((existing) => existing.filter((node) => !removedWithDescendants.has(String(node.id))));
+      setEdges((existing) => existing.filter((edge) => (
+        !removedWithDescendants.has(String(edge.source))
+        && !removedWithDescendants.has(String(edge.target))
+      )));
+    }
+
+    setTimeout(() => {
+      reactFlow.getNodes()
+        .filter((node) => node.data?.className === 'Group')
+        .forEach((node) => refreshGroupNode(node.id));
+    }, 0);
+  }, [onNodesChange, reactFlow, refreshGroupNode, setEdges, setNodes]);
 
   // ── Drop-on-blank: open filtered context menu ──────────────────────
 
@@ -733,7 +1344,7 @@ function Flow() {
     if (!fromHandle || !fromHandle.id) return;
 
     const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
-    const handleType = getHandleType(fromHandle.id);
+    const handleType = getConnectionHandleType(fromHandle.id);
 
     setContextMenu({
       x: clientX,
@@ -1058,7 +1669,9 @@ function Flow() {
     onRuntimeValuesChange,
     openFileBrowser,
     onManualTrigger,
-  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger]);
+    onToggleGroupCollapse: toggleGroupCollapse,
+    onUngroup: ungroupGroup,
+  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, toggleGroupCollapse, ungroupGroup]);
 
   const clearGraph = useCallback(() => {
     setNodes([]);
@@ -1298,8 +1911,20 @@ function Flow() {
   }, []);
 
   const onNodeDragStart = useCallback((event, node) => {
+    activeDragNodeIdRef.current = String(node.id);
+
     if (!(event.ctrlKey || event.metaKey)) {
       duplicateDragRef.current = null;
+      if (node.data?.className === 'Group') {
+        const descendantIds = collectGroupDescendantIds(reactFlow.getNodes(), node.id);
+        if (descendantIds.size > 0) {
+          setNodes((existing) => existing.map((candidate) => (
+            descendantIds.has(String(candidate.id))
+              ? { ...candidate, selected: false }
+              : candidate
+          )));
+        }
+      }
       return;
     }
 
@@ -1343,6 +1968,7 @@ function Flow() {
     );
 
     duplicateDragRef.current = {
+      anchorId: String(node.id),
       draggedIds,
       originPositions,
       duplicateSourceById,
@@ -1361,104 +1987,178 @@ function Flow() {
   }, [initializeDynamicNodes, reactFlow, setEdges, setNodes]);
 
   const onNodeDrag = useCallback((_event, node) => {
+    if (String(node.id) !== activeDragNodeIdRef.current) return;
+
     const duplicateState = duplicateDragRef.current;
-    if (!duplicateState) return;
+    if (duplicateState) {
+      const anchorId = duplicateState.anchorId || duplicateState.draggedIds[0];
+      const anchorOrigin = duplicateState.originPositions[anchorId];
+      if (!anchorOrigin) return;
 
-    const anchorId = duplicateState.draggedIds.includes(String(node.id))
-      ? String(node.id)
-      : duplicateState.draggedIds[0];
-    const anchorOrigin = duplicateState.originPositions[anchorId];
-    if (!anchorOrigin) return;
+      const offset = {
+        x: (Number(node.position?.x) || 0) - anchorOrigin.x,
+        y: (Number(node.position?.y) || 0) - anchorOrigin.y,
+      };
+      const draggedIdSet = new Set(duplicateState.draggedIds);
 
-    const offset = {
-      x: (Number(node.position?.x) || 0) - anchorOrigin.x,
-      y: (Number(node.position?.y) || 0) - anchorOrigin.y,
-    };
-    const draggedIdSet = new Set(duplicateState.draggedIds);
+      setNodes((existing) => existing.map((candidate) => {
+        const candidateId = String(candidate.id);
+        const originalPosition = duplicateState.originPositions[candidateId];
+        if (draggedIdSet.has(candidateId) && originalPosition) {
+          return {
+            ...candidate,
+            selected: false,
+            position: originalPosition,
+          };
+        }
 
-    setNodes((existing) => existing.map((candidate) => {
-      const candidateId = String(candidate.id);
-      const originalPosition = duplicateState.originPositions[candidateId];
-      if (draggedIdSet.has(candidateId) && originalPosition) {
-        return {
-          ...candidate,
-          selected: false,
-          position: originalPosition,
-        };
-      }
+        const sourceId = duplicateState.duplicateSourceById[candidateId];
+        if (sourceId) {
+          const sourceOrigin = duplicateState.originPositions[sourceId];
+          if (!sourceOrigin) return candidate;
+          return {
+            ...candidate,
+            selected: true,
+            position: {
+              x: sourceOrigin.x + offset.x,
+              y: sourceOrigin.y + offset.y,
+            },
+          };
+        }
 
-      const sourceId = duplicateState.duplicateSourceById[candidateId];
-      if (sourceId) {
-        const sourceOrigin = duplicateState.originPositions[sourceId];
-        if (!sourceOrigin) return candidate;
-        return {
-          ...candidate,
-          selected: true,
-          position: {
-            x: sourceOrigin.x + offset.x,
-            y: sourceOrigin.y + offset.y,
-          },
-        };
-      }
-
-      return candidate;
-    }));
+        return candidate;
+      }));
+      return;
+    }
   }, [setNodes]);
 
-  const onNodeDragStop = useCallback((_event, node) => {
+  const onNodeDragStop = useCallback((event, node) => {
+    if (String(node.id) !== activeDragNodeIdRef.current) return;
+    activeDragNodeIdRef.current = null;
+
     const duplicateState = duplicateDragRef.current;
     duplicateDragRef.current = null;
-    if (!duplicateState) return;
+    if (duplicateState) {
+      const anchorId = duplicateState.anchorId || duplicateState.draggedIds[0];
+      const anchorOrigin = duplicateState.originPositions[anchorId];
+      if (!anchorOrigin) return;
 
-    const anchorId = duplicateState.draggedIds.includes(String(node.id))
-      ? String(node.id)
-      : duplicateState.draggedIds[0];
-    const anchorOrigin = duplicateState.originPositions[anchorId];
-    if (!anchorOrigin) return;
+      const offset = {
+        x: (Number(node.position?.x) || 0) - anchorOrigin.x,
+        y: (Number(node.position?.y) || 0) - anchorOrigin.y,
+      };
+      const draggedIdSet = new Set(duplicateState.draggedIds);
 
-    const offset = {
-      x: (Number(node.position?.x) || 0) - anchorOrigin.x,
-      y: (Number(node.position?.y) || 0) - anchorOrigin.y,
-    };
-    const draggedIdSet = new Set(duplicateState.draggedIds);
+      setNodes((existing) => existing.map((candidate) => {
+        const candidateId = String(candidate.id);
+        const originalPosition = duplicateState.originPositions[candidateId];
+        if (draggedIdSet.has(candidateId) && originalPosition) {
+          return {
+            ...candidate,
+            selected: false,
+            position: originalPosition,
+          };
+        }
 
-    setNodes((existing) => existing.map((candidate) => {
-      const candidateId = String(candidate.id);
-      const originalPosition = duplicateState.originPositions[candidateId];
-      if (draggedIdSet.has(candidateId) && originalPosition) {
+        const sourceId = duplicateState.duplicateSourceById[candidateId];
+        if (sourceId) {
+          const sourceOrigin = duplicateState.originPositions[sourceId];
+          if (!sourceOrigin) return candidate;
+          return {
+            ...candidate,
+            selected: true,
+            position: {
+              x: sourceOrigin.x + offset.x,
+              y: sourceOrigin.y + offset.y,
+            },
+          };
+        }
+
         return {
           ...candidate,
           selected: false,
-          position: originalPosition,
         };
+      }));
+
+      setStatus({
+        text: `Duplicated ${Object.keys(duplicateState.duplicateSourceById).length} node${Object.keys(duplicateState.duplicateSourceById).length === 1 ? '' : 's'}.`,
+        level: 'info',
+      });
+      scheduleAutoRun();
+      return;
+    }
+
+    const currentNodes = reactFlow.getNodes();
+    const touchedGroupIds = new Set();
+    let nextNodes = currentNodes;
+    let changed = false;
+
+    const draggedNodes = node.data?.className === 'Group'
+      ? []
+      : (
+        node.selected
+          ? nextNodes.filter((candidate) => candidate.selected && candidate.data?.className !== 'Group')
+          : nextNodes.filter((candidate) => candidate.id === node.id)
+      );
+
+    if (draggedNodes.length > 0) {
+      const draggedIdSet = new Set(draggedNodes.map((candidate) => String(candidate.id)));
+      const targetGroup = findExpandedGroupDropTarget(nextNodes, Array.from(draggedIdSet), node.id);
+      if (targetGroup) {
+        const nodeMap = new Map(nextNodes.map((candidate) => [String(candidate.id), candidate]));
+        const targetRect = getGroupWorkspaceBounds(targetGroup, nodeMap);
+        const targetAbs = getNodeAbsolutePosition(targetGroup, nodeMap);
+        let joinedCount = 0;
+
+        nextNodes = nextNodes.map((candidate) => {
+          if (!draggedIdSet.has(String(candidate.id))) return candidate;
+
+          const center = getNodeCenter(candidate, nodeMap);
+          if (!rectContainsPoint(targetRect, center)) return candidate;
+
+          const absolute = getNodeAbsolutePosition(candidate, nodeMap);
+          const nextPosition = {
+            x: absolute.x - targetAbs.x,
+            y: absolute.y - targetAbs.y,
+          };
+          const alreadyInTarget = String(candidate.parentId || '') === String(targetGroup.id);
+          const samePosition = Math.abs((Number(candidate.position?.x) || 0) - nextPosition.x) < 0.5
+            && Math.abs((Number(candidate.position?.y) || 0) - nextPosition.y) < 0.5;
+          if (alreadyInTarget && samePosition) return candidate;
+
+          if (candidate.parentId) {
+            touchedGroupIds.add(String(candidate.parentId));
+          }
+          touchedGroupIds.add(String(targetGroup.id));
+          joinedCount += 1;
+          changed = true;
+          return {
+            ...candidate,
+            parentId: String(targetGroup.id),
+            extent: 'parent',
+            hidden: false,
+            position: nextPosition,
+          };
+        });
+
+        if (joinedCount > 0) {
+          setStatus({
+            text: `Added ${joinedCount} node${joinedCount === 1 ? '' : 's'} to group.`,
+            level: 'info',
+          });
+        }
       }
+    }
 
-      const sourceId = duplicateState.duplicateSourceById[candidateId];
-      if (sourceId) {
-        const sourceOrigin = duplicateState.originPositions[sourceId];
-        if (!sourceOrigin) return candidate;
-        return {
-          ...candidate,
-          selected: true,
-          position: {
-            x: sourceOrigin.x + offset.x,
-            y: sourceOrigin.y + offset.y,
-          },
-        };
-      }
+    if (!changed) return;
 
-      return {
-        ...candidate,
-        selected: false,
-      };
-    }));
-
-    setStatus({
-      text: `Duplicated ${Object.keys(duplicateState.duplicateSourceById).length} node${Object.keys(duplicateState.duplicateSourceById).length === 1 ? '' : 's'}.`,
-      level: 'info',
-    });
-    scheduleAutoRun();
-  }, [scheduleAutoRun, setNodes]);
+    setNodes(nextNodes);
+    setTimeout(() => {
+      touchedGroupIds.forEach((groupId) => {
+        if (groupId) refreshGroupNode(groupId, nextNodes, reactFlow.getEdges());
+      });
+    }, 0);
+  }, [reactFlow, refreshGroupNode, scheduleAutoRun, setNodes]);
 
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
@@ -1531,6 +2231,8 @@ function Flow() {
     return () => window.removeEventListener('pointerdown', handlePointerDown, true);
   }, [contextMenu]);
 
+  const selectedNodeCount = nodes.filter((node) => node.selected).length;
+
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
@@ -1569,7 +2271,7 @@ function Flow() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
+            onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onNodeDragStart={onNodeDragStart}
             onNodeDrag={onNodeDrag}
@@ -1600,9 +2302,11 @@ function Flow() {
               y={contextMenu.y}
               nodeDefs={nodeDefsRef.current}
               onAdd={addNode}
+              onCreateGroup={createGroupFromSelection}
               onClose={() => setContextMenu(null)}
               filterType={contextMenu.filterType}
               filterDirection={contextMenu.filterDirection}
+              selectedNodeCount={selectedNodeCount}
             />
           )}
         </div>

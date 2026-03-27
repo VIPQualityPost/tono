@@ -192,6 +192,73 @@ test('serializeExecutionGraph allows a singleton ImageDemo graph so previews can
   });
 });
 
+test('serializeExecutionGraph ignores group shells and resolves collapsed proxy edges back to child endpoints', () => {
+  const nodes = [
+    {
+      id: '1',
+      data: {
+        className: 'Image',
+        definition: {
+          input: { required: { filename: ['FILE_PICKER', {}] }, optional: {} },
+          manual_trigger: false,
+        },
+        widgetValues: { filename: 'scan.gwy' },
+      },
+    },
+    {
+      id: '10',
+      data: {
+        className: 'Group',
+        definition: null,
+        widgetValues: {},
+      },
+    },
+    {
+      id: '2',
+      parentId: '10',
+      hidden: true,
+      data: {
+        className: 'PreviewImage',
+        definition: {
+          input: { required: { field: ['DATA_FIELD', {}] }, optional: {} },
+          manual_trigger: false,
+        },
+        widgetValues: {},
+      },
+    },
+  ];
+
+  const edges = [
+    {
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '10',
+      targetHandle: 'group-proxy::in::2::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+      data: {
+        groupProxyOwner: '10',
+        groupProxyOriginal: {
+          target: '2',
+          targetHandle: 'input::field::DATA_FIELD',
+        },
+      },
+    },
+  ];
+
+  const prompt = serializeExecutionGraph(nodes, edges);
+
+  assert.deepEqual(prompt, {
+    '1': {
+      class_type: 'Image',
+      inputs: { filename: 'scan.gwy' },
+    },
+    '2': {
+      class_type: 'PreviewImage',
+      inputs: { field: ['1', 0] },
+    },
+  });
+  assert.equal('10' in prompt, false);
+});
+
 test('getAutoRunnableNodes ignores disconnected nodes when deciding what can auto-run', () => {
   const nodes = [
     { id: '1', data: { definition: {}, widgetValues: {} } },

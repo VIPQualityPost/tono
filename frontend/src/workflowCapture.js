@@ -1,5 +1,5 @@
 import { toBlob } from 'html-to-image';
-import { CANVAS_COLORS } from './constants';
+import { CANVAS_COLORS } from './constants.js';
 
 export const OVERLAY_CAPTURE_SELECTORS = [
   '.lineplot-overlay',

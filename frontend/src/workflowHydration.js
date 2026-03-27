@@ -40,18 +40,26 @@ export function hydrateWorkflowState(data, defs = {}) {
     return {
       ...node,
       type: node.type || 'custom',
+      className: node.className,
+      parentId: node.parentId,
+      extent: node.extent,
+      hidden: !!node.hidden,
+      style: node.style,
       dragHandle: node.dragHandle || '.drag-handle',
       data: {
         ...node.data,
         label: node.data?.label || node.data?.className || 'Node',
         widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition),
-        runtimeValues: {},
+        runtimeValues: node.data?.runtimeValues || {},
+        ...(node.data?.extraData || {}),
         definition,
         previewImage: null,
         tableRows: null,
         meshData: null,
         overlay: null,
         scalarValue: null,
+        processingTimeMs: null,
+        warning: null,
       },
     };
   });

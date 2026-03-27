@@ -265,3 +265,28 @@ test('clipboard payload deep-copies local widget and runtime fields', () => {
   assert.equal(payload.nodes[0].data.widgetValues.markup_shapes[0].points[0], 0.1);
   assert.equal(payload.nodes[0].data.runtimeValues.camera.azimuth, 15);
 });
+
+test('clipboard payload preserves wrapper class names for group shells', () => {
+  const payload = buildNodeClipboardPayloadForIds(
+    [
+      {
+        id: '50',
+        type: 'custom',
+        className: 'group-shell',
+        position: { x: 0, y: 0 },
+        data: {
+          label: 'group',
+          className: 'Group',
+          widgetValues: {},
+        },
+      },
+    ],
+    [],
+    ['50'],
+  );
+
+  const instantiated = instantiateNodeClipboardPayload(payload, {}, 80);
+
+  assert.equal(payload.nodes[0].className, 'group-shell');
+  assert.equal(instantiated.nodes[0].className, 'group-shell');
+});

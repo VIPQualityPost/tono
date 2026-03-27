@@ -24,6 +24,103 @@ function formatUiLabel(text) {
     .toLowerCase();
 }
 
+function parseProxyHandle(handleId) {
+  const text = String(handleId || '');
+  if (!text.startsWith('group-proxy::')) return null;
+  const parts = text.split('::');
+  if (parts.length < 5) return null;
+  return {
+    direction: parts[1],
+    nodeId: parts[2],
+    type: parts[3],
+    realHandle: decodeURIComponent(parts.slice(4).join('::')),
+  };
+}
+
+function GroupNode({ id, data }) {
+  const ctx = useContext(NodeContext);
+  const proxyInputs = Array.isArray(data.proxyInputs) ? data.proxyInputs : [];
+  const proxyOutputs = Array.isArray(data.proxyOutputs) ? data.proxyOutputs : [];
+  const childCount = Number(data.childCount) || 0;
+  const collapsed = !!data.collapsed;
+  const maxRows = Math.max(proxyInputs.length, proxyOutputs.length, collapsed ? 1 : 0);
+
+  return (
+    <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
+      <div className="node-title drag-handle group-node-title">
+        <button
+          type="button"
+          className="group-toggle group-toggle-collapse nodrag"
+          onClick={() => ctx.onToggleGroupCollapse?.(id)}
+          title={collapsed ? 'expand group' : 'collapse group'}
+        >
+          {collapsed ? '▸' : '▾'}
+        </button>
+        <span className="node-title-main">{formatUiLabel(data.label || 'group')}</span>
+        <div className="group-node-actions">
+          <button
+            type="button"
+            className="group-toggle nodrag"
+            onClick={() => ctx.onUngroup?.(id)}
+            title="ungroup"
+          >
+            ungroup
+          </button>
+        </div>
+      </div>
+
+      <div className="node-body">
+        {collapsed ? (
+          <>
+            {Array.from({ length: maxRows }, (_, index) => {
+              const input = proxyInputs[index];
+              const output = proxyOutputs[index];
+              return (
+                <div className="io-row" key={`group-io-${index}`}>
+                  <div className="io-left">
+                    {input && (
+                      <>
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={input.handleId}
+                          className="typed-handle"
+                          style={{ background: TYPE_COLORS[input.type] || 'var(--fallback-type)' }}
+                        />
+                        <span className="io-label">{formatUiLabel(input.label || input.name)}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="io-right">
+                    {output && (
+                      <>
+                        <span className="io-label">{formatUiLabel(output.label || output.name)}</span>
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={output.handleId}
+                          className="typed-handle"
+                          style={{ background: TYPE_COLORS[output.type] || 'var(--fallback-type)' }}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="group-node-summary">{childCount} nodes</div>
+          </>
+        ) : (
+          <div className="group-node-workspace">
+            <div className="group-node-workspace-label">workflow group</div>
+            <div className="group-node-summary">{childCount} nodes</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 class PreviewBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -390,6 +487,8 @@ function getSourceTypeForInput(store, nodeId, inputName) {
   const targetHandle = `input::${inputName}::`;
   const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
+  const proxy = parseProxyHandle(edge.sourceHandle);
+  if (proxy) return proxy.type || null;
   const parts = edge.sourceHandle.split('::');
   return parts[2] || null;
 }
@@ -405,8 +504,11 @@ function getConnectedOutputInfo(store, nodeId, inputName) {
   const targetHandle = `input::${inputName}::`;
   const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
-  const sourceNode = store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
-  const slot = Number.parseInt(edge.sourceHandle.split('::')[1], 10);
+  const proxy = parseProxyHandle(edge.sourceHandle);
+  const sourceNodeId = proxy?.nodeId || edge.source;
+  const sourceHandle = proxy?.realHandle || edge.sourceHandle;
+  const sourceNode = store.nodeLookup?.get(sourceNodeId) || store.nodes?.find((n) => n.id === sourceNodeId) || null;
+  const slot = Number.parseInt(sourceHandle.split('::')[1], 10);
   if (!sourceNode || !Number.isInteger(slot)) return null;
   return {
     path: sourceNode.data?.definition?.output_paths?.[slot] || null,
@@ -751,6 +853,9 @@ function NodeTable({ rows }) {
 
 function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
+  if (data.className === 'Group') {
+    return <GroupNode id={id} data={data} />;
+  }
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
