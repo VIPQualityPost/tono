@@ -34,6 +34,7 @@ class Save:
                     "choices_by_source_type": {
                         "DATA_FIELD": ["TIFF", "PNG", "NPZ"],
                         "IMAGE": ["PNG", "TIFF", "NPZ"],
+                        "ANNOTATION_SOURCE": ["PNG", "TIFF", "NPZ"],
                         "LINE": ["CSV", "NPZ", "JSON"],
                         "MEASURE_TABLE": ["CSV", "JSON"],
                         "RECORD_TABLE": ["CSV", "JSON"],

@@ -1,5 +1,5 @@
 import React, { useContext, useRef, useCallback, useState, useEffect, memo, lazy, Suspense } from 'react';
-import { Handle, Position, useStore } from '@xyflow/react';
+import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
 import LinePlotOverlay from './LinePlotOverlay';
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
@@ -11,6 +11,7 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 import {
   DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
+import { getGroupMinimumSize } from './groupSizing.js';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 
@@ -44,10 +45,37 @@ function GroupNode({ id, data }) {
   const childCount = Number(data.childCount) || 0;
   const collapsed = !!data.collapsed;
   const maxRows = Math.max(proxyInputs.length, proxyOutputs.length, collapsed ? 1 : 0);
+  const selected = useStore(
+    useCallback(
+      (s) => {
+        const node = s.nodeLookup?.get(id) || s.nodes?.find((candidate) => candidate.id === id);
+        return !!node?.selected;
+      },
+      [id],
+    ),
+  );
+  const groupMinSize = useStore(
+    useCallback(
+      (s) => getGroupMinimumSize(
+        (s.nodes || []).filter((candidate) => String(candidate.parentId || '') === String(id)),
+      ),
+      [id],
+    ),
+  );
 
   return (
-    <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
-      <div className="node-title drag-handle group-node-title">
+    <>
+      {!collapsed && selected && (
+        <NodeResizeControl
+          position="bottom-right"
+          className="node-resize-handle"
+          minWidth={groupMinSize.width}
+          minHeight={groupMinSize.height}
+          onResizeEnd={(event, params) => ctx.onResizeGroup?.(id, params)}
+        />
+      )}
+      <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
+        <div className="node-title drag-handle group-node-title">
         <button
           type="button"
           className="group-toggle group-toggle-collapse nodrag"
@@ -117,7 +145,8 @@ function GroupNode({ id, data }) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

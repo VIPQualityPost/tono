@@ -2205,11 +2205,13 @@ def test_view3d():
 def test_save_generic():
     print("=== Test: Save ===")
     from backend.nodes.save import Save
-    from backend.data_types import DataField, LineData, MeasureTable, MeshModel, RecordTable
+    from backend.data_types import DataField, ImageData, LineData, MeasureTable, MeshModel, RecordTable
     import tifffile
     from PIL import Image as PILImage
 
     node = Save()
+    format_choices = node.INPUT_TYPES()["required"]["format"][1]["choices_by_source_type"]
+    assert format_choices["ANNOTATION_SOURCE"] == format_choices["IMAGE"]
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Save scalar as TXT and JSON
@@ -2281,6 +2283,26 @@ def test_save_generic():
         node.save(filename="image_npz", directory_path=tmpdir, format="NPZ", value=image)
         image_npz = np.load(Path(tmpdir, "image_npz.npz"))
         assert np.array_equal(image_npz["image"], image)
+
+        # Save ANNOTATION_SOURCE as PNG, TIFF, and NPZ
+        annotation_image = ImageData(
+            image,
+            metadata={"annotation_context": {"si_unit_xy": "um", "si_unit_z": "nm"}},
+        )
+        node.save(filename="annotation_png", directory_path=tmpdir, format="PNG", value=annotation_image)
+        annotation_png = np.asarray(PILImage.open(Path(tmpdir, "annotation_png.png")))
+        assert annotation_png.shape == image.shape
+        assert np.array_equal(annotation_png, image)
+
+        node.save(filename="annotation_tiff", directory_path=tmpdir, format="TIFF", value=annotation_image)
+        annotation_tiff = tifffile.imread(Path(tmpdir, "annotation_tiff.tiff"))
+        assert annotation_tiff.shape == image.shape
+        assert annotation_tiff.dtype == np.uint8
+        assert np.array_equal(annotation_tiff, image)
+
+        node.save(filename="annotation_npz", directory_path=tmpdir, format="NPZ", value=annotation_image)
+        annotation_npz = np.load(Path(tmpdir, "annotation_npz.npz"))
+        assert np.array_equal(annotation_npz["image"], image)
 
         # Save tables as CSV and JSON
         measure_table = MeasureTable([
