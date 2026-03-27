@@ -218,11 +218,25 @@ class ExecutionEngine:
         on_warning: Callable | None = None,
     ) -> None:
         """Wire up broadcast callbacks on display node classes."""
-        from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay, Markup
-        from backend.nodes.analysis import CrossSection, Cursors, Stats, Histogram
-        from backend.nodes.modify import CropResizeField, RotateField
-        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
-        from backend.nodes.io import SaveImage, Image, ImageDemo
+        from backend.nodes.preview_image import PreviewImage
+        from backend.nodes.print_table import PrintTable
+        from backend.nodes.view_3d import View3D
+        from backend.nodes.value_display import ValueDisplay
+        from backend.nodes.markup import Markup
+        from backend.nodes.cross_section import CrossSection
+        from backend.nodes.cursors import Cursors
+        from backend.nodes.stats import Stats
+        from backend.nodes.histogram import Histogram
+        from backend.nodes.crop_resize_field import CropResizeField
+        from backend.nodes.rotate_field import RotateField
+        from backend.nodes.threshold_mask import ThresholdMask
+        from backend.nodes.mask_morphology import MaskMorphology
+        from backend.nodes.mask_invert import MaskInvert
+        from backend.nodes.mask_combine import MaskCombine
+        from backend.nodes.draw_mask import DrawMask
+        from backend.nodes.save_image import SaveImage
+        from backend.nodes.image import Image
+        from backend.nodes.image_demo import ImageDemo
 
         PreviewImage._broadcast_fn = on_preview
         ThresholdMask._broadcast_fn = on_preview
@@ -246,11 +260,25 @@ class ExecutionEngine:
 
     def _set_node_id_on_display(self, cls: type, node_id: str) -> None:
         """Inform display nodes of their current node_id for WS tagging."""
-        from backend.nodes.display import PreviewImage, PrintTable, View3D, ValueDisplay, Markup
-        from backend.nodes.analysis import CrossSection, Cursors, Stats, Histogram
-        from backend.nodes.modify import CropResizeField, RotateField
-        from backend.nodes.mask import ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask
-        from backend.nodes.io import Image, ImageDemo, SaveImage
+        from backend.nodes.preview_image import PreviewImage
+        from backend.nodes.print_table import PrintTable
+        from backend.nodes.view_3d import View3D
+        from backend.nodes.value_display import ValueDisplay
+        from backend.nodes.markup import Markup
+        from backend.nodes.cross_section import CrossSection
+        from backend.nodes.cursors import Cursors
+        from backend.nodes.stats import Stats
+        from backend.nodes.histogram import Histogram
+        from backend.nodes.crop_resize_field import CropResizeField
+        from backend.nodes.rotate_field import RotateField
+        from backend.nodes.threshold_mask import ThresholdMask
+        from backend.nodes.mask_morphology import MaskMorphology
+        from backend.nodes.mask_invert import MaskInvert
+        from backend.nodes.mask_combine import MaskCombine
+        from backend.nodes.draw_mask import DrawMask
+        from backend.nodes.image import Image
+        from backend.nodes.image_demo import ImageDemo
+        from backend.nodes.save_image import SaveImage
         if cls in (PreviewImage, PrintTable, View3D, ValueDisplay, Stats, Histogram, CrossSection, Cursors, CropResizeField, RotateField, Markup,
                    ThresholdMask, MaskMorphology, MaskInvert, MaskCombine, DrawMask,
                    Image, ImageDemo, SaveImage):
@@ -274,7 +302,8 @@ class ExecutionEngine:
         from backend.data_types import (
             DataField, LineData, image_to_uint8, encode_preview, render_datafield_preview,
         )
-        from backend.nodes.io import Image, ImageDemo
+        from backend.nodes.image import Image
+        from backend.nodes.image_demo import ImageDemo
 
         if getattr(cls, "_CUSTOM_PREVIEW", False):
             return
@@ -318,7 +347,7 @@ class ExecutionEngine:
         inputs: dict[str, Any],
     ) -> dict | None:
         from backend.data_types import DataField, encode_preview, render_datafield_preview
-        from backend.nodes.io import list_channels
+        from backend.nodes.helpers import list_channels
 
         fields = [value for value in result if isinstance(value, DataField)]
         if not fields:

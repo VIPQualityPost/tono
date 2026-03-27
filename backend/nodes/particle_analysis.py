@@ -1,19 +1,8 @@
-"""
-Particle detection nodes.
-
-Gwyddion equivalents:
-  ParticleAnalysis → gwy_data_field_particles_get_values (particles-values.c)
-"""
-
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import DataField, RecordTable
 
-
-# ---------------------------------------------------------------------------
-# ParticleAnalysis
-# ---------------------------------------------------------------------------
 
 @register_node(display_name="Particle Analysis")
 class ParticleAnalysis:
@@ -43,7 +32,7 @@ class ParticleAnalysis:
         binary = (mask > 127).astype(np.int32)
         labeled, n_particles = label(binary)
 
-        pixel_area = field.dx * field.dy  # m^2 per pixel
+        pixel_area = field.dx * field.dy
 
         rows = RecordTable()
         for pid in range(1, n_particles + 1):
@@ -59,7 +48,6 @@ class ParticleAnalysis:
             mean_h = float(heights.mean())
             max_h = float(heights.max())
 
-            # Bounding box
             ys, xs = np.where(particle_pixels)
             bbox = f"({int(xs.min())},{int(ys.min())})-({int(xs.max())},{int(ys.max())})"
 

@@ -10,7 +10,7 @@ import numpy as np
 
 sys.path.insert(0, ".")
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
-from backend.nodes.analysis import FFT2D
+from backend.nodes.fft_2d import FFT2D
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(OUT_DIR, exist_ok=True)

@@ -9,7 +9,8 @@ import numpy as np
 
 sys.path.insert(0, ".")
 from backend.data_types import DataField
-from backend.nodes.analysis import FFT2D, InverseFFT2D
+from backend.nodes.fft_2d import FFT2D
+from backend.nodes.inverse_fft_2d import InverseFFT2D
 
 
 def make_field(data, xreal=1e-6, yreal=1e-6):

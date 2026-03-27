@@ -217,7 +217,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
 
     async def get_folder_files(request: web.Request) -> web.Response:
         folder_path = request.query.get("folder", "")
-        from backend.nodes.io import list_folder_paths
+        from backend.nodes.helpers import list_folder_paths
         loop = asyncio.get_running_loop()
         entries = await loop.run_in_executor(None, list_folder_paths, folder_path)
         return web.Response(text=_dumps(entries), content_type="application/json")
@@ -267,7 +267,7 @@ def create_app(loop: asyncio.AbstractEventLoop) -> web.Application:
 
     async def get_channels(request: web.Request) -> web.Response:
         """Return available channels for a given file path."""
-        from backend.nodes.io import list_channels
+        from backend.nodes.helpers import list_channels
         filepath = request.query.get("file", "")
         if not filepath:
             return web.Response(

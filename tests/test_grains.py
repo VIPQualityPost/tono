@@ -28,7 +28,7 @@ def make_field(data, xreal=1e-6, yreal=1e-6):
 def test_threshold_otsu_bimodal():
     """Otsu on a clean bimodal image should separate the two populations."""
     print("=== Test: Otsu on bimodal image ===")
-    from backend.nodes.particle import ThresholdMask
+    from backend.nodes.threshold_mask import ThresholdMask
     node = ThresholdMask()
 
     data = np.zeros((128, 128))
@@ -50,7 +50,7 @@ def test_threshold_otsu_bimodal():
 def test_threshold_relative_range():
     """Relative threshold at 0.5 should be the midpoint of [min, max]."""
     print("=== Test: Relative threshold at midpoint ===")
-    from backend.nodes.particle import ThresholdMask
+    from backend.nodes.threshold_mask import ThresholdMask
     node = ThresholdMask()
 
     data = np.full((64, 64), 2.0)
@@ -68,7 +68,7 @@ def test_threshold_relative_range():
 def test_threshold_empty_mask():
     """Very high absolute threshold on low data should produce an empty mask."""
     print("=== Test: Empty mask from high threshold ===")
-    from backend.nodes.particle import ThresholdMask
+    from backend.nodes.threshold_mask import ThresholdMask
     node = ThresholdMask()
 
     data = np.ones((64, 64))
@@ -82,7 +82,7 @@ def test_threshold_empty_mask():
 def test_threshold_full_mask():
     """Very low absolute threshold should produce an all-white mask."""
     print("=== Test: Full mask from low threshold ===")
-    from backend.nodes.particle import ThresholdMask
+    from backend.nodes.threshold_mask import ThresholdMask
     node = ThresholdMask()
 
     data = np.ones((64, 64)) * 5.0
@@ -100,7 +100,7 @@ def test_threshold_full_mask():
 def test_single_circle_area():
     """A single filled circle — verify pixel count and physical area."""
     print("=== Test: Single circle area ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 200
@@ -146,7 +146,7 @@ def test_single_circle_area():
 def test_multiple_particles_separation():
     """Three well-separated particles of different sizes — check each is reported."""
     print("=== Test: Multiple particles separation ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 128
@@ -184,7 +184,7 @@ def test_multiple_particles_separation():
 def test_min_size_filtering():
     """min_size should exclude particles smaller than the threshold."""
     print("=== Test: min_size filtering ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
@@ -227,7 +227,7 @@ def test_min_size_filtering():
 def test_particles_bounding_box():
     """Bounding box should match the particles extents."""
     print("=== Test: Grain bounding box ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
@@ -250,7 +250,7 @@ def test_particles_bounding_box():
 def test_empty_mask_produces_no_particles():
     """An all-zero mask should yield zero particles."""
     print("=== Test: Empty mask → no particles ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     field = make_field(np.ones((64, 64)))
@@ -264,7 +264,7 @@ def test_empty_mask_produces_no_particles():
 def test_particles_at_image_edge():
     """A particles touching the image border should still be detected."""
     print("=== Test: Grain at image edge ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
@@ -286,7 +286,7 @@ def test_adjacent_particles_connectivity():
     """Two diagonally-touching blocks should be separate particles
     (scipy.ndimage.label uses 4-connectivity by default)."""
     print("=== Test: Diagonal adjacency → separate particles ===")
-    from backend.nodes.particle import GrainAnalysis
+    from backend.nodes.particle_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 32
@@ -316,7 +316,8 @@ def test_adjacent_particles_connectivity():
 def test_pipeline_synthetic():
     """Full pipeline on a synthetic image with known geometry."""
     print("=== Test: Full pipeline on synthetic particles ===")
-    from backend.nodes.particle import ThresholdMask, GrainAnalysis
+    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.particle_analysis import GrainAnalysis
 
     N = 200
     XREAL = 10e-6  # 10 µm
@@ -371,7 +372,8 @@ def test_pipeline_demo_image():
     """Run the full pipeline on the bundled demo nanoparticles image."""
     print("=== Test: Full pipeline on demo nanoparticles.npy ===")
     from pathlib import Path
-    from backend.nodes.particle import ThresholdMask, GrainAnalysis
+    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.particle_analysis import GrainAnalysis
     from backend.runtime_paths import demo_dir
 
     npy_path = demo_dir() / "nanoparticles.npy"
