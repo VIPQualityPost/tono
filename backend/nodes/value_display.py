@@ -1,5 +1,6 @@
 from __future__ import annotations
 from backend.node_registry import register_node
+from backend.execution_context import emit_value
 from backend.data_types import MeasureTable
 from backend.nodes.helpers import _measurement_entry, _measurement_value, _scalar_payload
 
@@ -38,6 +39,5 @@ class ValueDisplay:
             unit = row.get("unit", "") if isinstance(row.get("unit"), str) else ""
         else:
             numeric = float(value)
-        if ValueDisplay._broadcast_value_fn is not None:
-            ValueDisplay._broadcast_value_fn(ValueDisplay._current_node_id, _scalar_payload(numeric, unit))
+        emit_value(_scalar_payload(numeric, unit))
         return (numeric,)

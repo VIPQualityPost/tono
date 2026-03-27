@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_preview
 from backend.data_types import (
     COLORMAPS,
     colormap_to_uint8,
@@ -68,7 +69,6 @@ class PreviewImage:
 
         data_uri = encode_preview(arr_u8)
 
-        if PreviewImage._broadcast_fn is not None:
-            PreviewImage._broadcast_fn(PreviewImage._current_node_id, data_uri)
+        emit_preview(data_uri)
 
         return ()

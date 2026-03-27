@@ -9,9 +9,9 @@ export default defineConfig({
     proxy: {
       '/nodes': 'http://127.0.0.1:8188',
       '/files': 'http://127.0.0.1:8188',
-      '/browse': 'http://127.0.0.1:8188',
       '/folder-files': 'http://127.0.0.1:8188',
       '/channels': 'http://127.0.0.1:8188',
+      '/upload-folder': 'http://127.0.0.1:8188',
       '/upload': 'http://127.0.0.1:8188',
       '/download': 'http://127.0.0.1:8188',
       '/prompt': 'http://127.0.0.1:8188',

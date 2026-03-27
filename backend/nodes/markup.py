@@ -1,5 +1,6 @@
 from __future__ import annotations
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import (
     DataField,
     ImageData,
@@ -70,17 +71,13 @@ class Markup:
                 metadata=image_metadata(input),
             )
 
-        if Markup._broadcast_overlay_fn is not None:
-            Markup._broadcast_overlay_fn(
-                Markup._current_node_id,
-                {
-                    "kind": "markup",
-                    "section_title": "Markup",
-                    "image": encode_preview(preview_base),
-                    "shape": str(shape),
-                    "stroke_color": _normalize_markup_color(stroke_color),
-                    "stroke_width": max(1, int(stroke_width)),
-                },
-            )
+        emit_overlay({
+            "kind": "markup",
+            "section_title": "Markup",
+            "image": encode_preview(preview_base),
+            "shape": str(shape),
+            "stroke_color": _normalize_markup_color(stroke_color),
+            "stroke_width": max(1, int(stroke_width)),
+        })
 
         return (out,)

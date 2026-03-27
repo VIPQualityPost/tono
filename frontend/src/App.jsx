@@ -4,13 +4,13 @@ import React, {
 import {
   ReactFlow, Background, Controls, MiniMap,
   useNodesState, useEdgesState, addEdge, useReactFlow,
-  ReactFlowProvider, getViewportForBounds,
+  ReactFlowProvider, getViewportForBounds, PanOnScrollMode, SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import CustomNode, { NodeContext } from './CustomNode';
-import FileBrowser from './FileBrowser';
 import * as api from './api';
+import { pickNativeDirectorySelection, pickNativeFileSelection } from './nativePicker';
 import { toBlob } from 'html-to-image';
 import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
@@ -791,7 +791,6 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
   const [contextMenu, setContextMenu] = useState(null);
-  const [fileBrowserState, setFileBrowserState] = useState(null);
 
   const nodeDefsRef = useRef({});
   const nextIdRef = useRef(1);
@@ -1481,22 +1480,68 @@ function Flow() {
 
   // ── File browser ────────────────────────────────────────────────────
 
-  const openFileBrowser = useCallback((callback, { selectionMode = 'file' } = {}) => {
+  const uploadBrowserSelection = useCallback(async (selection, selectionMode) => {
+    if (!selection) return null;
+
+    if (selectionMode === 'folder') {
+      const rootName = String(selection.rootName || '').trim();
+      if (!rootName) {
+        throw new Error('Selected folder is empty or could not be read.');
+      }
+
+      setStatus({
+        text: `Importing folder "${rootName}" into this session…`,
+        level: 'info',
+      });
+
+      const folder = await api.createUploadFolder(rootName);
+      for (const entry of selection.entries || []) {
+        await api.uploadFile(entry.file, { relativePath: entry.relativePath });
+      }
+      return folder.path;
+    }
+
+    const [entry] = selection.entries || [];
+    if (!entry) return null;
+
+    setStatus({
+      text: `Uploading ${entry.file.name}…`,
+      level: 'info',
+    });
+
+    const uploaded = await api.uploadFile(entry.file, { relativePath: entry.relativePath });
+    return uploaded.path;
+  }, []);
+
+  const openFileBrowser = useCallback(async (callback, { selectionMode = 'file' } = {}) => {
     if (selectionMode === 'folder' && window.pywebview?.api?.open_folder_dialog) {
       window.pywebview.api.open_folder_dialog().then((path) => {
         if (path) callback(path);
       });
       return;
     }
-    // Use native file picker when running inside pywebview (desktop app)
     if (selectionMode === 'file' && window.pywebview?.api?.open_file_dialog) {
       window.pywebview.api.open_file_dialog().then((path) => {
         if (path) callback(path);
       });
       return;
     }
-    setFileBrowserState({ callback, selectionMode });
-  }, []);
+
+    try {
+      const selection = selectionMode === 'folder'
+        ? await pickNativeDirectorySelection()
+        : await pickNativeFileSelection();
+      if (!selection) return;
+
+      const uploadedPath = await uploadBrowserSelection(selection, selectionMode);
+      if (uploadedPath) callback(uploadedPath);
+    } catch (error) {
+      setStatus({
+        text: `Browse failed: ${error.message || String(error)}`,
+        level: 'error',
+      });
+    }
+  }, [uploadBrowserSelection]);
 
   // ── Node context value (stable) ─────────────────────────────────────
 
@@ -1782,6 +1827,21 @@ function Flow() {
     setTimeout(() => reactFlow.updateNodeInternals(String(groupId)), 0);
   }, [reactFlow, setNodes]);
 
+  const renameGroup = useCallback((groupId, label) => {
+    const nextLabel = String(label || '').trim() || 'group';
+    setNodes((existing) => existing.map((node) => {
+      if (String(node.id) !== String(groupId) || node.data?.className !== 'Group') return node;
+      if (String(node.data?.label || 'group') === nextLabel) return node;
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          label: nextLabel,
+        },
+      };
+    }));
+  }, [setNodes]);
+
   const contextValue = useMemo(() => ({
     onWidgetChange,
     onRuntimeValuesChange,
@@ -1789,8 +1849,9 @@ function Flow() {
     onManualTrigger,
     onToggleGroupCollapse: toggleGroupCollapse,
     onResizeGroup: resizeGroup,
+    onRenameGroup: renameGroup,
     onUngroup: ungroupGroup,
-  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, resizeGroup, toggleGroupCollapse, ungroupGroup]);
+  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup]);
 
   const clearGraph = useCallback(() => {
     setNodes([]);
@@ -2602,6 +2663,12 @@ function Flow() {
             nodeTypes={NODE_TYPES}
             onPaneContextMenu={onPaneContextMenu}
             colorMode="dark"
+            panOnDrag={[1]}
+            panOnScroll
+            panOnScrollMode={PanOnScrollMode.Free}
+            zoomOnScroll={false}
+            selectionOnDrag
+            selectionMode={SelectionMode.Partial}
             multiSelectionKeyCode={['Shift']}
             deleteKeyCode={['Backspace', 'Delete']}
             defaultEdgeOptions={{ type: 'default' }}
@@ -2631,14 +2698,6 @@ function Flow() {
           )}
         </div>
 
-        {/* File browser modal */}
-        {fileBrowserState && (
-          <FileBrowser
-            selectionMode={fileBrowserState.selectionMode}
-            onSelect={(path) => { fileBrowserState.callback(path); setFileBrowserState(null); }}
-            onClose={() => setFileBrowserState(null)}
-          />
-        )}
       </div>
     </NodeContext.Provider>
   );

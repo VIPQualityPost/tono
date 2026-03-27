@@ -45,6 +45,9 @@ function GroupNode({ id, data }) {
   const childCount = Number(data.childCount) || 0;
   const collapsed = !!data.collapsed;
   const maxRows = Math.max(proxyInputs.length, proxyOutputs.length, collapsed ? 1 : 0);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [draftLabel, setDraftLabel] = useState(String(data.label || 'group'));
+  const labelInputRef = useRef(null);
   const selected = useStore(
     useCallback(
       (s) => {
@@ -62,6 +65,33 @@ function GroupNode({ id, data }) {
       [id],
     ),
   );
+  const displayLabel = String(data.label || 'group');
+
+  useEffect(() => {
+    if (!isEditingLabel) {
+      setDraftLabel(displayLabel);
+    }
+  }, [displayLabel, isEditingLabel]);
+
+  useEffect(() => {
+    if (!isEditingLabel) return;
+    labelInputRef.current?.focus();
+    labelInputRef.current?.select();
+  }, [isEditingLabel]);
+
+  const commitLabel = useCallback(() => {
+    const nextLabel = String(draftLabel || '').trim() || 'group';
+    setIsEditingLabel(false);
+    setDraftLabel(nextLabel);
+    if (nextLabel !== displayLabel) {
+      ctx.onRenameGroup?.(id, nextLabel);
+    }
+  }, [ctx, displayLabel, draftLabel, id]);
+
+  const cancelLabelEdit = useCallback(() => {
+    setDraftLabel(displayLabel);
+    setIsEditingLabel(false);
+  }, [displayLabel]);
 
   return (
     <>
@@ -84,7 +114,40 @@ function GroupNode({ id, data }) {
         >
           {collapsed ? '▸' : '▾'}
         </button>
-        <span className="node-title-main">{formatUiLabel(data.label || 'group')}</span>
+        {isEditingLabel ? (
+          <input
+            ref={labelInputRef}
+            className="group-title-input nodrag"
+            type="text"
+            value={draftLabel}
+            onChange={(event) => setDraftLabel(event.target.value)}
+            onBlur={commitLabel}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                commitLabel();
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelLabelEdit();
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="group-title-button nodrag"
+            title="rename group"
+            onClick={(event) => {
+              event.stopPropagation();
+              setDraftLabel(displayLabel);
+              setIsEditingLabel(true);
+            }}
+          >
+            {displayLabel}
+          </button>
+        )}
         <div className="group-node-actions">
           <button
             type="button"

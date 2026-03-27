@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 
 from backend.node_registry import register_node
+from backend.execution_context import emit_warning
 from backend.data_types import DataField, image_to_uint8
 from backend.nodes.helpers import _MAX_SAVE_FIELDS
 
@@ -174,9 +175,6 @@ class SaveImage:
         raise ValueError(f"Unsupported save layer type: {type(layer).__name__}")
 
     def _send_warning(self, message: str):
-        fn = SaveImage._broadcast_warning_fn
-        nid = SaveImage._current_node_id
-        if fn and nid:
-            fn(nid, message)
+        emit_warning(message)
 
         return ()

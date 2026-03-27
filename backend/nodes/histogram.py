@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import DataField, MeasureTable
 
 
@@ -72,22 +73,18 @@ class Histogram:
         yb = float(counts[idx_b]) if len(counts) else 0.0
         count_unit = "count" if y_scale == "linear" else "log10(1+count)"
 
-        if Histogram._broadcast_overlay_fn is not None:
-            Histogram._broadcast_overlay_fn(
-                Histogram._current_node_id,
-                {
-                    "kind": "line_plot",
-                    "section_title": "Histogram",
-                    "line": counts.tolist(),
-                    "x_axis": bin_centers.astype(np.float64).tolist(),
-                    "x1": float(np.clip(x1, 0.0, 1.0)),
-                    "x2": float(np.clip(x2, 0.0, 1.0)),
-                    "y1": float(y1),
-                    "y2": float(y2),
-                    "a_locked": False,
-                    "b_locked": False,
-                },
-            )
+        emit_overlay({
+            "kind": "line_plot",
+            "section_title": "Histogram",
+            "line": counts.tolist(),
+            "x_axis": bin_centers.astype(np.float64).tolist(),
+            "x1": float(np.clip(x1, 0.0, 1.0)),
+            "x2": float(np.clip(x2, 0.0, 1.0)),
+            "y1": float(y1),
+            "y2": float(y2),
+            "a_locked": False,
+            "b_locked": False,
+        })
 
         table = MeasureTable([
             {"quantity": "A position", "value": xa, "unit": field.si_unit_z},

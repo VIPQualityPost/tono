@@ -1,5 +1,6 @@
 from __future__ import annotations
 from backend.node_registry import register_node
+from backend.execution_context import emit_table
 
 
 @register_node(display_name="Print Table")
@@ -22,6 +23,5 @@ class PrintTable:
     _current_node_id: str = ""
 
     def print_table(self, table: list) -> tuple:
-        if PrintTable._broadcast_table_fn is not None:
-            PrintTable._broadcast_table_fn(PrintTable._current_node_id, table)
+        emit_table(table)
         return ()

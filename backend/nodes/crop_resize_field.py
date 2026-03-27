@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
 
 
@@ -61,20 +62,16 @@ class CropResizeField:
         x2 = float(np.clip(x2, 0.0, 1.0))
         y2 = float(np.clip(y2, 0.0, 1.0))
 
-        if CropResizeField._broadcast_overlay_fn is not None:
-            CropResizeField._broadcast_overlay_fn(
-                CropResizeField._current_node_id,
-                {
-                    "kind": "crop_box",
-                    "image": encode_preview(datafield_to_uint8(field, field.colormap)),
-                    "x1": x1,
-                    "y1": y1,
-                    "x2": x2,
-                    "y2": y2,
-                    "a_locked": corner_a is not None,
-                    "b_locked": corner_b is not None,
-                },
-            )
+        emit_overlay({
+            "kind": "crop_box",
+            "image": encode_preview(datafield_to_uint8(field, field.colormap)),
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "a_locked": corner_a is not None,
+            "b_locked": corner_b is not None,
+        })
 
         left = min(x1, x2)
         right = max(x1, x2)

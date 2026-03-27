@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 
 from backend.node_registry import register_node
+from backend.execution_context import emit_warning
 from backend.data_types import COLORMAPS, DataField, resolve_colormap_input
 from backend.nodes.helpers import _resolve_path, _SPM_EXTENSIONS, _import_ibw_loader
 
@@ -66,10 +67,7 @@ class Image:
         return fields
 
     def _send_warning(self, message: str):
-        fn = Image._broadcast_warning_fn
-        nid = Image._current_node_id
-        if fn and nid:
-            fn(nid, message)
+        emit_warning(message)
 
     @staticmethod
     @lru_cache(maxsize=32)

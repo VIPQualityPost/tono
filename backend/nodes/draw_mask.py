@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
 from backend.nodes.helpers import _parse_mask_strokes, _rasterize_mask
 
@@ -40,17 +41,13 @@ class DrawMask:
         if invert:
             mask = np.where(mask > 127, np.uint8(0), np.uint8(255))
 
-        if DrawMask._broadcast_overlay_fn is not None:
-            DrawMask._broadcast_overlay_fn(
-                DrawMask._current_node_id,
-                {
-                    "kind": "mask_paint",
-                    "section_title": "Mask",
-                    "image": encode_preview(datafield_to_uint8(field, "gray")),
-                    "image_width": field.xres,
-                    "image_height": field.yres,
-                    "invert": bool(invert),
-                },
-            )
+        emit_overlay({
+            "kind": "mask_paint",
+            "section_title": "Mask",
+            "image": encode_preview(datafield_to_uint8(field, "gray")),
+            "image_width": field.xres,
+            "image_height": field.yres,
+            "invert": bool(invert),
+        })
 
         return (mask,)

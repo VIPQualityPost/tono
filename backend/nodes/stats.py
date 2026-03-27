@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_value
 from backend.data_types import DataField, LineData, MeasureTable
 from backend.nodes.helpers import (
     LINE_OPS,
@@ -71,11 +72,9 @@ class Stats:
         op_entry = ops[operation]
         fn = op_entry[0] if isinstance(op_entry, tuple) else op_entry
         result = fn(values)
-        if Stats._broadcast_value_fn is not None:
-            Stats._broadcast_value_fn(
-                Stats._current_node_id,
-                _scalar_payload(result, self._resolve_output_unit(input, source_type, resolved_column, operation)),
-            )
+        emit_value(
+            _scalar_payload(result, self._resolve_output_unit(input, source_type, resolved_column, operation)),
+        )
         return (result,)
 
     def _resolve_output_unit(self, input_value, source_type: str, column: str | None, operation: str) -> str:

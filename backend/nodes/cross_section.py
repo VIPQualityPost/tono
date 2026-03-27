@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import DataField, LineData, datafield_to_uint8, encode_preview
 from backend.nodes.helpers import _extend_to_edges
 
@@ -73,19 +74,14 @@ class CrossSection:
 
         profile = map_coordinates(field.data, [coords_y, coords_x], order=3, mode="nearest")
 
-        if CrossSection._broadcast_overlay_fn is not None:
-            image_uri = encode_preview(datafield_to_uint8(field, field.colormap))
-
-            CrossSection._broadcast_overlay_fn(
-                CrossSection._current_node_id,
-                {
-                    "image": image_uri,
-                    "x1": marker_x1, "y1": marker_y1,
-                    "x2": marker_x2, "y2": marker_y2,
-                    "a_locked": marker_pair is not None,
-                    "b_locked": marker_pair is not None,
-                },
-            )
+        image_uri = encode_preview(datafield_to_uint8(field, field.colormap))
+        emit_overlay({
+            "image": image_uri,
+            "x1": marker_x1, "y1": marker_y1,
+            "x2": marker_x2, "y2": marker_y2,
+            "a_locked": marker_pair is not None,
+            "b_locked": marker_pair is not None,
+        })
 
         dx_real = (x2 - x1) * field.xreal
         dy_real = (y2 - y1) * field.yreal

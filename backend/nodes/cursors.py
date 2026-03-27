@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_overlay
 from backend.data_types import DataField, LineData, MeasureTable, encode_preview, render_datafield_preview
 
 
@@ -87,22 +88,18 @@ class Cursors:
         xa, ya = float(x[idx_a]), float(y[idx_a])
         xb, yb = float(x[idx_b]), float(y[idx_b])
 
-        if Cursors._broadcast_overlay_fn is not None:
-            Cursors._broadcast_overlay_fn(
-                Cursors._current_node_id,
-                {
-                    "kind": "line_plot",
-                    "section_title": "Cursors",
-                    "line": y.tolist(),
-                    "x_axis": x.tolist(),
-                    "x1": x1,
-                    "x2": x2,
-                    "y1": float(y1),
-                    "y2": float(y2),
-                    "a_locked": locked,
-                    "b_locked": locked,
-                },
-            )
+        emit_overlay({
+            "kind": "line_plot",
+            "section_title": "Cursors",
+            "line": y.tolist(),
+            "x_axis": x.tolist(),
+            "x1": x1,
+            "x2": x2,
+            "y1": float(y1),
+            "y2": float(y2),
+            "a_locked": locked,
+            "b_locked": locked,
+        })
 
         table = MeasureTable([
             {"quantity": "A x", "value": xa, "unit": x_unit},
@@ -143,21 +140,17 @@ class Cursors:
         bx = float(field.xoff + x2 * field.xreal)
         by = float(field.yoff + y2 * field.yreal)
 
-        if Cursors._broadcast_overlay_fn is not None:
-            Cursors._broadcast_overlay_fn(
-                Cursors._current_node_id,
-                {
-                    "kind": "cursor_points",
-                    "section_title": "Cursors",
-                    "image": encode_preview(render_datafield_preview(field, field.colormap)),
-                    "x1": x1,
-                    "y1": y1,
-                    "x2": x2,
-                    "y2": y2,
-                    "a_locked": locked,
-                    "b_locked": locked,
-                },
-            )
+        emit_overlay({
+            "kind": "cursor_points",
+            "section_title": "Cursors",
+            "image": encode_preview(render_datafield_preview(field, field.colormap)),
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "a_locked": locked,
+            "b_locked": locked,
+        })
 
         table = MeasureTable([
             {"quantity": "A x", "value": ax, "unit": field.si_unit_xy},

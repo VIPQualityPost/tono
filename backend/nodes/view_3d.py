@@ -3,6 +3,7 @@ import base64
 import io
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_mesh
 from backend.data_types import (
     COLORMAPS,
     DataField,
@@ -211,8 +212,7 @@ class View3D:
             "y_range": [float(field.yoff), float(field.yoff + field.yreal)],
         }
 
-        if View3D._broadcast_mesh_fn is not None:
-            View3D._broadcast_mesh_fn(View3D._current_node_id, mesh_data)
+        emit_mesh(mesh_data)
 
         annotation_context = _annotation_context_from_field(color_field, resolved_colormap)
         annotation_context["xreal"] = float(field.xreal)

@@ -259,6 +259,34 @@ html, body, #root {
   flex: 1;
 }
 
+.group-title-button {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-heading);
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-title-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 2px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--text-heading);
+  font: inherit;
+}
+
 .group-node-actions {
   display: flex;
   align-items: center;
