@@ -504,20 +504,6 @@ html, body, #root {
   border-color: var(--accent);
 }
 
-.widget-linked-state {
-  flex: 1;
-  min-width: 0;
-  padding: 4px 8px;
-  border: 1px dashed var(--linked-border);
-  border-radius: 4px;
-  background: var(--linked-bg);
-  color: var(--linked-text);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: center;
-}
-
 .colormap-editor {
   flex: 1;
   min-width: 0;

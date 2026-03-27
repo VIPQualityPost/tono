@@ -16,6 +16,14 @@ import {
 
 export const NodeContext = React.createContext(null);
 
+function formatUiLabel(text) {
+  return String(text ?? '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 class PreviewBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -786,7 +794,7 @@ function CustomNode({ id, data }) {
   for (const [name, spec] of Object.entries(required)) {
     const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
     if (DATA_TYPES.has(type)) {
-      dataInputs.push({ name, type, label: opts?.label || name });
+      dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else if (opts?.hidden) {
       hiddenWidgets.add(name);
@@ -836,7 +844,7 @@ function CustomNode({ id, data }) {
       if (match) {
         const idx = parseInt(match[1], 10);
         if (idx === 0 || (connectedInputs && connectedInputs.has(`field_${idx - 1}`))) {
-          dataInputs.push({ name, type, label: opts?.label || name });
+          dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
           visibleInputNames.add(name);
         }
         continue;
@@ -845,7 +853,7 @@ function CustomNode({ id, data }) {
     if (opts?.hidden) {
       hiddenWidgets.add(name);
     } else if (DATA_TYPES.has(type)) {
-      dataInputs.push({ name, type, label: opts?.label || name });
+      dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else {
       widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
@@ -882,7 +890,7 @@ function CustomNode({ id, data }) {
   }
 
   const outputs = def.output.map((type, i) => ({
-    name: def.output_name[i] || type,
+    name: formatUiLabel(def.output_name[i] || type),
     type,
     slot: i,
   }));
@@ -949,18 +957,21 @@ function CustomNode({ id, data }) {
                     />
                   );
                 })()}
-                <WidgetControl
-                  widget={w}
-                  nodeId={id}
-                  value={data.widgetValues[w.name]}
-                  widgetValues={data.widgetValues}
-                  onChange={ctx.onWidgetChange}
-                  openFileBrowser={ctx.openFileBrowser}
-                  connected={!!(
-                    (w.socketType && connectedInputs?.has(w.name))
-                    || (w.opts?.top_socket_input && connectedInputs?.has(w.opts.top_socket_input))
-                  )}
-                />
+                {!!(
+                  (w.socketType && connectedInputs?.has(w.name))
+                  || (w.opts?.top_socket_input && connectedInputs?.has(w.opts.top_socket_input))
+                ) ? (
+                  <label>{formatUiLabel(w.opts?.label || w.name)}</label>
+                ) : (
+                  <WidgetControl
+                    widget={w}
+                    nodeId={id}
+                    value={data.widgetValues[w.name]}
+                    widgetValues={data.widgetValues}
+                    onChange={ctx.onWidgetChange}
+                    openFileBrowser={ctx.openFileBrowser}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -1046,15 +1057,18 @@ function CustomNode({ id, data }) {
                 style={{ background: TYPE_COLORS[w.socketType] || 'var(--fallback-type)' }}
               />
             )}
-            <WidgetControl
-              widget={w}
-              nodeId={id}
-              value={data.widgetValues[w.name]}
-              widgetValues={data.widgetValues}
-              onChange={ctx.onWidgetChange}
-              openFileBrowser={ctx.openFileBrowser}
-              connected={!!(w.socketType && connectedInputs?.has(w.name))}
-            />
+            {w.socketType && connectedInputs?.has(w.name) ? (
+              <label>{formatUiLabel(w.opts?.label || w.name)}</label>
+            ) : (
+              <WidgetControl
+                widget={w}
+                nodeId={id}
+                value={data.widgetValues[w.name]}
+                widgetValues={data.widgetValues}
+                onChange={ctx.onWidgetChange}
+                openFileBrowser={ctx.openFileBrowser}
+              />
+            )}
           </div>
         ))}
 
@@ -1206,9 +1220,9 @@ function CustomNode({ id, data }) {
 
 // ── Widget renderer ───────────────────────────────────────────────────
 
-function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, connected = false, hideLabel = false }) {
+function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false }) {
   const { name, type, opts } = widget;
-  const label = opts?.label || name;
+  const label = formatUiLabel(opts?.label || name);
   const val = value ?? opts?.default ?? '';
   const placeholder = opts?.placeholder || '';
   const dynamicSourceType = useStore(
@@ -1286,15 +1300,6 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     if (dynamicTypeChoices.includes(current)) return;
     onChange(nodeId, name, dynamicTypeChoices[0]);
   }, [dynamicTypeChoices, name, nodeId, onChange, val]);
-
-  if (connected) {
-    return (
-      <>
-        {!hideLabel && <label>{label}</label>}
-        <div className="widget-linked-state">Connected</div>
-      </>
-    );
-  }
 
   if (opts?.colormap_stops) {
     return (
@@ -1441,7 +1446,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
           }
         }}
       >
-        {opts?.label || name}
+        {formatUiLabel(opts?.label || name)}
       </button>
     );
   }
