@@ -25,11 +25,11 @@ MENU_LAYOUT: dict[str, list[str]] = {
     ],
     "Output": [
         "PreviewImage",
+        "ValueDisplay",
+        "View3D",
         "Save",
         "SaveImage",
-        "View3D",
         "PrintTable",
-        "ValueDisplay",
     ],
     "Overlay": [
         "Markup",
@@ -37,10 +37,10 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "AngleMeasure",
     ],
     "Modify": [
-        "ColormapAdjust",
         "CropResizeField",
         "RotateField",
         "FlipField",
+        "ColormapAdjust",
     ],
     "Filter": [
         "GaussianFilter",
@@ -51,24 +51,24 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ScarRemoval",
     ],
     "Frequency": [
-        "FFT2D",
         "PSDF",
+        "FFT2D",
         "InverseFFT2D",
     ],
     "Flatten": [
-        "PlaneLevelField",
-        "FacetLevelField",
-        "PolyLevelField",
         "FixZero",
         "LineCorrection",
+        "PlaneLevelField",
+        "PolyLevelField",
+        "FacetLevelField",
     ],
     "Measure": [
         "CrossSection",
-        "Curvature",
         "Histogram",
+        "Cursors",
+        "Curvature",
         "FractalDimension",
         "ACF",
-        "Cursors",
         "Statistics",
         "Stats",
     ],
@@ -77,12 +77,12 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ThresholdMask",
         "MaskMorphology",
         "MaskInvert",
-        "MaskCombine",
-        "GrainDistanceTransform",
+        "MaskOperations",
     ],
-    "Particles": [
+    "Grains": [
+        "GrainAnalysis",
+        "GrainDistanceTransform",
         "WatershedSegmentation",
-        "ParticleAnalysis",
     ],
 }
 

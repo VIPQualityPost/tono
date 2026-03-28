@@ -38,7 +38,7 @@ export const CAT_COLORS = {
   modify:    '#0f766e',
   level:     '#1b5e20',
   analysis:  '#4a148c',
-  particles: '#bf360c',
+  Grains:    '#bf360c',
   display:   '#212121',
 };
 

@@ -32,7 +32,7 @@ PREVIEW_MARKUP_REFERENCE_DIM = 512
 
 
 class RecordTable(list):
-    """Tabular rows with a shared schema, e.g. particle statistics."""
+    """Tabular rows with a shared schema, e.g. grain statistics."""
 
 
 class MeasureTable(list):

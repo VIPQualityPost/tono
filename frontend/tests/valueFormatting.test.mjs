@@ -11,7 +11,7 @@ import {
 test('getTableColumns hides companion record-table unit columns', () => {
   const columns = getTableColumns([
     {
-      particle_id: 1,
+      grain_id: 1,
       area_m2: 2.5e-12,
       area_m2_unit: 'm^2',
       mean_height: 1.5e-9,
@@ -20,7 +20,7 @@ test('getTableColumns hides companion record-table unit columns', () => {
     },
   ]);
 
-  assert.deepEqual(columns, ['particle_id', 'area_m2', 'mean_height', 'bbox']);
+  assert.deepEqual(columns, ['grain_id', 'area_m2', 'mean_height', 'bbox']);
 });
 
 test('formatTableRowCell appends companion units inline for record-table values', () => {

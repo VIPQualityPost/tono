@@ -5,8 +5,8 @@ from backend.data_types import DataField, RecordTable
 from backend.nodes.helpers import _square_unit
 
 
-@register_node(display_name="Particle Analysis")
-class ParticleAnalysis:
+@register_node(display_name="Grain Analysis")
+class GrainAnalysis:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -18,44 +18,44 @@ class ParticleAnalysis:
         }
 
     RETURN_TYPES = ("RECORD_TABLE",)
-    RETURN_NAMES = ("particle_stats",)
+    RETURN_NAMES = ("grain_stats",)
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Label connected particle regions in a binary mask and compute per-particle "
+        "Label connected grain regions in a binary mask and compute per-grain "
         "statistics: area, equivalent diameter, mean/max height, bounding box. "
-        "Equivalent to gwy_data_field_particles_get_values."
+        "Equivalent to Gwyddion's grain statistics tools."
     )
 
     def process(self, field: DataField, mask: np.ndarray, min_size: int) -> tuple:
         from scipy.ndimage import label
 
         binary = (mask > 127).astype(np.int32)
-        labeled, n_particles = label(binary)
+        labeled, n_grains = label(binary)
 
         pixel_area = field.dx * field.dy
         xy_unit = str(field.si_unit_xy or "").strip()
         z_unit = str(field.si_unit_z or "").strip()
 
         rows = RecordTable()
-        for pid in range(1, n_particles + 1):
-            particle_pixels = labeled == pid
-            area_px = int(particle_pixels.sum())
+        for gid in range(1, n_grains + 1):
+            grain_pixels = labeled == gid
+            area_px = int(grain_pixels.sum())
             if area_px < min_size:
                 continue
 
             area_m2 = area_px * pixel_area
             equiv_diam = float(2.0 * np.sqrt(area_m2 / np.pi))
 
-            heights = field.data[particle_pixels]
+            heights = field.data[grain_pixels]
             mean_h = float(heights.mean())
             max_h = float(heights.max())
 
-            ys, xs = np.where(particle_pixels)
+            ys, xs = np.where(grain_pixels)
             bbox = f"({int(xs.min())},{int(ys.min())})-({int(xs.max())},{int(ys.max())})"
 
             rows.append({
-                "particle_id":  pid,
+                "grain_id":     gid,
                 "area_px":      area_px,
                 "area_px_unit": _square_unit("px"),
                 "area_m2":      area_m2,

@@ -32,7 +32,7 @@ from backend.nodes import (
     threshold_mask,
     mask_morphology,
     mask_invert,
-    mask_combine,
+    mask_operations,
     grain_distance_transform,
     # Correction
     scar_removal,
@@ -59,9 +59,5 @@ from backend.nodes import (
     cross_section,
     stats,
     watershed_segmentation,
+    grain_analysis,
 )
-
-try:
-    from backend.nodes import particle_analysis
-except ImportError:
-    pass

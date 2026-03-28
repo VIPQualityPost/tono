@@ -1,12 +1,12 @@
 """
-Thorough tests for the particles/particle analysis pipeline:
-    ThresholdMask → GrainAnalysis
+Thorough tests for the grain-analysis pipeline:
+    ThresholdMask -> GrainAnalysis
 
 Covers synthetic geometry (known answers), the demo nanoparticles image,
 edge cases, and physical-unit correctness.
 
 Run from project root:
-    .venv/bin/python -m tests.test_particles
+    .venv/bin/python -m tests.test_grains
 """
 
 import sys
@@ -100,7 +100,7 @@ def test_threshold_full_mask():
 def test_single_circle_area():
     """A single filled circle — verify pixel count and physical area."""
     print("=== Test: Single circle area ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 200
@@ -118,35 +118,35 @@ def test_single_circle_area():
     field = make_field(data, xreal=XREAL, yreal=XREAL)
     table, = node.process(field, mask=mask, min_size=1)
 
-    assert len(table) == 1, f"Expected 1 particles, got {len(table)}"
-    particles = table[0]
+    assert len(table) == 1, f"Expected 1 grain, got {len(table)}"
+    grain = table[0]
 
     # Pixel area of a discrete circle: should be close to π r²
     expected_px = np.pi * r ** 2
-    assert abs(particles["area_px"] - expected_px) / expected_px < 0.02, \
-        f"area_px={particles['area_px']}, expected≈{expected_px:.0f}"
+    assert abs(grain["area_px"] - expected_px) / expected_px < 0.02, \
+        f"area_px={grain['area_px']}, expected≈{expected_px:.0f}"
 
     # Physical area
     pixel_area = (XREAL / N) ** 2
-    expected_m2 = particles["area_px"] * pixel_area
-    assert abs(particles["area_m2"] - expected_m2) < 1e-20, \
-        f"area_m2 mismatch: {particles['area_m2']} vs {expected_m2}"
+    expected_m2 = grain["area_px"] * pixel_area
+    assert abs(grain["area_m2"] - expected_m2) < 1e-20, \
+        f"area_m2 mismatch: {grain['area_m2']} vs {expected_m2}"
 
     # Equivalent diameter should be close to 2r in physical units
     expected_diam = 2 * r * (XREAL / N)
-    assert abs(particles["equiv_diam_m"] - expected_diam) / expected_diam < 0.02, \
-        f"equiv_diam={particles['equiv_diam_m']:.3e}, expected≈{expected_diam:.3e}"
+    assert abs(grain["equiv_diam_m"] - expected_diam) / expected_diam < 0.02, \
+        f"equiv_diam={grain['equiv_diam_m']:.3e}, expected≈{expected_diam:.3e}"
 
     # Heights
-    assert abs(particles["mean_height"] - 5.0) < 1e-10
-    assert abs(particles["max_height"] - 5.0) < 1e-10
+    assert abs(grain["mean_height"] - 5.0) < 1e-10
+    assert abs(grain["max_height"] - 5.0) < 1e-10
     print("  PASS\n")
 
 
-def test_multiple_particles_separation():
-    """Three well-separated particles of different sizes — check each is reported."""
-    print("=== Test: Multiple particles separation ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+def test_multiple_grains_separation():
+    """Three well-separated grains of different sizes — check each is reported."""
+    print("=== Test: Multiple grains separation ===")
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 128
@@ -168,7 +168,7 @@ def test_multiple_particles_separation():
     field = make_field(data)
     table, = node.process(field, mask=mask, min_size=1)
 
-    assert len(table) == 3, f"Expected 3 particles, got {len(table)}"
+    assert len(table) == 3, f"Expected 3 grains, got {len(table)}"
 
     table.sort(key=lambda r: r["area_px"], reverse=True)
     assert table[0]["area_px"] == 400   # 20×20
@@ -182,24 +182,24 @@ def test_multiple_particles_separation():
 
 
 def test_min_size_filtering():
-    """min_size should exclude particles smaller than the threshold."""
+    """min_size should exclude grains smaller than the threshold."""
     print("=== Test: min_size filtering ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
     data = np.zeros((N, N))
     mask = np.zeros((N, N), dtype=np.uint8)
 
-    # Large particles: 15×15 = 225 px
+    # Large grains: 15x15 = 225 px
     data[5:20, 5:20] = 1.0
     mask[5:20, 5:20] = 255
 
-    # Medium particles: 8×8 = 64 px
+    # Medium grains: 8x8 = 64 px
     data[30:38, 30:38] = 1.0
     mask[30:38, 30:38] = 255
 
-    # Tiny particles: 3×3 = 9 px
+    # Tiny grains: 3x3 = 9 px
     data[50:53, 50:53] = 1.0
     mask[50:53, 50:53] = 255
 
@@ -224,16 +224,16 @@ def test_min_size_filtering():
     print("  PASS\n")
 
 
-def test_particles_bounding_box():
-    """Bounding box should match the particles extents."""
+def test_grains_bounding_box():
+    """Bounding box should match the grain extents."""
     print("=== Test: Grain bounding box ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
     data = np.zeros((N, N))
     mask = np.zeros((N, N), dtype=np.uint8)
-    # Place a particles at rows 20:35, cols 10:45
+    # Place a grain at rows 20:35, cols 10:45
     data[20:35, 10:45] = 2.0
     mask[20:35, 10:45] = 255
 
@@ -247,10 +247,10 @@ def test_particles_bounding_box():
     print("  PASS\n")
 
 
-def test_empty_mask_produces_no_particles():
-    """An all-zero mask should yield zero particles."""
-    print("=== Test: Empty mask → no particles ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+def test_empty_mask_produces_no_grains():
+    """An all-zero mask should yield zero grains."""
+    print("=== Test: Empty mask -> no grains ===")
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     field = make_field(np.ones((64, 64)))
@@ -261,10 +261,10 @@ def test_empty_mask_produces_no_particles():
     print("  PASS\n")
 
 
-def test_particles_at_image_edge():
-    """A particles touching the image border should still be detected."""
+def test_grains_at_image_edge():
+    """A grain touching the image border should still be detected."""
     print("=== Test: Grain at image edge ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 64
@@ -282,11 +282,11 @@ def test_particles_at_image_edge():
     print("  PASS\n")
 
 
-def test_adjacent_particles_connectivity():
-    """Two diagonally-touching blocks should be separate particles
+def test_adjacent_grains_connectivity():
+    """Two diagonally-touching blocks should be separate grains
     (scipy.ndimage.label uses 4-connectivity by default)."""
-    print("=== Test: Diagonal adjacency → separate particles ===")
-    from backend.nodes.particle_analysis import GrainAnalysis
+    print("=== Test: Diagonal adjacency -> separate grains ===")
+    from backend.nodes.grain_analysis import GrainAnalysis
     node = GrainAnalysis()
 
     N = 32
@@ -305,7 +305,7 @@ def test_adjacent_particles_connectivity():
     table, = node.process(field, mask=mask, min_size=1)
     # Default label() uses structure that connects diagonals? Let's verify.
     # scipy.ndimage.label default is cross-shaped (no diagonals) for 2D
-    assert len(table) == 2, f"Expected 2 separate particles, got {len(table)}"
+    assert len(table) == 2, f"Expected 2 separate grains, got {len(table)}"
     print("  PASS\n")
 
 
@@ -315,17 +315,17 @@ def test_adjacent_particles_connectivity():
 
 def test_pipeline_synthetic():
     """Full pipeline on a synthetic image with known geometry."""
-    print("=== Test: Full pipeline on synthetic particles ===")
+    print("=== Test: Full pipeline on synthetic grains ===")
     from backend.nodes.threshold_mask import ThresholdMask
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
 
     N = 200
     XREAL = 10e-6  # 10 µm
     rng = np.random.default_rng(99)
 
-    # Background at 0 with small noise, particles as raised bumps
+    # Background at 0 with small noise, grains as raised bumps
     bg = rng.normal(0, 0.1, (N, N))
-    particles = np.zeros((N, N))
+    grains = np.zeros((N, N))
 
     yy, xx = np.mgrid[0:N, 0:N]
 
@@ -338,32 +338,32 @@ def test_pipeline_synthetic():
     ]
     for cx, cy, r, h in specs:
         inside = ((xx - cx) ** 2 + (yy - cy) ** 2) <= r ** 2
-        particles[inside] = h
+        grains[inside] = h
 
-    data = bg + particles
+    data = bg + grains
     field = make_field(data, xreal=XREAL, yreal=XREAL)
 
     # Step 1: threshold
     thresh = ThresholdMask()
     mask, = thresh.process(field, method="absolute", threshold=1.0, direction="above")
 
-    # Particles are well above noise, so mask should capture all 5
-    assert mask.max() == 255, "No particles detected"
+    # Grains are well above noise, so mask should capture all 5
+    assert mask.max() == 255, "No grains detected"
 
-    # Step 2: particles analysis
+    # Step 2: grain analysis
     ga = GrainAnalysis()
     table, = ga.process(field, mask=mask, min_size=5)
 
-    assert len(table) == 5, f"Expected 5 particles, got {len(table)}"
+    assert len(table) == 5, f"Expected 5 grains, got {len(table)}"
 
     # Verify that detected areas are in the right ballpark
     table.sort(key=lambda r: r["area_px"], reverse=True)
     expected_areas = sorted([np.pi * r ** 2 for _, _, r, _ in specs], reverse=True)
 
-    for particles, expected_px in zip(table, expected_areas):
-        ratio = particles["area_px"] / expected_px
+    for grain, expected_px in zip(table, expected_areas):
+        ratio = grain["area_px"] / expected_px
         assert 0.85 < ratio < 1.15, \
-            f"particles area_px={particles['area_px']}, expected≈{expected_px:.0f}, ratio={ratio:.2f}"
+            f"grain area_px={grain['area_px']}, expected≈{expected_px:.0f}, ratio={ratio:.2f}"
 
     print("  PASS\n")
 
@@ -373,7 +373,7 @@ def test_pipeline_demo_image():
     print("=== Test: Full pipeline on demo nanoparticles.npy ===")
     from pathlib import Path
     from backend.nodes.threshold_mask import ThresholdMask
-    from backend.nodes.particle_analysis import GrainAnalysis
+    from backend.nodes.grain_analysis import GrainAnalysis
     from backend.runtime_paths import demo_dir
 
     npy_path = demo_dir() / "nanoparticles.npy"
@@ -385,31 +385,31 @@ def test_pipeline_demo_image():
     # The demo image is a 5 µm × 5 µm scan
     field = make_field(data, xreal=5e-6, yreal=5e-6)
 
-    # Threshold to find particles (they are raised above background)
+    # Threshold to find grains (they are raised above background)
     thresh = ThresholdMask()
     mask, = thresh.process(field, method="otsu", threshold=0.0, direction="above")
 
-    # Should detect particles
-    assert mask.max() == 255, "No particles found in demo image"
+    # Should detect grains
+    assert mask.max() == 255, "No grains found in demo image"
     particle_fraction = (mask == 255).sum() / mask.size
     assert 0.01 < particle_fraction < 0.5, \
         f"Suspicious particle fraction: {particle_fraction:.3f}"
-    print(f"  Mask: {particle_fraction*100:.1f}% of pixels are particles")
+    print(f"  Mask: {particle_fraction*100:.1f}% of pixels are grains")
 
     # Grain analysis
     ga = GrainAnalysis()
     table, = ga.process(field, mask=mask, min_size=20)
 
-    assert len(table) > 0, "No particles detected"
-    print(f"  Found {len(table)} particles (min_size=20)")
+    assert len(table) > 0, "No grains detected"
+    print(f"  Found {len(table)} grains (min_size=20)")
 
-    # Sanity checks on particles properties
-    for particles in table:
-        assert particles["area_px"] >= 20
-        assert particles["area_m2"] > 0
-        assert particles["equiv_diam_m"] > 0
-        assert particles["max_height"] >= particles["mean_height"]
-        assert particles["mean_height"] > 0
+    # Sanity checks on grain properties
+    for grain in table:
+        assert grain["area_px"] >= 20
+        assert grain["area_m2"] > 0
+        assert grain["equiv_diam_m"] > 0
+        assert grain["max_height"] >= grain["mean_height"]
+        assert grain["mean_height"] > 0
 
     # Physical size sanity: equivalent diameters should be in the nm–µm range
     diams_nm = [g["equiv_diam_m"] * 1e9 for g in table]
@@ -433,15 +433,15 @@ if __name__ == "__main__":
 
     # GrainAnalysis
     test_single_circle_area()
-    test_multiple_particles_separation()
+    test_multiple_grains_separation()
     test_min_size_filtering()
-    test_particles_bounding_box()
-    test_empty_mask_produces_no_particles()
-    test_particles_at_image_edge()
-    test_adjacent_particles_connectivity()
+    test_grains_bounding_box()
+    test_empty_mask_produces_no_grains()
+    test_grains_at_image_edge()
+    test_adjacent_grains_connectivity()
 
     # End-to-end pipeline
     test_pipeline_synthetic()
     test_pipeline_demo_image()
 
-    print("All particles tests passed!")
+    print("All grain tests passed!")
