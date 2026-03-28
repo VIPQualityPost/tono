@@ -1,3 +1,5 @@
+import { sortNodesForParentOrder } from './nodeHierarchy.js';
+
 export const NODE_CLIPBOARD_KIND = 'argonode/node-selection';
 export const NODE_CLIPBOARD_MIME = 'application/x-argonode-node-selection';
 
@@ -18,13 +20,52 @@ function clonePlainObject(value) {
   return cloneValue(value) || {};
 }
 
+function collectSelectedNodeIds(nodes, nodeIds) {
+  const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id)));
+  if (selectedIdSet.size === 0) return selectedIdSet;
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of Array.isArray(nodes) ? nodes : []) {
+      const parentId = node?.parentId ? String(node.parentId) : null;
+      const nodeId = String(node?.id);
+      if (parentId && selectedIdSet.has(parentId) && !selectedIdSet.has(nodeId)) {
+        selectedIdSet.add(nodeId);
+        changed = true;
+      }
+    }
+  }
+  return selectedIdSet;
+}
+
+function extractExtraData(data) {
+  const source = data || {};
+  return Object.fromEntries(
+    Object.entries(source).filter(([key]) => ![
+      'label',
+      'className',
+      'widgetValues',
+      'runtimeValues',
+      'definition',
+      'previewImage',
+      'tableRows',
+      'meshData',
+      'overlay',
+      'scalarValue',
+      'processingTimeMs',
+      'warning',
+    ].includes(key)),
+  );
+}
+
 export function buildNodeClipboardPayloadForIds(
   nodes,
   edges,
   nodeIds,
   { includeIncomingExternalEdges = false } = {},
 ) {
-  const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id)));
+  const selectedIdSet = collectSelectedNodeIds(nodes, nodeIds);
   const selectedNodes = Array.isArray(nodes)
     ? nodes.filter((node) => selectedIdSet.has(String(node.id)))
     : [];
@@ -50,12 +91,18 @@ export function buildNodeClipboardPayloadForIds(
         x: Number(node.position?.x) || 0,
         y: Number(node.position?.y) || 0,
       },
+      ...(node.className ? { className: node.className } : {}),
+      ...(node.parentId ? { parentId: String(node.parentId) } : {}),
+      ...(node.extent ? { extent: node.extent } : {}),
+      ...(node.hidden ? { hidden: true } : {}),
+      ...(node.style ? { style: cloneValue(node.style) } : {}),
       dragHandle: node.dragHandle || '.drag-handle',
       data: {
         label: node.data?.label || node.data?.className || 'Node',
         className: node.data?.className || '',
         widgetValues: clonePlainObject(node.data?.widgetValues),
         runtimeValues: clonePlainObject(node.data?.runtimeValues),
+        extraData: clonePlainObject(extractExtraData(node.data)),
       },
     })),
     edges: capturedEdges.map((edge) => ({
@@ -64,15 +111,19 @@ export function buildNodeClipboardPayloadForIds(
       target: String(edge.target),
       targetHandle: edge.targetHandle,
       ...(edge.style ? { style: { ...edge.style } } : {}),
+      ...(edge.hidden ? { hidden: true } : {}),
+      ...(edge.data ? { data: cloneValue(edge.data) } : {}),
     })),
   };
 }
 
 export function buildNodeClipboardPayload(nodes, edges) {
-  const selectedIds = Array.isArray(nodes)
-    ? nodes.filter((node) => node?.selected).map((node) => String(node.id))
+  const selectedNodes = Array.isArray(nodes)
+    ? nodes.filter((node) => node?.selected)
     : [];
-  return buildNodeClipboardPayloadForIds(nodes, edges, selectedIds);
+  const selectedIds = selectedNodes.map((node) => String(node.id));
+  const includeIncomingExternalEdges = selectedNodes.some((node) => node?.data?.className === 'Group');
+  return buildNodeClipboardPayloadForIds(nodes, edges, selectedIds, { includeIncomingExternalEdges });
 }
 
 export function parseNodeClipboardPayload(text) {
@@ -102,19 +153,27 @@ export function instantiateNodeClipboardPayload(
   const idMap = new Map();
   let currentId = Number(nextNodeId) || 1;
 
-  const nodes = payload.nodes.map((node) => {
-    const newId = String(currentId++);
-    idMap.set(String(node.id), newId);
+  payload.nodes.forEach((node) => {
+    idMap.set(String(node.id), String(currentId++));
+  });
+
+  const nodes = sortNodesForParentOrder(payload.nodes.map((node) => {
+    const newId = idMap.get(String(node.id));
     const className = node.data?.className || '';
     const definition = className ? defs[className] || null : null;
 
     return {
       id: newId,
       type: node.type || 'custom',
+      className: node.className,
       position: {
         x: (Number(node.position?.x) || 0) + (Number(offset?.x) || 0),
         y: (Number(node.position?.y) || 0) + (Number(offset?.y) || 0),
       },
+      ...(node.parentId ? { parentId: idMap.get(String(node.parentId)) || String(node.parentId) } : {}),
+      ...(node.extent ? { extent: node.extent } : {}),
+      ...(node.hidden ? { hidden: true } : {}),
+      ...(node.style ? { style: cloneValue(node.style) } : {}),
       dragHandle: node.dragHandle || '.drag-handle',
       selected: true,
       data: {
@@ -122,6 +181,7 @@ export function instantiateNodeClipboardPayload(
         className,
         widgetValues: clonePlainObject(node.data?.widgetValues),
         runtimeValues: clonePlainObject(node.data?.runtimeValues),
+        ...(clonePlainObject(node.data?.extraData)),
         definition,
         previewImage: null,
         tableRows: null,
@@ -132,7 +192,7 @@ export function instantiateNodeClipboardPayload(
         warning: null,
       },
     };
-  });
+  }));
 
   const edges = payload.edges
     .filter((edge) => (
@@ -147,6 +207,8 @@ export function instantiateNodeClipboardPayload(
       targetHandle: edge.targetHandle,
       selected: false,
       ...(edge.style ? { style: { ...edge.style } } : {}),
+      ...(edge.hidden ? { hidden: true } : {}),
+      ...(edge.data ? { data: cloneValue(edge.data) } : {}),
     }));
 
   return {

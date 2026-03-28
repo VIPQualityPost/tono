@@ -249,7 +249,6 @@ export default function LinePlotOverlay({
           <>
             <line x1={cursorA.x} y1={plotTop} x2={cursorA.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
             <line x1={cursorB.x} y1={plotTop} x2={cursorB.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
-            <line x1={cursorA.x} y1={cursorA.y} x2={cursorB.x} y2={cursorB.y} stroke="var(--accent-light)" strokeWidth={measureStroke} opacity="0.95" />
 
             <circle
               cx={cursorA.x}

@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from backend.node_registry import register_node
+from backend.execution_context import emit_warning
 from backend.data_types import DataField, LineData, MeshModel, datafield_to_uint8, image_to_uint8
 
 
@@ -34,6 +35,7 @@ class Save:
                     "choices_by_source_type": {
                         "DATA_FIELD": ["TIFF", "PNG", "NPZ"],
                         "IMAGE": ["PNG", "TIFF", "NPZ"],
+                        "ANNOTATION_SOURCE": ["PNG", "TIFF", "NPZ"],
                         "LINE": ["CSV", "NPZ", "JSON"],
                         "MEASURE_TABLE": ["CSV", "JSON"],
                         "RECORD_TABLE": ["CSV", "JSON"],
@@ -254,7 +256,4 @@ class Save:
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def _send_warning(self, message: str):
-        fn = Save._broadcast_warning_fn
-        nid = Save._current_node_id
-        if fn and nid:
-            fn(nid, message)
+        emit_warning(message)

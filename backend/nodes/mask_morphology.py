@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_preview
 from backend.data_types import DataField, encode_preview
 from backend.nodes.helpers import _mask_overlay, _mask_structure
 
@@ -62,10 +63,8 @@ class MaskMorphology:
 
         out = result.astype(np.uint8) * 255
 
-        if field is not None and MaskMorphology._broadcast_fn is not None:
+        if field is not None:
             overlay = _mask_overlay(field, out)
-            MaskMorphology._broadcast_fn(
-                MaskMorphology._current_node_id, encode_preview(overlay),
-            )
+            emit_preview(encode_preview(overlay))
 
         return (out,)

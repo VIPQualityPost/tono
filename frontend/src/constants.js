@@ -49,7 +49,7 @@ export const SOCKET_COMPATIBILITY = {
   VALUE_SOURCE:  new Set(['FLOAT', 'MEASURE_TABLE']),
   ANNOTATION_SOURCE: new Set(['DATA_FIELD', 'IMAGE']),
   SAVE_LAYER:    new Set(['DATA_FIELD', 'IMAGE']),
-  SAVE_VALUE:    new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'MESH_MODEL', 'FLOAT']),
+  SAVE_VALUE:    new Set(['DATA_FIELD', 'IMAGE', 'ANNOTATION_SOURCE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'MESH_MODEL', 'FLOAT']),
   FLOAT:         new Set(['INT']),
   INT:           new Set(['FLOAT']),
   LINE:          new Set(['COORDPAIR']),

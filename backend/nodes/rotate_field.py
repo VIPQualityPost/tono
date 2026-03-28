@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_warning
 from backend.data_types import DataField
 
 
@@ -84,10 +85,7 @@ class RotateField:
         return (result,)
 
     def _send_warning(self, message: str):
-        fn = RotateField._broadcast_warning_fn
-        nid = RotateField._current_node_id
-        if fn and nid:
-            fn(nid, message)
+        emit_warning(message)
 
     @staticmethod
     def _rotated_extents(field: DataField, angle: float, expand_canvas: bool) -> tuple[float, float]:

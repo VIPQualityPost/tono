@@ -44,6 +44,19 @@ class _Api:
             return result[0]
         return None
 
+    def open_folder_dialog(self) -> str | None:
+        """Open a native folder picker and return the selected path (or None)."""
+        win = self._window_ref[0]
+        if win is None:
+            return None
+        result = win.create_file_dialog(
+            webview.FOLDER_DIALOG,
+            allow_multiple=False,
+        )
+        if result and len(result) > 0:
+            return result[0]
+        return None
+
     def choose_save_workflow_png_path(self, default_filename: str = "workflow.png") -> str | None:
         """Open a native save dialog and return the chosen PNG path (or None)."""
         win = self._window_ref[0]
@@ -90,7 +103,7 @@ def _run_server(host: str, port: int, ready: threading.Event, state: dict[str, o
     state["loop"] = loop
 
     async def start() -> None:
-        app = create_app(loop)
+        app = create_app(loop, allow_local_filesystem=True)
         runner = web.AppRunner(app, access_log=None)
         await runner.setup()
         site = web.TCPSite(runner, host, port)

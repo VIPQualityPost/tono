@@ -7,12 +7,15 @@
   },
   "scripts": {
     "postinstall": "npm --prefix frontend install",
-    "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
+    "clean:dev": "node scripts/clean-build-artifacts.mjs",
+    "clean:build": "node scripts/clean-build-artifacts.mjs",
+    "clean:native": "node scripts/clean-build-artifacts.mjs --mode=native",
+    "dev": "npm run clean:dev && npm --prefix frontend run dev",
+    "build": "npm run clean:build && npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
     "test:frontend": "npm --prefix frontend test",
     "backend": "python -m backend.main",
-    "desktop": "python desktop.py",
+    "desktop": "npm run build && python desktop.py",
     "build:windows": "powershell -ExecutionPolicy Bypass -File scripts\\build-windows.ps1",
     "build:mac": "bash scripts/build-mac.sh",
     "build:linux": "bash scripts/build-linux.sh"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_warning
 from backend.data_types import (
     COLORMAPS,
     DataField,
@@ -120,7 +121,4 @@ class Annotations:
         return (ImageData(annotated, metadata={"annotation_context": context}),)
 
     def _send_warning(self, message: str):
-        fn = Annotations._broadcast_warning_fn
-        nid = Annotations._current_node_id
-        if fn and nid:
-            fn(nid, message)
+        emit_warning(message)

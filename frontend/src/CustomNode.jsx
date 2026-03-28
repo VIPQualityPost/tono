@@ -1,5 +1,5 @@
 import React, { useContext, useRef, useCallback, useState, useEffect, memo, lazy, Suspense } from 'react';
-import { Handle, Position, useStore } from '@xyflow/react';
+import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
 import LinePlotOverlay from './LinePlotOverlay';
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
@@ -11,6 +11,7 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 import {
   DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
+import { getGroupMinimumSize } from './groupSizing.js';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 
@@ -22,6 +23,198 @@ function formatUiLabel(text) {
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+}
+
+function parseProxyHandle(handleId) {
+  const text = String(handleId || '');
+  if (!text.startsWith('group-proxy::')) return null;
+  const parts = text.split('::');
+  if (parts.length < 5) return null;
+  return {
+    direction: parts[1],
+    nodeId: parts[2],
+    type: parts[3],
+    realHandle: decodeURIComponent(parts.slice(4).join('::')),
+  };
+}
+
+function GroupNode({ id, data }) {
+  const ctx = useContext(NodeContext);
+  const proxyInputs = Array.isArray(data.proxyInputs) ? data.proxyInputs : [];
+  const proxyOutputs = Array.isArray(data.proxyOutputs) ? data.proxyOutputs : [];
+  const childCount = Number(data.childCount) || 0;
+  const collapsed = !!data.collapsed;
+  const maxRows = Math.max(proxyInputs.length, proxyOutputs.length, collapsed ? 1 : 0);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [draftLabel, setDraftLabel] = useState(String(data.label || 'group'));
+  const labelInputRef = useRef(null);
+  const selected = useStore(
+    useCallback(
+      (s) => {
+        const node = s.nodeLookup?.get(id) || s.nodes?.find((candidate) => candidate.id === id);
+        return !!node?.selected;
+      },
+      [id],
+    ),
+  );
+  const groupMinSize = useStore(
+    useCallback(
+      (s) => getGroupMinimumSize(
+        (s.nodes || []).filter((candidate) => String(candidate.parentId || '') === String(id)),
+      ),
+      [id],
+    ),
+  );
+  const displayLabel = String(data.label || 'group');
+  const labelFieldSize = Math.max(2, Math.min(40, String(draftLabel || displayLabel || 'group').length));
+
+  useEffect(() => {
+    if (!isEditingLabel) {
+      setDraftLabel(displayLabel);
+    }
+  }, [displayLabel, isEditingLabel]);
+
+  useEffect(() => {
+    if (!isEditingLabel) return;
+    labelInputRef.current?.focus();
+    labelInputRef.current?.select();
+  }, [isEditingLabel]);
+
+  const commitLabel = useCallback(() => {
+    const nextLabel = String(draftLabel || '').trim() || 'group';
+    setIsEditingLabel(false);
+    setDraftLabel(nextLabel);
+    if (nextLabel !== displayLabel) {
+      ctx.onRenameGroup?.(id, nextLabel);
+    }
+  }, [ctx, displayLabel, draftLabel, id]);
+
+  const cancelLabelEdit = useCallback(() => {
+    setDraftLabel(displayLabel);
+    setIsEditingLabel(false);
+  }, [displayLabel]);
+
+  return (
+    <>
+      {!collapsed && selected && (
+        <NodeResizeControl
+          position="bottom-right"
+          className="node-resize-handle"
+          minWidth={groupMinSize.width}
+          minHeight={groupMinSize.height}
+          onResizeEnd={(event, params) => ctx.onResizeGroup?.(id, params)}
+        />
+      )}
+      <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
+        <div className="node-title drag-handle group-node-title">
+        <button
+          type="button"
+          className="group-toggle group-toggle-collapse nodrag"
+          onClick={() => ctx.onToggleGroupCollapse?.(id)}
+          title={collapsed ? 'expand group' : 'collapse group'}
+        >
+          {collapsed ? '▸' : '▾'}
+        </button>
+        <div className="group-title-slot">
+          {isEditingLabel ? (
+            <input
+              ref={labelInputRef}
+              className="group-title-input nodrag"
+              type="text"
+              value={draftLabel}
+              size={labelFieldSize}
+              onChange={(event) => setDraftLabel(event.target.value)}
+              onBlur={commitLabel}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  commitLabel();
+                } else if (event.key === 'Escape') {
+                  event.preventDefault();
+                  cancelLabelEdit();
+                }
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="group-title-button nodrag"
+              title="rename group"
+              onClick={(event) => {
+                event.stopPropagation();
+                setDraftLabel(displayLabel);
+                setIsEditingLabel(true);
+              }}
+            >
+              {displayLabel}
+            </button>
+          )}
+        </div>
+        <div className="group-node-actions">
+          <button
+            type="button"
+            className="group-toggle nodrag"
+            onClick={() => ctx.onUngroup?.(id)}
+            title="ungroup"
+          >
+            ungroup
+          </button>
+        </div>
+      </div>
+
+      <div className="node-body">
+        {collapsed ? (
+          <>
+            {Array.from({ length: maxRows }, (_, index) => {
+              const input = proxyInputs[index];
+              const output = proxyOutputs[index];
+              return (
+                <div className="io-row" key={`group-io-${index}`}>
+                  <div className="io-left">
+                    {input && (
+                      <>
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={input.handleId}
+                          className="typed-handle"
+                          style={{ background: TYPE_COLORS[input.type] || 'var(--fallback-type)' }}
+                        />
+                        <span className="io-label">{formatUiLabel(input.label || input.name)}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="io-right">
+                    {output && (
+                      <>
+                        <span className="io-label">{formatUiLabel(output.label || output.name)}</span>
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={output.handleId}
+                          className="typed-handle"
+                          style={{ background: TYPE_COLORS[output.type] || 'var(--fallback-type)' }}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="group-node-summary">{childCount} nodes</div>
+          </>
+        ) : (
+          <div className="group-node-workspace">
+            <div className="group-node-workspace-label">workflow group</div>
+            <div className="group-node-summary">{childCount} nodes</div>
+          </div>
+        )}
+      </div>
+      </div>
+    </>
+  );
 }
 
 class PreviewBoundary extends React.Component {
@@ -390,6 +583,8 @@ function getSourceTypeForInput(store, nodeId, inputName) {
   const targetHandle = `input::${inputName}::`;
   const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
+  const proxy = parseProxyHandle(edge.sourceHandle);
+  if (proxy) return proxy.type || null;
   const parts = edge.sourceHandle.split('::');
   return parts[2] || null;
 }
@@ -405,8 +600,11 @@ function getConnectedOutputInfo(store, nodeId, inputName) {
   const targetHandle = `input::${inputName}::`;
   const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
-  const sourceNode = store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
-  const slot = Number.parseInt(edge.sourceHandle.split('::')[1], 10);
+  const proxy = parseProxyHandle(edge.sourceHandle);
+  const sourceNodeId = proxy?.nodeId || edge.source;
+  const sourceHandle = proxy?.realHandle || edge.sourceHandle;
+  const sourceNode = store.nodeLookup?.get(sourceNodeId) || store.nodes?.find((n) => n.id === sourceNodeId) || null;
+  const slot = Number.parseInt(sourceHandle.split('::')[1], 10);
   if (!sourceNode || !Number.isInteger(slot)) return null;
   return {
     path: sourceNode.data?.definition?.output_paths?.[slot] || null,
@@ -751,6 +949,9 @@ function NodeTable({ rows }) {
 
 function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
+  if (data.className === 'Group') {
+    return <GroupNode id={id} data={data} />;
+  }
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);

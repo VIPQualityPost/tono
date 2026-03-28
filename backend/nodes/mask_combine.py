@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.execution_context import emit_preview
 from backend.data_types import DataField, encode_preview
 from backend.nodes.helpers import _mask_overlay
 
@@ -53,10 +54,8 @@ class MaskCombine:
 
         out = result.astype(np.uint8) * 255
 
-        if field is not None and MaskCombine._broadcast_fn is not None:
+        if field is not None:
             overlay = _mask_overlay(field, out)
-            MaskCombine._broadcast_fn(
-                MaskCombine._current_node_id, encode_preview(overlay),
-            )
+            emit_preview(encode_preview(overlay))
 
         return (out,)

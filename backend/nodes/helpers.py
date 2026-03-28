@@ -180,6 +180,20 @@ def _render_annotation_text(text: str, size_px: int, color: tuple[int, int, int]
         return text_image
 
 
+def _import_ibw_loader():
+    """Import igor's binary wave loader with NumPy 2 compatibility."""
+    if not hasattr(np, "complex"):
+        # igor 0.3 still references np.complex at import time.
+        setattr(np, "complex", complex)
+
+    try:
+        from igor.binarywave import load as load_ibw
+    except ImportError:
+        raise ImportError("Install 'igor' package to load .ibw files: pip install igor")
+
+    return load_ibw
+
+
 # ---------------------------------------------------------------------------
 # Markup helpers  (from display.py — used by Markup)
 # ---------------------------------------------------------------------------
@@ -508,7 +522,7 @@ def list_channels(filepath: str) -> list[dict]:
 
     if ext == ".ibw":
         try:
-            from igor.binarywave import load as load_ibw
+            load_ibw = _import_ibw_loader()
             wave = load_ibw(str(path))
             raw = wave["wave"]["wData"]
             labels = wave["wave"].get("labels", None)

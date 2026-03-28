@@ -85,6 +85,7 @@ http://127.0.0.1:5173
 Notes:
 
 - The frontend dev server proxies API and WebSocket requests to the backend.
+- `npm run dev` now clears Vite's local cache and stale Python bytecode first, then starts Vite with `--force`.
 - If you open the backend directly in a browser instead of the Vite dev server, argonode now refreshes `frontend/dist` automatically when checked-out frontend sources are newer, such as after a `git pull`.
 - If you want the frontend accessible from other devices on your LAN, run:
 
@@ -95,14 +96,9 @@ npm run dev -- --host 0.0.0.0
 ## Running the Local Desktop Version
 
 The desktop launcher starts the Python server internally and opens a native window with `pywebview`.
+`npm run desktop` now rebuilds the frontend first so the native app always uses a fresh `frontend/dist`.
 
-Build the frontend first:
-
-```powershell
-npm run build
-```
-
-Then launch the desktop app from source:
+Launch the desktop app from source:
 
 ```powershell
 npm run desktop
@@ -110,8 +106,7 @@ npm run desktop
 
 Notes:
 
-- `npm run desktop` uses the built frontend from `frontend/dist`.
-- If you change frontend code, run `npm run build` again before starting the desktop version.
+- `npm run build` clears stale frontend output, Vite cache, and Python bytecode before producing `frontend/dist`.
 
 ## Building the Windows `.exe`
 

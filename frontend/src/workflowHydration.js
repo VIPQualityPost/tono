@@ -1,3 +1,5 @@
+import { sortNodesForParentOrder } from './nodeHierarchy.js';
+
 function mergeDefinition(nodeData, defs) {
   const savedData = nodeData || {};
   const registryDefinition = savedData.className ? defs[savedData.className] : null;
@@ -34,27 +36,35 @@ export function hydrateWorkflowState(data, defs = {}) {
   const loadedNodes = Array.isArray(data?.nodes) ? data.nodes : [];
   const loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
 
-  const nodes = loadedNodes.map((node) => {
+  const nodes = sortNodesForParentOrder(loadedNodes.map((node) => {
     const definition = mergeDefinition(node.data, defs);
 
     return {
       ...node,
       type: node.type || 'custom',
+      className: node.className,
+      parentId: node.parentId,
+      extent: node.extent,
+      hidden: !!node.hidden,
+      style: node.style,
       dragHandle: node.dragHandle || '.drag-handle',
       data: {
         ...node.data,
         label: node.data?.label || node.data?.className || 'Node',
         widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition),
-        runtimeValues: {},
+        runtimeValues: node.data?.runtimeValues || {},
+        ...(node.data?.extraData || {}),
         definition,
         previewImage: null,
         tableRows: null,
         meshData: null,
         overlay: null,
         scalarValue: null,
+        processingTimeMs: null,
+        warning: null,
       },
     };
-  });
+  }));
 
   const edges = loadedEdges.map((edge) => ({ ...edge }));
 

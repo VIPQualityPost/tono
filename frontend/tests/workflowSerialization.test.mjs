@@ -226,3 +226,26 @@ test('hydrateWorkflowState clears saved folder selections on shared workflows', 
   assert.deepEqual(hydrated.nodes[0].data.definition.output, ['PATH']);
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['path']);
 });
+
+test('workflow serialization preserves wrapper class names for group shells', () => {
+  const nodes = [
+    {
+      id: '31',
+      type: 'custom',
+      className: 'group-shell',
+      position: { x: 5, y: 15 },
+      style: { width: 420, height: 260 },
+      data: {
+        label: 'group',
+        className: 'Group',
+        widgetValues: {},
+      },
+    },
+  ];
+
+  const serialized = serializeWorkflowState(nodes, []);
+  const hydrated = hydrateWorkflowState(serialized, {});
+
+  assert.equal(serialized.nodes[0].className, 'group-shell');
+  assert.equal(hydrated.nodes[0].className, 'group-shell');
+});
