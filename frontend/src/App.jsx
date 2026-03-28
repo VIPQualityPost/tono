@@ -2790,6 +2790,7 @@ function Flow() {
             colorMode="dark"
             panOnDrag={[1]}
             panOnScroll
+            panOnScrollSpeed={1.5}
             panOnScrollMode={PanOnScrollMode.Free}
             zoomOnScroll={false}
             selectionOnDrag
