@@ -290,3 +290,101 @@ test('clipboard payload preserves wrapper class names for group shells', () => {
   assert.equal(payload.nodes[0].className, 'group-shell');
   assert.equal(instantiated.nodes[0].className, 'group-shell');
 });
+
+test('instantiateNodeClipboardPayload remaps collapsed group proxy metadata to cloned child ids', () => {
+  const payload = {
+    kind: NODE_CLIPBOARD_KIND,
+    version: 1,
+    nodes: [
+      {
+        id: '10',
+        type: 'custom',
+        className: 'group-shell',
+        position: { x: 40, y: 50 },
+        style: { width: 320, height: 220 },
+        data: {
+          label: 'group',
+          className: 'Group',
+          widgetValues: {},
+          extraData: {
+            collapsed: true,
+            childCount: 1,
+            proxyInputs: [
+              {
+                key: '2::input::field::DATA_FIELD',
+                type: 'DATA_FIELD',
+                label: 'field',
+                handleId: 'group-proxy::in::2::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+              },
+            ],
+          },
+        },
+      },
+      {
+        id: '2',
+        type: 'custom',
+        parentId: '10',
+        extent: 'parent',
+        hidden: true,
+        position: { x: 24, y: 48 },
+        data: {
+          label: 'preview',
+          className: 'Preview',
+          widgetValues: {},
+        },
+      },
+    ],
+    edges: [
+      {
+        source: '1',
+        sourceHandle: 'output::0::DATA_FIELD',
+        target: '10',
+        targetHandle: 'group-proxy::in::2::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+        data: {
+          groupProxyOwner: '10',
+          groupProxyOriginal: {
+            target: '2',
+            targetHandle: 'input::field::DATA_FIELD',
+          },
+        },
+      },
+    ],
+  };
+
+  const instantiated = instantiateNodeClipboardPayload(
+    payload,
+    {},
+    20,
+    { x: 0, y: 0 },
+    { keepExternalSources: true },
+  );
+
+  assert.equal(instantiated.nextNodeId, 22);
+  assert.deepEqual(instantiated.nodes.map((node) => node.id), ['20', '21']);
+  assert.deepEqual(instantiated.edges, [
+    {
+      id: 'e1-20-0',
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '20',
+      targetHandle: 'group-proxy::in::21::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+      selected: false,
+      data: {
+        groupProxyOwner: '20',
+        groupProxyOriginal: {
+          target: '21',
+          targetHandle: 'input::field::DATA_FIELD',
+        },
+      },
+    },
+  ]);
+
+  assert.deepEqual(instantiated.nodes[0].data.proxyInputs, [
+    {
+      key: '21::input::field::DATA_FIELD',
+      type: 'DATA_FIELD',
+      label: 'field',
+      handleId: 'group-proxy::in::21::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+    },
+  ]);
+});

@@ -20,6 +20,102 @@ function clonePlainObject(value) {
   return cloneValue(value) || {};
 }
 
+function encodeProxyHandleRef(handleId) {
+  return encodeURIComponent(String(handleId || ''));
+}
+
+function decodeProxyHandleRef(encoded) {
+  try {
+    return decodeURIComponent(String(encoded || ''));
+  } catch {
+    return String(encoded || '');
+  }
+}
+
+function parseGroupProxyHandle(handleId) {
+  const text = String(handleId || '');
+  if (!text.startsWith('group-proxy::')) return null;
+  const parts = text.split('::');
+  if (parts.length < 5) return null;
+  return {
+    direction: parts[1],
+    nodeId: parts[2],
+    type: parts[3],
+    realHandle: decodeProxyHandleRef(parts.slice(4).join('::')),
+  };
+}
+
+function hasOwn(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function remapNodeId(value, idMap) {
+  if (value == null) return value;
+  return idMap.get(String(value)) || String(value);
+}
+
+function remapGroupProxyHandle(handleId, idMap) {
+  const proxy = parseGroupProxyHandle(handleId);
+  if (!proxy) return handleId;
+  return `group-proxy::${proxy.direction}::${remapNodeId(proxy.nodeId, idMap)}::${proxy.type}::${encodeProxyHandleRef(proxy.realHandle)}`;
+}
+
+function remapGroupProxyDescriptors(items, idMap) {
+  if (!Array.isArray(items)) return items;
+  return items.map((item) => {
+    if (!item || typeof item !== 'object') return item;
+    const nextItem = { ...item };
+    if (typeof nextItem.key === 'string') {
+      const separator = nextItem.key.indexOf('::');
+      if (separator !== -1) {
+        const handleId = nextItem.key.slice(separator + 2);
+        nextItem.key = `${remapNodeId(nextItem.key.slice(0, separator), idMap)}::${remapGroupProxyHandle(handleId, idMap)}`;
+      }
+    }
+    if (typeof nextItem.handleId === 'string') {
+      nextItem.handleId = remapGroupProxyHandle(nextItem.handleId, idMap);
+    }
+    return nextItem;
+  });
+}
+
+function remapClipboardExtraData(extraData, idMap) {
+  const nextExtraData = clonePlainObject(extraData);
+  if (Array.isArray(nextExtraData.proxyInputs)) {
+    nextExtraData.proxyInputs = remapGroupProxyDescriptors(nextExtraData.proxyInputs, idMap);
+  }
+  if (Array.isArray(nextExtraData.proxyOutputs)) {
+    nextExtraData.proxyOutputs = remapGroupProxyDescriptors(nextExtraData.proxyOutputs, idMap);
+  }
+  return nextExtraData;
+}
+
+function remapClipboardEdgeData(data, idMap) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return cloneValue(data);
+
+  const nextData = cloneValue(data);
+  if (hasOwn(nextData, 'groupInternalHiddenBy')) {
+    nextData.groupInternalHiddenBy = remapNodeId(nextData.groupInternalHiddenBy, idMap);
+  }
+  if (hasOwn(nextData, 'groupProxyOwner')) {
+    nextData.groupProxyOwner = remapNodeId(nextData.groupProxyOwner, idMap);
+  }
+
+  const original = nextData.groupProxyOriginal;
+  if (original && typeof original === 'object' && !Array.isArray(original)) {
+    if (hasOwn(original, 'source')) original.source = remapNodeId(original.source, idMap);
+    if (hasOwn(original, 'target')) original.target = remapNodeId(original.target, idMap);
+    if (hasOwn(original, 'sourceHandle')) {
+      original.sourceHandle = remapGroupProxyHandle(original.sourceHandle, idMap);
+    }
+    if (hasOwn(original, 'targetHandle')) {
+      original.targetHandle = remapGroupProxyHandle(original.targetHandle, idMap);
+    }
+  }
+
+  return nextData;
+}
+
 function collectSelectedNodeIds(nodes, nodeIds) {
   const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id)));
   if (selectedIdSet.size === 0) return selectedIdSet;
@@ -161,6 +257,7 @@ export function instantiateNodeClipboardPayload(
     const newId = idMap.get(String(node.id));
     const className = node.data?.className || '';
     const definition = className ? defs[className] || null : null;
+    const extraData = remapClipboardExtraData(node.data?.extraData, idMap);
 
     return {
       id: newId,
@@ -181,7 +278,7 @@ export function instantiateNodeClipboardPayload(
         className,
         widgetValues: clonePlainObject(node.data?.widgetValues),
         runtimeValues: clonePlainObject(node.data?.runtimeValues),
-        ...(clonePlainObject(node.data?.extraData)),
+        ...extraData,
         definition,
         previewImage: null,
         tableRows: null,
@@ -199,17 +296,21 @@ export function instantiateNodeClipboardPayload(
       idMap.has(String(edge.target))
       && (idMap.has(String(edge.source)) || keepExternalSources)
     ))
-    .map((edge, index) => ({
-      id: `e${idMap.get(String(edge.source)) || String(edge.source)}-${idMap.get(String(edge.target))}-${index}`,
-      source: idMap.get(String(edge.source)) || String(edge.source),
-      sourceHandle: edge.sourceHandle,
-      target: idMap.get(String(edge.target)),
-      targetHandle: edge.targetHandle,
-      selected: false,
-      ...(edge.style ? { style: { ...edge.style } } : {}),
-      ...(edge.hidden ? { hidden: true } : {}),
-      ...(edge.data ? { data: cloneValue(edge.data) } : {}),
-    }));
+    .map((edge, index) => {
+      const source = idMap.get(String(edge.source)) || String(edge.source);
+      const target = idMap.get(String(edge.target));
+      return {
+        id: `e${source}-${target}-${index}`,
+        source,
+        sourceHandle: remapGroupProxyHandle(edge.sourceHandle, idMap),
+        target,
+        targetHandle: remapGroupProxyHandle(edge.targetHandle, idMap),
+        selected: false,
+        ...(edge.style ? { style: { ...edge.style } } : {}),
+        ...(edge.hidden ? { hidden: true } : {}),
+        ...(edge.data ? { data: remapClipboardEdgeData(edge.data, idMap) } : {}),
+      };
+    });
 
   return {
     nodes,
