@@ -287,7 +287,7 @@ def test_flip_field():
         overlays=[markup_overlay, annotation_overlay],
     )
 
-    assert get_node_info("FlipField")["category"] == "Modify"
+    assert get_node_info("FlipField")["category"] == "Geometry"
 
     flipped_x, = node.process(field, axis="x")
     assert np.array_equal(flipped_x.data, np.flipud(data))
@@ -569,7 +569,7 @@ def test_facet_level():
 
     node = FacetLevelField()
     plane_node = PlaneLevelField()
-    assert get_node_info("FacetLevelField")["category"] == "Flatten"
+    assert get_node_info("FacetLevelField")["category"] == "Level & Correct"
 
     N = 96
     yy, xx = np.mgrid[0:N, 0:N]
@@ -749,7 +749,7 @@ def test_line_correction():
     from backend.nodes.line_correction import LineCorrection
 
     node = LineCorrection()
-    assert get_node_info("LineCorrection")["category"] == "Flatten"
+    assert get_node_info("LineCorrection")["category"] == "Level & Correct"
 
     rows = 96
     cols = 128
@@ -815,7 +815,9 @@ def test_scar_removal():
     from backend.nodes.scar_removal import ScarRemoval
 
     node = ScarRemoval()
-    assert get_node_info("ScarRemoval")["category"] == "Filter"
+    info = get_node_info("ScarRemoval")
+    assert info["category"] == "Filter"
+    assert {entry["category"] for entry in info["menu_categories"]} == {"Filter", "Level & Correct"}
 
     rows = 96
     cols = 128
@@ -874,7 +876,9 @@ def test_angle_measure():
     from backend.data_types import ImageData
 
     node = AngleMeasure()
-    assert get_node_info("AngleMeasure")["category"] == "Overlay"
+    info = get_node_info("AngleMeasure")
+    assert info["category"] == "Overlay"
+    assert {entry["category"] for entry in info["menu_categories"]} == {"Overlay", "Measure"}
     required_inputs = AngleMeasure.INPUT_TYPES()["required"]
     optional_inputs = AngleMeasure.INPUT_TYPES().get("optional", {})
     assert required_inputs["color"][1]["default"] == "#ff9800"

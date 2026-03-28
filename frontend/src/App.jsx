@@ -404,8 +404,16 @@ function canStartCanvasRightDragZoom(target) {
 }
 
 function compareMenuNodes(a, b) {
-  const orderA = Number.isFinite(a?.def?.menu_order) ? a.def.menu_order : Number.MAX_SAFE_INTEGER;
-  const orderB = Number.isFinite(b?.def?.menu_order) ? b.def.menu_order : Number.MAX_SAFE_INTEGER;
+  const orderA = Number.isFinite(a?.menu_order)
+    ? a.menu_order
+    : Number.isFinite(a?.def?.menu_order)
+      ? a.def.menu_order
+      : Number.MAX_SAFE_INTEGER;
+  const orderB = Number.isFinite(b?.menu_order)
+    ? b.menu_order
+    : Number.isFinite(b?.def?.menu_order)
+      ? b.def.menu_order
+      : Number.MAX_SAFE_INTEGER;
   if (orderA !== orderB) return orderA - orderB;
 
   const nameA = (a?.def?.display_name || a?.className || '').toLowerCase();
@@ -615,19 +623,37 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
           if (!hasMatch) continue;
         }
       }
-      const cat = def.category || 'uncategorized';
-      if (!cats[cat]) {
-        cats[cat] = {
-          name: cat,
-          order: Number.isFinite(def.category_order) ? def.category_order : Number.MAX_SAFE_INTEGER,
-          items: [],
-        };
+      const menuCategories = Array.isArray(def.menu_categories) && def.menu_categories.length > 0
+        ? def.menu_categories
+        : [{
+            category: def.category || 'uncategorized',
+            category_order: def.category_order,
+            menu_order: def.menu_order,
+          }];
+
+      for (const menuCategory of menuCategories) {
+        const cat = menuCategory?.category || def.category || 'uncategorized';
+        if (!cats[cat]) {
+          cats[cat] = {
+            name: cat,
+            order: Number.isFinite(menuCategory?.category_order)
+              ? menuCategory.category_order
+              : Number.MAX_SAFE_INTEGER,
+            items: [],
+          };
+        }
+        cats[cat].order = Math.min(
+          cats[cat].order,
+          Number.isFinite(menuCategory?.category_order)
+            ? menuCategory.category_order
+            : Number.MAX_SAFE_INTEGER,
+        );
+        cats[cat].items.push({
+          className,
+          def,
+          menu_order: Number.isFinite(menuCategory?.menu_order) ? menuCategory.menu_order : def.menu_order,
+        });
       }
-      cats[cat].order = Math.min(
-        cats[cat].order,
-        Number.isFinite(def.category_order) ? def.category_order : Number.MAX_SAFE_INTEGER,
-      );
-      cats[cat].items.push({ className, def });
     }
     return Object.values(cats)
       .map((category) => ({
@@ -642,10 +668,15 @@ function ContextMenu({ x, y, nodeDefs, onAdd, onClose, filterType, filterDirecti
     if (!search.trim()) return null;
     const q = search.toLowerCase();
     const results = [];
+    const seen = new Set();
     for (const category of categories) {
       for (const { className, def } of category.items) {
+        if (seen.has(className)) continue;
         const name = (def.display_name || className).toLowerCase();
-        if (name.includes(q)) results.push({ className, def });
+        if (name.includes(q)) {
+          results.push({ className, def });
+          seen.add(className);
+        }
       }
     }
     return results;

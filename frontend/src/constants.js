@@ -33,13 +33,16 @@ export const TYPE_COLORS = {
 };
 
 export const CAT_COLORS = {
-  io:        '#37474f',
-  filters:   '#1a237e',
-  modify:    '#0f766e',
-  level:     '#1b5e20',
-  analysis:  '#4a148c',
+  Input:           '#37474f',
+  Display:         '#212121',
+  Overlay:         '#0f766e',
+  Geometry:        '#0d9488',
+  Filter:          '#1a237e',
+  Spectral:        '#4c1d95',
+  'Level & Correct': '#1b5e20',
+  Measure:         '#4a148c',
+  Mask:            '#7c2d12',
   Grains:    '#bf360c',
-  display:   '#212121',
 };
 
 export const SOCKET_COMPATIBILITY = {

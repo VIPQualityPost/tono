@@ -47,6 +47,7 @@ def get_node_info(class_name: str) -> dict[str, Any]:
         "category": menu_metadata["category"],
         "category_order": menu_metadata["category_order"],
         "menu_order": menu_metadata["menu_order"],
+        "menu_categories": list(menu_metadata.get("menu_categories", [])),
         "input": input_types,
         "input_order": {k: list(v.keys()) for k, v in input_types.items()},
         "output": list(cls.RETURN_TYPES),
