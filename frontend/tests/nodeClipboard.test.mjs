@@ -58,7 +58,7 @@ test('buildNodeClipboardPayload keeps only selected nodes and internal edges', (
       source: '2',
       sourceHandle: 'output::0::IMAGE',
       target: '3',
-      targetHandle: 'input::value::SAVE_VALUE',
+      targetHandle: 'input::value::DATA_FIELD',
     },
   ];
 
@@ -166,7 +166,7 @@ test('buildNodeClipboardPayloadForIds can include upstream external edges for du
       source: '2',
       sourceHandle: 'output::0::IMAGE',
       target: '3',
-      targetHandle: 'input::value::SAVE_VALUE',
+      targetHandle: 'input::value::DATA_FIELD',
     },
   ];
 

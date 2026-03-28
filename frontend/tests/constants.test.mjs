@@ -1,8 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SOCKET_COMPATIBILITY } from '../src/constants.js';
+import {
+  DATA_TYPES,
+  getAcceptedSocketTypes,
+  isDataSocketSpec,
+  socketSpecAcceptsType,
+} from '../src/constants.js';
 
-test('SAVE_VALUE accepts ANNOTATION_SOURCE inputs', () => {
-  assert.equal(SOCKET_COMPATIBILITY.SAVE_VALUE.has('ANNOTATION_SOURCE'), true);
+test('intrinsic socket compatibility still allows INT to connect to FLOAT sockets', () => {
+  assert.equal(socketSpecAcceptsType('INT', 'FLOAT'), true);
+  assert.equal(socketSpecAcceptsType('FLOAT', 'INT'), true);
+});
+
+test('retired save alias types are no longer first-class socket types', () => {
+  assert.equal(DATA_TYPES.has('SAVE_VALUE'), false);
+  assert.equal(DATA_TYPES.has('SAVE_LAYER'), false);
+});
+
+test('accepted_types extend canonical socket compatibility without reintroducing alias types', () => {
+  const spec = ['MEASURE_TABLE', { accepted_types: ['RECORD_TABLE'] }];
+
+  assert.equal(isDataSocketSpec(spec), true);
+  assert.deepEqual(
+    Array.from(getAcceptedSocketTypes(spec)).sort(),
+    ['MEASURE_TABLE', 'RECORD_TABLE'],
+  );
+  assert.equal(socketSpecAcceptsType('RECORD_TABLE', spec), true);
+  assert.equal(socketSpecAcceptsType('LINE', spec), false);
 });

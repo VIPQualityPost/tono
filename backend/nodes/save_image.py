@@ -17,7 +17,10 @@ class SaveImage:
             "directory": ("DIRECTORY", {"label": "directory"}),
         }
         for i in range(_MAX_SAVE_FIELDS):
-            optional[f"field_{i}"] = ("SAVE_LAYER", {"label": f"layer {i + 1}"})
+            optional[f"field_{i}"] = ("DATA_FIELD", {
+                "label": f"layer {i + 1}",
+                "accepted_types": ["IMAGE", "ANNOTATION_SOURCE"],
+            })
             optional[f"layer_name_{i}"] = ("STRING", {
                 "default": "",
                 "placeholder": "name",

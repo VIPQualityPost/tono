@@ -22,7 +22,10 @@ class PreviewImage:
                 "colormap": (["auto"] + list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
             },
             "optional": {
-                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
+                "input": ("ANNOTATION_SOURCE", {
+                    "label": "Input",
+                    "accepted_types": ["DATA_FIELD", "IMAGE"],
+                }),
                 "colormap_map": ("COLORMAP", {"label": "colormap"}),
             }
         }

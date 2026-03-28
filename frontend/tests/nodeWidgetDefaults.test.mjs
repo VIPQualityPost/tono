@@ -16,6 +16,7 @@ test('buildDefaultWidgetValues keeps non-data required widget defaults', () => {
       input: {
         required: {
           input: ['ANNOTATION_SOURCE', { label: 'Input' }],
+          table: ['MEASURE_TABLE', { accepted_types: ['RECORD_TABLE'] }],
           shape: [['line', 'rectangle', 'circle', 'arrow'], { default: 'arrow' }],
           stroke_color: ['STRING', { default: '#ff0000', color_picker: true }],
           stroke_width: ['INT', { default: 3 }],

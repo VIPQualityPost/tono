@@ -23,7 +23,10 @@ class Annotations:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
+                "input": ("ANNOTATION_SOURCE", {
+                    "label": "Input",
+                    "accepted_types": ["DATA_FIELD", "IMAGE"],
+                }),
                 "colormap": (["auto"] + list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
                 "show_scale_bar": ("BOOLEAN", {"default": True}),
                 "show_color_map": ("BOOLEAN", {"default": True}),

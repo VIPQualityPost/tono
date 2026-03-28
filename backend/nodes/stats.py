@@ -26,7 +26,9 @@ class Stats:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "input": ("STATS_SOURCE",),
+                "input": ("DATA_FIELD", {
+                    "accepted_types": ["IMAGE", "LINE", "RECORD_TABLE"],
+                }),
                 "column": ("STRING", {
                     "default": "value",
                     "choices_from_table_input": "input",

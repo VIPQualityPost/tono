@@ -11,7 +11,9 @@ class ValueDisplay:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": ("VALUE_SOURCE",),
+                "value": ("FLOAT", {
+                    "accepted_types": ["MEASURE_TABLE"],
+                }),
                 "measurement": ("STRING", {
                     "default": "",
                     "choices_from_measure_input": "value",

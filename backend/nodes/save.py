@@ -29,7 +29,18 @@ class Save:
                     "hide_when_input_connected": "directory",
                     "top_socket_input": "directory",
                 }),
-                "value": ("SAVE_VALUE", {"label": "value"}),
+                "value": ("DATA_FIELD", {
+                    "label": "value",
+                    "accepted_types": [
+                        "IMAGE",
+                        "ANNOTATION_SOURCE",
+                        "LINE",
+                        "MEASURE_TABLE",
+                        "RECORD_TABLE",
+                        "MESH_MODEL",
+                        "FLOAT",
+                    ],
+                }),
                 "format": ("STRING", {
                     "default": "TIFF",
                     "choices_by_source_type": {

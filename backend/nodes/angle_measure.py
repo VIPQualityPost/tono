@@ -85,7 +85,10 @@ class AngleMeasure:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
+                "input": ("ANNOTATION_SOURCE", {
+                    "label": "Input",
+                    "accepted_types": ["DATA_FIELD", "IMAGE"],
+                }),
                 "color": ("STRING", {"default": ANGLE_DEFAULT_COLOR, "color_picker": True}),
                 "stroke_width": ("FLOAT", {
                     "default": 1.35,

@@ -1,8 +1,8 @@
-import { DATA_TYPES } from './constants.js';
+import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.js';
 
 export function getDefaultWidgetValue(spec) {
-  const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-  if (DATA_TYPES.has(type)) return undefined;
+  const [type, opts] = getSpecTypeAndOptions(spec);
+  if (isDataSocketSpec(spec)) return undefined;
   if (type === 'BUTTON') return undefined;
   if (Array.isArray(type)) {
     if (typeof opts?.default === 'string' && type.includes(opts.default)) {

@@ -1,9 +1,9 @@
 // ── Shared type & color constants ─────────────────────────────────────
 
 export const DATA_TYPES = new Set([
-  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'ANY_TABLE',
-  'COORD', 'STATS_SOURCE', 'CURSOR_SOURCE', 'VALUE_SOURCE', 'ANNOTATION_SOURCE', 'COLORMAP',
-  'SAVE_LAYER', 'SAVE_VALUE', 'MESH_MODEL', 'FONT', 'FILE_PATH', 'DIRECTORY', 'COORDPAIR',
+  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE',
+  'COORD', 'ANNOTATION_SOURCE', 'COLORMAP',
+  'MESH_MODEL', 'FONT', 'FILE_PATH', 'DIRECTORY', 'COORDPAIR',
 ]);
 
 export const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
@@ -13,19 +13,13 @@ export const TYPE_COLORS = {
   IMAGE:         '#00ff08a0',
   LINE:          '#ffbe5c',
   MEASURE_TABLE: '#35e2fd',
-  RECORD_TABLE:  '#fbbf24',
-  ANY_TABLE:     '#67e8f9',
+  RECORD_TABLE:  '#ff7474',
   COORD:         '#e91ed1',
-  COORDPAIR:     '#5c7cb8',
+  COORDPAIR:     '#5cb861',
   FLOAT:         '#ab3197',
-  INT:           '#38bdf8',
-  STATS_SOURCE:  '#c084fc',
-  CURSOR_SOURCE: '#a78bfa',
-  VALUE_SOURCE:  '#60a5fa',
+  INT:           '#ffffff',
   ANNOTATION_SOURCE: '#06b6d4',
   COLORMAP:      '#f472b6',
-  SAVE_LAYER:    '#22c55e',
-  SAVE_VALUE:    '#4ade80',
   MESH_MODEL:    '#14b8a6',
   FONT:          '#fb7185',
   FILE_PATH:     '#f59e0b',
@@ -46,17 +40,59 @@ export const CAT_COLORS = {
 };
 
 export const SOCKET_COMPATIBILITY = {
-  STATS_SOURCE:  new Set(['DATA_FIELD', 'IMAGE', 'LINE', 'RECORD_TABLE']),
-  CURSOR_SOURCE: new Set(['DATA_FIELD', 'LINE']),
-  ANY_TABLE:     new Set(['MEASURE_TABLE', 'RECORD_TABLE']),
-  VALUE_SOURCE:  new Set(['FLOAT', 'MEASURE_TABLE']),
-  ANNOTATION_SOURCE: new Set(['DATA_FIELD', 'IMAGE']),
-  SAVE_LAYER:    new Set(['DATA_FIELD', 'IMAGE']),
-  SAVE_VALUE:    new Set(['DATA_FIELD', 'IMAGE', 'ANNOTATION_SOURCE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE', 'MESH_MODEL', 'FLOAT']),
   FLOAT:         new Set(['INT']),
   INT:           new Set(['FLOAT']),
   LINE:          new Set(['COORDPAIR']),
 };
+
+const EMPTY_SOCKET_TYPE_SET = new Set();
+
+export function getSpecTypeAndOptions(spec) {
+  if (Array.isArray(spec)) {
+    return [spec[0], spec[1] || {}];
+  }
+  return [spec, {}];
+}
+
+export function isDataSocketType(type) {
+  return typeof type === 'string' && DATA_TYPES.has(type);
+}
+
+export function isDataSocketSpec(spec) {
+  const [type] = getSpecTypeAndOptions(spec);
+  return isDataSocketType(type);
+}
+
+export function getAcceptedSocketTypes(specOrType) {
+  const [type, opts] = Array.isArray(specOrType)
+    ? getSpecTypeAndOptions(specOrType)
+    : [specOrType, {}];
+  if (typeof type !== 'string') {
+    return EMPTY_SOCKET_TYPE_SET;
+  }
+
+  const accepted = new Set([type]);
+  const explicitAccepted = Array.isArray(opts?.accepted_types) ? opts.accepted_types : [];
+  for (const acceptedType of explicitAccepted) {
+    if (typeof acceptedType === 'string' && acceptedType) {
+      accepted.add(acceptedType);
+    }
+  }
+
+  const fallbackAccepted = SOCKET_COMPATIBILITY[type];
+  if (fallbackAccepted) {
+    for (const acceptedType of fallbackAccepted) {
+      accepted.add(acceptedType);
+    }
+  }
+
+  return accepted;
+}
+
+export function socketSpecAcceptsType(sourceType, targetSpecOrType) {
+  if (typeof sourceType !== 'string' || !sourceType) return false;
+  return getAcceptedSocketTypes(targetSpecOrType).has(sourceType);
+}
 
 // Colors used in Canvas 2D / toBlob contexts where CSS var() is unavailable.
 export const CANVAS_COLORS = {

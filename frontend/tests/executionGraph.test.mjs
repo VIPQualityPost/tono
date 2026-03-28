@@ -478,3 +478,89 @@ test('hasBlockingAutoRunInput skips required file widgets when a connected socke
 
   assert.equal(hasBlockingAutoRunInput(node, edges), false);
 });
+
+test('serializeExecutionGraph treats accepted_types inputs as sockets, not widgets', () => {
+  const nodes = [
+    {
+      id: '1',
+      data: {
+        className: 'TableSource',
+        definition: {
+          input: { required: {}, optional: {} },
+          output: ['RECORD_TABLE'],
+          output_name: ['rows'],
+          manual_trigger: false,
+        },
+        widgetValues: {},
+      },
+    },
+    {
+      id: '2',
+      data: {
+        className: 'PrintTable',
+        definition: {
+          input: {
+            required: {
+              table: ['MEASURE_TABLE', { accepted_types: ['RECORD_TABLE'] }],
+            },
+            optional: {},
+          },
+          manual_trigger: false,
+        },
+        widgetValues: { table: 'should-not-serialize' },
+      },
+    },
+  ];
+  const edges = [
+    {
+      source: '1',
+      sourceHandle: 'output::0::RECORD_TABLE',
+      target: '2',
+      targetHandle: 'input::table::MEASURE_TABLE',
+    },
+  ];
+
+  const prompt = serializeExecutionGraph(nodes, edges);
+
+  assert.deepEqual(prompt, {
+    '1': {
+      class_type: 'TableSource',
+      inputs: {},
+    },
+    '2': {
+      class_type: 'PrintTable',
+      inputs: { table: ['1', 0] },
+    },
+  });
+});
+
+test('hasBlockingAutoRunInput still blocks unconnected accepted_types sockets', () => {
+  const node = {
+    id: '2',
+    data: {
+      definition: {
+        manual_trigger: false,
+        input: {
+          required: {
+            input: ['DATA_FIELD', { accepted_types: ['IMAGE', 'LINE', 'RECORD_TABLE'] }],
+          },
+          optional: {},
+        },
+      },
+      widgetValues: {},
+    },
+  };
+
+  assert.equal(hasBlockingAutoRunInput(node, []), true);
+  assert.equal(
+    hasBlockingAutoRunInput(node, [
+      {
+        source: '1',
+        sourceHandle: 'output::0::RECORD_TABLE',
+        target: '2',
+        targetHandle: 'input::input::DATA_FIELD',
+      },
+    ]),
+    false,
+  );
+});

@@ -10,7 +10,7 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 
 import {
-  DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
+  getSpecTypeAndOptions, isDataSocketSpec, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
 import { getGroupMinimumSize } from './groupSizing.js';
 import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout.js';
@@ -898,8 +898,8 @@ function CustomNode({ id, data }) {
   const hiddenWidgets = new Set();
 
   for (const [name, spec] of Object.entries(required)) {
-    const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-    if (DATA_TYPES.has(type)) {
+    const [type, opts] = getSpecTypeAndOptions(spec);
+    if (isDataSocketSpec(spec)) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else if (opts?.hidden) {
@@ -943,8 +943,8 @@ function CustomNode({ id, data }) {
   );
 
   for (const [name, spec] of Object.entries(optional)) {
-    const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-    if (isProgressive && DATA_TYPES.has(type)) {
+    const [type, opts] = getSpecTypeAndOptions(spec);
+    if (isProgressive && isDataSocketSpec(spec)) {
       // Progressive: show this slot only if it's the first or the previous is connected
       const match = name.match(/^field_(\d+)$/);
       if (match) {
@@ -958,7 +958,7 @@ function CustomNode({ id, data }) {
     }
     if (opts?.hidden) {
       hiddenWidgets.add(name);
-    } else if (DATA_TYPES.has(type)) {
+    } else if (isDataSocketSpec(spec)) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else {

@@ -13,7 +13,10 @@ class Cursors:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "line": ("CURSOR_SOURCE", {"label": "input"}),
+                "line": ("LINE", {
+                    "label": "input",
+                    "accepted_types": ["DATA_FIELD"],
+                }),
                 "x1": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "y1": ("FLOAT", {"default": 0.5,  "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "x2": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),

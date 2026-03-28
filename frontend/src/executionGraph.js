@@ -1,4 +1,4 @@
-import { DATA_TYPES } from './constants.js';
+import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.js';
 
 const OMITTED_WIDGET_INPUTS_BY_CLASS = {
   View3D: new Set([
@@ -91,8 +91,8 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
     };
     for (const [name, spec] of Object.entries(allWidgets)) {
       if (omittedInputs?.has(name)) continue;
-      const [type] = Array.isArray(spec) ? spec : [spec];
-      if (DATA_TYPES.has(type)) continue;
+      const [type] = getSpecTypeAndOptions(spec);
+      if (isDataSocketSpec(spec)) continue;
       if (type === 'BUTTON') continue;
       if (valueBag[name] !== undefined) {
         inputs[name] = valueBag[name];
@@ -125,16 +125,16 @@ export function hasBlockingAutoRunInput(node, edges) {
 
   const required = def.input.required || {};
   for (const [name, spec] of Object.entries(required)) {
-    const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-      const hiddenByConnectedInput = (() => {
-        const raw = opts?.hide_when_input_connected;
-        if (!raw) return false;
-        const inputs = Array.isArray(raw) ? raw : [raw];
-        return inputs.some((inputName) => edges.some(
-          (edge) => {
-            const resolved = resolveExecutionEdge(edge);
-            return resolved.target === node.id && getInputName(resolved.targetHandle) === String(inputName);
-          }
+    const [type, opts] = getSpecTypeAndOptions(spec);
+    const hiddenByConnectedInput = (() => {
+      const raw = opts?.hide_when_input_connected;
+      if (!raw) return false;
+      const inputs = Array.isArray(raw) ? raw : [raw];
+      return inputs.some((inputName) => edges.some(
+        (edge) => {
+          const resolved = resolveExecutionEdge(edge);
+          return resolved.target === node.id && getInputName(resolved.targetHandle) === String(inputName);
+        }
       ));
     })();
 
@@ -144,7 +144,7 @@ export function hasBlockingAutoRunInput(node, edges) {
       if (!node.data.widgetValues?.[name]) return true;
       continue;
     }
-    if (!DATA_TYPES.has(type)) continue;
+    if (!isDataSocketSpec(spec)) continue;
     const hasEdge = edges.some(
       (edge) => {
         const resolved = resolveExecutionEdge(edge);

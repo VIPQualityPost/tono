@@ -21,7 +21,10 @@ class Markup:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
+                "input": ("ANNOTATION_SOURCE", {
+                    "label": "Input",
+                    "accepted_types": ["DATA_FIELD", "IMAGE"],
+                }),
                 "shape": (["line", "rectangle", "circle", "arrow"], {"default": "arrow"}),
                 "stroke_color": ("STRING", {"default": "#ff0000", "color_picker": True}),
                 "stroke_width": ("INT", {"default": 3, "min": 1, "max": 64, "step": 1}),
