@@ -8,3 +8,5 @@ desktop-dist/
 frontend/node_modules/
 frontend/dist/
 .venv/
+sessions/
+.*/
