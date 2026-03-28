@@ -14,8 +14,8 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 | ~~4~~ | ~~Morphological Mask Ops~~ | ~~mask_morph.c~~ | ~~Erode, dilate, open, close on grain masks. Needed to clean up thresholded masks.~~ **DONE** |
 | ~~5~~ | ~~1D FFT Filter~~ | ~~fft_filter_1d.c~~ | ~~Bandpass/lowpass/highpass filtering of LINE profiles.~~ **DONE** |
 | ~~6~~ | ~~2D FFT Filter~~ | ~~fft_filter_2d.c~~ | ~~Frequency-domain filtering of DATA_FIELDs (remove periodic noise, etc.).~~ **DONE** |
-| 7 | Autocorrelation (ACF) | acf2d.c | 2D autocorrelation function. Reveals periodic structures and correlation lengths. |
-| 8 | PSDF | psdf2d.c | Radial/2D power spectral density function. Complementary to ACF for roughness characterization. |
+| ~~7~~ | ~~Autocorrelation (ACF)~~ | ~~acf2d.c~~ | ~~2D autocorrelation function. Reveals periodic structures and correlation lengths.~~ **DONE** |
+| ~~8~~ | ~~PSDF~~ | ~~psdf2d.c~~ | ~~Radial/2D power spectral density function. Complementary to ACF for roughness characterization.~~ **DONE** |
 | 9 | Fractal Dimension | fractal.c | Multiple methods: partitioning, cube counting, triangulation, PSDF, HHCF. Quantifies surface complexity. |
 | 10 | Curvature | curvature.c | Local mean/Gaussian curvature maps. Useful for feature identification. |
 | 11 | Grain Distance Transform | mask_edt.c | Euclidean distance from grain boundaries. Useful for spatial distribution analysis. |

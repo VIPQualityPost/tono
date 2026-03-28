@@ -52,6 +52,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     ],
     "Frequency": [
         "FFT2D",
+        "PSDF",
         "InverseFFT2D",
     ],
     "Flatten": [
@@ -63,6 +64,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     "Measure": [
         "CrossSection",
         "Histogram",
+        "ACF",
         "Cursors",
         "Statistics",
         "Stats",

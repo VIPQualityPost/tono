@@ -47,8 +47,10 @@ from backend.nodes import (
     # Analysis
     statistics_node,
     histogram,
+    acf,
     cursors,
     fft_2d,
+    psdf,
     inverse_fft_2d,
     cross_section,
     stats,
