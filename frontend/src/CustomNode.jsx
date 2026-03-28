@@ -7,6 +7,7 @@ const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
 const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
 const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
+const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 
 import {
   DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
@@ -1018,6 +1019,8 @@ function CustomNode({ id, data }) {
       ? 'Mask'
       : data.overlay?.kind === 'markup'
       ? 'Markup'
+      : data.overlay?.kind === 'angle_measure'
+      ? 'Angle'
       : data.overlay?.kind === 'crop_box'
       ? 'Crop'
       : data.overlay?.kind === 'cursor_points'
@@ -1298,6 +1301,25 @@ function CustomNode({ id, data }) {
                   strokeColor={data.widgetValues.stroke_color ?? data.overlay.stroke_color}
                   strokeWidth={data.widgetValues.stroke_width ?? data.overlay.stroke_width}
                   markupShapes={data.widgetValues.markup_shapes}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : data.overlay.kind === 'angle_measure' ? (
+                <AngleMeasureOverlay
+                  image={data.overlay.image}
+                  x1={data.widgetValues.x1 ?? data.overlay.x1}
+                  y1={data.widgetValues.y1 ?? data.overlay.y1}
+                  xm={data.widgetValues.xm ?? data.overlay.xm}
+                  ym={data.widgetValues.ym ?? data.overlay.ym}
+                  x2={data.widgetValues.x2 ?? data.overlay.x2}
+                  y2={data.widgetValues.y2 ?? data.overlay.y2}
+                  labelDx={data.widgetValues.label_dx ?? data.overlay.label_dx ?? 0}
+                  labelDy={data.widgetValues.label_dy ?? data.overlay.label_dy ?? 0}
+                  angleDeg={data.overlay.angle_deg}
+                  color={data.widgetValues.color ?? data.overlay.color ?? '#ff0000'}
+                  lineThickness={connectedInputs?.has('line_thickness_input')
+                    ? (data.overlay.line_thickness ?? data.widgetValues.line_thickness ?? 1.35)
+                    : (data.widgetValues.line_thickness ?? data.overlay.line_thickness ?? 1.35)}
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
                 />

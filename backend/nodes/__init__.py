@@ -38,6 +38,7 @@ from backend.nodes import (
     color_map,
     font_node,
     annotations,
+    angle_measure,
     markup,
     preview_image,
     view_3d,

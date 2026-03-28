@@ -102,12 +102,12 @@ class Cursors:
         })
 
         table = MeasureTable([
+            {"quantity": "dx",  "value": xb - xa, "unit": x_unit},
+            {"quantity": "dy",  "value": yb - ya, "unit": y_unit},
             {"quantity": "A x", "value": xa, "unit": x_unit},
             {"quantity": "A y", "value": ya, "unit": y_unit},
             {"quantity": "B x", "value": xb, "unit": x_unit},
             {"quantity": "B y", "value": yb, "unit": y_unit},
-            {"quantity": "dx",  "value": xb - xa, "unit": x_unit},
-            {"quantity": "dy",  "value": yb - ya, "unit": y_unit},
         ])
         return (table, ((x1, y1), (x2, y2)))
 

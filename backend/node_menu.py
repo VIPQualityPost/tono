@@ -34,6 +34,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     "Overlay": [
         "Markup",
         "Annotations",
+        "AngleMeasure",
     ],
     "Modify": [
         "ColormapAdjust",

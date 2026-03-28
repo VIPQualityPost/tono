@@ -860,6 +860,216 @@ def _apply_markup_overlay(image: np.ndarray, field: DataField | None, spec: dict
     return np.asarray(pil_image, dtype=np.uint8)
 
 
+def _angle_label_base_position(spec: dict[str, Any]) -> tuple[float, float]:
+    x1 = float(np.clip(spec.get("x1", 0.0), 0.0, 1.0))
+    y1 = float(np.clip(spec.get("y1", 0.0), 0.0, 1.0))
+    xm = float(np.clip(spec.get("xm", 0.5), 0.0, 1.0))
+    ym = float(np.clip(spec.get("ym", 0.5), 0.0, 1.0))
+    x2 = float(np.clip(spec.get("x2", 1.0), 0.0, 1.0))
+    y2 = float(np.clip(spec.get("y2", 0.0), 0.0, 1.0))
+
+    va = np.array([x1 - xm, y1 - ym], dtype=np.float64)
+    vb = np.array([x2 - xm, y2 - ym], dtype=np.float64)
+    len_a = float(np.hypot(va[0], va[1]))
+    len_b = float(np.hypot(vb[0], vb[1]))
+    if len_a <= 1e-6 or len_b <= 1e-6:
+        return (float(np.clip(xm, 0.0, 1.0)), float(np.clip(ym - 0.14, 0.0, 1.0)))
+
+    unit = np.array([
+        va[0] / len_a + vb[0] / len_b,
+        va[1] / len_a + vb[1] / len_b,
+    ], dtype=np.float64)
+    unit_len = float(np.hypot(unit[0], unit[1]))
+    if unit_len <= 1e-6:
+        bisector = np.array([0.0, -1.0], dtype=np.float64)
+    else:
+        bisector = unit / unit_len
+
+    return (
+        float(np.clip(xm + bisector[0] * 0.14, 0.0, 1.0)),
+        float(np.clip(ym + bisector[1] * 0.14, 0.0, 1.0)),
+    )
+
+
+def _sanitize_angle_overlay_thickness(value: Any, default: float = 1.35) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        numeric = default
+    if not np.isfinite(numeric):
+        numeric = default
+    return float(np.clip(numeric, 0.35, 6.0))
+
+
+def _sanitize_angle_overlay_color(value: Any, default: str = "#ff0000") -> str:
+    if isinstance(value, str):
+        text = value.strip()
+        if len(text) == 4 and text.startswith("#"):
+            text = "#" + "".join(ch * 2 for ch in text[1:])
+        if len(text) == 7 and text.startswith("#"):
+            try:
+                int(text[1:], 16)
+                return text.lower()
+            except ValueError:
+                pass
+    return default
+
+
+def _hex_to_rgb(color: str) -> tuple[int, int, int]:
+    return tuple(int(color[index:index + 2], 16) for index in (1, 3, 5))
+
+
+def _mix_rgb(color_a: tuple[int, int, int], color_b: tuple[int, int, int], weight: float) -> tuple[int, int, int]:
+    alpha = float(np.clip(weight, 0.0, 1.0))
+    return tuple(
+        int(round(a * (1.0 - alpha) + b * alpha))
+        for a, b in zip(color_a, color_b)
+    )
+
+
+def _draw_round_line(draw, start: tuple[float, float], end: tuple[float, float], fill, width: int) -> None:
+    width = max(1, int(round(width)))
+    draw.line((start, end), fill=fill, width=width)
+    radius = max(1, int(np.ceil(width / 2.0)))
+    for px, py in (start, end):
+        draw.ellipse((px - radius, py - radius, px + radius, py + radius), fill=fill)
+
+
+def _draw_dashed_polyline(
+    draw,
+    points: list[tuple[float, float]],
+    fill,
+    width: int,
+    dash_length: float,
+    gap_length: float,
+) -> None:
+    if len(points) < 2:
+        return
+
+    dash_length = max(1.0, float(dash_length))
+    gap_length = max(1.0, float(gap_length))
+    cycle_length = dash_length + gap_length
+    traversed = 0.0
+
+    for start, end in zip(points[:-1], points[1:]):
+        seg_len = float(np.hypot(end[0] - start[0], end[1] - start[1]))
+        if seg_len <= 1e-6:
+            continue
+        if ((traversed + 0.5 * seg_len) % cycle_length) < dash_length:
+            _draw_round_line(draw, start, end, fill=fill, width=width)
+        traversed += seg_len
+
+
+def _apply_angle_measure_overlay(image: np.ndarray, field: DataField | None, spec: dict[str, Any]) -> np.ndarray:
+    from PIL import Image, ImageDraw
+
+    current = np.asarray(image, dtype=np.uint8)
+    if current.ndim == 2:
+        current = np.repeat(current[:, :, np.newaxis], 3, axis=2)
+
+    pil_image = Image.fromarray(current.copy()).convert("RGBA")
+    draw = ImageDraw.Draw(pil_image, "RGBA")
+    field_width = max(1, int(field.xres)) if isinstance(field, DataField) else max(1, current.shape[1])
+    field_height = max(1, int(field.yres)) if isinstance(field, DataField) else max(1, current.shape[0])
+    longest_dim = max(field_width, field_height)
+
+    x1 = float(np.clip(spec.get("x1", 0.0), 0.0, 1.0))
+    y1 = float(np.clip(spec.get("y1", 0.0), 0.0, 1.0))
+    xm = float(np.clip(spec.get("xm", 0.5), 0.0, 1.0))
+    ym = float(np.clip(spec.get("ym", 0.5), 0.0, 1.0))
+    x2 = float(np.clip(spec.get("x2", 1.0), 0.0, 1.0))
+    y2 = float(np.clip(spec.get("y2", 0.0), 0.0, 1.0))
+    label_dx = float(spec.get("label_dx", 0.0) or 0.0)
+    label_dy = float(spec.get("label_dy", 0.0) or 0.0)
+    angle_deg = float(spec.get("angle_deg", 0.0) or 0.0)
+    color_hex = _sanitize_angle_overlay_color(spec.get("color", "#ff0000"))
+    line_thickness = _sanitize_angle_overlay_thickness(spec.get("line_thickness", 1.35))
+    base_rgb = _hex_to_rgb(color_hex)
+    arc_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.42)
+    badge_text_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.72)
+    badge_border_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.32)
+
+    line_width = max(1, int(round(longest_dim * line_thickness / 100.0)))
+    arc_width = max(1, int(round(longest_dim * max(0.85, line_thickness * 0.78) / 100.0)))
+    line_color = (*base_rgb, 255)
+    arc_color = (*arc_rgb, 242)
+
+    points = [
+        (x1 * field_width, y1 * field_height),
+        (xm * field_width, ym * field_height),
+        (x2 * field_width, y2 * field_height),
+    ]
+    _draw_round_line(draw, points[0], points[1], fill=line_color, width=line_width)
+    _draw_round_line(draw, points[1], points[2], fill=line_color, width=line_width)
+
+    va = np.array([x1 - xm, y1 - ym], dtype=np.float64)
+    vb = np.array([x2 - xm, y2 - ym], dtype=np.float64)
+    len_a = float(np.hypot(va[0], va[1]))
+    len_b = float(np.hypot(vb[0], vb[1]))
+    if len_a > 1e-6 and len_b > 1e-6:
+        radius = min(0.12, 0.38 * min(len_a, len_b))
+        start_angle = float(np.arctan2(va[1], va[0]))
+        delta = float(np.arctan2(va[0] * vb[1] - va[1] * vb[0], np.dot(va, vb)))
+        arc_points = []
+        for theta in np.linspace(start_angle, start_angle + delta, 48):
+            arc_points.append((
+                (xm + radius * np.cos(theta)) * field_width,
+                (ym + radius * np.sin(theta)) * field_height,
+            ))
+        if len(arc_points) >= 2:
+            _draw_dashed_polyline(
+                draw,
+                arc_points,
+                fill=arc_color,
+                width=arc_width,
+                dash_length=max(4.0, longest_dim * 0.05),
+                gap_length=max(3.0, longest_dim * 0.03),
+            )
+
+    base_label_x, base_label_y = _angle_label_base_position(spec)
+    label_x = float(np.clip(base_label_x + label_dx, 0.0, 1.0))
+    label_y = float(np.clip(base_label_y + label_dy, 0.0, 1.0))
+    label_text = f"{angle_deg:.1f} deg"
+    text_image = _render_overlay_text(
+        label_text,
+        max(10, int(round(longest_dim / 26.0))),
+        badge_text_rgb,
+    )
+
+    bg_pad_x = max(5, int(round(text_image.size[0] * 0.16)))
+    bg_pad_y = max(3, int(round(text_image.size[1] * 0.18)))
+    bg_width = text_image.size[0] + 2 * bg_pad_x
+    bg_height = text_image.size[1] + 2 * bg_pad_y
+    center_x = int(round(label_x * field_width))
+    center_y = int(round(label_y * field_height))
+    bg_left = max(0, min(field_width - bg_width, center_x - bg_width // 2))
+    bg_top = max(0, min(field_height - bg_height, center_y - bg_height // 2))
+    bg_right = bg_left + bg_width
+    bg_bottom = bg_top + bg_height
+
+    shadow_offset = max(1, int(round(bg_height * 0.08)))
+    draw.rounded_rectangle(
+        (
+            bg_left,
+            min(field_height, bg_top + shadow_offset),
+            bg_right,
+            min(field_height, bg_bottom + shadow_offset),
+        ),
+        radius=max(6, bg_height // 2),
+        fill=(15, 23, 42, 86),
+    )
+    draw.rounded_rectangle(
+        (bg_left, bg_top, bg_right, bg_bottom),
+        radius=max(6, bg_height // 2),
+        fill=(15, 23, 42, 230),
+        outline=(*badge_border_rgb, 115),
+        width=1,
+    )
+    pil_image.paste(text_image, (bg_left + bg_pad_x, bg_top + bg_pad_y), text_image)
+
+    return np.asarray(pil_image.convert("RGB"), dtype=np.uint8)
+
+
 def render_datafield_preview(df: DataField, colormap: Any = "gray") -> np.ndarray:
     current = datafield_to_uint8(df, colormap)
     for overlay in df.overlays:
@@ -870,6 +1080,8 @@ def render_datafield_preview(df: DataField, colormap: Any = "gray") -> np.ndarra
             current = _apply_annotation_overlay(current, df, colormap, overlay)
         elif kind == "markup":
             current = _apply_markup_overlay(current, df, overlay)
+        elif kind == "angle_measure":
+            current = _apply_angle_measure_overlay(current, df, overlay)
     return current
 
 
