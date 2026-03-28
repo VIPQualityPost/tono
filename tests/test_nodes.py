@@ -526,6 +526,81 @@ def test_plane_level():
     print("  PASS\n")
 
 
+def test_facet_level():
+    print("=== Test: FacetLevelField ===")
+    from backend.node_registry import get_node_info
+    from backend.nodes.facet_level_field import FacetLevelField
+    from backend.nodes.plane_level_field import PlaneLevelField
+
+    def fit_pixel_plane(data: np.ndarray, region: np.ndarray) -> tuple[float, float, float]:
+        yy, xx = np.mgrid[0:data.shape[0], 0:data.shape[1]]
+        A = np.column_stack([
+            np.ones(int(np.count_nonzero(region)), dtype=np.float64),
+            xx[region].astype(np.float64),
+            yy[region].astype(np.float64),
+        ])
+        coeffs, _, _, _ = np.linalg.lstsq(A, data[region].ravel().astype(np.float64), rcond=None)
+        return float(coeffs[0]), float(coeffs[1]), float(coeffs[2])
+
+    node = FacetLevelField()
+    plane_node = PlaneLevelField()
+    assert get_node_info("FacetLevelField")["category"] == "Flatten"
+
+    N = 96
+    yy, xx = np.mgrid[0:N, 0:N]
+    base = 0.055 * xx + 0.028 * yy
+    terraces = np.zeros((N, N), dtype=np.float64)
+    terraces[:, 54:] += 6.0
+    terraces[18:70, 68:88] += 3.5
+    field = make_field(data=base + terraces)
+
+    plane_leveled, = plane_node.process(field)
+    facet_leveled, = node.process(field, masking="ignore")
+
+    left_region = xx < 48
+    right_region = (xx > 60) & ~((yy >= 18) & (yy < 70) & (xx >= 68) & (xx < 88))
+    _, plane_left_bx, plane_left_by = fit_pixel_plane(plane_leveled.data, left_region)
+    _, plane_right_bx, plane_right_by = fit_pixel_plane(plane_leveled.data, right_region)
+    _, facet_left_bx, facet_left_by = fit_pixel_plane(facet_leveled.data, left_region)
+    _, facet_right_bx, facet_right_by = fit_pixel_plane(facet_leveled.data, right_region)
+    plane_slope = float(max(np.hypot(plane_left_bx, plane_left_by), np.hypot(plane_right_bx, plane_right_by)))
+    facet_slope = float(max(np.hypot(facet_left_bx, facet_left_by), np.hypot(facet_right_bx, facet_right_by)))
+    assert facet_slope < plane_slope * 1e-6
+
+    mask = np.zeros((N, N), dtype=np.uint8)
+    mask[24:72, 24:72] = 255
+    base_only = 0.035 * xx + 0.014 * yy
+    masked_facet = 5.0 - 0.065 * xx + 0.045 * yy
+    competing = np.where(mask > 0, masked_facet, base_only)
+    competing_field = make_field(data=competing)
+
+    excluded, = node.process(competing_field, masking="exclude", mask=mask)
+    included, = node.process(competing_field, masking="include", mask=mask)
+
+    outer_region = (mask == 0) & (xx > 4) & (xx < N - 4) & (yy > 4) & (yy < N - 4)
+    inner_region = (mask > 0) & (xx > 28) & (xx < 68) & (yy > 28) & (yy < 68)
+    _, excl_outer_bx, excl_outer_by = fit_pixel_plane(excluded.data, outer_region)
+    _, excl_inner_bx, excl_inner_by = fit_pixel_plane(excluded.data, inner_region)
+    _, incl_outer_bx, incl_outer_by = fit_pixel_plane(included.data, outer_region)
+    _, incl_inner_bx, incl_inner_by = fit_pixel_plane(included.data, inner_region)
+
+    excl_outer_slope = float(np.hypot(excl_outer_bx, excl_outer_by))
+    excl_inner_slope = float(np.hypot(excl_inner_bx, excl_inner_by))
+    incl_outer_slope = float(np.hypot(incl_outer_bx, incl_outer_by))
+    incl_inner_slope = float(np.hypot(incl_inner_bx, incl_inner_by))
+    assert excl_outer_slope < incl_outer_slope * 0.2
+    assert incl_inner_slope < excl_inner_slope * 0.2
+
+    bad_units = DataField(data=np.zeros((16, 16), dtype=np.float64), xreal=1e-6, yreal=1e-6, si_unit_xy="nm", si_unit_z="V")
+    try:
+        node.process(bad_units, masking="ignore")
+    except ValueError as exc:
+        assert "compatible XY and Z units" in str(exc)
+    else:
+        assert False, "Facet level should reject incompatible XY/Z units."
+    print("  PASS\n")
+
+
 def test_poly_level():
     print("=== Test: PolyLevelField ===")
     from backend.nodes.poly_level_field import PolyLevelField
@@ -568,6 +643,78 @@ def test_fix_zero():
 
     result_median, = node.process(field, method="median")
     assert abs(np.median(result_median.data)) < 1e-10
+    print("  PASS\n")
+
+
+def test_curvature():
+    print("=== Test: Curvature ===")
+    from backend.node_registry import get_node_info
+    from backend.execution_context import active_node, execution_callbacks
+    from backend.nodes.curvature import Curvature
+
+    node = Curvature()
+    assert get_node_info("Curvature")["category"] == "Measure"
+
+    xres, yres = 121, 101
+    xreal, yreal = 8.0e-6, 6.0e-6
+    xoff, yoff = 1.0e-6, -0.5e-6
+    x = np.linspace(xoff, xoff + xreal, xres, dtype=np.float64)
+    y = np.linspace(yoff, yoff + yreal, yres, dtype=np.float64)
+    yy, xx = np.meshgrid(y, x, indexing="ij")
+
+    x0 = xoff + 0.45 * xreal
+    y0 = yoff + 0.60 * yreal
+    rx = 1.2e-6
+    ry = 2.4e-6
+    z0 = 3.0e-9
+    data = z0 + (xx - x0) ** 2 / (2.0 * rx) + (yy - y0) ** 2 / (2.0 * ry)
+    field = DataField(data=data, xreal=xreal, yreal=yreal, xoff=xoff, yoff=yoff, si_unit_xy="m", si_unit_z="m")
+
+    previews = []
+    tables = []
+    with execution_callbacks(preview=lambda nid, uri: previews.append(uri), table=lambda nid, rows: tables.append(rows)), active_node("test"):
+        output, table, profile1, profile2 = node.process(field, masking="ignore")
+
+    rows = {row["quantity"]: row for row in table}
+    recovered_radii = sorted([rows["Curvature radius 1"]["value"], rows["Curvature radius 2"]["value"]])
+    expected_radii = sorted([rx, ry])
+    assert len(previews) == 1
+    assert previews[0].startswith("data:image/png;base64,")
+    assert len(tables) == 1
+    assert abs(rows["Center x position"]["value"] - x0) < xreal * 0.02
+    assert abs(rows["Center y position"]["value"] - y0) < yreal * 0.02
+    assert abs(rows["Center value"]["value"] - z0) < 5e-11
+    assert np.allclose(recovered_radii, expected_radii, rtol=0.08, atol=5e-8)
+    assert output.overlays[-1]["kind"] == "markup"
+    assert len(output.overlays[-1]["shapes"]) == 3
+    assert isinstance(profile1, LineData)
+    assert isinstance(profile2, LineData)
+    assert profile1.x_unit == field.si_unit_xy
+    assert profile1.y_unit == field.si_unit_z
+    assert profile2.x_unit == field.si_unit_xy
+    assert profile2.y_unit == field.si_unit_z
+    assert len(profile1) > 10
+    assert len(profile2) > 10
+
+    mask = np.zeros((yres, xres), dtype=np.uint8)
+    mask[:, :xres // 2] = 255
+    left = 1.0e-9 + (xx - (xoff + 0.25 * xreal)) ** 2 / (2.0 * 0.9e-6) + (yy - (yoff + 0.5 * yreal)) ** 2 / (2.0 * 1.8e-6)
+    right = 2.0e-9 + (xx - (xoff + 0.75 * xreal)) ** 2 / (2.0 * 1.6e-6) + (yy - (yoff + 0.5 * yreal)) ** 2 / (2.0 * 3.2e-6)
+    split_field = DataField(data=np.where(mask > 0, left, right), xreal=xreal, yreal=yreal, xoff=xoff, yoff=yoff, si_unit_xy="m", si_unit_z="m")
+    _, include_table, _, _ = node.process(split_field, masking="include", mask=mask)
+    _, exclude_table, _, _ = node.process(split_field, masking="exclude", mask=mask)
+    include_radii = sorted([row["value"] for row in include_table if row["quantity"].startswith("Curvature radius")])
+    exclude_radii = sorted([row["value"] for row in exclude_table if row["quantity"].startswith("Curvature radius")])
+    assert np.allclose(include_radii, [0.9e-6, 1.8e-6], rtol=0.12, atol=5e-8)
+    assert np.allclose(exclude_radii, [1.6e-6, 3.2e-6], rtol=0.12, atol=5e-8)
+
+    bad_units = DataField(data=np.zeros((16, 16), dtype=np.float64), xreal=1e-6, yreal=1e-6, si_unit_xy="nm", si_unit_z="V")
+    try:
+        node.process(bad_units, masking="ignore")
+    except ValueError as exc:
+        assert "compatible XY and Z units" in str(exc)
+    else:
+        assert False, "Curvature should reject incompatible XY/Z units."
     print("  PASS\n")
 
 
@@ -863,6 +1010,80 @@ def test_height_histogram():
     )
 
     Histogram._broadcast_overlay_fn = None
+    print("  PASS\n")
+
+
+def test_fractal_dimension():
+    print("=== Test: FractalDimension ===")
+    from backend.node_registry import get_node_info
+    from backend.execution_context import active_node, execution_callbacks
+    from backend.nodes.fractal_dimension import FractalDimension
+
+    node = FractalDimension()
+    assert get_node_info("FractalDimension")["category"] == "Measure"
+
+    N = 129
+    yy, xx = np.mgrid[0:N, 0:N] / (N - 1)
+    data = 0.25 * xx + 0.12 * yy + 0.03 * np.sin(6.0 * np.pi * xx) + 0.02 * np.cos(4.0 * np.pi * yy)
+    field = make_field(data=data, xreal=4.0e-6, yreal=4.0e-6)
+
+    overlays = []
+    tables = []
+    with execution_callbacks(overlay=lambda nid, payload: overlays.append(payload), table=lambda nid, rows: tables.append(rows)), active_node("test"):
+        dimension, curve, table = node.process(
+            field,
+            method="partitioning",
+            interpolation="linear",
+            x1=0.0,
+            y1=0.5,
+            x2=1.0,
+            y2=0.5,
+        )
+
+    assert np.isfinite(dimension)
+    assert 1.5 < dimension < 2.5
+    assert isinstance(curve, LineData)
+    assert len(curve) > 3
+    assert curve.x_axis is not None
+    assert np.all(np.diff(curve.x_axis) > 0.0)
+    assert len(overlays) == 1
+    assert overlays[0]["kind"] == "line_plot"
+    assert len(tables) == 1
+    assert table[0]["quantity"] == "Dimension"
+
+    methods = ["partitioning", "cube_counting", "triangulation", "psdf", "hhcf"]
+    for method in methods:
+        dim, line, measurements = node.process(
+            field,
+            method=method,
+            interpolation="linear",
+            x1=0.0,
+            y1=0.5,
+            x2=1.0,
+            y2=0.5,
+        )
+        assert np.isfinite(dim), f"{method} should produce a finite fractal dimension"
+        if method == "psdf":
+            assert -1.0 < dim < 3.2
+        else:
+            assert 1.2 < dim < 3.2
+        assert isinstance(line, LineData)
+        assert len(line) >= 2
+        assert measurements[0]["quantity"] == "Dimension"
+
+    narrowed_dim, _, narrowed_table = node.process(
+        field,
+        method="partitioning",
+        interpolation="linear",
+        x1=0.15,
+        y1=0.5,
+        x2=0.55,
+        y2=0.5,
+    )
+    assert np.isfinite(narrowed_dim)
+    fit_from = next(row["value"] for row in narrowed_table if row["quantity"] == "Fit from")
+    fit_to = next(row["value"] for row in narrowed_table if row["quantity"] == "Fit to")
+    assert fit_to > fit_from
     print("  PASS\n")
 
 
@@ -1164,6 +1385,93 @@ def test_particle_analysis():
     table_filtered, = node.process(field, mask=mask, min_size=80)
     assert len(table_filtered) == 1
     assert table_filtered[0]["area_px"] == 100
+    print("  PASS\n")
+
+
+def test_grain_distance_transform():
+    print("=== Test: GrainDistanceTransform ===")
+    from backend.nodes.grain_distance_transform import GrainDistanceTransform
+
+    node = GrainDistanceTransform()
+    field = make_field(data=np.zeros((7, 7), dtype=np.float64), xreal=7.0, yreal=7.0)
+    mask = np.zeros((7, 7), dtype=np.uint8)
+    mask[2:5, 2:5] = 255
+
+    interior, = node.process(field, mask, distance_type="euclidean", output_type="interior", from_border=True)
+    assert interior.data.shape == field.data.shape
+    assert interior.si_unit_z == field.si_unit_xy
+    assert np.isclose(interior.data[3, 3], 2.0)
+    assert np.isclose(interior.data[2, 2], 1.0)
+    assert np.isclose(interior.data[0, 0], 0.0)
+
+    exterior, = node.process(field, mask, distance_type="cityblock", output_type="exterior", from_border=True)
+    assert np.isclose(exterior.data[1, 1], 2.0)
+    assert np.isclose(exterior.data[2, 1], 1.0)
+    assert np.isclose(exterior.data[3, 3], 0.0)
+
+    signed, = node.process(field, mask, distance_type="chess", output_type="signed", from_border=True)
+    assert signed.data[3, 3] > 0.0
+    assert signed.data[0, 0] < 0.0
+
+    edge_field = make_field(data=np.zeros((5, 5), dtype=np.float64), xreal=5.0, yreal=5.0)
+    edge_mask = np.zeros((5, 5), dtype=np.uint8)
+    edge_mask[:, :2] = 255
+    from_edge, = node.process(edge_field, edge_mask, distance_type="euclidean", output_type="interior", from_border=True)
+    not_from_edge, = node.process(edge_field, edge_mask, distance_type="euclidean", output_type="interior", from_border=False)
+    assert not_from_edge.data[2, 0] > from_edge.data[2, 0]
+    print("  PASS\n")
+
+
+def test_watershed_segmentation():
+    print("=== Test: WatershedSegmentation ===")
+    from scipy.ndimage import label
+    from backend.execution_context import active_node, execution_callbacks
+    from backend.nodes.watershed_segmentation import WatershedSegmentation
+
+    node = WatershedSegmentation()
+    y, x = np.mgrid[-1:1:64j, -1:1:64j]
+    data = (
+        2.0 * np.exp(-((x + 0.45) ** 2 + y**2) / 0.05)
+        + 2.0 * np.exp(-((x - 0.45) ** 2 + y**2) / 0.05)
+        - 0.3 * np.exp(-(x**2 + y**2) / 0.12)
+    )
+    field = make_field(data=data, xreal=2.0e-6, yreal=2.0e-6)
+
+    previews = []
+    with execution_callbacks(preview=lambda nid, uri: previews.append(uri)), active_node("test"):
+        mask, = node.process(
+            field,
+            invert_height=False,
+            locate_steps=10,
+            locate_threshold=8,
+            locate_drop_size=0.1,
+            watershed_steps=20,
+            watershed_drop_size=0.1,
+            combine_mode="replace",
+        )
+    assert mask.dtype == np.uint8
+    assert mask.shape == field.data.shape
+    assert len(previews) == 1
+    assert previews[0].startswith("data:image/png;base64,")
+
+    _, ngrains = label(mask > 127)
+    assert ngrains >= 2
+
+    seed_mask = np.zeros_like(mask)
+    seed_mask[:, :32] = 255
+    intersected, = node.process(
+        field,
+        invert_height=False,
+        locate_steps=10,
+        locate_threshold=8,
+        locate_drop_size=0.1,
+        watershed_steps=20,
+        watershed_drop_size=0.1,
+        combine_mode="intersection",
+        mask=seed_mask,
+    )
+    assert np.count_nonzero(intersected) < np.count_nonzero(mask)
+    assert np.all(intersected[:, 40:] == 0)
     print("  PASS\n")
 
 
@@ -2814,6 +3122,7 @@ if __name__ == "__main__":
     test_plane_level()
     test_poly_level()
     test_fix_zero()
+    test_curvature()
     test_line_correction()
     test_scar_removal()
     test_angle_measure()
@@ -2821,6 +3130,7 @@ if __name__ == "__main__":
     # Analysis
     test_statistics()
     test_height_histogram()
+    test_fractal_dimension()
     test_cross_section()
     test_line_cursors()
     test_fft2d()

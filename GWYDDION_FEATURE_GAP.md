@@ -10,17 +10,17 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 |---|---------|---------------|-------------|
 | ~~1~~ | ~~Line Correction~~ | ~~linecorrect.c, linematch.c~~ | ~~Row-by-row median/polynomial alignment. Essential for raw SPM data with scan-line artifacts.~~ **DONE** |
 | ~~2~~ | ~~Scar Removal~~ | ~~scars.c~~ | ~~Detect and interpolate scan-line defects (horizontal streaks).~~ **DONE** |
-| 3 | Facet Leveling | facet-level.c | Orient the dominant surface facet to horizontal. Better than plane level for terraced/stepped surfaces. |
+| ~~3~~ | ~~Facet Leveling~~ | ~~facet-level.c~~ | ~~Orient the dominant surface facet to horizontal. Better than plane level for terraced/stepped surfaces.~~ **DONE** |
 | ~~4~~ | ~~Morphological Mask Ops~~ | ~~mask_morph.c~~ | ~~Erode, dilate, open, close on grain masks. Needed to clean up thresholded masks.~~ **DONE** |
 | ~~5~~ | ~~1D FFT Filter~~ | ~~fft_filter_1d.c~~ | ~~Bandpass/lowpass/highpass filtering of LINE profiles.~~ **DONE** |
 | ~~6~~ | ~~2D FFT Filter~~ | ~~fft_filter_2d.c~~ | ~~Frequency-domain filtering of DATA_FIELDs (remove periodic noise, etc.).~~ **DONE** |
 | ~~7~~ | ~~Autocorrelation (ACF)~~ | ~~acf2d.c~~ | ~~2D autocorrelation function. Reveals periodic structures and correlation lengths.~~ **DONE** |
 | ~~8~~ | ~~PSDF~~ | ~~psdf2d.c~~ | ~~Radial/2D power spectral density function. Complementary to ACF for roughness characterization.~~ **DONE** |
-| 9 | Fractal Dimension | fractal.c | Multiple methods: partitioning, cube counting, triangulation, PSDF, HHCF. Quantifies surface complexity. |
-| 10 | Curvature | curvature.c | Local mean/Gaussian curvature maps. Useful for feature identification. |
-| 11 | Grain Distance Transform | mask_edt.c | Euclidean distance from grain boundaries. Useful for spatial distribution analysis. |
-| 12 | Watershed Segmentation | grain_wshed.c | Automatic grain detection without manual threshold. More robust than simple thresholding. |
-| 13 | Rotate / Flip | rotate.c, basicops.c | Basic geometric transforms (90°, arbitrary angle, mirror). |
+| ~~9~~ | ~~Fractal Dimension~~ | ~~fractal.c~~ | ~~Multiple methods: partitioning, cube counting, triangulation, PSDF, HHCF. Quantifies surface complexity.~~ **DONE** |
+| ~~10~~ | ~~Curvature~~ | ~~curvature.c~~ | ~~Quadratic-surface curvature fit with principal radii/directions. Useful for apex and dome characterization.~~ **DONE** |
+| ~~11~~ | ~~Grain Distance Transform~~ | ~~mask_edt.c~~ | ~~Euclidean distance from grain boundaries. Useful for spatial distribution analysis.~~ **DONE** |
+| ~~12~~ | ~~Watershed Segmentation~~ | ~~grain_wshed.c~~ | ~~Automatic grain detection without manual threshold. More robust than simple thresholding.~~ **DONE** |
+| ~~13~~ | ~~Rotate / Flip~~ | ~~rotate.c, basicops.c~~ | ~~Basic geometric transforms (90°, arbitrary angle, mirror).~~ **DONE** |
 | ~~14~~ | ~~Crop~~ | ~~crop.c~~ | ~~Extract sub-region of a field.~~ **DONE** |
 
 ## Medium Value
@@ -70,7 +70,10 @@ For reference, these Gwyddion equivalents are already covered:
 | Load Image / Load SPM File | io | File import (gwy, sxm, ibw) |
 | Save Image | io | File export |
 | Coordinate | io | — |
+| Rotate Field | modify | rotate.c |
+| Flip Field | modify | basicops.c |
 | Plane Level | level | level.c |
+| Facet Level | level | facet-level.c |
 | Polynomial Level | level | polylevel.c |
 | Fix Zero | level | level.c (fix_zero) |
 | Line Correction | level | linecorrect.c, linematch.c |
@@ -81,6 +84,8 @@ For reference, these Gwyddion equivalents are already covered:
 | 2D FFT Filter | filters | fft_filter_2d.c (lowpass, highpass, bandpass, notch) |
 | Scar Removal | filters | scars.c |
 | Statistics | analysis | stats.c |
+| Curvature | analysis | curvature.c |
+| Fractal Dimension | analysis | fractal.c |
 | Height Histogram | analysis | linestats.c (dh) |
 | 2D FFT | analysis | fft.c |
 | Cross Section | analysis | profile tool |
@@ -90,5 +95,7 @@ For reference, these Gwyddion equivalents are already covered:
 | Mask Morphology | mask | mask_morph.c (erode, dilate, open, close) |
 | Mask Invert | mask | — |
 | Mask Combine | mask | — (boolean AND, OR, XOR, subtract) |
+| Grain Distance Transform | mask | mask_edt.c |
+| Watershed Segmentation | particles | grain_wshed.c |
 | Particle Analysis | particles | grain_stat.c |
 | Preview / 3D View / Print Table | display | Presentation, 3D view |

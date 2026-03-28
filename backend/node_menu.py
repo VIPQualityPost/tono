@@ -57,13 +57,16 @@ MENU_LAYOUT: dict[str, list[str]] = {
     ],
     "Flatten": [
         "PlaneLevelField",
+        "FacetLevelField",
         "PolyLevelField",
         "FixZero",
         "LineCorrection",
     ],
     "Measure": [
         "CrossSection",
+        "Curvature",
         "Histogram",
+        "FractalDimension",
         "ACF",
         "Cursors",
         "Statistics",
@@ -75,8 +78,10 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MaskMorphology",
         "MaskInvert",
         "MaskCombine",
+        "GrainDistanceTransform",
     ],
     "Particles": [
+        "WatershedSegmentation",
         "ParticleAnalysis",
     ],
 }

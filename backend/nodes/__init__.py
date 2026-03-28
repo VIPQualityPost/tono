@@ -23,6 +23,7 @@ from backend.nodes import (
     flip_field,
     # Level
     plane_level_field,
+    facet_level_field,
     poly_level_field,
     fix_zero,
     line_correction,
@@ -32,6 +33,7 @@ from backend.nodes import (
     mask_morphology,
     mask_invert,
     mask_combine,
+    grain_distance_transform,
     # Correction
     scar_removal,
     # Display
@@ -45,6 +47,8 @@ from backend.nodes import (
     print_table,
     value_display,
     # Analysis
+    curvature,
+    fractal_dimension,
     statistics_node,
     histogram,
     acf,
@@ -54,6 +58,7 @@ from backend.nodes import (
     inverse_fft_2d,
     cross_section,
     stats,
+    watershed_segmentation,
 )
 
 try:
