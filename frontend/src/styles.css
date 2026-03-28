@@ -1115,9 +1115,15 @@ html, body, #root {
 }
 
 /* ── 3D surface view ──────────────────────────────────────────────── */
-.surface-view-container {
+.surface-view-shell {
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
+}
+
+.surface-view-container {
+  width: 100%;
+  height: 100%;
   cursor: grab;
   overflow: hidden;
 }
@@ -1126,6 +1132,50 @@ html, body, #root {
 }
 .surface-view-container canvas {
   display: block;
+}
+
+.surface-view-home {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  min-width: 54px;
+  padding: 4px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.86);
+  color: var(--text-bright);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.28);
+}
+
+.surface-view-home:hover {
+  background: rgba(30, 41, 59, 0.94);
+  border-color: rgba(125, 211, 252, 0.55);
+}
+
+.surface-view-diagnostics {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 2;
+  max-width: calc(100% - 84px);
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  color: rgba(226, 232, 240, 0.92);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 9px;
+  line-height: 1.35;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.24);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* ── Node table ────────────────────────────────────────────────────── */

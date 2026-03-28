@@ -49,7 +49,9 @@ def _surface_extent_scale(xreal: float, yreal: float, nx: int, ny: int) -> tuple
 
     x_span = _resolve_span(xreal, nx)
     y_span = _resolve_span(yreal, ny)
-    max_span = max(x_span, y_span, 1.0)
+    max_span = max(x_span, y_span)
+    if not np.isfinite(max_span) or max_span <= 0.0:
+        max_span = 1.0
     return (x_span / max_span, y_span / max_span)
 
 

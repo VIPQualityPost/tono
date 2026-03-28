@@ -227,6 +227,40 @@ test('hydrateWorkflowState clears saved folder selections on shared workflows', 
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['path']);
 });
 
+test('View3D runtime viewport state is not persisted or rehydrated with workflows', () => {
+  const nodes = [
+    {
+      id: '41',
+      type: 'custom',
+      position: { x: 10, y: 20 },
+      data: {
+        label: '3D View',
+        className: 'View3D',
+        widgetValues: { z_scale: 1 },
+        runtimeValues: {
+          camera_azimuth: 0.42,
+          camera_polar: 1.2,
+          camera_distance: 2.5,
+          camera_target_x: 0.1,
+          camera_target_y: 0.2,
+          camera_target_z: 0.3,
+          viewport_snapshot: 'data:image/png;base64,abc',
+        },
+      },
+    },
+  ];
+
+  const serialized = serializeWorkflowState(nodes, []);
+
+  assert.equal('runtimeValues' in serialized.nodes[0].data, false);
+
+  const hydrated = hydrateWorkflowState(serialized, {
+    View3D: { output: ['MESH_MODEL', 'IMAGE'], output_name: ['mesh', 'viewport'] },
+  });
+
+  assert.deepEqual(hydrated.nodes[0].data.runtimeValues, {});
+});
+
 test('workflow serialization preserves wrapper class names for group shells', () => {
   const nodes = [
     {

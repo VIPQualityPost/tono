@@ -1,5 +1,16 @@
 import { DATA_TYPES } from './constants.js';
 
+const OMITTED_WIDGET_INPUTS_BY_CLASS = {
+  View3D: new Set([
+    'camera_azimuth',
+    'camera_polar',
+    'camera_distance',
+    'camera_target_x',
+    'camera_target_y',
+    'camera_target_z',
+  ]),
+};
+
 function getInputName(handleId) {
   return handleId.split('::')[1];
 }
@@ -72,12 +83,14 @@ export function serializeExecutionGraph(nodes, edges, { excludeManualTrigger = f
 
     const inputs = {};
     const valueBag = { ...(widgetValues || {}), ...(runtimeValues || {}) };
+    const omittedInputs = OMITTED_WIDGET_INPUTS_BY_CLASS[className] || null;
 
     const allWidgets = {
       ...(definition.input.required || {}),
       ...(definition.input.optional || {}),
     };
     for (const [name, spec] of Object.entries(allWidgets)) {
+      if (omittedInputs?.has(name)) continue;
       const [type] = Array.isArray(spec) ? spec : [spec];
       if (DATA_TYPES.has(type)) continue;
       if (type === 'BUTTON') continue;

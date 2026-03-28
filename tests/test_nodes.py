@@ -256,6 +256,31 @@ def test_rotate_field_overlay_warning():
     print("  PASS\n")
 
 
+def test_view3d_normalizes_small_physical_extents_for_display():
+    print("=== Test: View3D extent normalization ===")
+    from backend.nodes.view_3d import View3D
+
+    data = np.linspace(0.0, 1.0, 64 * 64, dtype=np.float64).reshape(64, 64)
+    field = DataField(
+        data=data,
+        xreal=1.0e-5,
+        yreal=1.0e-5,
+        si_unit_xy="m",
+        si_unit_z="m",
+    )
+
+    node = View3D()
+    mesh, _ = node.render(field, colormap="auto", z_scale=1.0, resolution=64, make_solid=False)
+
+    vertices = np.asarray(mesh.vertices, dtype=np.float64)
+    spans = vertices.max(axis=0) - vertices.min(axis=0)
+
+    assert np.isclose(spans[0], 1.0, atol=1e-6)
+    assert np.isclose(spans[2], 1.0, atol=1e-6)
+    assert spans[1] > 0.09
+    print("  PASS\n")
+
+
 def test_colormap_adjust():
     print("=== Test: ColormapAdjust ===")
     from backend.nodes.colormap_adjust import ColormapAdjust

@@ -259,6 +259,80 @@ test('serializeExecutionGraph ignores group shells and resolves collapsed proxy 
   assert.equal('10' in prompt, false);
 });
 
+test('serializeExecutionGraph keeps only the View3D viewport snapshot, not camera pose', () => {
+  const nodes = [
+    {
+      id: '1',
+      data: {
+        className: 'FieldSource',
+        definition: {
+          input: { required: {}, optional: {} },
+          manual_trigger: false,
+        },
+        widgetValues: {},
+      },
+    },
+    {
+      id: '2',
+      data: {
+        className: 'View3D',
+        definition: {
+          input: {
+            required: {
+              field: ['DATA_FIELD', {}],
+              camera_azimuth: ['FLOAT', {}],
+              camera_polar: ['FLOAT', {}],
+              camera_distance: ['FLOAT', {}],
+              camera_target_x: ['FLOAT', {}],
+              camera_target_y: ['FLOAT', {}],
+              camera_target_z: ['FLOAT', {}],
+              viewport_snapshot: ['STRING', {}],
+            },
+            optional: {},
+          },
+          manual_trigger: false,
+        },
+        widgetValues: {
+          camera_azimuth: 0,
+          camera_polar: 1.1,
+          camera_distance: 1.8,
+          camera_target_x: 0,
+          camera_target_y: 0,
+          camera_target_z: 0,
+          viewport_snapshot: '',
+        },
+        runtimeValues: {
+          camera_azimuth: 0.4,
+          camera_polar: 1.3,
+          camera_distance: 2.6,
+          camera_target_x: 99,
+          camera_target_y: 88,
+          camera_target_z: 77,
+          viewport_snapshot: 'data:image/png;base64,abc',
+        },
+      },
+    },
+  ];
+  const edges = [
+    {
+      source: '1',
+      sourceHandle: 'output::0::DATA_FIELD',
+      target: '2',
+      targetHandle: 'input::field::DATA_FIELD',
+    },
+  ];
+
+  const prompt = serializeExecutionGraph(nodes, edges);
+
+  assert.deepEqual(prompt['2'], {
+    class_type: 'View3D',
+    inputs: {
+      field: ['1', 0],
+      viewport_snapshot: 'data:image/png;base64,abc',
+    },
+  });
+});
+
 test('getAutoRunnableNodes ignores disconnected nodes when deciding what can auto-run', () => {
   const nodes = [
     { id: '1', data: { definition: {}, widgetValues: {} } },

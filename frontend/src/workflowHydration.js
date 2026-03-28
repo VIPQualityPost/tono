@@ -1,4 +1,5 @@
 import { sortNodesForParentOrder } from './nodeHierarchy.js';
+import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.js';
 
 function mergeDefinition(nodeData, defs) {
   const savedData = nodeData || {};
@@ -52,7 +53,10 @@ export function hydrateWorkflowState(data, defs = {}) {
         ...node.data,
         label: node.data?.label || node.data?.className || 'Node',
         widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition),
-        runtimeValues: node.data?.runtimeValues || {},
+        runtimeValues: sanitizeRuntimeValuesForPersistence(
+          node.data?.className,
+          node.data?.runtimeValues,
+        ),
         ...(node.data?.extraData || {}),
         definition,
         previewImage: null,
