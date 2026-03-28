@@ -39,6 +39,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ColormapAdjust",
         "CropResizeField",
         "RotateField",
+        "FlipField",
     ],
     "Filter": [
         "GaussianFilter",

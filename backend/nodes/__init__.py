@@ -20,6 +20,7 @@ from backend.nodes import (
     colormap_adjust,
     crop_resize_field,
     rotate_field,
+    flip_field,
     # Level
     plane_level_field,
     poly_level_field,
