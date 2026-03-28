@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import DataField, RecordTable
+from backend.nodes.helpers import _square_unit
 
 
 @register_node(display_name="Particle Analysis")
@@ -33,6 +34,8 @@ class ParticleAnalysis:
         labeled, n_particles = label(binary)
 
         pixel_area = field.dx * field.dy
+        xy_unit = str(field.si_unit_xy or "").strip()
+        z_unit = str(field.si_unit_z or "").strip()
 
         rows = RecordTable()
         for pid in range(1, n_particles + 1):
@@ -54,10 +57,15 @@ class ParticleAnalysis:
             rows.append({
                 "particle_id":  pid,
                 "area_px":      area_px,
+                "area_px_unit": _square_unit("px"),
                 "area_m2":      area_m2,
+                "area_m2_unit": _square_unit(xy_unit),
                 "equiv_diam_m": equiv_diam,
+                "equiv_diam_m_unit": xy_unit,
                 "mean_height":  mean_h,
+                "mean_height_unit": z_unit,
                 "max_height":   max_h,
+                "max_height_unit": z_unit,
                 "bbox":         bbox,
             })
 

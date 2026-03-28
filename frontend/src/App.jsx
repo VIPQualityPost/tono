@@ -30,6 +30,11 @@ import {
   getAutoRunnableNodes,
   hasBlockingAutoRunInput,
 } from './executionGraph';
+import {
+  beginTrackedNodeRequest,
+  isTrackedNodeRequestCurrent,
+  resolveLoadNodeChannelPath,
+} from './loadNodeOutputs.js';
 
 import {
   DATA_TYPES, SOCKET_COMPATIBILITY, TYPE_COLORS, CAT_COLORS, CANVAS_COLORS,
@@ -823,6 +828,7 @@ function Flow() {
   const activeDragNodeIdRef = useRef(null);
   const canvasRightZoomRef = useRef(null);
   const suppressPaneContextMenuUntilRef = useRef(0);
+  const loadNodeOutputRequestVersionsRef = useRef(new Map());
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -1163,26 +1169,26 @@ function Flow() {
 
   const refreshLoadNodeOutputs = useCallback(async (nodeId, explicitPath = null) => {
     const node = reactFlow.getNode(nodeId);
-    if (!node) return;
+    const resolvedPath = resolveLoadNodeChannelPath({
+      explicitPath,
+      resolvedPathInput: getResolvedPathInput(nodeId),
+      className: node?.data?.className || '',
+      widgetValues: node?.data?.widgetValues || {},
+    });
+    const requestVersion = beginTrackedNodeRequest(loadNodeOutputRequestVersionsRef.current, nodeId);
 
-    let resolvedPath = typeof explicitPath === 'string' && explicitPath ? explicitPath : null;
     if (!resolvedPath) {
-      resolvedPath = getResolvedPathInput(nodeId);
-    }
-    if (!resolvedPath) {
-      if (node.data.className === 'Image') {
-        resolvedPath = node.data.widgetValues?.filename || '';
-      } else if (node.data.className === 'ImageDemo') {
-        resolvedPath = node.data.widgetValues?.name || '';
+      if (!isTrackedNodeRequestCurrent(loadNodeOutputRequestVersionsRef.current, nodeId, requestVersion)) {
+        return;
       }
-    }
-
-    if (!resolvedPath) {
       setNodeOutputs(nodeId, ['DATA_FIELD'], ['field'], { output_paths: [] });
       return;
     }
 
     const channels = await api.getChannels(resolvedPath);
+    if (!isTrackedNodeRequestCurrent(loadNodeOutputRequestVersionsRef.current, nodeId, requestVersion)) {
+      return;
+    }
     setNodeOutputs(
       nodeId,
       channels.map((channel) => channel.type),
@@ -1625,17 +1631,21 @@ function Flow() {
     setNodes((ns) => [...ns, newNode]);
 
     // Initialize dynamic outputs for nodes that depend on the selected path/folder.
-    if (className === 'Folder' && widgetValues.folder) {
-      refreshFolderNodeOutputs(newNodeId, widgetValues.folder);
-    }
+    setTimeout(() => {
+      if (className === 'Folder' && widgetValues.folder) {
+        refreshFolderNodeOutputs(newNodeId, widgetValues.folder);
+      }
 
-    // For Image/ImageDemo, auto-fetch channels for the default value
-    if (className === 'ImageDemo' && widgetValues.name) {
-      refreshLoadNodeOutputs(newNodeId, widgetValues.name);
-    }
-    if (className === 'Image' && widgetValues.filename) {
-      refreshLoadNodeOutputs(newNodeId, widgetValues.filename);
-    }
+      // For Image/ImageDemo, auto-fetch channels for the default value.
+      // Delay this until after the node exists in React Flow so the async
+      // response cannot be dropped on creation.
+      if (className === 'ImageDemo' && widgetValues.name) {
+        refreshLoadNodeOutputs(newNodeId, widgetValues.name);
+      }
+      if (className === 'Image' && widgetValues.filename) {
+        refreshLoadNodeOutputs(newNodeId, widgetValues.filename);
+      }
+    }, 0);
 
     // Auto-connect if this was triggered by dropping a connection on blank space
     if (contextMenu.pendingHandleId) {

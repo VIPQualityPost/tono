@@ -12,18 +12,12 @@ import {
   DATA_TYPES, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
 import { getGroupMinimumSize } from './groupSizing.js';
+import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout.js';
+import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns } from './valueFormatting.js';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 
 export const NodeContext = React.createContext(null);
-
-function formatUiLabel(text) {
-  return String(text ?? '')
-    .replace(/_/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-}
 
 function parseProxyHandle(handleId) {
   const text = String(handleId || '');
@@ -421,17 +415,6 @@ function LayerGalleryPreview({ overlay }) {
   );
 }
 
-function getTableColumns(rows) {
-  const columns = [];
-  for (const row of rows) {
-    if (!row || typeof row !== 'object') continue;
-    for (const key of Object.keys(row)) {
-      if (!columns.includes(key)) columns.push(key);
-    }
-  }
-  return columns;
-}
-
 function getMeasurementChoices(rows) {
   const names = [];
   for (const row of rows || []) {
@@ -441,85 +424,6 @@ function getMeasurementChoices(rows) {
     }
   }
   return names;
-}
-
-const SI_PREFIXES = [
-  { exp: -24, prefix: 'y' },
-  { exp: -21, prefix: 'z' },
-  { exp: -18, prefix: 'a' },
-  { exp: -15, prefix: 'f' },
-  { exp: -12, prefix: 'p' },
-  { exp: -9, prefix: 'n' },
-  { exp: -6, prefix: 'u' },
-  { exp: -3, prefix: 'm' },
-  { exp: 0, prefix: '' },
-  { exp: 3, prefix: 'k' },
-  { exp: 6, prefix: 'M' },
-  { exp: 9, prefix: 'G' },
-  { exp: 12, prefix: 'T' },
-  { exp: 15, prefix: 'P' },
-  { exp: 18, prefix: 'E' },
-  { exp: 21, prefix: 'Z' },
-  { exp: 24, prefix: 'Y' },
-];
-
-const PREFIXABLE_UNITS = new Set([
-  'm', 's', 'A', 'V', 'W', 'Hz', 'F', 'C', 'J', 'N', 'Pa', 'T', 'H', 'S', 'g', 'K', 'Ohm', 'ohm', 'Ω',
-]);
-
-function formatNumericCell(value) {
-  if (value == null) return '';
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) return String(value);
-    const abs = Math.abs(value);
-    if (Number.isInteger(value) && abs < 1e6) return String(value);
-    if ((abs > 0 && abs < 1e-3) || abs >= 1e4) return value.toExponential(3);
-    return value.toFixed(4).replace(/\.?0+$/, '');
-  }
-  if (Array.isArray(value)) return value.join(', ');
-  return String(value);
-}
-
-function applySIPrefix(value, unit) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return { valueText: formatNumericCell(value), unitText: unit };
-  }
-  if (typeof unit !== 'string' || !PREFIXABLE_UNITS.has(unit)) {
-    return { valueText: formatNumericCell(value), unitText: unit };
-  }
-  if (value === 0) {
-    return { valueText: '0', unitText: unit };
-  }
-
-  const abs = Math.abs(value);
-  let exp = Math.floor(Math.log10(abs) / 3) * 3;
-  exp = Math.max(-24, Math.min(24, exp));
-
-  let scaled = value / (10 ** exp);
-  if (Math.abs(scaled) >= 999.5 && exp < 24) {
-    exp += 3;
-    scaled = value / (10 ** exp);
-  }
-
-  const prefix = SI_PREFIXES.find((entry) => entry.exp === exp)?.prefix ?? '';
-  return {
-    valueText: formatNumericCell(scaled),
-    unitText: `${prefix}${unit}`,
-  };
-}
-
-function formatTableCell(value) {
-  return formatNumericCell(value);
-}
-
-function formatTableRowCell(row, column) {
-  if (column === 'value' && typeof row?.unit === 'string') {
-    return applySIPrefix(row?.value, row.unit).valueText;
-  }
-  if (column === 'unit' && typeof row?.unit === 'string') {
-    return applySIPrefix(row?.value, row.unit).unitText;
-  }
-  return formatTableCell(row?.[column]);
 }
 
 function formatScalarValue(value) {
@@ -550,8 +454,8 @@ function formatScalarDisplay(scalarValue) {
   if (!payload) return null;
 
   if (payload.unit) {
-    if (PREFIXABLE_UNITS.has(payload.unit)) {
-      const prefixed = applySIPrefix(payload.value, payload.unit);
+    const prefixed = applySIPrefix(payload.value, payload.unit);
+    if (prefixed.unitText !== payload.unit || prefixed.valueText !== formatNumericCell(payload.value)) {
       return {
         valueText: prefixed.valueText,
         unitText: prefixed.unitText,
@@ -1061,20 +965,24 @@ function CustomNode({ id, data }) {
     }
   }
 
-  const visibleWidgets = widgets.filter((w) => (
+  const dataInputByName = new Map(dataInputs.map((input) => [input.name, input]));
+
+  const widgetsVisibleByDefinition = widgets.filter((w) => (
     widgetVisibleForSourceType(w, connectedSourceTypes?.[getWidgetSourceInputName(w.opts)])
     && widgetVisibleForWidgetValues(w, data.widgetValues)
     && widgetVisibleForInputVisibility(w, visibleInputNames)
-    && !widgetHiddenByConnectedInput(w, connectedInputs)
+  ));
+  const combinedInputNameByWidgetName = buildCombinedInputNameByWidgetName(
+    widgetsVisibleByDefinition,
+    dataInputs,
+  );
+  const visibleWidgets = widgetsVisibleByDefinition.filter((widget) => (
+    combinedInputNameByWidgetName.has(widget.name)
+    || !widgetHiddenByConnectedInput(widget, connectedInputs)
   ));
 
-  const combinedTopInputNames = new Set(
-    visibleWidgets
-      .map((widget) => widget?.opts?.top_socket_input)
-      .filter((name) => typeof name === 'string' && name.length > 0),
-  );
-  const renderedDataInputs = dataInputs.filter((input) => !combinedTopInputNames.has(input.name));
-  const dataInputByName = new Map(dataInputs.map((input) => [input.name, input]));
+  const combinedInputNames = new Set(combinedInputNameByWidgetName.values());
+  const renderedDataInputs = dataInputs.filter((input) => !combinedInputNames.has(input.name));
 
   const inlineWidgetsByInput = new Map();
   const topWidgets = [];
@@ -1141,14 +1049,14 @@ function CustomNode({ id, data }) {
       <div className="node-body">
         {topWidgets.length > 0 && (
           <div className="top-widget-section">
-            {topWidgets.map((w) => (
-              <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
-                {(w.socketType || w.opts?.top_socket_input) && (() => {
-                  const socketInput = w.opts?.top_socket_input ? dataInputByName.get(w.opts.top_socket_input) : null;
-                  const socketType = w.socketType || socketInput?.type;
-                  const socketName = w.socketType ? w.name : socketInput?.name;
-                  if (!socketType || !socketName) return null;
-                  return (
+            {topWidgets.map((w) => {
+              const combinedInputName = combinedInputNameByWidgetName.get(w.name) || null;
+              const socketInput = combinedInputName ? dataInputByName.get(combinedInputName) : null;
+              const socketType = w.socketType || socketInput?.type;
+              const socketName = w.socketType ? w.name : socketInput?.name;
+              return (
+                <div className={`widget-row${socketType ? ' widget-row-socket' : ''}`} key={w.name}>
+                  {socketType && socketName && (
                     <Handle
                       type="target"
                       position={Position.Left}
@@ -1156,25 +1064,25 @@ function CustomNode({ id, data }) {
                       className="typed-handle"
                       style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
                     />
-                  );
-                })()}
-                {!!(
-                  (w.socketType && connectedInputs?.has(w.name))
-                  || (w.opts?.top_socket_input && connectedInputs?.has(w.opts.top_socket_input))
-                ) ? (
-                  <label>{formatUiLabel(w.opts?.label || w.name)}</label>
-                ) : (
-                  <WidgetControl
-                    widget={w}
-                    nodeId={id}
-                    value={data.widgetValues[w.name]}
-                    widgetValues={data.widgetValues}
-                    onChange={ctx.onWidgetChange}
-                    openFileBrowser={ctx.openFileBrowser}
-                  />
-                )}
-              </div>
-            ))}
+                  )}
+                  {!!(
+                    (w.socketType && connectedInputs?.has(w.name))
+                    || (combinedInputName && connectedInputs?.has(combinedInputName))
+                  ) ? (
+                    <label>{formatUiLabel(w.opts?.label || w.name)}</label>
+                  ) : (
+                    <WidgetControl
+                      widget={w}
+                      nodeId={id}
+                      value={data.widgetValues[w.name]}
+                      widgetValues={data.widgetValues}
+                      onChange={ctx.onWidgetChange}
+                      openFileBrowser={ctx.openFileBrowser}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -1247,31 +1155,38 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Widget rows */}
-        {standaloneWidgets.map((w) => (
-          <div className={`widget-row${w.socketType ? ' widget-row-socket' : ''}`} key={w.name}>
-            {w.socketType && (
-              <Handle
-                type="target"
-                position={Position.Left}
-                id={`input::${w.name}::${w.socketType}`}
-                className="typed-handle"
-                style={{ background: TYPE_COLORS[w.socketType] || 'var(--fallback-type)' }}
-              />
-            )}
-            {w.socketType && connectedInputs?.has(w.name) ? (
-              <label>{formatUiLabel(w.opts?.label || w.name)}</label>
-            ) : (
-              <WidgetControl
-                widget={w}
-                nodeId={id}
-                value={data.widgetValues[w.name]}
-                widgetValues={data.widgetValues}
-                onChange={ctx.onWidgetChange}
-                openFileBrowser={ctx.openFileBrowser}
-              />
-            )}
-          </div>
-        ))}
+        {standaloneWidgets.map((w) => {
+          const combinedInputName = combinedInputNameByWidgetName.get(w.name) || null;
+          const socketInput = combinedInputName ? dataInputByName.get(combinedInputName) : null;
+          const socketType = w.socketType || socketInput?.type;
+          const socketName = w.socketType ? w.name : socketInput?.name;
+          return (
+            <div className={`widget-row${socketType ? ' widget-row-socket' : ''}`} key={w.name}>
+              {socketType && socketName && (
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id={`input::${socketName}::${socketType}`}
+                  className="typed-handle"
+                  style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
+                />
+              )}
+              {(w.socketType && connectedInputs?.has(w.name))
+                || (combinedInputName && connectedInputs?.has(combinedInputName)) ? (
+                <label>{formatUiLabel(w.opts?.label || w.name)}</label>
+              ) : (
+                <WidgetControl
+                  widget={w}
+                  nodeId={id}
+                  value={data.widgetValues[w.name]}
+                  widgetValues={data.widgetValues}
+                  onChange={ctx.onWidgetChange}
+                  openFileBrowser={ctx.openFileBrowser}
+                />
+              )}
+            </div>
+          );
+        })}
 
         {/* Manual trigger button (Save) */}
         {def.manual_trigger && (

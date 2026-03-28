@@ -867,6 +867,11 @@ def test_particle_analysis():
     assert table[1]["area_px"] == 64   # 8x8
     assert abs(table[0]["mean_height"] - 5.0) < 1e-10
     assert abs(table[1]["mean_height"] - 3.0) < 1e-10
+    assert table[0]["area_px_unit"] == "px^2"
+    assert table[0]["area_m2_unit"] == "m^2"
+    assert table[0]["equiv_diam_m_unit"] == "m"
+    assert table[0]["mean_height_unit"] == "m"
+    assert table[0]["max_height_unit"] == "m"
 
     # min_size filtering: only keep particles >= 80 px
     table_filtered, = node.process(field, mask=mask, min_size=80)
