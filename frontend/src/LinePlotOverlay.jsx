@@ -173,6 +173,7 @@ export default function LinePlotOverlay({
   const cursorStroke = clamp(plotWidth / 220, 1.4, 2.2);
   const measureStroke = clamp(plotWidth / 180, 1.6, 2.8);
   const markerRadius = clamp(plotWidth / 42, 5.5, 9);
+  const markerLabelSize = clamp(plotWidth / 34, 8, 11);
 
   const updateCursor = useCallback((point, event) => {
     if (!interactive || !onWidgetChange || !nodeId) return;
@@ -250,20 +251,44 @@ export default function LinePlotOverlay({
             <line x1={cursorA.x} y1={plotTop} x2={cursorA.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
             <line x1={cursorB.x} y1={plotTop} x2={cursorB.x} y2={plotTop + plotHeight} stroke="var(--marker)" strokeWidth={cursorStroke} strokeDasharray="10 6" opacity="0.95" />
 
-            <circle
-              cx={cursorA.x}
-              cy={cursorA.y}
-              r={markerRadius}
-              className={`lineplot-marker ${aLocked ? 'lineplot-marker-locked' : ''}`}
-              onPointerDown={onPointerDown('p1')}
-            />
-            <circle
-              cx={cursorB.x}
-              cy={cursorB.y}
-              r={markerRadius}
-              className={`lineplot-marker ${bLocked ? 'lineplot-marker-locked' : ''}`}
-              onPointerDown={onPointerDown('p2')}
-            />
+            <g onPointerDown={onPointerDown('p1')}>
+              <circle
+                cx={cursorA.x}
+                cy={cursorA.y}
+                r={markerRadius}
+                className={`lineplot-marker ${aLocked ? 'lineplot-marker-locked' : ''}`}
+              />
+              <text
+                x={cursorA.x}
+                y={cursorA.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={markerLabelSize}
+                className="lineplot-marker-label"
+                pointerEvents="none"
+              >
+                A
+              </text>
+            </g>
+            <g onPointerDown={onPointerDown('p2')}>
+              <circle
+                cx={cursorB.x}
+                cy={cursorB.y}
+                r={markerRadius}
+                className={`lineplot-marker ${bLocked ? 'lineplot-marker-locked' : ''}`}
+              />
+              <text
+                x={cursorB.x}
+                y={cursorB.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={markerLabelSize}
+                className="lineplot-marker-label"
+                pointerEvents="none"
+              >
+                B
+              </text>
+            </g>
           </>
         )}
       </svg>

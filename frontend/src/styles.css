@@ -967,6 +967,12 @@ html, body, #root {
   cursor: default;
 }
 
+.lineplot-marker-label {
+  fill: var(--bg-deep);
+  font-weight: 700;
+  user-select: none;
+}
+
 .crop-overlay {
   position: relative;
   user-select: none;
