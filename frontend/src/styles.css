@@ -933,14 +933,13 @@ html, body, #root {
 }
 
 .angle-overlay {
-  --angle-line-color: #ff0000;
-  --angle-arc-color: rgb(255, 107, 107);
-  --angle-end-handle-color: #ff0000;
-  --angle-mid-handle-color: rgb(255, 184, 184);
-  --angle-badge-text-color: rgb(255, 184, 184);
-  --angle-badge-border-color: rgb(255, 82, 82);
-  --angle-line-thickness: 1.35;
-  --angle-arc-thickness: 1.05;
+  --angle-line-color: #ff9800;
+  --angle-arc-color: rgb(255, 166, 77);
+  --angle-end-handle-color: #ff9800;
+  --angle-mid-handle-color: rgb(255, 210, 163);
+  --angle-badge-text-color: rgb(255, 210, 163);
+  --angle-badge-border-color: rgb(255, 183, 77);
+  --angle-stroke-width: 1.35;
   position: relative;
   overflow: hidden;
   user-select: none;
@@ -965,14 +964,14 @@ html, body, #root {
 
 .angle-line {
   stroke: var(--angle-line-color);
-  stroke-width: var(--angle-line-thickness);
+  stroke-width: var(--angle-stroke-width);
   stroke-linecap: round;
 }
 
 .angle-arc {
   fill: none;
   stroke: var(--angle-arc-color);
-  stroke-width: var(--angle-arc-thickness);
+  stroke-width: var(--angle-stroke-width);
   stroke-dasharray: 5 3;
   opacity: 0.95;
 }

@@ -704,7 +704,11 @@ def test_angle_measure():
     node = AngleMeasure()
     assert get_node_info("AngleMeasure")["category"] == "Overlay"
     required_inputs = AngleMeasure.INPUT_TYPES()["required"]
-    assert required_inputs["color"][1]["default"] == "#ff0000"
+    optional_inputs = AngleMeasure.INPUT_TYPES().get("optional", {})
+    assert required_inputs["color"][1]["default"] == "#ff9800"
+    assert required_inputs["stroke_width"][1]["default"] == 1.35
+    assert optional_inputs["line_thickness"][1]["hidden"] is True
+    assert optional_inputs["line_thickness_input"][1]["hidden"] is True
 
     field = make_field(
         data=np.zeros((32, 64), dtype=np.float64),
@@ -714,7 +718,7 @@ def test_angle_measure():
     output, table = node.process(
         field,
         color="#c62828",
-        line_thickness=1.8,
+        stroke_width=1.8,
         x1=0.2,
         y1=0.5,
         xm=0.5,
@@ -730,17 +734,17 @@ def test_angle_measure():
     assert len(output.overlays) == len(field.overlays) + 1
     assert output.overlays[-1]["kind"] == "angle_measure"
     assert output.overlays[-1]["color"] == "#c62828"
-    assert np.isclose(output.overlays[-1]["line_thickness"], 1.8)
+    assert np.isclose(output.overlays[-1]["stroke_width"], 1.8)
     assert np.isclose(rows["Arm A length"]["value"], 1.2)
     assert np.isclose(rows["Arm B length"]["value"], 0.6)
     assert np.isclose(rows["Angle"]["value"], 90.0)
     assert rows["Angle"]["unit"] == "deg"
     assert rows["Vertex x"]["unit"] == field.si_unit_xy
 
-    overridden_output, _ = node.process(
+    sanitized_output, _ = node.process(
         field,
         color="not-a-color",
-        line_thickness=0.7,
+        stroke_width=-0.7,
         x1=0.2,
         y1=0.5,
         xm=0.5,
@@ -749,16 +753,15 @@ def test_angle_measure():
         y2=0.2,
         label_dx=0.0,
         label_dy=0.0,
-        line_thickness_input=2.4,
     )
-    assert overridden_output.overlays[-1]["color"] == "#ff0000"
-    assert np.isclose(overridden_output.overlays[-1]["line_thickness"], 2.4)
+    assert sanitized_output.overlays[-1]["color"] == "#ff9800"
+    assert np.isclose(sanitized_output.overlays[-1]["stroke_width"], 0.35)
 
     image = np.zeros((50, 100, 3), dtype=np.uint8)
     image_output, image_table = node.process(
         image,
-        color="#ff0000",
-        line_thickness=1.25,
+        color="#ff9800",
+        stroke_width=1.25,
         x1=0.25,
         y1=0.5,
         xm=0.5,

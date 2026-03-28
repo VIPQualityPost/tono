@@ -16,12 +16,14 @@ from backend.execution_context import emit_overlay, emit_table
 from backend.node_registry import register_node
 from backend.nodes.helpers import _normalize_markup_color
 
+ANGLE_DEFAULT_COLOR = "#ff9800"
+
 
 def _clamp01(value: float) -> float:
     return float(np.clip(value, 0.0, 1.0))
 
 
-def _sanitize_line_thickness(value: float | None, default: float = 1.35) -> float:
+def _sanitize_stroke_width(value: float | None, default: float = 1.35) -> float:
     try:
         numeric = float(value)
     except (TypeError, ValueError):
@@ -56,7 +58,7 @@ def _angle_overlay_spec(
     angle_deg: float,
     label_dx: float,
     label_dy: float,
-    line_thickness: float,
+    stroke_width: float,
     color: str,
 ) -> dict[str, float | str]:
     return {
@@ -70,7 +72,7 @@ def _angle_overlay_spec(
         "angle_deg": float(angle_deg),
         "label_dx": float(label_dx),
         "label_dy": float(label_dy),
-        "line_thickness": float(line_thickness),
+        "stroke_width": float(stroke_width),
         "color": str(color),
     }
 
@@ -84,14 +86,13 @@ class AngleMeasure:
         return {
             "required": {
                 "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
-                "color": ("STRING", {"default": "#ff0000", "color_picker": True}),
-                "line_thickness": ("FLOAT", {
+                "color": ("STRING", {"default": ANGLE_DEFAULT_COLOR, "color_picker": True}),
+                "stroke_width": ("FLOAT", {
                     "default": 1.35,
                     "min": 0.35,
                     "max": 6.0,
                     "step": 0.05,
-                    "label": "line thickness",
-                    "hide_when_input_connected": "line_thickness_input",
+                    "label": "stroke width",
                 }),
                 "x1": ("FLOAT", {"default": 0.22, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
                 "y1": ("FLOAT", {"default": 0.72, "min": 0.0, "max": 1.0, "step": 0.01, "hidden": True}),
@@ -103,7 +104,8 @@ class AngleMeasure:
                 "label_dy": ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.01, "hidden": True}),
             },
             "optional": {
-                "line_thickness_input": ("FLOAT", {"label": "line thickness"}),
+                "line_thickness": ("FLOAT", {"hidden": True}),
+                "line_thickness_input": ("FLOAT", {"hidden": True}),
             },
         }
 
@@ -114,15 +116,15 @@ class AngleMeasure:
     DESCRIPTION = (
         "Measure the included angle between two draggable line segments over a DATA_FIELD or IMAGE. "
         "Drag either endpoint to change that arm, drag the middle joint to move the whole widget, "
-        "drag the angle label to reposition it, choose the overlay color, and adjust line thickness "
-        "with the widget or a FLOAT input."
+        "drag the angle label to reposition it, choose the overlay color, and adjust stroke width "
+        "with the widget or its FLOAT socket."
     )
 
     def process(
         self,
         input,
         color: str,
-        line_thickness: float,
+        stroke_width: float,
         x1: float,
         y1: float,
         xm: float,
@@ -131,6 +133,7 @@ class AngleMeasure:
         y2: float,
         label_dx: float,
         label_dy: float,
+        line_thickness: float | None = None,
         line_thickness_input: float | None = None,
     ) -> tuple:
         x1 = _clamp01(x1)
@@ -141,9 +144,10 @@ class AngleMeasure:
         y2 = _clamp01(y2)
         label_dx = float(np.clip(label_dx, -1.0, 1.0))
         label_dy = float(np.clip(label_dy, -1.0, 1.0))
-        resolved_color = _normalize_markup_color(color, default="#ff0000")
-        resolved_line_thickness = _sanitize_line_thickness(
-            line_thickness_input if line_thickness_input is not None else line_thickness,
+        resolved_color = _normalize_markup_color(color, default=ANGLE_DEFAULT_COLOR)
+        legacy_stroke_width = line_thickness_input if line_thickness_input is not None else line_thickness
+        resolved_stroke_width = _sanitize_stroke_width(
+            legacy_stroke_width if legacy_stroke_width is not None else stroke_width,
         )
 
         if isinstance(input, DataField):
@@ -177,7 +181,7 @@ class AngleMeasure:
             angle_deg=angle_deg,
             label_dx=label_dx,
             label_dy=label_dy,
-            line_thickness=resolved_line_thickness,
+            stroke_width=resolved_stroke_width,
             color=resolved_color,
         )
         table = MeasureTable([

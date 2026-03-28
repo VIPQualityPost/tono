@@ -1316,10 +1316,10 @@ function CustomNode({ id, data }) {
                   labelDx={data.widgetValues.label_dx ?? data.overlay.label_dx ?? 0}
                   labelDy={data.widgetValues.label_dy ?? data.overlay.label_dy ?? 0}
                   angleDeg={data.overlay.angle_deg}
-                  color={data.widgetValues.color ?? data.overlay.color ?? '#ff0000'}
-                  lineThickness={connectedInputs?.has('line_thickness_input')
-                    ? (data.overlay.line_thickness ?? data.widgetValues.line_thickness ?? 1.35)
-                    : (data.widgetValues.line_thickness ?? data.overlay.line_thickness ?? 1.35)}
+                  color={data.widgetValues.color ?? data.overlay.color ?? '#ff9800'}
+                  strokeWidth={connectedInputs?.has('stroke_width')
+                    ? (data.overlay.stroke_width ?? data.overlay.line_thickness ?? data.widgetValues.stroke_width ?? 1.35)
+                    : (data.widgetValues.stroke_width ?? data.overlay.stroke_width ?? data.overlay.line_thickness ?? 1.35)}
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
                 />

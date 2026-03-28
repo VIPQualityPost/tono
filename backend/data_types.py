@@ -504,7 +504,17 @@ def _render_overlay_text(
 
 @lru_cache(maxsize=1)
 def _overlay_font_candidates() -> tuple[str, ...]:
-    candidates: list[str] = []
+    candidates: list[str] = [
+        "/System/Library/Fonts/HelveticaNeue.ttc",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+        "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+        "/Library/Fonts/Arial.ttf",
+        "/Library/Fonts/Helvetica.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+    ]
 
     try:
         import PIL
@@ -516,16 +526,6 @@ def _overlay_font_candidates() -> tuple[str, ...]:
         ])
     except Exception:
         pass
-
-    candidates.extend([
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
-        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
-        "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
-        "/Library/Fonts/Arial.ttf",
-        "/Library/Fonts/Helvetica.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-    ])
 
     unique: list[str] = []
     for candidate in candidates:
@@ -891,7 +891,7 @@ def _angle_label_base_position(spec: dict[str, Any]) -> tuple[float, float]:
     )
 
 
-def _sanitize_angle_overlay_thickness(value: Any, default: float = 1.35) -> float:
+def _sanitize_angle_overlay_stroke_width(value: Any, default: float = 1.35) -> float:
     try:
         numeric = float(value)
     except (TypeError, ValueError):
@@ -983,14 +983,14 @@ def _apply_angle_measure_overlay(image: np.ndarray, field: DataField | None, spe
     label_dy = float(spec.get("label_dy", 0.0) or 0.0)
     angle_deg = float(spec.get("angle_deg", 0.0) or 0.0)
     color_hex = _sanitize_angle_overlay_color(spec.get("color", "#ff0000"))
-    line_thickness = _sanitize_angle_overlay_thickness(spec.get("line_thickness", 1.35))
+    stroke_width = _sanitize_angle_overlay_stroke_width(spec.get("stroke_width", spec.get("line_thickness", 1.35)))
     base_rgb = _hex_to_rgb(color_hex)
     arc_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.42)
     badge_text_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.72)
     badge_border_rgb = _mix_rgb(base_rgb, (255, 255, 255), 0.32)
 
-    line_width = max(1, int(round(longest_dim * line_thickness / 100.0)))
-    arc_width = max(1, int(round(longest_dim * max(0.85, line_thickness * 0.78) / 100.0)))
+    line_width = max(1, int(round(longest_dim * stroke_width / 100.0)))
+    arc_width = line_width
     line_color = (*base_rgb, 255)
     arc_color = (*arc_rgb, 242)
 
@@ -1034,6 +1034,7 @@ def _apply_angle_measure_overlay(image: np.ndarray, field: DataField | None, spe
         label_text,
         max(10, int(round(longest_dim / 26.0))),
         badge_text_rgb,
+        font_spec={"family": "Helvetica Neue"},
     )
 
     bg_pad_x = max(5, int(round(text_image.size[0] * 0.16)))

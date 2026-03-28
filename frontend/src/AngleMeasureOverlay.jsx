@@ -12,7 +12,7 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
-function sanitizeHexColor(value, fallback = '#ff0000') {
+function sanitizeHexColor(value, fallback = '#ff9800') {
   if (typeof value !== 'string') return fallback;
   const text = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text.toLowerCase() : fallback;
@@ -73,15 +73,14 @@ export default function AngleMeasureOverlay({
   labelDy,
   angleDeg,
   color,
-  lineThickness,
+  strokeWidth,
   nodeId,
   onWidgetChange,
 }) {
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null);
-  const resolvedColor = sanitizeHexColor(color, '#ff0000');
-  const resolvedLineThickness = Math.max(0.35, Math.min(6, Number(lineThickness) || 1.35));
-  const resolvedArcThickness = Math.max(0.85, resolvedLineThickness * 0.78);
+  const resolvedColor = sanitizeHexColor(color, '#ff9800');
+  const resolvedStrokeWidth = Math.max(0.35, Math.min(6, Number(strokeWidth) || 1.35));
   const resolvedArcColor = mixColor(resolvedColor, '#ffffff', 0.42);
   const resolvedMidColor = mixColor(resolvedColor, '#ffffff', 0.72);
   const resolvedBadgeTextColor = mixColor(resolvedColor, '#ffffff', 0.72);
@@ -166,8 +165,7 @@ export default function AngleMeasureOverlay({
         '--angle-mid-handle-color': resolvedMidColor,
         '--angle-badge-text-color': resolvedBadgeTextColor,
         '--angle-badge-border-color': resolvedBadgeBorderColor,
-        '--angle-line-thickness': `${resolvedLineThickness}`,
-        '--angle-arc-thickness': `${resolvedArcThickness}`,
+        '--angle-stroke-width': `${resolvedStrokeWidth}`,
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
