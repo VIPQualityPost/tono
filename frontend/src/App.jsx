@@ -43,6 +43,10 @@ const GROUP_HEADER_HEIGHT = 36;
 const GROUP_WORKSPACE_INSET = 12;
 const GROUP_MIN_WIDTH = 260;
 const GROUP_MIN_HEIGHT = 180;
+const CANVAS_MIN_ZOOM = 0.2;
+const CANVAS_MAX_ZOOM = 4;
+const CANVAS_RIGHT_DRAG_ZOOM_SENSITIVITY = 0.0065;
+const CANVAS_RIGHT_DRAG_ZOOM_THRESHOLD = 5;
 
 // ── Handle ID helpers ─────────────────────────────────────────────────
 
@@ -378,6 +382,19 @@ function isEditableTarget(target) {
   if (!target || !(target instanceof Element)) return false;
   if (target.closest('input, textarea, select')) return true;
   return target.closest('[contenteditable="true"]') !== null;
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function canStartCanvasRightDragZoom(target) {
+  if (!target || !(target instanceof Element)) return false;
+  if (isEditableTarget(target)) return false;
+  if (target.closest('.context-menu, .react-flow__node, .react-flow__edge, .react-flow__controls, .react-flow__minimap, .surface-view-container')) {
+    return false;
+  }
+  return target.closest('.react-flow__pane, .react-flow__background') !== null;
 }
 
 function compareMenuNodes(a, b) {
@@ -791,7 +808,9 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
   const [contextMenu, setContextMenu] = useState(null);
+  const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
 
+  const flowContainerRef = useRef(null);
   const nodeDefsRef = useRef({});
   const nextIdRef = useRef(1);
   const autoRunTimer = useRef(null);
@@ -802,6 +821,8 @@ function Flow() {
   const duplicateDragRef = useRef(null);
   const dragStateRef = useRef(null);
   const activeDragNodeIdRef = useRef(null);
+  const canvasRightZoomRef = useRef(null);
+  const suppressPaneContextMenuUntilRef = useRef(0);
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -2597,8 +2618,105 @@ function Flow() {
 
   const onPaneContextMenu = useCallback((event) => {
     event.preventDefault();
+    if (performance.now() < suppressPaneContextMenuUntilRef.current) {
+      suppressPaneContextMenuUntilRef.current = 0;
+      return;
+    }
     setContextMenu({ x: event.clientX, y: event.clientY });
   }, []);
+
+  const onFlowContainerPointerDown = useCallback((event) => {
+    if (event.button !== 2) return;
+    if (!canStartCanvasRightDragZoom(event.target)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu(null);
+
+    const viewport = reactFlow.getViewport();
+    canvasRightZoomRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startZoom: Number(viewport.zoom) || 1,
+      moved: false,
+    };
+    setIsCanvasRightZooming(true);
+
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Ignore capture failures; global listeners still complete the interaction.
+    }
+  }, [reactFlow]);
+
+  const onFlowContainerContextMenuCapture = useCallback((event) => {
+    if (canvasRightZoomRef.current?.moved || performance.now() < suppressPaneContextMenuUntilRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (event) => {
+      const zoomState = canvasRightZoomRef.current;
+      if (!zoomState || event.pointerId !== zoomState.pointerId) return;
+
+      const deltaY = event.clientY - zoomState.startY;
+      if (Math.abs(deltaY) < CANVAS_RIGHT_DRAG_ZOOM_THRESHOLD) return;
+
+      event.preventDefault();
+      zoomState.moved = true;
+
+      const container = flowContainerRef.current;
+      if (!container) return;
+      const bounds = container.getBoundingClientRect();
+      const localX = event.clientX - bounds.left;
+      const localY = event.clientY - bounds.top;
+      const currentViewport = reactFlow.getViewport();
+      const flowX = (localX - currentViewport.x) / currentViewport.zoom;
+      const flowY = (localY - currentViewport.y) / currentViewport.zoom;
+      const nextZoom = clampNumber(
+        zoomState.startZoom * Math.exp(-deltaY * CANVAS_RIGHT_DRAG_ZOOM_SENSITIVITY),
+        CANVAS_MIN_ZOOM,
+        CANVAS_MAX_ZOOM,
+      );
+
+      reactFlow.setViewport({
+        x: localX - (flowX * nextZoom),
+        y: localY - (flowY * nextZoom),
+        zoom: nextZoom,
+      }, { duration: 0 });
+    };
+
+    const finishPointerInteraction = (event) => {
+      const zoomState = canvasRightZoomRef.current;
+      if (!zoomState || event.pointerId !== zoomState.pointerId) return;
+
+      if (zoomState.moved) {
+        suppressPaneContextMenuUntilRef.current = performance.now() + 250;
+      }
+      canvasRightZoomRef.current = null;
+      setIsCanvasRightZooming(false);
+
+      const container = flowContainerRef.current;
+      if (container?.hasPointerCapture?.(event.pointerId)) {
+        try {
+          container.releasePointerCapture(event.pointerId);
+        } catch {
+          // Ignore capture release errors.
+        }
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, true);
+    window.addEventListener('pointerup', finishPointerInteraction, true);
+    window.addEventListener('pointercancel', finishPointerInteraction, true);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove, true);
+      window.removeEventListener('pointerup', finishPointerInteraction, true);
+      window.removeEventListener('pointercancel', finishPointerInteraction, true);
+    };
+  }, [reactFlow]);
 
   useEffect(() => {
     if (!contextMenu) return undefined;
@@ -2648,7 +2766,14 @@ function Flow() {
         </div>
 
         {/* React Flow canvas */}
-        <div className="flow-container" onDrop={onDropFile} onDragOver={onDragOver}>
+        <div
+          ref={flowContainerRef}
+          className={`flow-container${isCanvasRightZooming ? ' canvas-right-zooming' : ''}`}
+          onDrop={onDropFile}
+          onDragOver={onDragOver}
+          onPointerDownCapture={onFlowContainerPointerDown}
+          onContextMenuCapture={onFlowContainerContextMenuCapture}
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}

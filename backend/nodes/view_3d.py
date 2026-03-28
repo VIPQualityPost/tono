@@ -37,19 +37,42 @@ def _grid_triangle_indices(nx: int, ny: int, *, reverse: bool = False) -> list[l
     return faces
 
 
-def _build_mesh_model(z: np.ndarray, colors_u8: np.ndarray, z_scale: float, make_solid: bool) -> MeshModel:
+def _surface_extent_scale(xreal: float, yreal: float, nx: int, ny: int) -> tuple[float, float]:
+    def _resolve_span(value: float, fallback_points: int) -> float:
+        try:
+            span = abs(float(value))
+        except (TypeError, ValueError):
+            span = 0.0
+        if not np.isfinite(span) or span <= 0.0:
+            span = float(max(fallback_points - 1, 1))
+        return span
+
+    x_span = _resolve_span(xreal, nx)
+    y_span = _resolve_span(yreal, ny)
+    max_span = max(x_span, y_span, 1.0)
+    return (x_span / max_span, y_span / max_span)
+
+
+def _build_mesh_model(
+    z: np.ndarray,
+    colors_u8: np.ndarray,
+    z_scale: float,
+    make_solid: bool,
+    lateral_extent: tuple[float, float] = (1.0, 1.0),
+) -> MeshModel:
     ny, nx = z.shape
     zmin = float(z.min())
     zmax = float(z.max())
     z_range = zmax - zmin if zmax != zmin else 1.0
+    x_extent, y_extent = lateral_extent
 
     top_vertices = np.empty((nx * ny, 3), dtype=np.float32)
     top_colors = colors_u8.reshape(-1, 3).astype(np.uint8)
     for iy in range(ny):
-        py = iy / max(ny - 1, 1) - 0.5
+        py = (iy / max(ny - 1, 1) - 0.5) * y_extent
         for ix in range(nx):
             idx = iy * nx + ix
-            px = ix / max(nx - 1, 1) - 0.5
+            px = (ix / max(nx - 1, 1) - 0.5) * x_extent
             pz = ((float(z[iy, ix]) - zmin) / z_range - 0.5) * z_scale
             top_vertices[idx] = (px, pz, py)
 
@@ -99,6 +122,9 @@ class View3D:
                 "camera_azimuth": ("FLOAT", {"default": 0.0, "hidden": True}),
                 "camera_polar": ("FLOAT", {"default": 1.1, "hidden": True}),
                 "camera_distance": ("FLOAT", {"default": 1.8, "hidden": True}),
+                "camera_target_x": ("FLOAT", {"default": 0.0, "hidden": True}),
+                "camera_target_y": ("FLOAT", {"default": 0.0, "hidden": True}),
+                "camera_target_z": ("FLOAT", {"default": 0.0, "hidden": True}),
                 "viewport_snapshot": ("STRING", {"default": "", "hidden": True}),
             },
             "optional": {
@@ -115,7 +141,7 @@ class View3D:
     DESCRIPTION = (
         "Interactive 3D surface view of a DATA_FIELD. "
         "Use the mesh input for geometry and optionally a second map input for coloring. "
-        "Drag to rotate, scroll to zoom. z_scale exaggerates height."
+        "Drag to rotate, middle-drag to pan, and right-drag or scroll to zoom. z_scale exaggerates height."
     )
 
     _broadcast_mesh_fn = None
@@ -125,6 +151,7 @@ class View3D:
         self, field: DataField,
         colormap: str, z_scale: float, resolution: int, make_solid: bool = False,
         camera_azimuth: float = 0.0, camera_polar: float = 1.1, camera_distance: float = 1.8,
+        camera_target_x: float = 0.0, camera_target_y: float = 0.0, camera_target_z: float = 0.0,
         viewport_snapshot: str = "",
         map_field: DataField | None = None, colormap_map=None,
     ) -> tuple:
@@ -183,7 +210,14 @@ class View3D:
             default="gray",
         )
         colors_u8 = colormap_to_uint8(z_norm, resolved_colormap)
-        mesh_model = _build_mesh_model(z, colors_u8, float(z_scale * 0.1), bool(make_solid))
+        surface_extent = _surface_extent_scale(field.xreal, field.yreal, nx, ny)
+        mesh_model = _build_mesh_model(
+            z,
+            colors_u8,
+            float(z_scale * 0.1),
+            bool(make_solid),
+            lateral_extent=surface_extent,
+        )
 
         z_b64 = base64.b64encode(z.tobytes()).decode()
         colors_b64 = base64.b64encode(colors_u8.tobytes()).decode()
@@ -208,8 +242,13 @@ class View3D:
             "camera_azimuth": float(camera_azimuth),
             "camera_polar": float(camera_polar),
             "camera_distance": float(camera_distance),
+            "camera_target_x": float(camera_target_x),
+            "camera_target_y": float(camera_target_y),
+            "camera_target_z": float(camera_target_z),
             "x_range": [float(field.xoff), float(field.xoff + field.xreal)],
             "y_range": [float(field.yoff), float(field.yoff + field.yreal)],
+            "surface_extent_x": float(surface_extent[0]),
+            "surface_extent_y": float(surface_extent[1]),
         }
 
         emit_mesh(mesh_data)
@@ -225,6 +264,9 @@ class View3D:
                     "azimuth": float(camera_azimuth),
                     "polar": float(camera_polar),
                     "distance": float(camera_distance),
+                    "target_x": float(camera_target_x),
+                    "target_y": float(camera_target_y),
+                    "target_z": float(camera_target_z),
                 },
             },
         )

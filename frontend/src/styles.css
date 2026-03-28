@@ -217,6 +217,11 @@ html, body, #root {
   flex: 1;
   position: relative;
 }
+.flow-container.canvas-right-zooming,
+.flow-container.canvas-right-zooming .react-flow__pane,
+.flow-container.canvas-right-zooming .react-flow__background {
+  cursor: ns-resize !important;
+}
 
 /* ── React Flow dark overrides ─────────────────────────────────────── */
 .react-flow {
@@ -259,9 +264,18 @@ html, body, #root {
   flex: 1;
 }
 
-.group-title-button {
-  flex: 1;
+.group-title-slot {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
+}
+
+.group-title-button {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
@@ -276,8 +290,10 @@ html, body, #root {
 }
 
 .group-title-input {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: min(40ch, 100%);
+  width: auto;
   height: 22px;
   padding: 2px 6px;
   border: 1px solid rgba(148, 163, 184, 0.45);

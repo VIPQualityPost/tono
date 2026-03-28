@@ -2,6 +2,69 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+const DEFAULT_CAMERA_STATE = {
+  azimuth: 0.0,
+  polar: 1.1,
+  distance: 1.8,
+  targetX: 0.0,
+  targetY: 0.0,
+  targetZ: 0.0,
+};
+
+function getFiniteNumber(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+  return null;
+}
+
+function getCameraState(meshData, widgetValues, runtimeValues, fallbackTarget = null) {
+  return {
+    azimuth: getFiniteNumber(
+      runtimeValues?.camera_azimuth,
+      widgetValues?.camera_azimuth,
+      meshData?.camera_azimuth,
+      DEFAULT_CAMERA_STATE.azimuth,
+    ),
+    polar: getFiniteNumber(
+      runtimeValues?.camera_polar,
+      widgetValues?.camera_polar,
+      meshData?.camera_polar,
+      DEFAULT_CAMERA_STATE.polar,
+    ),
+    distance: getFiniteNumber(
+      runtimeValues?.camera_distance,
+      widgetValues?.camera_distance,
+      meshData?.camera_distance,
+      DEFAULT_CAMERA_STATE.distance,
+    ),
+    targetX: getFiniteNumber(
+      runtimeValues?.camera_target_x,
+      widgetValues?.camera_target_x,
+      meshData?.camera_target_x,
+      fallbackTarget?.x,
+      DEFAULT_CAMERA_STATE.targetX,
+    ),
+    targetY: getFiniteNumber(
+      runtimeValues?.camera_target_y,
+      widgetValues?.camera_target_y,
+      meshData?.camera_target_y,
+      fallbackTarget?.y,
+      DEFAULT_CAMERA_STATE.targetY,
+    ),
+    targetZ: getFiniteNumber(
+      runtimeValues?.camera_target_z,
+      widgetValues?.camera_target_z,
+      meshData?.camera_target_z,
+      fallbackTarget?.z,
+      DEFAULT_CAMERA_STATE.targetZ,
+    ),
+  };
+}
+
 /**
  * Interactive 3D surface viewer using Three.js.
  * Props:
@@ -13,8 +76,14 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
   const threeRef = useRef(null); // { renderer, scene, camera, controls, mesh }
   const syncTimerRef = useRef(null);
   const lastSnapshotRef = useRef('');
-  const lastAnglesRef = useRef({ azimuth: null, polar: null, distance: null });
-  const hasSyncedInitialSnapshotRef = useRef(false);
+  const lastCameraStateRef = useRef({
+    azimuth: null,
+    polar: null,
+    distance: null,
+    targetX: null,
+    targetY: null,
+    targetZ: null,
+  });
 
   // Decode base64 to typed arrays
   const decode = useCallback((b64, ArrayType) => {
@@ -28,19 +97,27 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     const state = threeRef.current;
     if (!state || !nodeId || !onRuntimeValuesChange) return;
     const { renderer, controls } = state;
-    const azimuth = Number(controls.getAzimuthalAngle().toFixed(4));
-    const polar = Number(controls.getPolarAngle().toFixed(4));
-    const distance = Number(controls.getDistance().toFixed(4));
+    const cameraState = {
+      azimuth: Number(controls.getAzimuthalAngle().toFixed(4)),
+      polar: Number(controls.getPolarAngle().toFixed(4)),
+      distance: Number(controls.getDistance().toFixed(4)),
+      targetX: Number(controls.target.x.toFixed(4)),
+      targetY: Number(controls.target.y.toFixed(4)),
+      targetZ: Number(controls.target.z.toFixed(4)),
+    };
     const snapshot = renderer.domElement.toDataURL('image/png');
-    const previous = lastAnglesRef.current;
+    const previous = lastCameraStateRef.current;
     const patch = {};
-    if (previous.azimuth !== azimuth) patch.camera_azimuth = azimuth;
-    if (previous.polar !== polar) patch.camera_polar = polar;
-    if (previous.distance !== distance) patch.camera_distance = distance;
+    if (previous.azimuth !== cameraState.azimuth) patch.camera_azimuth = cameraState.azimuth;
+    if (previous.polar !== cameraState.polar) patch.camera_polar = cameraState.polar;
+    if (previous.distance !== cameraState.distance) patch.camera_distance = cameraState.distance;
+    if (previous.targetX !== cameraState.targetX) patch.camera_target_x = cameraState.targetX;
+    if (previous.targetY !== cameraState.targetY) patch.camera_target_y = cameraState.targetY;
+    if (previous.targetZ !== cameraState.targetZ) patch.camera_target_z = cameraState.targetZ;
     if (snapshot !== lastSnapshotRef.current) patch.viewport_snapshot = snapshot;
     if (Object.keys(patch).length > 0) {
       onRuntimeValuesChange(nodeId, patch, { scheduleRun });
-      lastAnglesRef.current = { azimuth, polar, distance };
+      lastCameraStateRef.current = cameraState;
       lastSnapshotRef.current = snapshot;
     }
   }, [nodeId, onRuntimeValuesChange]);
@@ -55,17 +132,26 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     }, delay);
   }, [syncViewportState]);
 
-  const applyCameraState = useCallback((azimuth, polar, distance) => {
+  const applyCameraState = useCallback((cameraState = {}) => {
     const state = threeRef.current;
     if (!state) return;
     const { camera, controls } = state;
-    const target = controls.target.clone();
+    const target = new THREE.Vector3(
+      getFiniteNumber(cameraState.targetX, controls.target.x, DEFAULT_CAMERA_STATE.targetX),
+      getFiniteNumber(cameraState.targetY, controls.target.y, DEFAULT_CAMERA_STATE.targetY),
+      getFiniteNumber(cameraState.targetZ, controls.target.z, DEFAULT_CAMERA_STATE.targetZ),
+    );
     const spherical = new THREE.Spherical(
-      Math.max(0.3, Number.isFinite(distance) ? distance : 1.8),
-      THREE.MathUtils.clamp(Number.isFinite(polar) ? polar : 1.1, 0.01, Math.PI - 0.01),
-      Number.isFinite(azimuth) ? azimuth : 0.0,
+      Math.max(0.3, getFiniteNumber(cameraState.distance, DEFAULT_CAMERA_STATE.distance)),
+      THREE.MathUtils.clamp(
+        getFiniteNumber(cameraState.polar, DEFAULT_CAMERA_STATE.polar),
+        0.01,
+        Math.PI - 0.01,
+      ),
+      getFiniteNumber(cameraState.azimuth, DEFAULT_CAMERA_STATE.azimuth),
     );
     const offset = new THREE.Vector3().setFromSpherical(spherical);
+    controls.target.copy(target);
     camera.position.copy(target).add(offset);
     controls.update();
   }, []);
@@ -96,8 +182,26 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.screenSpacePanning = true;
+    controls.panSpeed = 1.0;
+    controls.zoomSpeed = 2.2;
     controls.minDistance = 0.3;
     controls.maxDistance = 10;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.PAN,
+      RIGHT: THREE.MOUSE.DOLLY,
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
+    if ('zoomToCursor' in controls) {
+      controls.zoomToCursor = true;
+    }
+    renderer.domElement.style.touchAction = 'none';
     const handleControlsEnd = () => scheduleViewportSync(0, true);
     controls.addEventListener('end', handleControlsEnd);
 
@@ -121,11 +225,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     animate();
 
     threeRef.current = { renderer, scene, camera, controls, mesh: null, animId };
-    applyCameraState(
-      Number(runtimeValues?.camera_azimuth ?? widgetValues?.camera_azimuth),
-      Number(runtimeValues?.camera_polar ?? widgetValues?.camera_polar),
-      Number(runtimeValues?.camera_distance ?? widgetValues?.camera_distance),
-    );
+    applyCameraState(getCameraState(meshData, widgetValues, runtimeValues));
 
     // Resize observer to maintain 1:1 aspect when node width changes
     const ro = new ResizeObserver((entries) => {
@@ -152,16 +252,17 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       }
       threeRef.current = null;
     };
-  }, [applyCameraState, scheduleViewportSync]);
+  }, [applyCameraState, meshData, runtimeValues, scheduleViewportSync, widgetValues]);
 
   // Update mesh when data changes
   useEffect(() => {
     if (!threeRef.current || !meshData) return;
 
-    const { scene, camera, controls } = threeRef.current;
+    const { scene, controls } = threeRef.current;
     const {
       width: nx, height: ny, z_data, colors, z_min, z_max, z_scale,
-      positions, indices, vertex_colors, camera_azimuth, camera_polar, camera_distance,
+      positions, indices, vertex_colors,
+      surface_extent_x, surface_extent_y,
     } = meshData;
 
     // Decode arrays
@@ -182,14 +283,16 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     const geom = new THREE.BufferGeometry();
     const positionsArray = posArr ?? new Float32Array(nx * ny * 3);
     const colorAttr = new Float32Array((vertexColorArr ? vertexColorArr.length : (nx * ny * 3)));
+    const surfaceExtentX = getFiniteNumber(surface_extent_x, 1.0);
+    const surfaceExtentY = getFiniteNumber(surface_extent_y, 1.0);
 
     if (!posArr) {
       const zRange = z_max - z_min || 1;
       for (let iy = 0; iy < ny; iy++) {
         for (let ix = 0; ix < nx; ix++) {
           const idx = iy * nx + ix;
-          const px = ix / (nx - 1) - 0.5;
-          const py = iy / (ny - 1) - 0.5;
+          const px = (ix / Math.max(nx - 1, 1) - 0.5) * surfaceExtentX;
+          const py = (iy / Math.max(ny - 1, 1) - 0.5) * surfaceExtentY;
           const pz = ((zArr[idx] - z_min) / zRange - 0.5) * z_scale;
 
           positionsArray[idx * 3] = px;
@@ -238,21 +341,24 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     scene.add(mesh);
     threeRef.current.mesh = mesh;
 
-    // Reset camera target to center of mesh
-    controls.target.set(0, 0, 0);
-    if (!hasSyncedInitialSnapshotRef.current) {
-      applyCameraState(
-        Number.isFinite(camera_azimuth) ? camera_azimuth : Number(runtimeValues?.camera_azimuth ?? widgetValues?.camera_azimuth),
-        Number.isFinite(camera_polar) ? camera_polar : Number(runtimeValues?.camera_polar ?? widgetValues?.camera_polar),
-        Number.isFinite(camera_distance) ? camera_distance : Number(runtimeValues?.camera_distance ?? widgetValues?.camera_distance),
-      );
-      hasSyncedInitialSnapshotRef.current = true;
-    }
+    const bounds = new THREE.Box3().setFromObject(mesh);
+    const center = bounds.isEmpty() ? new THREE.Vector3() : bounds.getCenter(new THREE.Vector3());
+    const size = bounds.isEmpty() ? new THREE.Vector3(1, 1, 1) : bounds.getSize(new THREE.Vector3());
+    const maxDimension = Math.max(size.x, size.y, size.z, 0.25);
+    controls.minDistance = Math.max(0.1, maxDimension * 0.35);
+    controls.maxDistance = Math.max(10, maxDimension * 14);
+    applyCameraState(getCameraState(meshData, widgetValues, runtimeValues, center));
     scheduleViewportSync(0, false);
   }, [meshData, decode, applyCameraState, runtimeValues, scheduleViewportSync, widgetValues]);
 
   // Prevent scroll events from propagating to React Flow
   const onWheel = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const onContextMenu = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
   }, []);
 
@@ -261,6 +367,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       ref={containerRef}
       className="nodrag nowheel surface-view-container"
       onWheelCapture={onWheel}
+      onContextMenu={onContextMenu}
     />
   );
 }

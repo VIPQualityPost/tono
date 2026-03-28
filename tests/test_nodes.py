@@ -2110,6 +2110,7 @@ def test_view3d():
     print("=== Test: View3D ===")
     from backend.nodes.view_3d import View3D
     from backend.data_types import ImageData, MeshModel
+    from backend.execution_context import active_node, execution_callbacks
     import base64
     import io
     from PIL import Image
@@ -2118,28 +2119,34 @@ def test_view3d():
     field = make_field()
 
     captured = []
-    View3D._broadcast_mesh_fn = lambda nid, mesh: captured.append(mesh)
-    View3D._current_node_id = "test"
+    mesh_callback = lambda nid, mesh: captured.append(mesh)
 
     preview_image = Image.new("RGB", (12, 10), (255, 0, 0))
     preview_buffer = io.BytesIO()
     preview_image.save(preview_buffer, format="PNG")
     viewport_snapshot = "data:image/png;base64," + base64.b64encode(preview_buffer.getvalue()).decode()
 
-    result = node.render(
-        field,
-        colormap="viridis",
-        z_scale=2.0,
-        resolution=64,
-        make_solid=False,
-        viewport_snapshot=viewport_snapshot,
-    )
+    with execution_callbacks(mesh=mesh_callback), active_node("test"):
+        result = node.render(
+            field,
+            colormap="viridis",
+            z_scale=2.0,
+            resolution=64,
+            make_solid=False,
+            camera_target_x=0.1,
+            camera_target_y=-0.2,
+            camera_target_z=0.3,
+            viewport_snapshot=viewport_snapshot,
+        )
     assert len(result) == 2
     assert isinstance(result[0], MeshModel)
     assert isinstance(result[1], ImageData)
     assert result[1].shape == (10, 12, 3)
     assert np.all(result[1][0, 0] == np.array([255, 0, 0], dtype=np.uint8))
     assert result[1].metadata["annotation_context"]["si_unit_xy"] == field.si_unit_xy
+    assert result[1].metadata["viewport_camera"]["target_x"] == 0.1
+    assert result[1].metadata["viewport_camera"]["target_y"] == -0.2
+    assert result[1].metadata["viewport_camera"]["target_z"] == 0.3
     assert len(captured) == 1
 
     mesh = captured[0]
@@ -2150,6 +2157,9 @@ def test_view3d():
     assert mesh["z_scale"] == 0.2
     assert mesh["width"] <= 64
     assert mesh["height"] <= 64
+    assert mesh["camera_target_x"] == 0.1
+    assert mesh["camera_target_y"] == -0.2
+    assert mesh["camera_target_z"] == 0.3
     # z_min < z_max for non-constant data
     assert mesh["z_min"] < mesh["z_max"]
 
@@ -2163,7 +2173,8 @@ def test_view3d():
     # High-res input should be downsampled
     big_field = make_field(shape=(256, 256))
     captured.clear()
-    node.render(big_field, colormap="hot", z_scale=1.0, resolution=64, make_solid=False)
+    with execution_callbacks(mesh=mesh_callback), active_node("test"):
+        node.render(big_field, colormap="hot", z_scale=1.0, resolution=64, make_solid=False)
     assert captured[0]["width"] <= 64
     assert captured[0]["height"] <= 64
 
@@ -2171,16 +2182,23 @@ def test_view3d():
     mesh_field = make_field(data=np.zeros((64, 64), dtype=np.float64), xreal=2.0, yreal=3.0)
     map_field = make_field(data=np.tile(np.linspace(0.0, 1.0, 64, dtype=np.float64), (64, 1)), xreal=2.0, yreal=3.0)
     captured.clear()
-    mapped_result = node.render(mesh_field, map_field=map_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
+    with execution_callbacks(mesh=mesh_callback), active_node("test"):
+        mapped_result = node.render(mesh_field, map_field=map_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
     mapped_mesh = captured[0]
     assert mapped_mesh["x_range"] == [float(mesh_field.xoff), float(mesh_field.xoff + mesh_field.xreal)]
     assert mapped_mesh["y_range"] == [float(mesh_field.yoff), float(mesh_field.yoff + mesh_field.yreal)]
+    assert np.isclose(mapped_mesh["surface_extent_x"] / mapped_mesh["surface_extent_y"], mesh_field.xreal / mesh_field.yreal)
     mapped_z = np.frombuffer(base64.b64decode(mapped_mesh["z_data"]), dtype=np.float32)
     assert np.allclose(mapped_z, 0.0)
     mapped_colors = np.frombuffer(base64.b64decode(mapped_mesh["colors"]), dtype=np.uint8)
+    top_vertices = np.asarray(mapped_result[0].vertices, dtype=np.float32)
+    x_span = float(top_vertices[:, 0].max() - top_vertices[:, 0].min())
+    y_span = float(top_vertices[:, 2].max() - top_vertices[:, 2].min())
+    assert np.isclose(x_span / y_span, mesh_field.xreal / mesh_field.yreal)
 
     captured.clear()
-    node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
+    with execution_callbacks(mesh=mesh_callback), active_node("test"):
+        node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=32, make_solid=False)
     mesh_only = captured[0]
     mesh_only_colors = np.frombuffer(base64.b64decode(mesh_only["colors"]), dtype=np.uint8)
     assert not np.array_equal(mapped_colors, mesh_only_colors)
@@ -2189,7 +2207,8 @@ def test_view3d():
     solid_mesh = mapped_result[0]
     assert isinstance(solid_mesh, MeshModel)
     captured.clear()
-    solid_result = node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=16, make_solid=True)
+    with execution_callbacks(mesh=mesh_callback), active_node("test"):
+        solid_result = node.render(mesh_field, colormap="viridis", z_scale=1.0, resolution=16, make_solid=True)
     assert len(solid_result[0].vertices) > 16 * 16
     assert len(solid_result[0].faces) > (15 * 15 * 2)
     solid_payload = captured[0]
@@ -2197,8 +2216,6 @@ def test_view3d():
     assert "positions" in solid_payload
     assert "indices" in solid_payload
     assert "vertex_colors" in solid_payload
-
-    View3D._broadcast_mesh_fn = None
     print("  PASS\n")
 
 
