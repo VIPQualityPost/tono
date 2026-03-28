@@ -135,8 +135,10 @@ class View3D:
             },
         }
 
-    RETURN_TYPES = ("MESH_MODEL", "IMAGE")
-    RETURN_NAMES = ("mesh", "viewport")
+    OUTPUTS = (
+        ('MESH_MODEL', 'mesh'),
+        ('IMAGE', 'viewport'),
+    )
     FUNCTION = "render"
 
     OUTPUT_NODE = True

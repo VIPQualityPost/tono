@@ -31,7 +31,7 @@ from threading import RLock
 from time import perf_counter
 from typing import Any, Callable
 
-from backend.node_registry import NODE_CLASS_MAPPINGS
+from backend.node_registry import NODE_CLASS_MAPPINGS, get_node_output_types
 from backend.execution_context import active_node, execution_callbacks
 
 
@@ -455,7 +455,7 @@ class ExecutionEngine:
                 on_preview(node_id, preview)
                 return
 
-        return_types = getattr(cls, "RETURN_TYPES", ())
+        return_types = get_node_output_types(cls)
 
         for slot, type_name in enumerate(return_types):
             if slot >= len(result):
@@ -536,7 +536,7 @@ class ExecutionEngine:
         import numpy as np
         from backend.data_types import LineData
 
-        return_types = getattr(cls, "RETURN_TYPES", ())
+        return_types = get_node_output_types(cls)
 
         # Find the y-values (current slot) and try to find an x-axis
         y = result[slot]

@@ -15,8 +15,9 @@ class FixZero:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("zeroed",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'zeroed'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

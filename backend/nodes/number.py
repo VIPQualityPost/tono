@@ -14,8 +14,9 @@ class Number:
             }
         }
 
-    RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
+    OUTPUTS = (
+        ('FLOAT', 'value'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

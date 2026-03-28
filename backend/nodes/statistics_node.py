@@ -14,8 +14,9 @@ class Statistics:
             }
         }
 
-    RETURN_TYPES = ("MEASURE_TABLE",)
-    RETURN_NAMES = ("stats",)
+    OUTPUTS = (
+        ('MEASURE_TABLE', 'stats'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

@@ -16,8 +16,9 @@ class EdgeDetect:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("edges",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'edges'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

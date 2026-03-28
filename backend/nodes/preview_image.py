@@ -30,7 +30,7 @@ class PreviewImage:
             }
         }
 
-    RETURN_TYPES = ()
+    OUTPUTS = ()
     FUNCTION = "preview"
 
     OUTPUT_NODE = True

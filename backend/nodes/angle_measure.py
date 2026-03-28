@@ -112,8 +112,10 @@ class AngleMeasure:
             },
         }
 
-    RETURN_TYPES = ("ANNOTATION_SOURCE", "MEASURE_TABLE")
-    RETURN_NAMES = ("output", "measurements")
+    OUTPUTS = (
+        ('ANNOTATION_SOURCE', 'output'),
+        ('MEASURE_TABLE', 'measurements'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

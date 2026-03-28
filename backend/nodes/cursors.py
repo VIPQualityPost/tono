@@ -27,8 +27,10 @@ class Cursors:
             },
         }
 
-    RETURN_TYPES = ("MEASURE_TABLE", "COORDPAIR",)
-    RETURN_NAMES = ("measurement", "coord pair",)
+    OUTPUTS = (
+        ('MEASURE_TABLE', 'measurement'),
+        ('COORDPAIR', 'coord_pair'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

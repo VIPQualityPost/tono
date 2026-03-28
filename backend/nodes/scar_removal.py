@@ -185,8 +185,10 @@ class ScarRemoval:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD", "IMAGE")
-    RETURN_NAMES = ("corrected", "scar mask")
+    OUTPUTS = (
+        ('DATA_FIELD', 'corrected'),
+        ('IMAGE', 'scar_mask'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

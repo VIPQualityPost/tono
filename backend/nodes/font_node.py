@@ -19,8 +19,9 @@ class Font:
             }
         }
 
-    RETURN_TYPES = ("FONT",)
-    RETURN_NAMES = ("font",)
+    OUTPUTS = (
+        ('FONT', 'font'),
+    )
     FUNCTION = "build"
 
     DESCRIPTION = (

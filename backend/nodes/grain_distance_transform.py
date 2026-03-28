@@ -103,8 +103,9 @@ class GrainDistanceTransform:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("distance",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'distance'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

@@ -21,8 +21,12 @@ class FFT2D:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD", "DATA_FIELD", "DATA_FIELD", "DATA_FIELD")
-    RETURN_NAMES = ("log_magnitude", "magnitude", "phase", "psdf")
+    OUTPUTS = (
+        ('DATA_FIELD', 'log_magnitude'),
+        ('DATA_FIELD', 'magnitude'),
+        ('DATA_FIELD', 'phase'),
+        ('DATA_FIELD', 'psdf'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

@@ -61,7 +61,7 @@ class Save:
             },
         }
 
-    RETURN_TYPES = ()
+    OUTPUTS = ()
     FUNCTION = "save"
 
     OUTPUT_NODE = True

@@ -23,8 +23,9 @@ class ColorMap:
             }
         }
 
-    RETURN_TYPES = ("COLORMAP",)
-    RETURN_NAMES = ("colormap",)
+    OUTPUTS = (
+        ('COLORMAP', 'colormap'),
+    )
     FUNCTION = "build"
 
     DESCRIPTION = (

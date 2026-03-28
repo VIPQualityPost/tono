@@ -29,8 +29,9 @@ class FFTFilter1D:
             }
         }
 
-    RETURN_TYPES = ("LINE",)
-    RETURN_NAMES = ("filtered",)
+    OUTPUTS = (
+        ('LINE', 'filtered'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

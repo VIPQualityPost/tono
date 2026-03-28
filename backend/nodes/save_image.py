@@ -47,7 +47,7 @@ class SaveImage:
             "optional": optional,
         }
 
-    RETURN_TYPES = ()
+    OUTPUTS = ()
     FUNCTION = "save"
 
     OUTPUT_NODE = True

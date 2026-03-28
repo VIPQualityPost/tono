@@ -2425,8 +2425,9 @@ def test_execution_engine_numeric_socket_coercion():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("INT",)}}
 
-        RETURN_TYPES = ("INT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('INT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 
@@ -2439,8 +2440,9 @@ def test_execution_engine_numeric_socket_coercion():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("FLOAT",)}}
 
-        RETURN_TYPES = ("FLOAT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('FLOAT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 
@@ -2483,8 +2485,9 @@ def test_execution_engine_caches_unchanged_nodes():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("FLOAT",)}}
 
-        RETURN_TYPES = ("FLOAT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('FLOAT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 
@@ -2500,8 +2503,9 @@ def test_execution_engine_caches_unchanged_nodes():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("FLOAT",)}}
 
-        RETURN_TYPES = ("FLOAT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('FLOAT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 
@@ -2552,8 +2556,9 @@ def test_execution_engine_only_propagates_real_output_changes():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("FLOAT",)}}
 
-        RETURN_TYPES = ("INT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('INT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 
@@ -2569,8 +2574,9 @@ def test_execution_engine_only_propagates_real_output_changes():
         def INPUT_TYPES(cls):
             return {"required": {"value": ("INT",)}}
 
-        RETURN_TYPES = ("FLOAT",)
-        RETURN_NAMES = ("value",)
+        OUTPUTS = (
+            ('FLOAT', 'value'),
+        )
         FUNCTION = "process"
         CATEGORY = "tests"
 

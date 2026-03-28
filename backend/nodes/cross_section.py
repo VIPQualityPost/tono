@@ -27,8 +27,10 @@ class CrossSection:
             },
         }
 
-    RETURN_TYPES = ("LINE", "COORDPAIR",)
-    RETURN_NAMES = ("profile", "marker pair",)
+    OUTPUTS = (
+        ('LINE', 'profile'),
+        ('COORDPAIR', 'marker_pair'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

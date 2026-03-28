@@ -304,8 +304,11 @@ class FractalDimension:
             }
         }
 
-    RETURN_TYPES = ("FLOAT", "LINE", "MEASURE_TABLE")
-    RETURN_NAMES = ("dimension", "curve", "measurements")
+    OUTPUTS = (
+        ('FLOAT', 'dimension'),
+        ('LINE', 'curve'),
+        ('MEASURE_TABLE', 'measurements'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

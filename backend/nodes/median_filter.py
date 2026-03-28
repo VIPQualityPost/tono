@@ -14,8 +14,9 @@ class MedianFilter:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("filtered",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'filtered'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = "Apply a median filter. Equivalent to gwy_data_field_filter_median."

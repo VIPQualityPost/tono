@@ -17,8 +17,9 @@ class PSDF:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("psdf",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'psdf'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

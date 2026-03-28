@@ -15,7 +15,7 @@ class PrintTable:
             }
         }
 
-    RETURN_TYPES = ()
+    OUTPUTS = ()
     FUNCTION = "print_table"
 
     OUTPUT_NODE = True

@@ -21,8 +21,10 @@ class Histogram:
             }
         }
 
-    RETURN_TYPES = ("MEASURE_TABLE", "COORDPAIR",)
-    RETURN_NAMES = ("measurements", "marker pair",)
+    OUTPUTS = (
+        ('MEASURE_TABLE', 'measurements'),
+        ('COORDPAIR', 'marker_pair'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

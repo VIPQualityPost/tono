@@ -307,8 +307,11 @@ class LineCorrection:
             },
         }
 
-    RETURN_TYPES = ("DATA_FIELD", "DATA_FIELD", "LINE")
-    RETURN_NAMES = ("corrected", "background", "row shifts")
+    OUTPUTS = (
+        ('DATA_FIELD', 'corrected'),
+        ('DATA_FIELD', 'background'),
+        ('LINE', 'row_shifts'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

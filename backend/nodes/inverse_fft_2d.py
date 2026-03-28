@@ -18,8 +18,9 @@ class InverseFFT2D:
             },
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("image",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'image'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

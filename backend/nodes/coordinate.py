@@ -15,8 +15,9 @@ class Coordinate:
             }
         }
 
-    RETURN_TYPES = ("COORD",)
-    RETURN_NAMES = ("point",)
+    OUTPUTS = (
+        ('COORD', 'point'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = "Output a fractional (x, y) coordinate pair in [0, 1]."

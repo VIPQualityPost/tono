@@ -24,8 +24,9 @@ class ValueDisplay:
             }
         }
 
-    RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
+    OUTPUTS = (
+        ('FLOAT', 'value'),
+    )
     FUNCTION = "display_value"
 
     DESCRIPTION = "Display a FLOAT, or a selected numeric row from a measurement table, and pass the value through unchanged."

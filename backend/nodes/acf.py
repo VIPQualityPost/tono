@@ -16,8 +16,9 @@ class ACF:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("acf",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'acf'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

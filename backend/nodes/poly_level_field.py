@@ -16,8 +16,10 @@ class PolyLevelField:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD", "DATA_FIELD")
-    RETURN_NAMES = ("leveled", "background")
+    OUTPUTS = (
+        ('DATA_FIELD', 'leveled'),
+        ('DATA_FIELD', 'background'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

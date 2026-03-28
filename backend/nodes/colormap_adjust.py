@@ -17,8 +17,9 @@ class ColormapAdjust:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("field",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'field'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

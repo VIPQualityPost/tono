@@ -123,8 +123,9 @@ class FacetLevelField:
             },
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("leveled",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'leveled'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

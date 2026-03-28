@@ -21,8 +21,9 @@ class MaskInvert:
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("mask",)
+    OUTPUTS = (
+        ('IMAGE', 'mask'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = "Invert a binary mask — swap masked and unmasked regions."

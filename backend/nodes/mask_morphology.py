@@ -28,8 +28,9 @@ class MaskMorphology:
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("mask",)
+    OUTPUTS = (
+        ('IMAGE', 'mask'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

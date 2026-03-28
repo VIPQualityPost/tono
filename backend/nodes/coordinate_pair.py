@@ -15,8 +15,9 @@ class CoordinatePair:
             }
         }
 
-    RETURN_TYPES = ("COORDPAIR",)
-    RETURN_NAMES = ("coord pair",)
+    OUTPUTS = (
+        ('COORDPAIR', 'coord_pair'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = "Output a pair of coordinates."

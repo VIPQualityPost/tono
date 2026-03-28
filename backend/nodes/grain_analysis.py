@@ -17,8 +17,9 @@ class GrainAnalysis:
             }
         }
 
-    RETURN_TYPES = ("RECORD_TABLE",)
-    RETURN_NAMES = ("grain_stats",)
+    OUTPUTS = (
+        ('RECORD_TABLE', 'grain_stats'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

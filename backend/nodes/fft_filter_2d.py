@@ -30,8 +30,9 @@ class FFTFilter2D:
             }
         }
 
-    RETURN_TYPES = ("DATA_FIELD",)
-    RETURN_NAMES = ("filtered",)
+    OUTPUTS = (
+        ('DATA_FIELD', 'filtered'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

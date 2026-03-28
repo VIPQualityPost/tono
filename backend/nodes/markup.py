@@ -33,8 +33,9 @@ class Markup:
             }
         }
 
-    RETURN_TYPES = ("ANNOTATION_SOURCE",)
-    RETURN_NAMES = ("Output",)
+    OUTPUTS = (
+        ('ANNOTATION_SOURCE', 'output'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (

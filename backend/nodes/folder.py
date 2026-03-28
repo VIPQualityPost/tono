@@ -13,8 +13,9 @@ class Folder:
             }
         }
 
-    RETURN_TYPES = ("DIRECTORY",)
-    RETURN_NAMES = ("directory",)
+    OUTPUTS = (
+        ('DIRECTORY', 'directory'),
+    )
     FUNCTION = "list_files"
 
     DESCRIPTION = (

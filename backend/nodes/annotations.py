@@ -43,8 +43,9 @@ class Annotations:
             },
         }
 
-    RETURN_TYPES = ("ANNOTATION_SOURCE",)
-    RETURN_NAMES = ("Output",)
+    OUTPUTS = (
+        ('ANNOTATION_SOURCE', 'output'),
+    )
     FUNCTION = "render"
 
     DESCRIPTION = (

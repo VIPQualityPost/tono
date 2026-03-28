@@ -287,8 +287,12 @@ class Curvature:
             },
         }
 
-    RETURN_TYPES = ("ANNOTATION_SOURCE", "MEASURE_TABLE", "LINE", "LINE")
-    RETURN_NAMES = ("output", "measurements", "profile 1", "profile 2")
+    OUTPUTS = (
+        ('ANNOTATION_SOURCE', 'output'),
+        ('MEASURE_TABLE', 'measurements'),
+        ('LINE', 'profile_1'),
+        ('LINE', 'profile_2'),
+    )
     FUNCTION = "process"
 
     DESCRIPTION = (
