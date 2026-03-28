@@ -35,6 +35,7 @@ import {
   isTrackedNodeRequestCurrent,
   resolveLoadNodeChannelPath,
 } from './loadNodeOutputs.js';
+import { buildDefaultWidgetValues } from './nodeWidgetDefaults.js';
 
 import {
   DATA_TYPES, SOCKET_COMPATIBILITY, TYPE_COLORS, CAT_COLORS, CANVAS_COLORS,
@@ -1593,19 +1594,7 @@ function Flow() {
       y: contextMenu.y,
     });
 
-    // Build default widget values
-    const widgetValues = {};
-    const required = def.input.required || {};
-    for (const [name, spec] of Object.entries(required)) {
-      const [type, opts] = Array.isArray(spec) ? spec : [spec, {}];
-      if (DATA_TYPES.has(type)) continue;
-      if (type === 'BUTTON') continue;
-      if (Array.isArray(type)) {
-        widgetValues[name] = type[0]; // combo default = first option
-      } else {
-        widgetValues[name] = opts?.default ?? '';
-      }
-    }
+    const widgetValues = buildDefaultWidgetValues(def);
 
     const newNodeId = String(nextIdRef.current++);
     const newNode = {

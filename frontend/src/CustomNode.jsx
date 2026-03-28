@@ -1533,7 +1533,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   if (type === 'STRING' && opts?.color_picker) {
     const normalized = typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val)
       ? val
-      : 'var(--shape-default)';
+      : '#ff0000';
     return (
       <>
         {!hideLabel && <label>{label}</label>}

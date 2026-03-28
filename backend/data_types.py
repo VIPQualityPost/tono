@@ -711,14 +711,6 @@ def _apply_annotation_overlay_from_context(
     if current.ndim == 2:
         current = np.repeat(current[:, :, np.newaxis], 3, axis=2)
 
-    height, current_width = current.shape[:2]
-    legend_width = max(72, int(round(current_width * 0.18))) if show_color_map else 0
-    canvas_width = current_width + legend_width
-    canvas = np.full((height, canvas_width, 3), 255, dtype=np.uint8)
-    canvas[:, :current_width] = current
-
-    pil_image = Image.fromarray(canvas)
-    draw = ImageDraw.Draw(pil_image)
     base_font_px = max(6, int(round(text_size)))
 
     xreal_raw = context.get("xreal")
@@ -739,6 +731,35 @@ def _apply_annotation_overlay_from_context(
         and np.isfinite(legend_max)
         and bool(legend_unit)
     )
+    height, current_width = current.shape[:2]
+
+    legend_pad_x = max(8, int(round(base_font_px * 0.45)))
+    legend_gap_x = max(8, int(round(base_font_px * 0.35)))
+    legend_gradient_width = max(12, int(round(max(current_width * 0.05, base_font_px * 0.75))))
+    legend_label_images: list[Image.Image] = []
+    if show_color_map and has_color_legend:
+        legend_label_images = [
+            _render_overlay_text(
+                _format_with_unit(value, legend_unit),
+                base_font_px,
+                (20, 20, 20),
+                font_spec=font_spec,
+            )
+            for value in (legend_max, legend_mid, legend_min)
+        ]
+    max_legend_label_width = max((label.size[0] for label in legend_label_images), default=0)
+    default_legend_width = max(72, int(round(current_width * 0.18))) if show_color_map else 0
+    legend_width = max(
+        default_legend_width,
+        legend_pad_x * 2 + legend_gradient_width + legend_gap_x + max_legend_label_width,
+    ) if show_color_map else 0
+
+    canvas_width = current_width + legend_width
+    canvas = np.full((height, canvas_width, 3), 255, dtype=np.uint8)
+    canvas[:, :current_width] = current
+
+    pil_image = Image.fromarray(canvas)
+    draw = ImageDraw.Draw(pil_image)
 
     if show_scale_bar and has_scale_bar and current_width > 0:
         target_real = xreal / 5.0
@@ -757,21 +778,24 @@ def _apply_annotation_overlay_from_context(
             text = _format_with_unit(bar_real, si_unit_xy)
             text_image = _render_overlay_text(text, base_font_px, (255, 255, 255), font_spec=font_spec)
             text_w, text_h = text_image.size
-            label_pad = 2
-            bg_left = max(0, x0 - 4)
-            bg_top = max(0, y0 - text_h - label_pad * 3)
-            bg_right = min(canvas_width, max(x1 + 4, x0 + text_w + 8))
-            bg_bottom = min(height, y1 + 4)
+            box_pad_x = max(4, int(round(base_font_px * 0.35)))
+            box_pad_y = max(3, int(round(base_font_px * 0.22)))
+            label_gap_y = max(2, int(round(base_font_px * 0.18)))
+            bar_pad_y = max(4, int(round(base_font_px * 0.25)))
+            bg_left = max(0, x0 - box_pad_x)
+            bg_top = max(0, y0 - text_h - label_gap_y - box_pad_y * 2)
+            bg_right = min(canvas_width, max(x1 + box_pad_x, bg_left + text_w + box_pad_x * 2))
+            bg_bottom = min(height, y1 + bar_pad_y)
             draw.rectangle((bg_left, bg_top, bg_right, bg_bottom), fill=(0, 0, 0))
             draw.rectangle((x0, y0, x1, y1), fill=(255, 255, 255))
-            pil_image.paste(text_image, (x0, bg_top + label_pad), text_image)
+            pil_image.paste(text_image, (bg_left + box_pad_x, bg_top + box_pad_y), text_image)
 
     if show_color_map and has_color_legend and legend_width > 0:
         panel_x0 = current_width
         draw.rectangle((panel_x0, 0, canvas_width, height), fill=(245, 245, 245))
-        grad_x0 = panel_x0 + max(8, legend_width // 7)
-        grad_w = max(12, legend_width // 5)
-        grad_y0 = max(10, height // 18)
+        grad_x0 = panel_x0 + legend_pad_x
+        grad_w = legend_gradient_width
+        grad_y0 = max(10, max(height // 18, int(round(base_font_px * 0.5))))
         grad_y1 = max(grad_y0 + 10, height - grad_y0)
         grad_h = grad_y1 - grad_y0
         gradient = np.linspace(1.0, 0.0, grad_h, dtype=np.float64)[:, np.newaxis]
@@ -780,19 +804,9 @@ def _apply_annotation_overlay_from_context(
         pil_image.paste(Image.fromarray(gradient_rgb), (grad_x0, grad_y0))
         draw.rectangle((grad_x0, grad_y0, grad_x0 + grad_w, grad_y1), outline=(40, 40, 40), width=1)
 
-        labels = [
-            (legend_max, grad_y0),
-            (legend_mid, grad_y0 + grad_h // 2),
-            (legend_min, grad_y1),
-        ]
-        text_x = grad_x0 + grad_w + 8
-        for value, y_center in labels:
-            text_image = _render_overlay_text(
-                _format_with_unit(value, legend_unit),
-                base_font_px,
-                (20, 20, 20),
-                font_spec=font_spec,
-            )
+        label_centers = [grad_y0, grad_y0 + grad_h // 2, grad_y1]
+        text_x = grad_x0 + grad_w + legend_gap_x
+        for text_image, y_center in zip(legend_label_images, label_centers):
             text_y = int(round(y_center - text_image.size[1] / 2))
             text_y = max(0, min(height - text_image.size[1], text_y))
             pil_image.paste(text_image, (text_x, text_y), text_image)

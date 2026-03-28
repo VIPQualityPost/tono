@@ -115,7 +115,7 @@
   --crop-inset:      rgba(255, 255, 255, 0.22);
 
   /* Shape default */
-  --shape-default:   #ffd54f;
+  --shape-default:   #ff0000;
 
   /* Dynamic-lookup fallbacks */
   --fallback-type:   #999;

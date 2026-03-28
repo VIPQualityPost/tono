@@ -1,86 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  getArrowGeometry,
+  MARKUP_DEFAULT_COLOR,
+  MARKUP_DEFAULT_SHAPE,
+  getMarkupPreviewStrokeWidth,
+  parseMarkupShapes,
+  sanitizeMarkupColor,
+  sanitizeMarkupShape,
+} from './markupShapeGeometry.js';
 
 function clampFraction(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));
-}
-
-const SHAPE_DEFAULT_COLOR = '#ffd54f';
-
-function sanitizeColor(color, fallback = SHAPE_DEFAULT_COLOR) {
-  if (typeof color !== 'string') return fallback;
-  const value = color.trim();
-  return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : fallback;
-}
-
-function sanitizeShape(shape, fallbackShape, fallbackColor, fallbackWidth) {
-  if (!shape || typeof shape !== 'object') return null;
-  const kind = ['line', 'rectangle', 'circle', 'arrow'].includes(shape.kind) ? shape.kind : fallbackShape;
-  const x1 = clampFraction(shape.x1);
-  const y1 = clampFraction(shape.y1);
-  const x2 = clampFraction(shape.x2);
-  const y2 = clampFraction(shape.y2);
-  const width = Math.max(1, Math.min(64, Math.round(Number(shape.width) || fallbackWidth || 1)));
-  return {
-    kind,
-    x1: Number(x1.toFixed(4)),
-    y1: Number(y1.toFixed(4)),
-    x2: Number(x2.toFixed(4)),
-    y2: Number(y2.toFixed(4)),
-    width,
-    color: sanitizeColor(shape.color, fallbackColor),
-  };
-}
-
-function parseMarkupShapes(markupShapes, fallbackShape, fallbackColor, fallbackWidth) {
-  if (Array.isArray(markupShapes)) {
-    return markupShapes
-      .map((shape) => sanitizeShape(shape, fallbackShape, fallbackColor, fallbackWidth))
-      .filter(Boolean);
-  }
-
-  if (typeof markupShapes !== 'string' || !markupShapes.trim()) return [];
-
-  try {
-    const parsed = JSON.parse(markupShapes);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((shape) => sanitizeShape(shape, fallbackShape, fallbackColor, fallbackWidth))
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-function arrowPoints(shape, imageWidth, imageHeight) {
-  const x1 = shape.x1 * imageWidth;
-  const y1 = shape.y1 * imageHeight;
-  const x2 = shape.x2 * imageWidth;
-  const y2 = shape.y2 * imageHeight;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.hypot(dx, dy) || 1;
-  const ux = dx / length;
-  const uy = dy / length;
-  const strokeWidth = Math.max(1, shape.width);
-  const headLength = Math.max(10, strokeWidth * 4);
-  const headWidth = Math.max(8, strokeWidth * 3);
-  const overlap = Math.max(1, strokeWidth * 0.75);
-  const shaftX = x2 - ux * Math.max(0, headLength - overlap);
-  const shaftY = y2 - uy * Math.max(0, headLength - overlap);
-  const headBaseX = x2 - ux * headLength;
-  const headBaseY = y2 - uy * headLength;
-  const px = -uy;
-  const py = ux;
-  const leftX = headBaseX + px * headWidth * 0.5;
-  const leftY = headBaseY + py * headWidth * 0.5;
-  const rightX = headBaseX - px * headWidth * 0.5;
-  const rightY = headBaseY - py * headWidth * 0.5;
-  return {
-    line: `${x1},${y1} ${shaftX},${shaftY}`,
-    head: `${x2},${y2} ${leftX},${leftY} ${rightX},${rightY}`,
-  };
 }
 
 function ShapeElement({ shape, imageWidth, imageHeight }) {
@@ -92,14 +24,14 @@ function ShapeElement({ shape, imageWidth, imageHeight }) {
   const top = Math.min(y1, y2);
   const width = Math.abs(x2 - x1);
   const height = Math.abs(y2 - y1);
-  const strokeWidth = Math.max(1, shape.width);
+  const strokeWidth = getMarkupPreviewStrokeWidth(shape.width, imageWidth, imageHeight);
+  const renderShape = { ...shape, width: strokeWidth };
   const common = {
     fill: 'none',
     stroke: shape.color,
     strokeWidth,
-    strokeLinecap: 'round',
+    strokeLinecap: shape.kind === 'arrow' ? 'square' : 'round',
     strokeLinejoin: 'round',
-    vectorEffect: 'non-scaling-stroke',
   };
 
   if (shape.kind === 'line') {
@@ -122,7 +54,7 @@ function ShapeElement({ shape, imageWidth, imageHeight }) {
     );
   }
 
-  const arrow = arrowPoints(shape, imageWidth, imageHeight);
+  const arrow = getArrowGeometry(renderShape, imageWidth, imageHeight);
   return (
     <>
       <polyline points={arrow.line} {...common} />
@@ -151,10 +83,13 @@ export default function MarkupOverlay({
   const [imageSize, setImageSize] = useState({ width: 1, height: 1 });
 
   const normalizedShape = useMemo(
-    () => (['line', 'rectangle', 'circle', 'arrow'].includes(shape) ? shape : 'line'),
+    () => (['line', 'rectangle', 'circle', 'arrow'].includes(shape) ? shape : MARKUP_DEFAULT_SHAPE),
     [shape],
   );
-  const normalizedColor = useMemo(() => sanitizeColor(strokeColor, '#ffd54f'), [strokeColor]);
+  const normalizedColor = useMemo(
+    () => sanitizeMarkupColor(strokeColor, MARKUP_DEFAULT_COLOR),
+    [strokeColor],
+  );
   const normalizedWidth = useMemo(
     () => Math.max(1, Math.min(64, Math.round(Number(strokeWidth) || 3))),
     [strokeWidth],
@@ -231,7 +166,7 @@ export default function MarkupOverlay({
       setDrawing(false);
       return;
     }
-    const nextShape = sanitizeShape(draftShape, normalizedShape, normalizedColor, normalizedWidth);
+    const nextShape = sanitizeMarkupShape(draftShape, normalizedShape, normalizedColor, normalizedWidth);
     setDraftShape(null);
     setDrawing(false);
     if (!nextShape) return;

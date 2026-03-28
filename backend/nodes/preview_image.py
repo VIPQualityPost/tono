@@ -4,6 +4,7 @@ from backend.node_registry import register_node
 from backend.execution_context import emit_preview
 from backend.data_types import (
     COLORMAPS,
+    DataField,
     colormap_to_uint8,
     encode_preview,
     image_to_uint8,
@@ -21,9 +22,8 @@ class PreviewImage:
                 "colormap": (["auto"] + list(COLORMAPS), {"hide_when_input_connected": "colormap_map"}),
             },
             "optional": {
+                "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
                 "colormap_map": ("COLORMAP", {"label": "colormap"}),
-                "image": ("IMAGE",),
-                "field": ("DATA_FIELD",),
             }
         }
 
@@ -31,7 +31,7 @@ class PreviewImage:
     FUNCTION = "preview"
 
     OUTPUT_NODE = True
-    DESCRIPTION = "Display an IMAGE or DATA_FIELD as a coloured thumbnail. Connect either input."
+    DESCRIPTION = "Display an IMAGE or DATA_FIELD as a coloured thumbnail."
 
     _broadcast_fn = None
     _current_node_id: str = ""
@@ -39,10 +39,12 @@ class PreviewImage:
     def preview(
         self,
         colormap: str,
-        image: np.ndarray | None = None,
-        field=None,
+        input=None,
         colormap_map=None,
     ) -> tuple:
+        field = input if isinstance(input, DataField) else None
+        image = None if field is not None else input
+
         resolved_colormap = resolve_colormap_input(
             colormap,
             colormap_input=colormap_map,
@@ -65,7 +67,7 @@ class PreviewImage:
                         normalized = np.zeros_like(image, dtype=np.float64)
                 arr_u8 = colormap_to_uint8(normalized, resolved_colormap)
         else:
-            raise ValueError("Connect either an IMAGE or DATA_FIELD input to Preview.")
+            raise ValueError("Connect an IMAGE or DATA_FIELD input to Preview.")
 
         data_uri = encode_preview(arr_u8)
 

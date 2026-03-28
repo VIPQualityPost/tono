@@ -25,7 +25,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
       data: {
         className: 'PreviewImage',
         definition: {
-          input: { required: { field: ['DATA_FIELD', {}] }, optional: {} },
+          input: { required: {}, optional: { input: ['ANNOTATION_SOURCE', {}] } },
           manual_trigger: false,
         },
         widgetValues: {},
@@ -48,7 +48,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
       source: '1',
       sourceHandle: 'output::0::DATA_FIELD',
       target: '2',
-      targetHandle: 'input::field::DATA_FIELD',
+      targetHandle: 'input::input::ANNOTATION_SOURCE',
     },
   ];
 
@@ -61,7 +61,7 @@ test('serializeExecutionGraph excludes isolated nodes from the backend prompt', 
     },
     '2': {
       class_type: 'PreviewImage',
-      inputs: { field: ['1', 0] },
+      inputs: { input: ['1', 0] },
     },
   });
   assert.equal('3' in prompt, false);
@@ -85,7 +85,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
       data: {
         className: 'PreviewImage',
         definition: {
-          input: { required: { field: ['DATA_FIELD', {}] }, optional: {} },
+          input: { required: {}, optional: { input: ['ANNOTATION_SOURCE', {}] } },
           manual_trigger: false,
         },
         widgetValues: {},
@@ -119,7 +119,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
       source: '1',
       sourceHandle: 'output::0::DATA_FIELD',
       target: '2',
-      targetHandle: 'input::field::DATA_FIELD',
+      targetHandle: 'input::input::ANNOTATION_SOURCE',
     },
   ];
 
@@ -132,7 +132,7 @@ test('serializeExecutionGraph includes isolated preview-load nodes alongside con
     },
     '2': {
       class_type: 'PreviewImage',
-      inputs: { field: ['1', 0] },
+      inputs: { input: ['1', 0] },
     },
     '3': {
       class_type: 'ImageDemo',
@@ -220,7 +220,7 @@ test('serializeExecutionGraph ignores group shells and resolves collapsed proxy 
       data: {
         className: 'PreviewImage',
         definition: {
-          input: { required: { field: ['DATA_FIELD', {}] }, optional: {} },
+          input: { required: {}, optional: { input: ['ANNOTATION_SOURCE', {}] } },
           manual_trigger: false,
         },
         widgetValues: {},
@@ -233,12 +233,12 @@ test('serializeExecutionGraph ignores group shells and resolves collapsed proxy 
       source: '1',
       sourceHandle: 'output::0::DATA_FIELD',
       target: '10',
-      targetHandle: 'group-proxy::in::2::DATA_FIELD::input%3A%3Afield%3A%3ADATA_FIELD',
+      targetHandle: 'group-proxy::in::2::ANNOTATION_SOURCE::input%3A%3Ainput%3A%3AANNOTATION_SOURCE',
       data: {
         groupProxyOwner: '10',
         groupProxyOriginal: {
           target: '2',
-          targetHandle: 'input::field::DATA_FIELD',
+          targetHandle: 'input::input::ANNOTATION_SOURCE',
         },
       },
     },
@@ -253,7 +253,7 @@ test('serializeExecutionGraph ignores group shells and resolves collapsed proxy 
     },
     '2': {
       class_type: 'PreviewImage',
-      inputs: { field: ['1', 0] },
+      inputs: { input: ['1', 0] },
     },
   });
   assert.equal('10' in prompt, false);
@@ -365,7 +365,7 @@ test('getAutoRunnableNodes includes isolated preview-load nodes with selections'
       source: '1',
       sourceHandle: 'output::0::DATA_FIELD',
       target: '2',
-      targetHandle: 'input::field::DATA_FIELD',
+      targetHandle: 'input::input::ANNOTATION_SOURCE',
     },
   ];
 

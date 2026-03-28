@@ -22,8 +22,8 @@ class Markup:
         return {
             "required": {
                 "input": ("ANNOTATION_SOURCE", {"label": "Input"}),
-                "shape": (["line", "rectangle", "circle", "arrow"], {"default": "line"}),
-                "stroke_color": ("STRING", {"default": "#ffd54f", "color_picker": True}),
+                "shape": (["line", "rectangle", "circle", "arrow"], {"default": "arrow"}),
+                "stroke_color": ("STRING", {"default": "#ff0000", "color_picker": True}),
                 "stroke_width": ("INT", {"default": 3, "min": 1, "max": 64, "step": 1}),
                 "clear_shapes": ("BUTTON", {"label": "Clear Shapes", "set_widgets": {"markup_shapes": "[]"}}),
                 "markup_shapes": ("STRING", {"default": "[]", "hidden": True}),
