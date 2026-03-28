@@ -25,12 +25,15 @@ from backend.nodes import (
     plane_level_field,
     poly_level_field,
     fix_zero,
+    line_correction,
     # Mask
     draw_mask,
     threshold_mask,
     mask_morphology,
     mask_invert,
     mask_combine,
+    # Correction
+    scar_removal,
     # Display
     color_map,
     font_node,

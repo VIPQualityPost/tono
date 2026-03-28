@@ -47,6 +47,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "EdgeDetect",
         "FFTFilter1D",
         "FFTFilter2D",
+        "ScarRemoval",
     ],
     "Frequency": [
         "FFT2D",
@@ -56,6 +57,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "PlaneLevelField",
         "PolyLevelField",
         "FixZero",
+        "LineCorrection",
     ],
     "Measure": [
         "CrossSection",

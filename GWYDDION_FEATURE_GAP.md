@@ -8,8 +8,8 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 
 | # | Feature | Gwyddion Source | Description |
 |---|---------|---------------|-------------|
-| 1 | Line Correction | linecorrect.c, linematch.c | Row-by-row median/polynomial alignment. Essential for raw SPM data with scan-line artifacts. |
-| 2 | Scar Removal | scars.c | Detect and interpolate scan-line defects (horizontal streaks). |
+| ~~1~~ | ~~Line Correction~~ | ~~linecorrect.c, linematch.c~~ | ~~Row-by-row median/polynomial alignment. Essential for raw SPM data with scan-line artifacts.~~ **DONE** |
+| ~~2~~ | ~~Scar Removal~~ | ~~scars.c~~ | ~~Detect and interpolate scan-line defects (horizontal streaks).~~ **DONE** |
 | 3 | Facet Leveling | facet-level.c | Orient the dominant surface facet to horizontal. Better than plane level for terraced/stepped surfaces. |
 | ~~4~~ | ~~Morphological Mask Ops~~ | ~~mask_morph.c~~ | ~~Erode, dilate, open, close on grain masks. Needed to clean up thresholded masks.~~ **DONE** |
 | ~~5~~ | ~~1D FFT Filter~~ | ~~fft_filter_1d.c~~ | ~~Bandpass/lowpass/highpass filtering of LINE profiles.~~ **DONE** |
@@ -73,11 +73,13 @@ For reference, these Gwyddion equivalents are already covered:
 | Plane Level | level | level.c |
 | Polynomial Level | level | polylevel.c |
 | Fix Zero | level | level.c (fix_zero) |
+| Line Correction | level | linecorrect.c, linematch.c |
 | Gaussian Filter | filters | filters.c (gaussian) |
 | Median Filter | filters | filters.c (median) |
 | Edge Detect | filters | edge.c (sobel, prewitt, laplacian, LoG) |
 | 1D FFT Filter | filters | fft_filter_1d.c (lowpass, highpass, bandpass, notch) |
 | 2D FFT Filter | filters | fft_filter_2d.c (lowpass, highpass, bandpass, notch) |
+| Scar Removal | filters | scars.c |
 | Statistics | analysis | stats.c |
 | Height Histogram | analysis | linestats.c (dh) |
 | 2D FFT | analysis | fft.c |
