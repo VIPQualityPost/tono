@@ -585,13 +585,16 @@ class ExecutionEngine:
             plt.close(fig)
             fallback_image = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
 
-            return {
+            result_dict = {
                 "kind": "line_plot",
                 "line": y.tolist(),
                 "x_axis": x.tolist(),
                 "interactive": False,
                 "fallback_image": fallback_image,
             }
+            if y_meta is not None and y_meta.x_unit:
+                result_dict["x_unit"] = y_meta.x_unit
+            return result_dict
         except Exception:
             return None
 

@@ -80,6 +80,7 @@ class Histogram:
             "section_title": "Histogram",
             "line": counts.tolist(),
             "x_axis": bin_centers.astype(np.float64).tolist(),
+            "x_unit": field.si_unit_z,
             "x1": float(np.clip(x1, 0.0, 1.0)),
             "x2": float(np.clip(x2, 0.0, 1.0)),
             "y1": float(y1),

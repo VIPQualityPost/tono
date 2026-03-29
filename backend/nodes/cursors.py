@@ -98,6 +98,7 @@ class Cursors:
             "section_title": "Cursors",
             "line": y.tolist(),
             "x_axis": x.tolist(),
+            "x_unit": x_unit,
             "x1": x1,
             "x2": x2,
             "y1": float(y1),

@@ -8,6 +8,7 @@ const CropBoxOverlay = lazy(() => import('./CropBoxOverlay'));
 const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
 const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
+const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
 
 import {
   getSpecTypeAndOptions, isDataSocketSpec, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
@@ -971,6 +972,9 @@ function CustomNode({ id, data }) {
       visibleInputNames.add(name);
     } else if (opts?.hidden) {
       hiddenWidgets.add(name);
+    } else if (opts?.socket_only) {
+      dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
+      visibleInputNames.add(name);
     } else {
       widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
     }
@@ -1079,6 +1083,7 @@ function CustomNode({ id, data }) {
     hiddenWidgets.has('x1')
     || data.overlay.kind === 'mask_paint'
     || data.overlay.kind === 'markup'
+    || data.overlay.kind === 'threshold_histogram'
   );
   const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
@@ -1286,6 +1291,21 @@ function CustomNode({ id, data }) {
           </CollapsibleSection>
         )}
 
+        {/* Threshold histogram — rendered before preview so it sits above the mask image */}
+        {data.overlay?.kind === 'threshold_histogram' && (
+          <CollapsibleSection title={overlayTitle} defaultOpen={true}>
+            <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading...</div>}>
+              <ThresholdHistogram
+                overlay={data.overlay}
+                threshold={data.widgetValues.threshold}
+                thresholdConnected={connectedInputs?.has('threshold')}
+                nodeId={id}
+                onWidgetChange={ctx.onWidgetChange}
+              />
+            </Suspense>
+          </CollapsibleSection>
+        )}
+
         {/* Collapsible preview image */}
         {data.previewImage
           && !hidePreviewForInteractiveMask
@@ -1313,7 +1333,7 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Interactive cross-section overlay */}
-        {hasInteractiveOverlay && (
+        {hasInteractiveOverlay && data.overlay?.kind !== 'threshold_histogram' && (
           <CollapsibleSection title={overlayTitle} defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading...</div>}>
               {data.overlay.kind === 'line_plot' ? (
@@ -1368,6 +1388,13 @@ function CustomNode({ id, data }) {
                   strokeColor={data.widgetValues.stroke_color ?? data.overlay.stroke_color}
                   strokeWidth={data.widgetValues.stroke_width ?? data.overlay.stroke_width}
                   markupShapes={data.widgetValues.markup_shapes}
+                  nodeId={id}
+                  onWidgetChange={ctx.onWidgetChange}
+                />
+              ) : data.overlay.kind === 'threshold_histogram' ? (
+                <ThresholdHistogram
+                  overlay={data.overlay}
+                  threshold={data.widgetValues.threshold}
                   nodeId={id}
                   onWidgetChange={ctx.onWidgetChange}
                 />

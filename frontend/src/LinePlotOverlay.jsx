@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { getAxisScale } from './valueFormatting';
 
 const ASPECT_RATIO = 3.2 / 2.2;
 const MARGINS = { top: 18, right: 16, bottom: 34, left: 56 };
@@ -168,6 +169,8 @@ export default function LinePlotOverlay({
   const yTickCount = Math.max(2, Math.min(5, Math.floor(plotHeight / 40)));
   const xTicks = makeTicks(xMin, xMax, xTickCount);
   const yTicks = makeTicks(yMin, yMax, yTickCount);
+  const xRepresentative = Math.max(Math.abs(xMin), Math.abs(xMax));
+  const { scale: xScale, unitLabel: xUnitLabel } = getAxisScale(xRepresentative, overlay?.x_unit);
   const plotStroke = clamp(plotWidth / 240, 1.4, 2.6);
   const gridStroke = clamp(plotWidth / 900, 0.6, 1.1);
   const cursorStroke = clamp(plotWidth / 220, 1.4, 2.2);
@@ -225,11 +228,14 @@ export default function LinePlotOverlay({
             <g key={`x-${tick}`}>
               <line x1={x} y1={plotTop} x2={x} y2={plotTop + plotHeight} stroke="var(--border-default)" strokeWidth={gridStroke} opacity="0.45" />
               <text x={x} y={height - 10} textAnchor="middle" fontSize="11" fill="var(--text-secondary)">
-                {formatTick(tick)}
+                {formatTick(tick / xScale)}
               </text>
             </g>
           );
         })}
+        {xUnitLabel && (
+          <text x={plotLeft + plotWidth} y={height - 1} textAnchor="end" fontSize="10" fill="var(--text-muted)">{xUnitLabel}</text>
+        )}
 
         {yTicks.map((tick) => {
           const y = scaleY(tick);

@@ -21,7 +21,7 @@ class FFT1D:
     
     OUTPUTS = (
         ("LINE", "frequency_plot"),
-        ('RECORD_TABLE', 'measurement'),
+        ('RECORD_TABLE', 'max'),
     )
 
     FUNCTION = "process"

@@ -104,6 +104,21 @@ function choosePrefixExponent(value, power) {
   return candidates.reduce((best, candidate) => (candidate.absScaled > best.absScaled ? candidate : best));
 }
 
+/**
+ * Given a representative axis value and a unit string, returns the scale factor
+ * and prefixed unit label to use for a whole axis.
+ * All tick values should be divided by `scale` before display, and `unitLabel` shown once.
+ */
+export function getAxisScale(representativeValue, unit) {
+  if (!unit || typeof representativeValue !== 'number' || !Number.isFinite(representativeValue) || representativeValue === 0) {
+    return { scale: 1, unitLabel: unit || '' };
+  }
+  const { valueText, unitText } = applySIPrefix(representativeValue, unit);
+  const scaled = parseFloat(valueText);
+  if (!Number.isFinite(scaled) || scaled === 0) return { scale: 1, unitLabel: unit };
+  return { scale: representativeValue / scaled, unitLabel: unitText };
+}
+
 export function applySIPrefix(value, unit) {
   const formattedUnit = formatDisplayUnit(unit);
   if (typeof value !== 'number' || !Number.isFinite(value)) {

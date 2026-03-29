@@ -9,7 +9,7 @@ from backend.nodes.spectral_common import (
 )
 
 
-@register_node(display_name="2D FFT")
+@register_node(display_name="FFT 2D")
 class FFT2D:
     @classmethod
     def INPUT_TYPES(cls):

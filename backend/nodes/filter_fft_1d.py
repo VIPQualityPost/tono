@@ -5,7 +5,7 @@ from backend.data_types import LineData
 from backend.nodes.helpers import _cached_1d_transfer
 
 
-@register_node(display_name="1D FFT Filter")
+@register_node(display_name="FFT Filter 1D")
 class FFTFilter1D:
     """Bandpass / lowpass / highpass / notch filtering of 1-D line profiles.
 

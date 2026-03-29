@@ -462,9 +462,59 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     }
   }, [applyCameraState, decode, meshData, scheduleViewportSync, updateDiagnostics]);
 
-  // Prevent scroll events from propagating to React Flow
-  const onWheel = useCallback((e) => {
-    e.stopPropagation();
+  // Gesture-aware wheel handling: only capture scroll when it started inside the view.
+  // Uses capture phase to disable OrbitControls zoom before it fires when gesture started outside.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onEnter = () => {
+      isInsideRef.current = true;
+      pointerEnteredAtRef.current = Date.now();
+    };
+    const onLeave = () => {
+      isInsideRef.current = false;
+    };
+
+    // Capture phase: fires before OrbitControls on renderer.domElement
+    const onWheelCapture = () => {
+      const now = Date.now();
+      const msSinceLastWheel = now - lastWheelAtRef.current;
+      const msSinceEnter = now - pointerEnteredAtRef.current;
+      lastWheelAtRef.current = now;
+
+      if (msSinceLastWheel > 300) {
+        gestureStartedInsideRef.current = isInsideRef.current && msSinceEnter > 100;
+      }
+
+      // Gesture started outside — disable OrbitControls zoom so it doesn't intercept
+      if (!gestureStartedInsideRef.current && threeRef.current) {
+        threeRef.current.controls.enableZoom = false;
+      }
+    };
+
+    // Bubble phase: fires after OrbitControls has already run (or skipped due to enableZoom=false)
+    const onWheelBubble = (e) => {
+      if (threeRef.current) {
+        threeRef.current.controls.enableZoom = true;
+      }
+      if (gestureStartedInsideRef.current) {
+        e.stopPropagation(); // prevent React Flow from panning when interacting with the 3D view
+      }
+      // else: let event propagate to React Flow so canvas panning continues
+    };
+
+    container.addEventListener('wheel', onWheelCapture, { capture: true, passive: true });
+    container.addEventListener('wheel', onWheelBubble, { passive: false });
+    container.addEventListener('pointerenter', onEnter);
+    container.addEventListener('pointerleave', onLeave);
+
+    return () => {
+      container.removeEventListener('wheel', onWheelCapture, { capture: true });
+      container.removeEventListener('wheel', onWheelBubble);
+      container.removeEventListener('pointerenter', onEnter);
+      container.removeEventListener('pointerleave', onLeave);
+    };
   }, []);
 
   const onContextMenu = useCallback((e) => {
@@ -476,8 +526,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     <div className="surface-view-shell">
       <div
         ref={containerRef}
-        className="nodrag nowheel surface-view-container"
-        onWheel={onWheel}
+        className="nodrag surface-view-container"
         onContextMenu={onContextMenu}
       />
       {showDiagnostics ? (

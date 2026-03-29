@@ -28,7 +28,7 @@ def make_field(data=None, shape=(64, 64), xreal=1e-6, yreal=1e-6):
 
 def test_gaussian_filter():
     print("=== Test: GaussianFilter ===")
-    from backend.nodes.gaussian_filter import GaussianFilter
+    from backend.nodes.filter_gaussian import GaussianFilter
     node = GaussianFilter()
     field = make_field()
 
@@ -46,7 +46,7 @@ def test_gaussian_filter():
 
 def test_median_filter():
     print("=== Test: MedianFilter ===")
-    from backend.nodes.median_filter import MedianFilter
+    from backend.nodes.filter_median import MedianFilter
     node = MedianFilter()
 
     # Median filter should remove salt-and-pepper noise
@@ -68,7 +68,7 @@ def test_median_filter():
 
 def test_crop_resize_field():
     print("=== Test: CropResizeField ===")
-    from backend.nodes.crop_resize_field import CropResizeField
+    from backend.nodes.crop_resize import CropResizeField
     node = CropResizeField()
 
     data = np.arange(32, dtype=np.float64).reshape(4, 8)
@@ -167,7 +167,7 @@ def test_crop_resize_field():
 
 def test_rotate_field():
     print("=== Test: RotateField ===")
-    from backend.nodes.rotate_field import RotateField
+    from backend.nodes.rotate import RotateField
     node = RotateField()
 
     data = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
@@ -230,7 +230,7 @@ def test_rotate_field():
 
 def test_rotate_field_overlay_warning():
     print("=== Test: RotateField overlay warning ===")
-    from backend.nodes.rotate_field import RotateField
+    from backend.nodes.rotate import RotateField
 
     node = RotateField()
     warnings = []
@@ -258,7 +258,7 @@ def test_rotate_field_overlay_warning():
 
 def test_flip_field():
     print("=== Test: FlipField ===")
-    from backend.nodes.flip_field import FlipField
+    from backend.nodes.flip import FlipField
     from backend.node_registry import get_node_info
 
     node = FlipField()
@@ -420,7 +420,7 @@ def test_edge_detect():
 
 def test_fft_filter_1d():
     print("=== Test: FFTFilter1D ===")
-    from backend.nodes.fft_filter_1d import FFTFilter1D
+    from backend.nodes.filter_fft_1d import FFTFilter1D
     node = FFTFilter1D()
 
     # Signal: low-frequency sine + high-frequency sine
@@ -464,7 +464,7 @@ def test_fft_filter_1d():
 
 def test_fft_filter_2d():
     print("=== Test: FFTFilter2D ===")
-    from backend.nodes.fft_filter_2d import FFTFilter2D
+    from backend.nodes.filter_fft_2d import FFTFilter2D
     node = FFTFilter2D()
 
     N = 128
@@ -506,7 +506,7 @@ def test_fft_filter_2d():
 
 def test_plane_level():
     print("=== Test: PlaneLevelField ===")
-    from backend.nodes.plane_level_field import PlaneLevelField
+    from backend.nodes.level_plane import PlaneLevelField
     node = PlaneLevelField()
 
     # Create a tilted plane + small signal
@@ -554,8 +554,8 @@ def test_plane_level():
 def test_facet_level():
     print("=== Test: FacetLevelField ===")
     from backend.node_registry import get_node_info
-    from backend.nodes.facet_level_field import FacetLevelField
-    from backend.nodes.plane_level_field import PlaneLevelField
+    from backend.nodes.level_facet import FacetLevelField
+    from backend.nodes.level_plane import PlaneLevelField
 
     def fit_pixel_plane(data: np.ndarray, region: np.ndarray) -> tuple[float, float, float]:
         yy, xx = np.mgrid[0:data.shape[0], 0:data.shape[1]]
@@ -628,7 +628,7 @@ def test_facet_level():
 
 def test_poly_level():
     print("=== Test: PolyLevelField ===")
-    from backend.nodes.poly_level_field import PolyLevelField
+    from backend.nodes.level_poly import PolyLevelField
     node = PolyLevelField()
 
     N = 64
@@ -966,7 +966,7 @@ def test_angle_measure():
 
 def test_statistics():
     print("=== Test: Statistics ===")
-    from backend.nodes.statistics_node import Statistics
+    from backend.nodes.statistics import Statistics
     node = Statistics()
 
     data = np.array([[1, 2], [3, 4]], dtype=np.float64)
@@ -1194,7 +1194,7 @@ def test_cross_section():
 
 def test_threshold_mask():
     print("=== Test: ThresholdMask ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     node = ThresholdMask()
 
     # Clear bimodal data: left half = 0, right half = 1
@@ -1346,7 +1346,7 @@ def test_mask_operations():
 
 def test_draw_mask():
     print("=== Test: DrawMask ===")
-    from backend.nodes.draw_mask import DrawMask
+    from backend.nodes.mask_draw import DrawMask
     node = DrawMask()
 
     field = make_field(data=np.zeros((32, 32), dtype=np.float64))
@@ -1582,7 +1582,7 @@ def test_load_file():
 
 def test_save_image():
     print("=== Test: SaveImage (Save Layers) ===")
-    from backend.nodes.save_image import SaveImage
+    from backend.nodes.save_layers import SaveImage
     import tifffile
     node = SaveImage()
     input_types = SaveImage.INPUT_TYPES()
@@ -1686,7 +1686,7 @@ def test_save_image():
 
 def test_color_map_node():
     print("=== Test: ColorMap ===")
-    from backend.nodes.color_map import ColorMap
+    from backend.nodes.colormap import ColorMap
 
     node = ColorMap()
 
@@ -1712,7 +1712,7 @@ def test_color_map_node():
 
 def test_font_node():
     print("=== Test: Font ===")
-    from backend.nodes.font_node import Font
+    from backend.nodes.font import Font
     from backend.data_types import CUSTOM_FILE_FONT, SYSTEM_DEFAULT_FONT
 
     node = Font()
@@ -1796,7 +1796,7 @@ def test_preview_image():
 def test_annotations():
     print("=== Test: Annotations ===")
     from backend.nodes.annotations import Annotations
-    from backend.nodes.font_node import Font
+    from backend.nodes.font import Font
     from backend.data_types import ImageData
     from backend.execution_context import active_node, execution_callbacks
 

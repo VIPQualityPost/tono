@@ -5,7 +5,7 @@ from backend.data_types import DataField
 from backend.nodes.helpers import _cached_2d_transfer
 
 
-@register_node(display_name="2D FFT Filter")
+@register_node(display_name="FFT Filter 2D")
 class FFTFilter2D:
     """Frequency-domain filtering of 2-D data fields (images).
 

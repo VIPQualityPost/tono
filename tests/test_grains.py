@@ -28,7 +28,7 @@ def make_field(data, xreal=1e-6, yreal=1e-6):
 def test_threshold_otsu_bimodal():
     """Otsu on a clean bimodal image should separate the two populations."""
     print("=== Test: Otsu on bimodal image ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     node = ThresholdMask()
 
     data = np.zeros((128, 128))
@@ -50,7 +50,7 @@ def test_threshold_otsu_bimodal():
 def test_threshold_relative_range():
     """Relative threshold at 0.5 should be the midpoint of [min, max]."""
     print("=== Test: Relative threshold at midpoint ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     node = ThresholdMask()
 
     data = np.full((64, 64), 2.0)
@@ -68,7 +68,7 @@ def test_threshold_relative_range():
 def test_threshold_empty_mask():
     """Very high absolute threshold on low data should produce an empty mask."""
     print("=== Test: Empty mask from high threshold ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     node = ThresholdMask()
 
     data = np.ones((64, 64))
@@ -82,7 +82,7 @@ def test_threshold_empty_mask():
 def test_threshold_full_mask():
     """Very low absolute threshold should produce an all-white mask."""
     print("=== Test: Full mask from low threshold ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     node = ThresholdMask()
 
     data = np.ones((64, 64)) * 5.0
@@ -316,7 +316,7 @@ def test_adjacent_grains_connectivity():
 def test_pipeline_synthetic():
     """Full pipeline on a synthetic image with known geometry."""
     print("=== Test: Full pipeline on synthetic grains ===")
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     from backend.nodes.grain_analysis import GrainAnalysis
 
     N = 200
@@ -372,7 +372,7 @@ def test_pipeline_demo_image():
     """Run the full pipeline on the bundled demo nanoparticles image."""
     print("=== Test: Full pipeline on demo nanoparticles.npy ===")
     from pathlib import Path
-    from backend.nodes.threshold_mask import ThresholdMask
+    from backend.nodes.mask_threshold import ThresholdMask
     from backend.nodes.grain_analysis import GrainAnalysis
     from backend.runtime_paths import demo_dir
 
