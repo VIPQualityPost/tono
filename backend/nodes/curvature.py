@@ -159,6 +159,8 @@ def _compute_curvature_results(
     x0 = float(xc / q + 0.5 * xreal + field.xoff)
     y0 = float(yc / q + 0.5 * yreal + field.yoff)
 
+    print(f"debug: {x0}, {y0}, {r1}, {r2}")
+
     return {
         "degree": float(degree),
         "x0": x0,
@@ -290,8 +292,8 @@ class Curvature:
     OUTPUTS = (
         ('ANNOTATION_SOURCE', 'output'),
         ('RECORD_TABLE', 'measurements'),
-        ('LINE', 'profile_1'),
-        ('LINE', 'profile_2'),
+        ('LINE', 'profile_x'),
+        ('LINE', 'profile_y'),
     )
     FUNCTION = "process"
 
@@ -338,7 +340,7 @@ class Curvature:
 
         profiles = []
         for pair in intersections[:2]:
-            profiles.append(_profile_from_intersections(field, pair[0], pair[1]))
+            profiles.append(_profile_from_intersections(field, pair[1], pair[0]))
         while len(profiles) < 2:
             profiles.append(_empty_profile(field.si_unit_xy, field.si_unit_z))
 
@@ -346,18 +348,36 @@ class Curvature:
         output = field.replace(overlays=[*field.overlays, markup_spec])
 
         table = RecordTable([
-            {"quantity": "Center x position", "value": float(results["x0"]), "unit": field.si_unit_xy},
-            {"quantity": "Center y position", "value": float(results["y0"]), "unit": field.si_unit_xy},
-            {"quantity": "Center value", "value": float(results["z0"]), "unit": field.si_unit_z},
-            {"quantity": "Curvature radius 1", "value": float(results["r1"]), "unit": field.si_unit_xy},
-            {"quantity": "Curvature radius 2", "value": float(results["r2"]), "unit": field.si_unit_xy},
-            {"quantity": "Direction 1", "value": float(np.degrees(results["phi1"])), "unit": "deg"},
-            {"quantity": "Direction 2", "value": float(np.degrees(results["phi2"])), "unit": "deg"},
+            {"quantity": "Curvature radius 1",  "value": results["r1"],     "unit": field.si_unit_xy},
+            {"quantity": "Curvature radius 2",  "value": results["r2"],     "unit": field.si_unit_xy},
+            {"quantity": "Center x position",   "value": results["x0"],     "unit": field.si_unit_xy},
+            {"quantity": "Center y position",   "value": results["y0"],     "unit": field.si_unit_xy},
+            {"quantity": "Center value",        "value": results["z0"],     "unit": field.si_unit_z},
+            {"quantity": "Direction 1",         "value": results["phi1"],   "unit": "deg"},
+            {"quantity": "Direction 2",         "value": results["phi2"],   "unit": "deg"},
         ])
 
         preview_base = render_datafield_preview(field, field.colormap)
-        emit_preview(encode_preview(_apply_markup_overlay(preview_base, field, markup_spec)))
-        emit_table(table)
+        panels = []
+
+        for p, title in zip(profiles, ["X Principal Axis", "Y Principal Axis"]):
+            if len(p.data) > 0:
+                panels.append({
+                    "title": title,
+                    "kind": "line_plot",
+                    "line": p.data.tolist(),
+                    "x_axis": p.x_axis.tolist(),
+                    "x_unit": field.si_unit_xy,
+                })
+        panels.append({
+            "title": "Overview",
+            "kind": "image",
+            "image": encode_preview(_apply_markup_overlay(preview_base, field, markup_spec)),
+        })
+
+        emit_preview({"kind": "panels", "panels": panels})
+        # emit_table(table)
+
         if warnings:
             emit_warning(warnings[0])
 

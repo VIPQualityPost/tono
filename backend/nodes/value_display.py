@@ -1,6 +1,6 @@
 from __future__ import annotations
 from backend.node_registry import register_node
-from backend.execution_context import emit_value
+from backend.execution_context import emit_table, emit_value
 from backend.data_types import RecordTable
 from backend.nodes.helpers import _measurement_entry, _measurement_value, _scalar_payload
 
@@ -13,6 +13,7 @@ class ValueDisplay:
             "required": {
                 "value": ("FLOAT", {
                     "accepted_types": ["RECORD_TABLE"],
+                    "socket_only": True,
                 }),
                 "measurement": ("STRING", {
                     "default": "",
@@ -37,6 +38,7 @@ class ValueDisplay:
     def display_value(self, value, measurement: str = "") -> tuple:
         unit = ""
         if isinstance(value, RecordTable):
+            emit_table(value)
             row = _measurement_entry(value, measurement)
             numeric = _measurement_value(value, measurement)
             unit = row.get("unit", "") if isinstance(row.get("unit"), str) else ""

@@ -1056,6 +1056,9 @@ function CustomNode({ id, data }) {
   const combinedInputNames = new Set(combinedInputNameByWidgetName.values());
   const renderedDataInputs = dataInputs.filter((input) => !combinedInputNames.has(input.name));
 
+  // Computed directly from React props so it updates reliably when tableRows changes.
+  const nodeTableMeasurementChoices = getMeasurementChoices(data.tableRows || []);
+
   const inlineWidgetsByInput = new Map();
   const topWidgets = [];
   const standaloneWidgets = [];
@@ -1153,6 +1156,7 @@ function CustomNode({ id, data }) {
                       widgetValues={data.widgetValues}
                       onChange={ctx.onWidgetChange}
                       openFileBrowser={ctx.openFileBrowser}
+                      measurementChoices={nodeTableMeasurementChoices}
                     />
                   )}
                 </div>
@@ -1219,7 +1223,6 @@ function CustomNode({ id, data }) {
 
         {scalarDisplay && (
           <div className="node-value-display">
-            <div className="node-value-label">Value</div>
             <div className="node-value-box">
               <span className="node-value-box-number">{scalarDisplay.valueText}</span>
               {scalarDisplay.unitText && (
@@ -1257,6 +1260,7 @@ function CustomNode({ id, data }) {
                   widgetValues={data.widgetValues}
                   onChange={ctx.onWidgetChange}
                   openFileBrowser={ctx.openFileBrowser}
+                  measurementChoices={nodeTableMeasurementChoices}
                 />
               )}
             </div>
@@ -1307,29 +1311,46 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Collapsible preview image */}
-        {data.previewImage
-          && !hidePreviewForInteractiveMask
-          && !(hasInteractiveLineOverlay && typeof data.previewImage === 'object' && data.previewImage.kind === 'line_plot') && (
-          <CollapsibleSection title="Preview" defaultOpen={true}>
-            <PreviewBoundary
-              resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
-                kind: data.previewImage.kind,
-                len: data.previewImage.line?.length,
-                layers: data.previewImage.layers?.length,
-              })}
-              fallbackImage={typeof data.previewImage === 'object' ? data.previewImage.fallback_image : null}
-            >
-              {typeof data.previewImage === 'string' ? (
-                <div className="node-preview">
-                  <img src={data.previewImage} alt="preview" draggable={false} />
-                </div>
-              ) : data.previewImage.kind === 'layer_gallery' ? (
-                <LayerGalleryPreview overlay={data.previewImage} />
-              ) : data.previewImage.kind === 'line_plot' ? (
-                <LinePlotOverlay overlay={data.previewImage} interactive={false} />
-              ) : null}
-            </PreviewBoundary>
-          </CollapsibleSection>
+        {data.previewImage && !hidePreviewForInteractiveMask && (
+          typeof data.previewImage === 'object' && data.previewImage.kind === 'panels'
+            ? data.previewImage.panels.map((panel, pi) => (
+              <CollapsibleSection key={pi} title={panel.title || 'Preview'} defaultOpen={true}>
+                <PreviewBoundary
+                  resetKey={JSON.stringify({ kind: panel.kind, title: panel.title, len: panel.line?.length })}
+                  fallbackImage={panel.fallback_image ?? null}
+                >
+                  {panel.kind === 'line_plot' ? (
+                    <LinePlotOverlay overlay={panel} interactive={false} />
+                  ) : panel.kind === 'image' ? (
+                    <div className="node-preview">
+                      <img src={panel.image} alt={panel.title || 'preview'} draggable={false} />
+                    </div>
+                  ) : null}
+                </PreviewBoundary>
+              </CollapsibleSection>
+            ))
+            : !(hasInteractiveLineOverlay && typeof data.previewImage === 'object' && data.previewImage.kind === 'line_plot') && (
+              <CollapsibleSection title="Preview" defaultOpen={true}>
+                <PreviewBoundary
+                  resetKey={typeof data.previewImage === 'string' ? data.previewImage : JSON.stringify({
+                    kind: data.previewImage.kind,
+                    len: data.previewImage.line?.length,
+                    layers: data.previewImage.layers?.length,
+                  })}
+                  fallbackImage={typeof data.previewImage === 'object' ? data.previewImage.fallback_image : null}
+                >
+                  {typeof data.previewImage === 'string' ? (
+                    <div className="node-preview">
+                      <img src={data.previewImage} alt="preview" draggable={false} />
+                    </div>
+                  ) : data.previewImage.kind === 'layer_gallery' ? (
+                    <LayerGalleryPreview overlay={data.previewImage} />
+                  ) : data.previewImage.kind === 'line_plot' ? (
+                    <LinePlotOverlay overlay={data.previewImage} interactive={false} />
+                  ) : null}
+                </PreviewBoundary>
+              </CollapsibleSection>
+            )
         )}
 
         {/* Interactive cross-section overlay */}
@@ -1452,7 +1473,7 @@ function CustomNode({ id, data }) {
 
 // ── Widget renderer ───────────────────────────────────────────────────
 
-function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false }) {
+function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false, measurementChoices }) {
   const { name, type, opts } = widget;
   const label = formatUiLabel(opts?.label || name);
   const val = value ?? opts?.default ?? '';
@@ -1484,12 +1505,9 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   const dynamicMeasurementChoices = useStore(
     useCallback(
       (s) => {
-        const measurementInputName = opts?.choices_from_measure_input;
-        if (!measurementInputName) return [];
-        const sourceType = getSourceTypeForInput(s, nodeId, measurementInputName);
-        if (sourceType !== 'RECORD_TABLE') return [];
-        const sourceNode = getSourceNodeForInput(s, nodeId, measurementInputName);
-        const rows = sourceNode?.data?.tableRows;
+        if (!opts?.choices_from_measure_input) return [];
+        const node = s.nodeLookup?.get(nodeId) || s.nodes?.find((n) => n.id === nodeId);
+        const rows = node?.data?.tableRows;
         return Array.isArray(rows) ? getMeasurementChoices(rows) : [];
       },
       [nodeId, opts?.choices_from_measure_input],

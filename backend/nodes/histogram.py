@@ -90,8 +90,8 @@ class Histogram:
         })
 
         table = RecordTable([
-            {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
             {"quantity": "delta X",    "value": xb - xa, "unit": field.si_unit_z},
+            {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
             {"quantity": "A position", "value": xa, "unit": field.si_unit_z},
             {"quantity": "A count",    "value": ya, "unit": count_unit},
             {"quantity": "B position", "value": xb, "unit": field.si_unit_z},

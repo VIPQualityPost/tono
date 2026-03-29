@@ -3,7 +3,7 @@ from backend.nodes import (
     # IO
     colormap,
     crop_resize,
-    fft_2d_invert,
+    fft_2d_inverse,
     filter_fft_1d,
     filter_fft_2d,
     filter_gaussian,
