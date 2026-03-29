@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<9",
+    "pytest-cov>=7,<8",
 ]
 desktop = [
     "pyinstaller>=6,<7",
@@ -31,3 +32,11 @@ desktop = [
 
 [tool.setuptools.packages.find]
 include = ["backend*"]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/nodes/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

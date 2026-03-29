@@ -74,6 +74,20 @@ class _SafeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+def _sanitize_non_finite(obj):
+    """Recursively replace non-finite floats so they survive JSON serialization."""
+    if isinstance(obj, float):
+        if math.isnan(obj):
+            return "NaN"
+        if math.isinf(obj):
+            return "∞" if obj > 0 else "-∞"
+    elif isinstance(obj, dict):
+        return {k: _sanitize_non_finite(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_sanitize_non_finite(v) for v in obj]
+    return obj
+
+
 def _dumps(obj) -> str:
     return json.dumps(obj, cls=_SafeEncoder)
 
@@ -190,7 +204,7 @@ def create_app(
         broadcast(session_id, {"type": "preview", "data": {"node_id": node_id, "image": data_uri}})
 
     def on_table(session_id: str, node_id: str, rows: list) -> None:
-        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": rows}})
+        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": _sanitize_non_finite(rows)}})
 
     def on_mesh(session_id: str, node_id: str, mesh_data: dict) -> None:
         broadcast(session_id, {"type": "mesh3d", "data": {"node_id": node_id, "mesh": mesh_data}})
