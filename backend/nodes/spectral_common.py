@@ -127,6 +127,35 @@ def psdf_field_from_data(field: DataField, data: np.ndarray) -> DataField:
     )
 
 
+def acf_line_from_data(profile, data: np.ndarray, *, nrange: int = 0):
+    from scipy.signal import fftconvolve
+    from backend.data_types import LineData
+
+    z = np.asarray(data, dtype=np.float64).ravel()
+    n = len(z)
+    nrange = int(nrange) if nrange else max(1, n // 2)
+    nrange = max(1, min(nrange, n))
+
+    corr_full = fftconvolve(z, z[::-1], mode="full")
+    center = n - 1
+    corr = corr_full[center - (nrange - 1):center + nrange]
+
+    counts = np.array([n - abs(lag) for lag in range(-(nrange - 1), nrange)], dtype=np.float64)
+    acf = corr / counts
+
+    x_unit = profile.x_unit if hasattr(profile, "x_unit") else ""
+    y_unit = _square_unit(profile.y_unit) if hasattr(profile, "y_unit") and profile.y_unit else ""
+
+    if hasattr(profile, "x_axis") and profile.x_axis is not None and len(profile.x_axis) > 1:
+        d = float(profile.x_axis[1] - profile.x_axis[0])
+    else:
+        d = 1.0
+
+    lag_axis = np.arange(-(nrange - 1), nrange, dtype=np.float64) * d
+
+    return LineData(data=acf, x_axis=lag_axis, x_unit=x_unit, y_unit=y_unit)
+
+
 def acf_field_from_data(field: DataField, data: np.ndarray, *, xrange: int = 0, yrange: int = 0) -> DataField:
     from scipy.signal import fftconvolve
 

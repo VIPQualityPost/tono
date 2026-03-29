@@ -224,14 +224,20 @@ class ExecutionEngine:
             return value
 
         if input_type == "INT":
-            numeric = float(value)
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                return value
             if not isfinite(numeric):
                 raise ValueError(f"Expected a finite numeric value for INT input, got {value!r}")
             rounded = int(abs(numeric) + 0.5)
             return rounded if numeric >= 0 else -rounded
 
         if input_type == "FLOAT":
-            numeric = float(value)
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                return value
             if not isfinite(numeric):
                 raise ValueError(f"Expected a finite numeric value for FLOAT input, got {value!r}")
             return numeric

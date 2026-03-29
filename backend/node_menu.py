@@ -14,6 +14,7 @@ from typing import Any
 MENU_LAYOUT: dict[str, list[str]] = {
     "Input": [
         "Image",
+        "IBWNote",
         "ImageDemo",
         "Folder",
         "Number",
@@ -55,7 +56,8 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "InverseFFT2D",
         "FFTFilter1D",
         "FFTFilter2D",
-        "ACF",
+        "ACF2D",
+        "ACF1D",
         "PSDF",
     ],
     "Level & Correct": [
@@ -67,13 +69,15 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ScarRemoval",
     ],
     "Measure": [
+        "FFT1D",
         "AngleMeasure",
         "CrossSection",
         "Histogram",
         "Cursors",
         "Curvature",
         "FractalDimension",
-        "ACF",
+        "ACF2D",
+        "ACF1D",
         "PSDF",
         "Statistics",
         "Stats",

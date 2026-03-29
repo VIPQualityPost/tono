@@ -905,6 +905,7 @@ function Flow() {
   const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
 
   const flowContainerRef = useRef(null);
+  const panTimerRef = useRef(null);
   const nodeDefsRef = useRef({});
   const nextIdRef = useRef(1);
   const autoRunTimer = useRef(null);
@@ -2753,6 +2754,16 @@ function Flow() {
     }
   }, []);
 
+  const onFlowContainerWheel = useCallback(() => {
+    const container = flowContainerRef.current;
+    if (!container) return;
+    container.classList.add('is-panning');
+    clearTimeout(panTimerRef.current);
+    panTimerRef.current = setTimeout(() => {
+      container.classList.remove('is-panning');
+    }, 150);
+  }, []);
+
   useEffect(() => {
     const handlePointerMove = (event) => {
       const zoomState = canvasRightZoomRef.current;
@@ -2868,6 +2879,7 @@ function Flow() {
           className={`flow-container${isCanvasRightZooming ? ' canvas-right-zooming' : ''}`}
           onDrop={onDropFile}
           onDragOver={onDragOver}
+          onWheel={onFlowContainerWheel}
           onPointerDownCapture={onFlowContainerPointerDown}
           onContextMenuCapture={onFlowContainerContextMenuCapture}
         >

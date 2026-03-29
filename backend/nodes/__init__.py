@@ -2,6 +2,7 @@
 from backend.nodes import (
     # IO
     image,
+    ibw_note,
     image_demo,
     folder,
     coordinate,
@@ -51,7 +52,8 @@ from backend.nodes import (
     fractal_dimension,
     statistics_node,
     histogram,
-    acf,
+    acf_2d,
+    acf_1d,
     cursors,
     fft_2d,
     psdf,
@@ -60,4 +62,5 @@ from backend.nodes import (
     stats,
     watershed_segmentation,
     grain_analysis,
+    fft_1d,
 )

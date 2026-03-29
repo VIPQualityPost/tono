@@ -1164,6 +1164,15 @@ html, body, #root {
   z-index: 2;
 }
 
+.is-panning .cs-overlay,
+.is-panning .angle-overlay,
+.is-panning .lineplot-overlay,
+.is-panning .crop-overlay,
+.is-panning .mask-paint-overlay,
+.is-panning .markup-overlay {
+  pointer-events: none;
+}
+
 .markup-overlay {
   position: relative;
   overflow: hidden;

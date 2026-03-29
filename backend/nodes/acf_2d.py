@@ -5,8 +5,8 @@ from backend.data_types import DataField
 from backend.nodes.spectral_common import acf_field_from_data, preprocess_spectral_data
 
 
-@register_node(display_name="ACF")
-class ACF:
+@register_node(display_name="ACF 2D")
+class ACF2D:
     @classmethod
     def INPUT_TYPES(cls):
         return {

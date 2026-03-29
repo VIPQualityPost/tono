@@ -106,8 +106,10 @@ class Cursors:
             "b_locked": locked,
         })
 
+        length = float(np.hypot(xb - xa, yb - ya))
         table = MeasureTable([
-            {"quantity": "dx",  "value": xb - xa, "unit": x_unit},
+            {"quantity": "Length", "value": length,  "unit": x_unit},
+            {"quantity": "dx",     "value": xb - xa, "unit": x_unit},
             {"quantity": "dy",  "value": yb - ya, "unit": y_unit},
             {"quantity": "A x", "value": xa, "unit": x_unit},
             {"quantity": "A y", "value": ya, "unit": y_unit},
