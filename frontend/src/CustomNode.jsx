@@ -97,7 +97,7 @@ function GroupNode({ id, data }) {
           className="node-resize-handle"
           minWidth={groupMinSize.width}
           minHeight={groupMinSize.height}
-          onResizeEnd={(event, params) => ctx.onResizeGroup?.(id, params)}
+          onResizeEnd={(_event, params) => ctx.onResizeGroup?.(id, params)}
         />
       )}
       <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
@@ -788,13 +788,46 @@ function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
 function NodeTable({ rows }) {
   const [query, setQuery] = useState('');
   const scrollRef = useRef(null);
+  const isInsideRef = useRef(false);
+  const pointerEnteredAtRef = useRef(0);
+  const lastWheelAtRef = useRef(0);
+  const gestureStartedInsideRef = useRef(false);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const handler = (e) => e.stopPropagation();
-    el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
+
+    const onEnter = () => {
+      isInsideRef.current = true;
+      pointerEnteredAtRef.current = Date.now();
+    };
+    const onLeave = () => {
+      isInsideRef.current = false;
+    };
+    const onWheel = (e) => {
+      const now = Date.now();
+      const msSinceLastWheel = now - lastWheelAtRef.current;
+      const msSinceEnter = now - pointerEnteredAtRef.current;
+      lastWheelAtRef.current = now;
+
+      if (msSinceLastWheel > 300) {
+        // First event of a new gesture — only capture if pointer was already settled inside
+        gestureStartedInsideRef.current = isInsideRef.current && msSinceEnter > 100;
+      }
+
+      if (gestureStartedInsideRef.current) {
+        e.stopPropagation();
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('pointerenter', onEnter);
+    el.addEventListener('pointerleave', onLeave);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('pointerenter', onEnter);
+      el.removeEventListener('pointerleave', onLeave);
+    };
   }, []);
 
   const columns = getTableColumns(rows);
