@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
-from backend.data_types import LineData, MeasureTable
+from backend.data_types import LineData, RecordTable
 from backend.nodes.spectral_common import acf_line_from_data
 
 
@@ -34,7 +34,7 @@ class ACF1D:
 
     OUTPUTS = (
         ('LINE', 'acf'),
-        ('MEASURE_TABLE', 'measurement'),
+        ('RECORD_TABLE', 'measurement'),
     )
     FUNCTION = "process"
 
@@ -58,4 +58,4 @@ class ACF1D:
         if peak_lag is not None:
             rows.append({"quantity": "Peak period", "value": peak_lag, "unit": x_unit})
 
-        return (acf_line, MeasureTable(rows))
+        return (acf_line, RecordTable(rows))

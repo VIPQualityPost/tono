@@ -1,7 +1,7 @@
 // ── Shared type & color constants ─────────────────────────────────────
 
 export const DATA_TYPES = new Set([
-  'DATA_FIELD', 'IMAGE', 'LINE', 'MEASURE_TABLE', 'RECORD_TABLE',
+  'DATA_FIELD', 'IMAGE', 'LINE', 'RECORD_TABLE', 'DATA_TABLE',
   'COORD', 'ANNOTATION_SOURCE', 'COLORMAP',
   'MESH_MODEL', 'FONT', 'FILE_PATH', 'DIRECTORY', 'COORDPAIR',
 ]);
@@ -12,8 +12,8 @@ export const TYPE_COLORS = {
   DATA_FIELD:    '#3a7abf',
   IMAGE:         '#00ff08a0',
   LINE:          '#ffbe5c',
-  MEASURE_TABLE: '#35e2fd',
-  RECORD_TABLE:  '#ff7474',
+  RECORD_TABLE: '#35e2fd',
+  DATA_TABLE:  '#ff7474',
   COORD:         '#e91ed1',
   COORDPAIR:     '#5cb861',
   FLOAT:         '#ab3197',

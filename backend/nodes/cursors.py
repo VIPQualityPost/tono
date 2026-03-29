@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
-from backend.data_types import DataField, LineData, MeasureTable, encode_preview, render_datafield_preview
+from backend.data_types import DataField, LineData, RecordTable, encode_preview, render_datafield_preview
 
 
 @register_node(display_name="Cursors")
@@ -28,7 +28,7 @@ class Cursors:
         }
 
     OUTPUTS = (
-        ('MEASURE_TABLE', 'measurement'),
+        ('RECORD_TABLE', 'measurement'),
         ('COORDPAIR', 'coord_pair'),
     )
     FUNCTION = "process"
@@ -107,7 +107,7 @@ class Cursors:
         })
 
         length = float(np.hypot(xb - xa, yb - ya))
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "Length", "value": length,  "unit": x_unit},
             {"quantity": "dx",     "value": xb - xa, "unit": x_unit},
             {"quantity": "dy",  "value": yb - ya, "unit": y_unit},
@@ -159,7 +159,7 @@ class Cursors:
             "b_locked": locked,
         })
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "A x", "value": ax, "unit": field.si_unit_xy},
             {"quantity": "A y", "value": ay, "unit": field.si_unit_xy},
             {"quantity": "A z", "value": z1, "unit": field.si_unit_z},

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
-from backend.data_types import LineData, MeasureTable
+from backend.data_types import LineData, RecordTable
 
 
 @register_node(display_name="FFT 1D")
@@ -21,7 +21,7 @@ class FFT1D:
     
     OUTPUTS = (
         ("LINE", "frequency_plot"),
-        ('MEASURE_TABLE', 'measurement'),
+        ('RECORD_TABLE', 'measurement'),
     )
 
     FUNCTION = "process"
@@ -55,7 +55,7 @@ class FFT1D:
 
         peak_period = float(period_axis[np.argmax(spectrum)])
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "Peak period", "value": peak_period, "unit": spatial_unit},
         ])
 

@@ -9,8 +9,8 @@ class PrintTable:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "table": ("MEASURE_TABLE", {
-                    "accepted_types": ["RECORD_TABLE"],
+                "table": ("RECORD_TABLE", {
+                    "accepted_types": ["DATA_TABLE"],
                 }),
             }
         }

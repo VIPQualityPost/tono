@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
-from backend.data_types import DataField, MeasureTable
+from backend.data_types import DataField, RecordTable
 
 
 @register_node(display_name="Histogram")
@@ -22,7 +22,7 @@ class Histogram:
         }
 
     OUTPUTS = (
-        ('MEASURE_TABLE', 'measurements'),
+        ('RECORD_TABLE', 'measurements'),
         ('COORDPAIR', 'marker_pair'),
     )
     FUNCTION = "process"
@@ -88,7 +88,7 @@ class Histogram:
             "b_locked": False,
         })
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "delta Y",    "value": yb - ya, "unit": count_unit},
             {"quantity": "delta X",    "value": xb - xa, "unit": field.si_unit_z},
             {"quantity": "A position", "value": xa, "unit": field.si_unit_z},

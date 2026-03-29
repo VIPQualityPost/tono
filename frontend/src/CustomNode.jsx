@@ -786,6 +786,17 @@ function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
 }
 
 function NodeTable({ rows }) {
+  const [query, setQuery] = useState('');
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = (e) => e.stopPropagation();
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
   const columns = getTableColumns(rows);
   if (columns.length === 0) return null;
   const lowerColumns = columns.map((column) => String(column).toLowerCase());
@@ -804,9 +815,32 @@ function NodeTable({ rows }) {
     return '';
   };
 
+  const filteredRows = query.trim()
+    ? rows.filter((row) =>
+        columns.some((col) => {
+          const cell = formatTableRowCell(row, col);
+          return String(cell).toLowerCase().includes(query.toLowerCase());
+        })
+      )
+    : rows;
+
   return (
     <div className="node-table-wrap">
-      <div className="node-table-scroll">
+      {rows.length > 5 && (
+        <div
+          className="node-table-search"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <input
+            className="node-table-search-input nodrag"
+            type="text"
+            placeholder="Search…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      )}
+      <div className="node-table-scroll" ref={scrollRef}>
         <table className="node-table-grid">
           {hasMeasurementLayout && (
             <colgroup>
@@ -823,7 +857,7 @@ function NodeTable({ rows }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, rowIndex) => (
+            {filteredRows.map((row, rowIndex) => (
               <tr key={row.id ?? row.quantity ?? rowIndex}>
                 {columns.map((column) => {
                   const value = row?.[column];
@@ -1379,7 +1413,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         const tableInputName = opts?.choices_from_table_input;
         if (!tableInputName) return [];
         const sourceType = getSourceTypeForInput(s, nodeId, tableInputName);
-        if (sourceType !== 'RECORD_TABLE') return [];
+        if (sourceType !== 'DATA_TABLE') return [];
         const sourceNode = getSourceNodeForInput(s, nodeId, tableInputName);
         const rows = sourceNode?.data?.tableRows;
         return Array.isArray(rows) ? getTableColumns(rows) : [];
@@ -1393,7 +1427,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         const measurementInputName = opts?.choices_from_measure_input;
         if (!measurementInputName) return [];
         const sourceType = getSourceTypeForInput(s, nodeId, measurementInputName);
-        if (sourceType !== 'MEASURE_TABLE') return [];
+        if (sourceType !== 'RECORD_TABLE') return [];
         const sourceNode = getSourceNodeForInput(s, nodeId, measurementInputName);
         const rows = sourceNode?.data?.tableRows;
         return Array.isArray(rows) ? getMeasurementChoices(rows) : [];

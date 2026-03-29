@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, ".")
-from backend.data_types import DataField, LineData, MeasureTable, RecordTable, datafield_to_uint8, render_datafield_preview
+from backend.data_types import DataField, LineData, RecordTable, DataTable, datafield_to_uint8, render_datafield_preview
 
 
 def make_field(data=None, shape=(64, 64), xreal=1e-6, yreal=1e-6):
@@ -2000,8 +2000,8 @@ def test_print_table():
     node = PrintTable()
 
     table_spec = PrintTable.INPUT_TYPES()["required"]["table"]
-    assert table_spec[0] == "MEASURE_TABLE"
-    assert table_spec[1]["accepted_types"] == ["RECORD_TABLE"]
+    assert table_spec[0] == "RECORD_TABLE"
+    assert table_spec[1]["accepted_types"] == ["DATA_TABLE"]
 
     captured = []
     PrintTable._broadcast_table_fn = lambda node_id, rows: captured.append(rows)
@@ -2023,7 +2023,7 @@ def test_value_display():
     node = ValueDisplay()
     value_spec = ValueDisplay.INPUT_TYPES()["required"]["value"]
     assert value_spec[0] == "FLOAT"
-    assert value_spec[1]["accepted_types"] == ["MEASURE_TABLE"]
+    assert value_spec[1]["accepted_types"] == ["RECORD_TABLE"]
 
     captured = []
     ValueDisplay._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
@@ -2033,7 +2033,7 @@ def test_value_display():
     assert result == (3.25,)
     assert captured == [("test", {"value": 3.25})]
 
-    measurements = MeasureTable([
+    measurements = RecordTable([
         {"quantity": "delta X", "value": 1.7e-7, "unit": "m"},
         {"quantity": "delta Y", "value": 463, "unit": "count"},
     ])
@@ -2845,7 +2845,7 @@ def test_stats():
     node = Stats()
     input_spec = Stats.INPUT_TYPES()["required"]["input"]
     assert input_spec[0] == "DATA_FIELD"
-    assert input_spec[1]["accepted_types"] == ["IMAGE", "LINE", "RECORD_TABLE"]
+    assert input_spec[1]["accepted_types"] == ["IMAGE", "LINE", "DATA_TABLE"]
 
     captured = []
     Stats._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
@@ -2858,7 +2858,7 @@ def test_stats():
     roughness, = node.process(line, operation="Rq", column="value")
     assert np.isclose(roughness, np.sqrt(np.mean((line - line.mean()) ** 2)))
 
-    table = RecordTable([
+    table = DataTable([
         {"name": "a", "value": 3.0, "unit": "m", "other": 10.0},
         {"name": "b", "value": 7.0, "unit": "m", "other": 20.0},
     ])
@@ -2894,7 +2894,7 @@ def test_stats():
 
     try:
         node.process(
-            MeasureTable([{"quantity": "min", "value": 1.0, "unit": "m"}]),
+            RecordTable([{"quantity": "min", "value": 1.0, "unit": "m"}]),
             operation="max",
             column="value",
         )
@@ -3026,7 +3026,7 @@ def test_view3d():
 def test_save_generic():
     print("=== Test: Save ===")
     from backend.nodes.save import Save
-    from backend.data_types import DataField, ImageData, LineData, MeasureTable, MeshModel, RecordTable
+    from backend.data_types import DataField, ImageData, LineData, RecordTable, MeshModel, DataTable
     import tifffile
     from PIL import Image as PILImage
 
@@ -3037,8 +3037,8 @@ def test_save_generic():
         "IMAGE",
         "ANNOTATION_SOURCE",
         "LINE",
-        "MEASURE_TABLE",
         "RECORD_TABLE",
+        "DATA_TABLE",
         "MESH_MODEL",
         "FLOAT",
     ]
@@ -3137,7 +3137,7 @@ def test_save_generic():
         assert np.array_equal(annotation_npz["image"], image)
 
         # Save tables as CSV and JSON
-        measure_table = MeasureTable([
+        measure_table = RecordTable([
             {"quantity": "Rq", "value": 1.23, "unit": "nm"},
             {"quantity": "Ra", "value": 0.98, "unit": "nm"},
         ])
@@ -3148,7 +3148,7 @@ def test_save_generic():
         node.save(filename="measurements_json", directory_path=tmpdir, format="JSON", value=measure_table)
         assert json.loads(Path(tmpdir, "measurements_json.json").read_text(encoding="utf-8")) == list(measure_table)
 
-        record_table = RecordTable([
+        record_table = DataTable([
             {"label": "particle-1", "height": 12.0, "area": 44.0},
             {"label": "particle-2", "height": 8.0, "area": 21.0},
         ])

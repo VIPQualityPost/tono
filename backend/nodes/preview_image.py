@@ -45,8 +45,20 @@ class PreviewImage:
         input=None,
         colormap_map=None,
     ) -> tuple:
-        field = input if isinstance(input, DataField) else None
-        image = None if field is not None else input
+        if isinstance(input, DataField):
+            field = input
+            image = None
+        elif isinstance(input, np.ndarray):
+            field = None
+            image = input
+        elif input is not None:
+            raise TypeError(
+                f"Preview expects an IMAGE or DATA_FIELD — got {type(input).__name__}. "
+                "Check that you are connected to the DATA_FIELD output, not the path socket."
+            )
+        else:
+            field = None
+            image = None
 
         resolved_colormap = resolve_colormap_input(
             colormap,

@@ -8,7 +8,7 @@ from scipy.ndimage import map_coordinates
 from backend.data_types import (
     DataField,
     LineData,
-    MeasureTable,
+    RecordTable,
     _apply_markup_overlay,
     encode_preview,
     render_datafield_preview,
@@ -289,7 +289,7 @@ class Curvature:
 
     OUTPUTS = (
         ('ANNOTATION_SOURCE', 'output'),
-        ('MEASURE_TABLE', 'measurements'),
+        ('RECORD_TABLE', 'measurements'),
         ('LINE', 'profile_1'),
         ('LINE', 'profile_2'),
     )
@@ -313,7 +313,7 @@ class Curvature:
 
         if results is None:
             emit_warning("Curvature requires at least six usable pixels for the quadratic fit.")
-            table = MeasureTable([])
+            table = RecordTable([])
             emit_table(table)
             emit_preview(encode_preview(render_datafield_preview(field, field.colormap)))
             empty = _empty_profile(field.si_unit_xy, field.si_unit_z)
@@ -345,7 +345,7 @@ class Curvature:
         markup_spec = _curvature_markup(field, results["x0"], results["y0"], intersections)
         output = field.replace(overlays=[*field.overlays, markup_spec])
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "Center x position", "value": float(results["x0"]), "unit": field.si_unit_xy},
             {"quantity": "Center y position", "value": float(results["y0"]), "unit": field.si_unit_xy},
             {"quantity": "Center value", "value": float(results["z0"]), "unit": field.si_unit_z},

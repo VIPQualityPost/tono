@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.ndimage import map_coordinates
 
-from backend.data_types import LineData, MeasureTable
+from backend.data_types import LineData, RecordTable
 from backend.execution_context import emit_overlay, emit_table, emit_warning
 from backend.node_registry import register_node
 
@@ -307,7 +307,7 @@ class FractalDimension:
     OUTPUTS = (
         ('FLOAT', 'dimension'),
         ('LINE', 'curve'),
-        ('MEASURE_TABLE', 'measurements'),
+        ('RECORD_TABLE', 'measurements'),
     )
     FUNCTION = "process"
 
@@ -348,7 +348,7 @@ class FractalDimension:
             dimension = float("nan")
             emit_warning("Fractal fit range contains fewer than two usable points.")
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "Dimension", "value": float(dimension), "unit": ""},
             {"quantity": "Fit slope", "value": float(slope), "unit": ""},
             {"quantity": "Fit intercept", "value": float(intercept), "unit": ""},

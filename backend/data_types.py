@@ -31,11 +31,11 @@ CUSTOM_FILE_FONT = "Custom File"
 PREVIEW_MARKUP_REFERENCE_DIM = 512
 
 
-class RecordTable(list):
+class DataTable(list):
     """Tabular rows with a shared schema, e.g. grain statistics."""
 
 
-class MeasureTable(list):
+class RecordTable(list):
     """Named scalar measurements, typically rows of quantity/value/unit."""
 
 

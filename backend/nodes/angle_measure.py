@@ -5,7 +5,7 @@ import numpy as np
 from backend.data_types import (
     DataField,
     ImageData,
-    MeasureTable,
+    RecordTable,
     _apply_angle_measure_overlay,
     encode_preview,
     image_metadata,
@@ -114,7 +114,7 @@ class AngleMeasure:
 
     OUTPUTS = (
         ('ANNOTATION_SOURCE', 'output'),
-        ('MEASURE_TABLE', 'measurements'),
+        ('RECORD_TABLE', 'measurements'),
     )
     FUNCTION = "process"
 
@@ -189,7 +189,7 @@ class AngleMeasure:
             stroke_width=resolved_stroke_width,
             color=resolved_color,
         )
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "Angle", "value": angle_deg, "unit": "deg"},
             {"quantity": "Arm A length", "value": length_a, "unit": length_unit},
             {"quantity": "Arm B length", "value": length_b, "unit": length_unit},

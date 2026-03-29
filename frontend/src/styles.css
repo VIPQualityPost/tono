@@ -1296,6 +1296,26 @@ html, body, #root {
   padding: 4px 10px 8px;
 }
 
+.node-table-search {
+  padding: 0 0 4px;
+}
+
+.node-table-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px 7px;
+  font-size: 11px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.node-table-search-input:focus {
+  border-color: var(--accent);
+}
+
 .node-table-scroll {
   max-height: 220px;
   overflow: auto;
@@ -1310,7 +1330,7 @@ html, body, #root {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 10px;
   color: var(--text-table);
-  table-layout: auto;
+  table-layout: fixed;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -1319,6 +1339,8 @@ html, body, #root {
   padding: 6px 8px;
   border-bottom: 1px solid var(--border-table);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: left;
   vertical-align: top;
 }

@@ -19,13 +19,13 @@ test('retired save alias types are no longer first-class socket types', () => {
 });
 
 test('accepted_types extend canonical socket compatibility without reintroducing alias types', () => {
-  const spec = ['MEASURE_TABLE', { accepted_types: ['RECORD_TABLE'] }];
+  const spec = ['RECORD_TABLE', { accepted_types: ['DATA_TABLE'] }];
 
   assert.equal(isDataSocketSpec(spec), true);
   assert.deepEqual(
     Array.from(getAcceptedSocketTypes(spec)).sort(),
-    ['MEASURE_TABLE', 'RECORD_TABLE'],
+    ['RECORD_TABLE', 'DATA_TABLE'],
   );
-  assert.equal(socketSpecAcceptsType('RECORD_TABLE', spec), true);
+  assert.equal(socketSpecAcceptsType('DATA_TABLE', spec), true);
   assert.equal(socketSpecAcceptsType('LINE', spec), false);
 });

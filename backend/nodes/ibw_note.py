@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from backend.node_registry import register_node
-from backend.data_types import MeasureTable
+from backend.data_types import DataTable
 from backend.nodes.helpers import _resolve_path, _import_ibw_loader
 
 
@@ -22,14 +22,10 @@ def _parse_ibw_note(note_bytes: bytes) -> list[dict]:
         if not match:
             continue
         key = match.group(1).strip()
-        raw_val = match.group(2).strip()
+        value = match.group(2).strip()
         if not key:
             continue
-        try:
-            value = float(raw_val)
-        except (ValueError, TypeError):
-            continue
-        rows.append({"quantity": key, "value": value, "unit": ""})
+        rows.append({"key": key, "value": value})
 
     return rows
 
@@ -48,13 +44,13 @@ class IBWNote:
         }
 
     OUTPUTS = (
-        ('MEASURE_TABLE', 'note'),
+        ('DATA_TABLE', 'note'),
     )
     FUNCTION = "load"
 
     DESCRIPTION = (
-        "Read the Note metadata from an .ibw file and display numeric entries "
-        "as a measurement table. Non-numeric note entries are skipped."
+        "Read the Note metadata from an .ibw file and display all entries "
+        "as a table of key/value pairs."
     )
 
     def load(self, filename: str = "", path: str | None = None) -> tuple:
@@ -73,6 +69,6 @@ class IBWNote:
 
         rows = _parse_ibw_note(note_bytes)
         if not rows:
-            raise ValueError("No numeric metadata found in the .ibw note.")
+            raise ValueError("No metadata found in the .ibw note.")
 
-        return (MeasureTable(rows),)
+        return (DataTable(rows),)

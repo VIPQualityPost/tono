@@ -318,7 +318,7 @@ class ExecutionEngine:
 
     def _fingerprint_bytes(self, value: Any) -> bytes:
         import numpy as np
-        from backend.data_types import DataField, ImageData, LineData, MeasureTable, MeshModel, RecordTable
+        from backend.data_types import DataField, ImageData, LineData, RecordTable, MeshModel, DataTable
 
         if value is None:
             return b"null"
@@ -381,7 +381,7 @@ class ExecutionEngine:
             ).encode()
             return b"|".join([b"ndarray", header, memoryview(array).tobytes()])
 
-        if isinstance(value, (MeasureTable, RecordTable, list)):
+        if isinstance(value, (RecordTable, DataTable, list)):
             return b"[" + b",".join(self._fingerprint_bytes(item) for item in value) + b"]"
 
         if isinstance(value, tuple):
@@ -494,7 +494,7 @@ class ExecutionEngine:
                     on_preview(node_id, preview)
                     return
 
-            if type_name in ("TABLE", "MEASURE_TABLE", "RECORD_TABLE") and isinstance(value, list) and on_table:
+            if type_name in ("TABLE", "RECORD_TABLE", "DATA_TABLE") and isinstance(value, list) and on_table:
                 on_table(node_id, value)
                 return
 

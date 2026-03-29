@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField, MeasureTable
+from backend.data_types import DataField, RecordTable
 
 
 @register_node(display_name="Statistics")
@@ -15,7 +15,7 @@ class Statistics:
         }
 
     OUTPUTS = (
-        ('MEASURE_TABLE', 'stats'),
+        ('RECORD_TABLE', 'stats'),
     )
     FUNCTION = "process"
 
@@ -31,7 +31,7 @@ class Statistics:
         skewness = float(np.mean(((d - mean) / rms) ** 3)) if rms > 0 else 0.0
         kurtosis = float(np.mean(((d - mean) / rms) ** 4)) if rms > 0 else 0.0
 
-        table = MeasureTable([
+        table = RecordTable([
             {"quantity": "min",      "value": float(d.min()),    "unit": field.si_unit_z},
             {"quantity": "max",      "value": float(d.max()),    "unit": field.si_unit_z},
             {"quantity": "mean",     "value": mean,              "unit": field.si_unit_z},

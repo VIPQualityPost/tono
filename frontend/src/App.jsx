@@ -1271,7 +1271,7 @@ function Flow() {
       if (!isTrackedNodeRequestCurrent(loadNodeOutputRequestVersionsRef.current, nodeId, requestVersion)) {
         return;
       }
-      setNodeOutputs(nodeId, ['DATA_FIELD'], ['field'], { output_paths: [] });
+      setNodeOutputs(nodeId, ['FILE_PATH', 'DATA_FIELD'], ['path', 'field'], { output_paths: [] });
       return;
     }
 
@@ -1281,8 +1281,8 @@ function Flow() {
     }
     setNodeOutputs(
       nodeId,
-      channels.map((channel) => channel.type),
-      channels.map((channel) => channel.name),
+      ['FILE_PATH', ...channels.map((channel) => channel.type)],
+      ['path', ...channels.map((channel) => channel.name)],
       { output_paths: [] },
     );
   }, [getResolvedPathInput, reactFlow, setNodeOutputs]);

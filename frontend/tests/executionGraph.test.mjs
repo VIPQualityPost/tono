@@ -487,7 +487,7 @@ test('serializeExecutionGraph treats accepted_types inputs as sockets, not widge
         className: 'TableSource',
         definition: {
           input: { required: {}, optional: {} },
-          output: ['RECORD_TABLE'],
+          output: ['DATA_TABLE'],
           output_name: ['rows'],
           manual_trigger: false,
         },
@@ -501,7 +501,7 @@ test('serializeExecutionGraph treats accepted_types inputs as sockets, not widge
         definition: {
           input: {
             required: {
-              table: ['MEASURE_TABLE', { accepted_types: ['RECORD_TABLE'] }],
+              table: ['RECORD_TABLE', { accepted_types: ['DATA_TABLE'] }],
             },
             optional: {},
           },
@@ -514,9 +514,9 @@ test('serializeExecutionGraph treats accepted_types inputs as sockets, not widge
   const edges = [
     {
       source: '1',
-      sourceHandle: 'output::0::RECORD_TABLE',
+      sourceHandle: 'output::0::DATA_TABLE',
       target: '2',
-      targetHandle: 'input::table::MEASURE_TABLE',
+      targetHandle: 'input::table::RECORD_TABLE',
     },
   ];
 
@@ -542,7 +542,7 @@ test('hasBlockingAutoRunInput still blocks unconnected accepted_types sockets', 
         manual_trigger: false,
         input: {
           required: {
-            input: ['DATA_FIELD', { accepted_types: ['IMAGE', 'LINE', 'RECORD_TABLE'] }],
+            input: ['DATA_FIELD', { accepted_types: ['IMAGE', 'LINE', 'DATA_TABLE'] }],
           },
           optional: {},
         },
@@ -556,7 +556,7 @@ test('hasBlockingAutoRunInput still blocks unconnected accepted_types sockets', 
     hasBlockingAutoRunInput(node, [
       {
         source: '1',
-        sourceHandle: 'output::0::RECORD_TABLE',
+        sourceHandle: 'output::0::DATA_TABLE',
         target: '2',
         targetHandle: 'input::input::DATA_FIELD',
       },

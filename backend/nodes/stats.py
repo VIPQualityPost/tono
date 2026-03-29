@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_value
-from backend.data_types import DataField, LineData, MeasureTable
+from backend.data_types import DataField, LineData, RecordTable
 from backend.nodes.helpers import (
     LINE_OPS,
     TABLE_OPS,
@@ -17,7 +17,7 @@ from backend.nodes.helpers import (
 
 @register_node(display_name="Stats")
 class Stats:
-    """Polymorphic scalar stats node for LINE, RECORD_TABLE, DATA_FIELD, or IMAGE inputs."""
+    """Polymorphic scalar stats node for LINE, DATA_TABLE, DATA_FIELD, or IMAGE inputs."""
 
     _broadcast_value_fn = None
     _current_node_id: str = ""
@@ -27,20 +27,20 @@ class Stats:
         return {
             "required": {
                 "input": ("DATA_FIELD", {
-                    "accepted_types": ["IMAGE", "LINE", "RECORD_TABLE"],
+                    "accepted_types": ["IMAGE", "LINE", "DATA_TABLE"],
                 }),
                 "column": ("STRING", {
                     "default": "value",
                     "choices_from_table_input": "input",
                     "show_when_source_type": {
-                        "input": ["RECORD_TABLE"],
+                        "input": ["DATA_TABLE"],
                     },
                 }),
                 "operation": ("STRING", {
                     "default": "mean",
                     "choices_by_source_type": {
                         "LINE": list(LINE_OPS.keys()),
-                        "RECORD_TABLE": list(TABLE_OPS.keys()),
+                        "DATA_TABLE": list(TABLE_OPS.keys()),
                         "DATA_FIELD": list(ARRAY_OPS.keys()),
                         "IMAGE": list(ARRAY_OPS.keys()),
                     },
@@ -62,7 +62,7 @@ class Stats:
     def process(self, input, operation: str, column: str = "value") -> tuple:
         source_type, values, resolved_column = self._resolve_input_values(input, column)
 
-        if source_type == "RECORD_TABLE":
+        if source_type == "DATA_TABLE":
             ops = TABLE_OPS
         elif source_type == "LINE":
             ops = LINE_OPS
@@ -93,7 +93,7 @@ class Stats:
                 return _apply_scalar_unit(input_value.y_unit, operation)
             return ""
 
-        if source_type == "RECORD_TABLE" and isinstance(input_value, list) and column:
+        if source_type == "DATA_TABLE" and isinstance(input_value, list) and column:
             return _apply_scalar_unit(_common_table_unit(input_value, column), operation)
 
         return ""
@@ -103,7 +103,7 @@ class Stats:
             values = np.asarray(input_value.data, dtype=np.float64)
             return ("DATA_FIELD", values.ravel(), None)
 
-        if isinstance(input_value, MeasureTable):
+        if isinstance(input_value, RecordTable):
             raise ValueError("Stats only accepts record tables, not measurement tables.")
 
         if isinstance(input_value, list):
@@ -113,7 +113,7 @@ class Stats:
             values = extract_numeric_table_values(input_value, column_name)
             if not values:
                 raise ValueError(f"Column '{column_name}' has no numeric values.")
-            return ("RECORD_TABLE", np.asarray(values, dtype=np.float64), column_name)
+            return ("DATA_TABLE", np.asarray(values, dtype=np.float64), column_name)
 
         if isinstance(input_value, LineData):
             values = np.asarray(input_value.data, dtype=np.float64)

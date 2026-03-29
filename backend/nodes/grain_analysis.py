@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField, RecordTable
+from backend.data_types import DataField, DataTable
 from backend.nodes.helpers import _square_unit
 
 
@@ -18,7 +18,7 @@ class GrainAnalysis:
         }
 
     OUTPUTS = (
-        ('RECORD_TABLE', 'grain_stats'),
+        ('DATA_TABLE', 'grain_stats'),
     )
     FUNCTION = "process"
 
@@ -38,7 +38,7 @@ class GrainAnalysis:
         xy_unit = str(field.si_unit_xy or "").strip()
         z_unit = str(field.si_unit_z or "").strip()
 
-        rows = RecordTable()
+        rows = DataTable()
         for gid in range(1, n_grains + 1):
             grain_pixels = labeled == gid
             area_px = int(grain_pixels.sum())

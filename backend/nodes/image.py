@@ -2,6 +2,8 @@ from __future__ import annotations
 from functools import lru_cache
 import numpy as np
 from pathlib import Path
+import nanonispy as nap
+import gwyfile
 
 from backend.node_registry import register_node
 from backend.execution_context import emit_warning
@@ -25,6 +27,7 @@ class Image:
         }
 
     OUTPUTS = (
+        ("FILE_PATH", 'path'),
         ('DATA_FIELD', 'field'),
     )
     FUNCTION = "load"
@@ -65,7 +68,7 @@ class Image:
         if ext not in _SPM_EXTENSIONS:
             self._send_warning("Uncalibrated data — no physical dimensions.")
 
-        return fields
+        return (str(path_obj.resolve()),) + fields
 
     def _send_warning(self, message: str):
         emit_warning(message)
@@ -92,11 +95,6 @@ class Image:
 
     @staticmethod
     def _load_gwy_all(path: Path) -> list[DataField]:
-        try:
-            import gwyfile
-        except ImportError:
-            raise ImportError("Install 'gwyfile' package to load .gwy files: pip install gwyfile")
-
         obj = gwyfile.load(str(path))
         channels = gwyfile.util.get_datafields(obj)
         if not channels:
@@ -118,11 +116,6 @@ class Image:
 
     @staticmethod
     def _load_sxm_all(path: Path) -> list[DataField]:
-        try:
-            import nanonispy as nap
-        except ImportError:
-            raise ImportError("Install 'nanonispy' package to load .sxm files: pip install nanonispy")
-
         sxm = nap.read.Scan(str(path))
         signals = sxm.signals
         if not signals:
