@@ -30,8 +30,8 @@ def _parse_ibw_note(note_bytes: bytes) -> list[dict]:
     return rows
 
 
-@register_node(display_name="IBW Note")
-class IBWNote:
+@register_node(display_name="Note")
+class Note:
     @classmethod
     def INPUT_TYPES(cls):
         return {

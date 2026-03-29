@@ -10,7 +10,7 @@ import numpy as np
 sys.path.insert(0, ".")
 from backend.data_types import DataField
 from backend.nodes.fft_2d import FFT2D
-from backend.nodes.fft_2d_invert import InverseFFT2D
+from backend.nodes.fft_2d_inverse import FFT2DInverse
 
 
 def make_field(data, xreal=1e-6, yreal=1e-6):
@@ -255,7 +255,7 @@ def test_inverse_fft_reconstructs_from_magnitude_and_phase():
     field = make_field(data, xreal=2.4e-6, yreal=1.6e-6)
 
     fft_node = FFT2D()
-    ifft_node = InverseFFT2D()
+    ifft_node = FFT2DInverse()
 
     _, magnitude, phase, _ = fft_node.process(field, windowing="none", level="none")
     reconstructed, = ifft_node.process(magnitude, representation="magnitude", phase=phase)
@@ -282,7 +282,7 @@ def test_inverse_fft_reconstructs_from_log_magnitude_and_phase():
     field = make_field(data, xreal=1.6e-6, yreal=1.44e-6)
 
     fft_node = FFT2D()
-    ifft_node = InverseFFT2D()
+    ifft_node = FFT2DInverse()
 
     log_magnitude, _, phase, _ = fft_node.process(field, windowing="none", level="none")
     reconstructed, = ifft_node.process(log_magnitude, representation="log_magnitude", phase=phase)
@@ -301,7 +301,7 @@ def test_inverse_fft_reconstructs_from_psdf_and_phase():
     field = make_field(data, xreal=3.2e-6, yreal=2.4e-6)
 
     fft_node = FFT2D()
-    ifft_node = InverseFFT2D()
+    ifft_node = FFT2DInverse()
 
     _, _, phase, psdf = fft_node.process(field, windowing="none", level="none")
     reconstructed, = ifft_node.process(psdf, representation="psdf", phase=phase)
@@ -320,7 +320,7 @@ def test_inverse_fft_zero_phase_mode_returns_valid_image():
     field = make_field(data, xreal=1e-6, yreal=1e-6)
 
     fft_node = FFT2D()
-    ifft_node = InverseFFT2D()
+    ifft_node = FFT2DInverse()
 
     _, magnitude, _, _ = fft_node.process(field, windowing="none", level="none")
     reconstructed, = ifft_node.process(magnitude, representation="magnitude")

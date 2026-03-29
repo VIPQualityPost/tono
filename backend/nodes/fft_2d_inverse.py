@@ -5,7 +5,7 @@ from backend.data_types import DataField
 
 
 @register_node(display_name="Inverse 2D FFT")
-class InverseFFT2D:
+class FFT2DInverse:
     @classmethod
     def INPUT_TYPES(cls):
         return {

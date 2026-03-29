@@ -14,7 +14,7 @@ from typing import Any
 MENU_LAYOUT: dict[str, list[str]] = {
     "Input": [
         "Image",
-        "IBWNote",
+        "Note",
         "ImageDemo",
         "Folder",
         "Number",
@@ -53,7 +53,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     ],
     "Spectral": [
         "FFT2D",
-        "InverseFFT2D",
+        "FFT2DInverse",
         "FFTFilter1D",
         "FFTFilter2D",
         "ACF2D",
