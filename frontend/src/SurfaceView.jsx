@@ -74,6 +74,10 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
   const lastGeometrySignatureRef = useRef('');
   const syncTimerRef = useRef(null);
   const lastSnapshotRef = useRef('');
+  const isInsideRef = useRef(false);
+  const pointerEnteredAtRef = useRef(0);
+  const lastWheelAtRef = useRef(0);
+  const gestureStartedInsideRef = useRef(false);
   const [diagnostics, setDiagnostics] = useState({
     status: meshData ? 'initializing' : 'waiting for mesh',
     webgl: 'pending',
