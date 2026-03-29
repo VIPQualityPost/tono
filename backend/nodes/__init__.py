@@ -43,10 +43,9 @@ from backend.nodes import (
     markup,
     preview_image,
     statistics,
+    value_io,
     view_3d,
     print_table,
-    value_display,
-    # Analysis
     curvature,
     fractal_dimension,
     histogram,

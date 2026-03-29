@@ -1,3 +1,41 @@
+const SI_PREFIX_MULTIPLIERS = {
+  Y: 1e24, Z: 1e21, E: 1e18, P: 1e15, T: 1e12,
+  G: 1e9, M: 1e6, k: 1e3,
+  m: 1e-3, u: 1e-6, µ: 1e-6, n: 1e-9, p: 1e-12,
+  f: 1e-15, a: 1e-18, z: 1e-21, y: 1e-24,
+};
+
+const NUMBER_WITH_UNIT_RE = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*(.*)?$/;
+
+/**
+ * Parse a string like "1.5 nm" into { numeric: 1.5e-9, unit: "m" }.
+ * Returns null if the string does not start with a valid number.
+ * The numeric value is scaled to the base SI unit via the prefix.
+ */
+export function parseNumberWithUnit(text) {
+  const s = String(text ?? '').trim();
+  if (!s) return { numeric: 0, unit: '' };
+
+  const m = s.match(NUMBER_WITH_UNIT_RE);
+  if (!m) return null;
+
+  const numeric = parseFloat(m[1]);
+  const unitStr = (m[2] ?? '').trim();
+
+  if (!unitStr) return { numeric, unit: '' };
+
+  if (unitStr.length >= 2) {
+    const prefix = unitStr[0];
+    const rest = unitStr.slice(1);
+    const multiplier = SI_PREFIX_MULTIPLIERS[prefix];
+    if (multiplier !== undefined && PREFIXABLE_UNITS.has(rest)) {
+      return { numeric: numeric * multiplier, unit: rest };
+    }
+  }
+
+  return { numeric, unit: unitStr };
+}
+
 const SI_PREFIXES = [
   { exp: -24, prefix: 'y' },
   { exp: -21, prefix: 'z' },

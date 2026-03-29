@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import sys
 from collections import defaultdict
 from copy import deepcopy
@@ -204,6 +205,10 @@ def create_app(
         else:
             value = payload
             unit = ""
+
+        # JSON cannot encode non-finite floats; convert to string representations.
+        if isinstance(value, float) and not math.isfinite(value):
+            value = "∞" if value > 0 else ("-∞" if math.isinf(value) else "NaN")
 
         data = {"node_id": node_id, "value": value}
         if isinstance(unit, str) and unit.strip():

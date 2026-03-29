@@ -2,18 +2,21 @@ from __future__ import annotations
 from backend.node_registry import register_node
 from backend.execution_context import emit_table, emit_value
 from backend.data_types import RecordTable
-from backend.nodes.helpers import _measurement_entry, _measurement_value, _scalar_payload
+from backend.nodes.helpers import _measurement_entry, _measurement_value, _scalar_payload, parse_number_with_unit
 
 
 @register_node(display_name="Value Display")
-class ValueDisplay:
+class ValueIO:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": ("FLOAT", {
-                    "accepted_types": ["RECORD_TABLE"],
-                    "socket_only": True,
+                "number_input": ("STRING", {
+                    "text_input": True,
+                    "default": "0",
+                    "placeholder": "e.g. 1.5 nm",
+                    "hide_when_input_connected": "value",
+                    "hide_label": True,
                 }),
                 "measurement": ("STRING", {
                     "default": "",
@@ -22,7 +25,13 @@ class ValueDisplay:
                         "value": ["RECORD_TABLE"],
                     },
                 }),
-            }
+            },
+            "optional": {
+                "value": ("FLOAT", {
+                    "accepted_types": ["RECORD_TABLE"],
+                    "socket_only": True,
+                }),
+            },
         }
 
     OUTPUTS = (
@@ -35,14 +44,16 @@ class ValueDisplay:
     _broadcast_value_fn = None
     _current_node_id: str = ""
 
-    def display_value(self, value, measurement: str = "") -> tuple:
+    def display_value(self, number_input: str = "0", value=None, measurement: str = "") -> tuple:
         unit = ""
         if isinstance(value, RecordTable):
             emit_table(value)
             row = _measurement_entry(value, measurement)
             numeric = _measurement_value(value, measurement)
             unit = row.get("unit", "") if isinstance(row.get("unit"), str) else ""
-        else:
+        elif value is not None:
             numeric = float(value)
+        else:
+            numeric, unit = parse_number_with_unit(str(number_input))
         emit_value(_scalar_payload(numeric, unit))
         return (numeric,)

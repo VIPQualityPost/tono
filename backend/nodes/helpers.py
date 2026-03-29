@@ -4,6 +4,7 @@ Shared helper functions for argonode nodes.
 
 from __future__ import annotations
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable
@@ -16,6 +17,62 @@ from backend.runtime_paths import demo_dir, input_dir, output_dir
 # Scalar payload helpers  (from display.py)
 # ---------------------------------------------------------------------------
 
+_SI_PREFIXES: dict[str, float] = {
+    'Y': 1e24, 'Z': 1e21, 'E': 1e18, 'P': 1e15, 'T': 1e12,
+    'G': 1e9,  'M': 1e6,  'k': 1e3,
+    'm': 1e-3, 'u': 1e-6, 'µ': 1e-6, 'n': 1e-9, 'p': 1e-12,
+    'f': 1e-15, 'a': 1e-18, 'z': 1e-21, 'y': 1e-24,
+}
+
+_PREFIXABLE_UNITS: frozenset[str] = frozenset({
+    'm', 's', 'A', 'V', 'W', 'Hz', 'F', 'C', 'J', 'N', 'Pa',
+    'T', 'H', 'S', 'g', 'K', 'Ohm', 'ohm', 'Ω',
+})
+
+_NUMBER_RE = re.compile(
+    r'^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*(.*)?$'
+)
+
+
+def parse_number_with_unit(text: str) -> tuple[float, str]:
+    """Parse a string like '1.5 nm' into (1.5e-9, 'm').
+
+    The numeric part may use scientific notation. The unit is stripped of any
+    recognised SI prefix and the raw value is scaled accordingly, so the
+    returned float is always in the base SI unit.  Units that are not
+    prefixable are returned unchanged alongside the unscaled value.
+
+    Examples::
+
+        parse_number_with_unit("1 um")   → (1e-6, "m")
+        parse_number_with_unit("500 nm") → (5e-7, "m")
+        parse_number_with_unit("3.14")   → (3.14, "")
+        parse_number_with_unit("2 kHz")  → (2000.0, "Hz")
+    """
+    text = text.strip()
+    if not text:
+        return 0.0, ""
+
+    m = _NUMBER_RE.match(text)
+    if not m:
+        raise ValueError(f"Cannot parse number: {text!r}")
+
+    numeric = float(m.group(1))
+    unit_str = (m.group(2) or "").strip()
+
+    if not unit_str:
+        return numeric, ""
+
+    # Try prefix + base-unit split (handle multi-byte µ as a prefix)
+    if len(unit_str) >= 2:
+        prefix_char = unit_str[0]
+        rest = unit_str[1:]
+        if prefix_char in _SI_PREFIXES and rest in _PREFIXABLE_UNITS:
+            return numeric * _SI_PREFIXES[prefix_char], rest
+
+    return numeric, unit_str
+
+
 def _scalar_payload(value: float, unit: str = "") -> dict:
     payload = {"value": float(value)}
     if isinstance(unit, str) and unit.strip():
@@ -24,7 +81,7 @@ def _scalar_payload(value: float, unit: str = "") -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Measurement helpers  (from display.py — used by ValueDisplay)
+# Measurement helpers  (from display.py — used by ValueIO)
 # ---------------------------------------------------------------------------
 
 def _measurement_names(table: list) -> list[str]:

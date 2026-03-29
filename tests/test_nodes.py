@@ -2017,17 +2017,17 @@ def test_print_table():
 
 
 def test_value_display():
-    print("=== Test: ValueDisplay ===")
-    from backend.nodes.value_display import ValueDisplay
+    print("=== Test: ValueIO ===")
+    from backend.nodes.value_io import ValueIO
 
-    node = ValueDisplay()
-    value_spec = ValueDisplay.INPUT_TYPES()["required"]["value"]
+    node = ValueIO()
+    value_spec = ValueIO.INPUT_TYPES()["required"]["value"]
     assert value_spec[0] == "FLOAT"
     assert value_spec[1]["accepted_types"] == ["RECORD_TABLE"]
 
     captured = []
-    ValueDisplay._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
-    ValueDisplay._current_node_id = "test"
+    ValueIO._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
+    ValueIO._current_node_id = "test"
 
     result = node.display_value(3.25)
     assert result == (3.25,)
@@ -2041,7 +2041,7 @@ def test_value_display():
     assert result == (1.7e-7,)
     assert captured[-1] == ("test", {"value": 1.7e-7, "unit": "m"})
 
-    ValueDisplay._broadcast_value_fn = None
+    ValueIO._broadcast_value_fn = None
     print("  PASS\n")
 
 

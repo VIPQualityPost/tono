@@ -154,12 +154,11 @@ def _compute_curvature_results(
         + coeffs[5] * y_norm * y_norm
     )
 
-    r1 = float("inf") if abs(kappa1) <= 1e-14 else float(1.0 / (q * q * kappa1))
-    r2 = float("inf") if abs(kappa2) <= 1e-14 else float(1.0 / (q * q * kappa2))
+    #todo: fix inf case
+    r1 = float(np.inf) if abs(kappa1) <= 1e-14 else float(1.0 / (q * q * kappa1))
+    r2 = float(np.inf) if abs(kappa2) <= 1e-14 else float(1.0 / (q * q * kappa2))
     x0 = float(xc / q + 0.5 * xreal + field.xoff)
     y0 = float(yc / q + 0.5 * yreal + field.yoff)
-
-    print(f"debug: {x0}, {y0}, {r1}, {r2}")
 
     return {
         "degree": float(degree),
@@ -292,8 +291,8 @@ class Curvature:
     OUTPUTS = (
         ('ANNOTATION_SOURCE', 'output'),
         ('RECORD_TABLE', 'measurements'),
-        ('LINE', 'profile_x'),
-        ('LINE', 'profile_y'),
+        ('LINE', 'profile_a'),
+        ('LINE', 'profile_b'),
     )
     FUNCTION = "process"
 
@@ -340,7 +339,7 @@ class Curvature:
 
         profiles = []
         for pair in intersections[:2]:
-            profiles.append(_profile_from_intersections(field, pair[1], pair[0]))
+            profiles.append(_profile_from_intersections(field, pair[0], pair[1]))
         while len(profiles) < 2:
             profiles.append(_empty_profile(field.si_unit_xy, field.si_unit_z))
 
@@ -360,7 +359,7 @@ class Curvature:
         preview_base = render_datafield_preview(field, field.colormap)
         panels = []
 
-        for p, title in zip(profiles, ["X Principal Axis", "Y Principal Axis"]):
+        for p, title in zip(profiles, ["Principal Axis A", "Principal Axis B"]):
             if len(p.data) > 0:
                 panels.append({
                     "title": title,
@@ -376,7 +375,7 @@ class Curvature:
         })
 
         emit_preview({"kind": "panels", "panels": panels})
-        # emit_table(table)
+        emit_table(table)
 
         if warnings:
             emit_warning(warnings[0])

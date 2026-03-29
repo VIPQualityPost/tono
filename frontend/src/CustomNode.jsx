@@ -15,7 +15,7 @@ import {
 } from './constants';
 import { getGroupMinimumSize } from './groupSizing.js';
 import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout.js';
-import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns } from './valueFormatting.js';
+import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit } from './valueFormatting.js';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 
@@ -443,7 +443,11 @@ function getScalarPayload(scalarValue) {
     return Number.isFinite(scalarValue) ? { value: scalarValue, unit: '' } : null;
   }
   if (!scalarValue || typeof scalarValue !== 'object') return null;
-  const numeric = Number(scalarValue.value);
+  const raw = scalarValue.value;
+  if (typeof raw === 'string') {
+    return { valueText: raw, unitText: typeof scalarValue.unit === 'string' ? scalarValue.unit : '' };
+  }
+  const numeric = Number(raw);
   if (!Number.isFinite(numeric)) return null;
   return {
     value: numeric,
@@ -454,6 +458,7 @@ function getScalarPayload(scalarValue) {
 function formatScalarDisplay(scalarValue) {
   const payload = getScalarPayload(scalarValue);
   if (!payload) return null;
+  if ('valueText' in payload) return payload;
 
   if (payload.unit) {
     const prefixed = applySIPrefix(payload.value, payload.unit);
@@ -1471,6 +1476,55 @@ function CustomNode({ id, data }) {
   );
 }
 
+// ── Editable value-box for text_input FLOAT widgets ──────────────────
+
+function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const parsed = parseNumberWithUnit(val);
+  const display = parsed ? formatScalarDisplay({ value: parsed.numeric, unit: parsed.unit }) : null;
+
+  return (
+    <>
+      {!hideLabel && <label>{label}</label>}
+      <div
+        className="node-value-box nodrag"
+        style={{ cursor: editing ? 'text' : 'pointer' }}
+        onClick={() => !editing && setEditing(true)}
+      >
+        {editing ? (
+          <input
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            className="nodrag"
+            type="text"
+            value={val}
+            placeholder={placeholder}
+            onChange={(e) => onChange(nodeId, name, e.target.value)}
+            onBlur={() => setEditing(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'inherit',
+              font: 'inherit',
+              textAlign: 'center',
+              width: '100%',
+              padding: 0,
+            }}
+          />
+        ) : display ? (
+          <>
+            <span className="node-value-box-number">{display.valueText}</span>
+            {display.unitText && <span className="node-value-box-unit">{display.unitText}</span>}
+          </>
+        ) : (
+          <span className="node-value-box-number" style={{ opacity: 0.4 }}>{placeholder || '0'}</span>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Widget renderer ───────────────────────────────────────────────────
 
 function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false, measurementChoices }) {
@@ -1698,6 +1752,20 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
       >
         {formatUiLabel(opts?.label || name)}
       </button>
+    );
+  }
+
+  if (opts?.text_input) {
+    return (
+      <TextInputValueBox
+        val={val}
+        placeholder={placeholder || opts?.placeholder || ''}
+        nodeId={nodeId}
+        name={name}
+        label={label}
+        hideLabel={hideLabel || !!opts.hide_label}
+        onChange={onChange}
+      />
     );
   }
 
