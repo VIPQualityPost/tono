@@ -573,11 +573,13 @@ function ContextMenu({
 }) {
   const [openCat, setOpenCat] = useState(null);
   const [search, setSearch] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const menuRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ x, y });
   const subMenuRef = useRef(null);
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
   const catRowRefs = useRef({});
+  const selectedItemRef = useRef(null);
 
   // Group by category, optionally filtering to compatible nodes
   const categories = useMemo(() => {
@@ -657,6 +659,31 @@ function ContextMenu({
     }
     return results;
   }, [search, categories]);
+
+  // Reset selection to top whenever results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchResults]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    selectedItemRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIndex]);
+
+  const handleSearchKeyDown = useCallback((e) => {
+    if (!searchResults || searchResults.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.min(i + 1, searchResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const item = searchResults[selectedIndex];
+      if (item) { onAdd(item.className, item.def); onClose(); }
+    }
+  }, [searchResults, selectedIndex, onAdd, onClose]);
 
   // Clamp main menu position to viewport on mount
   useEffect(() => {
@@ -740,6 +767,7 @@ function ContextMenu({
             placeholder="Search…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setOpenCat(null); }}
+            onKeyDown={handleSearchKeyDown}
             autoFocus
           />
         </div>
@@ -758,11 +786,13 @@ function ContextMenu({
             {searchResults.length === 0 ? (
               <div className="context-item" style={{ color: 'var(--text-muted)' }}>No matches</div>
             ) : (
-              searchResults.map(({ className, def }) => (
+              searchResults.map(({ className, def }, idx) => (
                 <div
                   key={className}
-                  className="context-item"
+                  ref={idx === selectedIndex ? selectedItemRef : null}
+                  className={`context-item${idx === selectedIndex ? ' context-item--selected' : ''}`}
                   onClick={() => { onAdd(className, def); onClose(); }}
+                  onMouseEnter={() => setSelectedIndex(idx)}
                 >
                   {def.display_name || className}
                 </div>

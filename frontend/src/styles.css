@@ -1493,7 +1493,8 @@ html, body, #root {
   color: var(--text-primary);
   white-space: nowrap;
 }
-.context-item:hover {
+.context-item:hover,
+.context-item--selected {
   background: var(--accent-bg);
 }
 
