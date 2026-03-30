@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ONE_FILE=false
 CREATE_DMG=true
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --onefile)  ONE_FILE=true;  shift ;;
         --no-dmg)   CREATE_DMG=false; shift ;;
         *)          echo "Unknown option: $1"; exit 1 ;;
     esac
@@ -32,12 +30,6 @@ npm run build
 echo "Installing desktop build dependencies..."
 uv pip install -e ".[desktop]"
 
-if $ONE_FILE; then
-    MODE="--onefile"
-else
-    MODE="--onedir"
-fi
-
 echo "Packaging desktop app with PyInstaller..."
 $PYTHON -m PyInstaller \
     desktop.py \
@@ -45,7 +37,7 @@ $PYTHON -m PyInstaller \
     --clean \
     --name tono \
     --windowed \
-    $MODE \
+    --onefile \
     --distpath desktop-dist \
     --workpath desktop-build \
     --specpath desktop-build \
@@ -55,6 +47,7 @@ $PYTHON -m PyInstaller \
     --collect-all scipy \
     --collect-all skimage \
     --collect-all webview \
+    --copy-metadata gwyfile \
     --icon ../resources/icon.icns
 
 APP_BUNDLE="desktop-dist/tono.app"

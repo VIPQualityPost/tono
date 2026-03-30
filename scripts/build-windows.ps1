@@ -1,6 +1,3 @@
-param(
-    [switch]$OneFile
-)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -52,8 +49,6 @@ Write-Host "Installing desktop build dependencies..."
 & uv pip install -e ".[desktop]"
 Assert-LastExitCode "Desktop dependency installation"
 
-$mode = if ($OneFile) { "--onefile" } else { "--onedir" }
-
 $pyInstallerArgs = @(
     "-m", "PyInstaller",
     "desktop.py",
@@ -61,7 +56,7 @@ $pyInstallerArgs = @(
     "--clean",
     "--name", "tono",
     "--windowed",
-    $mode,
+    "--onefile",
     "--distpath", "desktop-dist",
     "--workpath", "desktop-build",
     "--specpath", "desktop-build",
@@ -71,6 +66,7 @@ $pyInstallerArgs = @(
     "--collect-all", "scipy",
     "--collect-all", "skimage",
     "--collect-all", "webview",
+    "--copy-metadata", "gwyfile",
     "--icon", "../resources/icon.ico"
 )
 
