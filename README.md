@@ -1,6 +1,6 @@
 # tono
 
-![tono icon](resources/icon_1024.png)
+![tono icon](resources/icon_1024.png | width=200)
 
 tono is a node-based image processing and analysis application.
 
