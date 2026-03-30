@@ -36,7 +36,7 @@ def test_threshold_otsu_bimodal():
     data[70:100, 80:110] = 10.0  # another bright region
     field = make_field(data)
 
-    mask, = node.process(field, method="otsu", threshold=0.0, direction="above")
+    mask, table = node.process(field, method="otsu", threshold=0.0, direction="above")
     bright_pixels = (mask == 255)
     # Should capture both bright regions
     assert bright_pixels[40, 40], "Otsu missed bright region 1"
@@ -57,7 +57,7 @@ def test_threshold_relative_range():
     data[10:20, 10:20] = 8.0  # bright patch, range = [2, 8], midpoint = 5
     field = make_field(data)
 
-    mask, = node.process(field, method="relative", threshold=0.5, direction="above")
+    mask, table = node.process(field, method="relative", threshold=0.5, direction="above")
     # Only the bright patch (value 8 >= 5) should be masked
     assert np.all(mask[10:20, 10:20] == 255)
     assert np.all(mask[0:10, :] == 0)
@@ -74,7 +74,7 @@ def test_threshold_empty_mask():
     data = np.ones((64, 64))
     field = make_field(data)
 
-    mask, = node.process(field, method="absolute", threshold=999.0, direction="above")
+    mask, table = node.process(field, method="absolute", threshold=999.0, direction="above")
     assert mask.sum() == 0, "Mask should be completely empty"
     print("  PASS\n")
 
@@ -88,7 +88,7 @@ def test_threshold_full_mask():
     data = np.ones((64, 64)) * 5.0
     field = make_field(data)
 
-    mask, = node.process(field, method="absolute", threshold=-1.0, direction="above")
+    mask, table = node.process(field, method="absolute", threshold=-1.0, direction="above")
     assert np.all(mask == 255), "Mask should be all white"
     print("  PASS\n")
 
@@ -345,7 +345,7 @@ def test_pipeline_synthetic():
 
     # Step 1: threshold
     thresh = ThresholdMask()
-    mask, = thresh.process(field, method="absolute", threshold=1.0, direction="above")
+    mask, table = thresh.process(field, method="absolute", threshold=1.0, direction="above")
 
     # Grains are well above noise, so mask should capture all 5
     assert mask.max() == 255, "No grains detected"
@@ -387,7 +387,7 @@ def test_pipeline_demo_image():
 
     # Threshold to find grains (they are raised above background)
     thresh = ThresholdMask()
-    mask, = thresh.process(field, method="otsu", threshold=0.0, direction="above")
+    mask, table = thresh.process(field, method="otsu", threshold=0.0, direction="above")
 
     # Should detect grains
     assert mask.max() == 255, "No grains found in demo image"

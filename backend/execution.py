@@ -31,7 +31,7 @@ from threading import RLock
 from time import perf_counter
 from typing import Any, Callable
 
-from backend.node_registry import NODE_CLASS_MAPPINGS, get_node_output_types
+from backend.node_registry import NODE_CLASS_MAPPINGS, get_node_output_types, get_node_output_accepted_types
 from backend.execution_context import active_node, execution_callbacks
 
 
@@ -462,16 +462,19 @@ class ExecutionEngine:
                 return
 
         return_types = get_node_output_types(cls)
+        output_accepted = get_node_output_accepted_types(cls)
 
         for slot, type_name in enumerate(return_types):
             if slot >= len(result):
                 break
             value = result[slot]
+            all_types = {type_name} | set(output_accepted[slot] if slot < len(output_accepted) else [])
 
-            if type_name == "DATA_FIELD" and isinstance(value, DataField) and on_preview:
+            # For polymorphic outputs, check the actual runtime type first.
+            if isinstance(value, DataField) and ("DATA_FIELD" in all_types) and on_preview:
                 arr = render_datafield_preview(value, value.colormap)
                 on_preview(node_id, encode_preview(arr))
-                return  # one preview per node is enough
+                return
 
             if type_name == "IMAGE" and isinstance(value, np.ndarray) and on_preview:
                 arr = image_to_uint8(value)
@@ -488,7 +491,7 @@ class ExecutionEngine:
                     on_preview(node_id, encode_preview(arr))
                     return
 
-            if type_name == "LINE" and isinstance(value, (np.ndarray, LineData)) and on_preview:
+            if "LINE" in all_types and isinstance(value, (np.ndarray, LineData)) and on_preview:
                 preview = self._render_line_preview(cls, slot, result)
                 if preview:
                     on_preview(node_id, preview)

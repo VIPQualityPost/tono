@@ -454,9 +454,14 @@ function socketTypesCompatible(sourceType, targetSpecOrType) {
   return socketSpecAcceptsType(sourceType, targetSpecOrType);
 }
 
-function outputTypeCanConnectToTarget(outputType, targetSpecOrType) {
+function outputTypeCanConnectToTarget(outputType, targetSpecOrType, outputAcceptedTypes = []) {
   if (socketTypesCompatible(outputType, targetSpecOrType)) {
     return true;
+  }
+  // Polymorphic output: the output socket declares it can also produce the target type
+  if (outputAcceptedTypes.length > 0) {
+    const targetType = Array.isArray(targetSpecOrType) ? targetSpecOrType[0] : targetSpecOrType;
+    if (outputAcceptedTypes.includes(targetType)) return true;
   }
   return outputType === 'ANNOTATION_SOURCE'
     && !socketTypesCompatible('ANNOTATION_SOURCE', targetSpecOrType)
@@ -674,8 +679,8 @@ function ContextMenu({
           });
           if (!hasMatch) continue;
         } else {
-          const hasMatch = def.output.some((type) =>
-            outputTypeCanConnectToTarget(type, filterSpec || filterType)
+          const hasMatch = def.output.some((type, idx) =>
+            outputTypeCanConnectToTarget(type, filterSpec || filterType, def.output_accepted_types?.[idx] || [])
           );
           if (!hasMatch) continue;
         }
@@ -1392,7 +1397,16 @@ function Flow() {
     const resolvedTarget = getResolvedHandleRef(connection.target, connection.targetHandle);
     const targetNode = reactFlow.getNode(resolvedTarget.nodeId);
     const targetSpec = getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) || resolvedTarget.type;
-    return socketTypesCompatible(srcType, targetSpec);
+    if (socketTypesCompatible(srcType, targetSpec)) return true;
+    // Polymorphic output: check if the source output declares it can produce the target type
+    const srcProxy = parseGroupProxyHandle(connection.sourceHandle);
+    const srcNodeId = srcProxy ? srcProxy.nodeId : connection.source;
+    const srcHandleId = srcProxy ? srcProxy.realHandle : connection.sourceHandle;
+    const srcNode = reactFlow.getNode(srcNodeId);
+    const srcSlot = getOutputSlot(srcHandleId);
+    const srcAcceptedTypes = srcNode?.data?.definition?.output_accepted_types?.[srcSlot] || [];
+    const targetType = Array.isArray(targetSpec) ? targetSpec[0] : targetSpec;
+    return Array.isArray(srcAcceptedTypes) && srcAcceptedTypes.includes(targetType);
   }, [reactFlow]);
 
   const onConnect = useCallback((params) => {
@@ -1765,8 +1779,8 @@ function Flow() {
         }
       } else {
         // Dragged from an input → connect from the first matching output on the new node
-        const outputIdx = def.output.findIndex((type) =>
-          outputTypeCanConnectToTarget(type, filterSpec)
+        const outputIdx = def.output.findIndex((type, idx) =>
+          outputTypeCanConnectToTarget(type, filterSpec, def.output_accepted_types?.[idx] || [])
         );
         if (outputIdx !== -1) {
           const outputType = resolveOutputTypeForTarget(def.output[outputIdx], filterSpec);
