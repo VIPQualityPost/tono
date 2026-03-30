@@ -75,4 +75,4 @@ Write-Host "Packaging desktop app..."
 Assert-LastExitCode "PyInstaller packaging"
 
 Write-Host "Desktop build complete."
-Write-Host "Output folder: $repoRoot\desktop-dist\tono"
+Write-Host "Output folder: $repoRoot\desktop-dist"
