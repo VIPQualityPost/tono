@@ -3,6 +3,7 @@
 *.DS_Store
 .pytest_cache/
 .coverage
+.claude/
 pytest-cache-files-*/
 desktop-build/
 desktop-dist/
@@ -10,5 +11,4 @@ frontend/node_modules/
 frontend/dist/
 .venv/
 sessions/
-.*/
 frontend/coverage/
