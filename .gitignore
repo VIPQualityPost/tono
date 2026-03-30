@@ -2,6 +2,7 @@
 *.egg-info/
 *.DS_Store
 .pytest_cache/
+.coverage
 pytest-cache-files-*/
 desktop-build/
 desktop-dist/
@@ -10,4 +11,4 @@ frontend/dist/
 .venv/
 sessions/
 .*/
-frontend/coverage/tmp
+frontend/coverage/
