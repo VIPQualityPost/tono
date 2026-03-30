@@ -4,7 +4,7 @@
 
 tono is a node-based SPM image processing and analysis tool. The main focus is on topographical measurements.
 
-It is heavily inspired by [Gwyddion](https://gwyddion.net/), one of the my favorite scientific FOSS programs on the web.
+It is heavily inspired by [Gwyddion](https://gwyddion.net/), one of my favorite scientific FOSS programs on the web.
 
 ## Project layout
 
