@@ -26,7 +26,7 @@ jobs:
           - os: windows-latest
             label: Windows
             build_cmd: npm run build:windows
-            artifact_path: desktop-dist/tono
+            artifact_path: desktop-dist
             artifact_name: tono-windows
 
     runs-on: ${{ matrix.os }}

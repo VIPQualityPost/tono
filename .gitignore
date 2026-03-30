@@ -4,6 +4,8 @@
 .pytest_cache/
 .coverage
 .claude/
+.tmp-tests/
+.pytest-tmp/
 pytest-cache-files-*/
 desktop-build/
 desktop-dist/
