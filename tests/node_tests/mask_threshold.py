@@ -23,14 +23,14 @@ def test_threshold_mask():
     assert len(previews) == 1
     assert previews[0].startswith("data:image/png;base64,")
 
-    mask_below, = node.process(field, method="absolute", threshold=0.5, direction="below")
+    mask_below, _ = node.process(field, method="absolute", threshold=0.5, direction="below")
     assert np.all(mask_below[:, :32] == 255)
     assert np.all(mask_below[:, 32:] == 0)
 
-    mask_rel, = node.process(field, method="relative", threshold=0.5, direction="above")
+    mask_rel, _ = node.process(field, method="relative", threshold=0.5, direction="above")
     assert np.all(mask_rel[:, 32:] == 255)
 
-    mask_otsu, = node.process(field, method="otsu", threshold=0.0, direction="above")
+    mask_otsu, _ = node.process(field, method="otsu", threshold=0.0, direction="above")
     assert mask_otsu[:, 32:].sum() > mask_otsu[:, :32].sum()
 
     ThresholdMask._broadcast_fn = None

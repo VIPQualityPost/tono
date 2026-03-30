@@ -20,8 +20,9 @@ def test_load_file():
         img.save(path)
 
         result = node.load(filename=path)
-        assert len(result) == 1
-        field = result[0]
+        assert len(result) == 2
+        assert isinstance(result[0], str)
+        field = result[1]
         assert field.data.shape == (48, 64)
         assert field.data.dtype == np.float64
 
@@ -31,15 +32,15 @@ def test_load_file():
         img_rgb.save(path_rgb)
 
         result_rgb = node.load(filename=path_rgb)
-        assert len(result_rgb) == 1
-        assert result_rgb[0].data.shape == (32, 32)
+        assert len(result_rgb) == 2
+        assert result_rgb[1].data.shape == (32, 32)
 
         data_npy = np.random.default_rng(3).standard_normal((50, 60))
         path_npy = os.path.join(tmpdir, "test.npy")
         np.save(path_npy, data_npy)
 
         result_npy = node.load(filename=path_npy)
-        assert np.allclose(result_npy[0].data, data_npy)
+        assert np.allclose(result_npy[1].data, data_npy)
 
         custom_colormap = {
             "mode": "custom",
@@ -50,13 +51,13 @@ def test_load_file():
             ],
         }
         result_custom = node.load(filename=path, colormap_map=custom_colormap)
-        assert isinstance(result_custom[0].colormap, dict)
-        assert result_custom[0].colormap["mode"] == "custom"
-        assert len(result_custom[0].colormap["stops"]) == 3
+        assert isinstance(result_custom[1].colormap, dict)
+        assert result_custom[1].colormap["mode"] == "custom"
+        assert len(result_custom[1].colormap["stops"]) == 3
 
         result_from_path = node.load(filename="", path=path)
-        assert len(result_from_path) == 1
-        assert result_from_path[0].data.shape == (48, 64)
+        assert len(result_from_path) == 2
+        assert result_from_path[1].data.shape == (48, 64)
 
 
 def test_load_file_npz():
@@ -68,8 +69,8 @@ def test_load_file_npz():
         np.savez(path, my_array=data)
 
         result = node.load(filename=path)
-        assert len(result) == 1
-        assert np.allclose(result[0].data, data)
+        assert len(result) == 2
+        assert np.allclose(result[1].data, data)
 
 
 def test_load_file_cache():
@@ -83,8 +84,8 @@ def test_load_file_cache():
         np.save(path, data)
 
         with patch.object(Image, "_load_image_or_array", wraps=Image._load_image_or_array) as loader:
-            first, = node.load(filename=path)
-            second, = node.load(filename=path)
+            _, first = node.load(filename=path)
+            _, second = node.load(filename=path)
             assert loader.call_count == 1
 
         assert np.allclose(first.data, data)
@@ -92,7 +93,7 @@ def test_load_file_cache():
         assert first is not second
         first.data[0, 0] = -999.0
 
-        third, = node.load(filename=path)
+        _, third = node.load(filename=path)
         assert third.data[0, 0] == data[0, 0]
 
     Image._load_fields_cached.cache_clear()
@@ -136,7 +137,7 @@ def test_load_file_warning():
         img.save(path)
 
         result = node.load(filename=path)
-        assert len(result) == 1
+        assert len(result) == 2
         assert len(warnings) == 1
         assert "Uncalibrated" in warnings[0]
 

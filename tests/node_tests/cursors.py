@@ -18,8 +18,9 @@ def test_line_cursors():
 
     table, coord_pair = node.process(line, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
     assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
-    assert len(table) == 6
+    assert len(table) == 7
     quantities = {row["quantity"] for row in table}
+    assert "Length" in quantities
     assert "A x" in quantities
     assert "B x" in quantities
     assert "dx" in quantities
@@ -41,7 +42,7 @@ def test_line_cursors():
 
     line_data = LineData(data=line, x_axis=np.linspace(0, 1, 100))
     table2, _ = node.process(line_data, x1=0.25, y1=0.5, x2=0.75, y2=0.5)
-    assert len(table2) == 6
+    assert len(table2) == 7
 
     field = DataField(
         data=np.arange(100, dtype=np.float64).reshape(10, 10),
