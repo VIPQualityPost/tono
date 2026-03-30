@@ -34,3 +34,14 @@ def test_threshold_mask():
     assert mask_otsu[:, 32:].sum() > mask_otsu[:, :32].sum()
 
     ThresholdMask._broadcast_fn = None
+
+
+def test_threshold_mask_unknown_method():
+    from backend.nodes.mask_threshold import ThresholdMask
+    node = ThresholdMask()
+    field = make_field(data=np.zeros((16, 16)))
+    try:
+        node.process(field, method="invalid", threshold=0.5, direction="above")
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass

@@ -136,3 +136,55 @@ def test_save_generic():
             assert False, "DATA_FIELD should reject unsupported save formats"
         except ValueError:
             pass
+
+        # 1-D ndarray → _save_line path
+        arr_1d = np.array([1.0, 2.0, 3.0])
+        node.save(filename="line_1d", directory_path=tmpdir, format="CSV", value=arr_1d)
+        assert Path(tmpdir, "line_1d.csv").exists()
+
+        # Unsupported input type
+        try:
+            node.save(filename="bad_type", directory_path=tmpdir, format="JSON", value=object())
+            assert False, "Expected ValueError for unsupported type"
+        except ValueError:
+            pass
+
+        # Unsupported IMAGE format
+        try:
+            node.save(filename="img_bad", directory_path=tmpdir, format="JSON", value=image)
+            assert False, "Expected ValueError for IMAGE + JSON"
+        except ValueError:
+            pass
+
+        # Unsupported LINE format
+        try:
+            node.save(filename="line_bad", directory_path=tmpdir, format="TIFF", value=line)
+            assert False, "Expected ValueError for LINE + TIFF"
+        except ValueError:
+            pass
+
+        # Unsupported table format
+        try:
+            node.save(filename="table_bad", directory_path=tmpdir, format="TIFF", value=list(measure_table))
+            assert False, "Expected ValueError for table + TIFF"
+        except ValueError:
+            pass
+
+        # Unsupported scalar format
+        try:
+            node.save(filename="scalar_bad", directory_path=tmpdir, format="NPZ", value=3.14)
+            assert False, "Expected ValueError for scalar + NPZ"
+        except ValueError:
+            pass
+
+
+def test_save_no_filename():
+    from backend.nodes.save import Save
+    import tempfile
+    node = Save()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            node.save(filename="", directory_path=tmpdir, format="JSON", value=1.0)
+            assert False, "Expected ValueError for empty filename"
+        except ValueError:
+            pass

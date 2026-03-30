@@ -50,3 +50,19 @@ def test_flip_field():
         raise AssertionError("Expected invalid flip axis to raise ValueError")
     except ValueError:
         pass
+
+    # _flip_overlays with non-list input → returns []
+    assert FlipField._flip_overlays(None, "x") == []
+    assert FlipField._flip_overlays("not_a_list", "y") == []
+
+    # Non-dict item in overlays → skipped
+    field_bad_overlay = DataField(data=data, overlays=["not_a_dict", markup_overlay])
+    flipped_bad, = node.process(field_bad_overlay, axis="x")
+    assert len(flipped_bad.overlays) == 1
+
+    # Shape with None coordinates → returns shape unchanged
+    shape_no_coords = {"kind": "line", "x1": None, "y1": None, "x2": None, "y2": None}
+    overlay_no_coords = {"kind": "markup", "shapes": [shape_no_coords]}
+    field_no_coords = DataField(data=data, overlays=[overlay_no_coords])
+    flipped_nc, = node.process(field_no_coords, axis="x")
+    assert len(flipped_nc.overlays) == 1

@@ -56,3 +56,43 @@ def test_preview_image():
         node.preview(colormap="auto", input=annotated_image)
         assert len(captured) == 1
         assert captured[0].startswith("data:image/png;base64,")
+
+
+def test_preview_no_input_raises():
+    from backend.nodes.preview_image import PreviewImage
+    node = PreviewImage()
+    with execution_callbacks(preview=lambda nid, d: None), active_node("test"):
+        try:
+            node.preview(colormap="gray", input=None)
+            assert False, "Expected ValueError"
+        except ValueError:
+            pass
+
+
+def test_preview_invalid_type_raises():
+    from backend.nodes.preview_image import PreviewImage
+    node = PreviewImage()
+    with execution_callbacks(preview=lambda nid, d: None), active_node("test"):
+        try:
+            node.preview(colormap="gray", input="not_an_image")
+            assert False, "Expected TypeError"
+        except TypeError:
+            pass
+
+
+def test_preview_float_grayscale():
+    from backend.nodes.preview_image import PreviewImage
+    node = PreviewImage()
+    captured = []
+    with execution_callbacks(preview=lambda nid, d: captured.append(d)), active_node("test"):
+        # float32 2-D array — covers the float normalization branch
+        float_arr = np.random.default_rng(7).random((16, 16)).astype(np.float32)
+        node.preview(colormap="viridis", input=float_arr)
+        assert len(captured) == 1
+        assert captured[0].startswith("data:image/png;base64,")
+
+        captured.clear()
+        # constant float array → normalized = zeros branch
+        const_arr = np.ones((8, 8), dtype=np.float32)
+        node.preview(colormap="viridis", input=const_arr)
+        assert len(captured) == 1

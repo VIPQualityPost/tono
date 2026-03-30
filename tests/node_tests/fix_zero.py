@@ -16,3 +16,15 @@ def test_fix_zero():
 
     result_median, = node.process(field, method="median")
     assert abs(np.median(result_median.data)) < 1e-10
+
+
+def test_fix_zero_unknown_method():
+    from backend.nodes.fix_zero import FixZero
+    import pytest
+    node = FixZero()
+    field = make_field(data=np.array([[1.0, 2.0], [3.0, 4.0]]))
+    try:
+        node.process(field, method="invalid_method")
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass

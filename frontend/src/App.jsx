@@ -36,6 +36,19 @@ import {
   resolveLoadNodeChannelPath,
 } from './loadNodeOutputs.js';
 import { buildDefaultWidgetValues } from './nodeWidgetDefaults.js';
+import {
+  getHandleType,
+  getInputName,
+  getOutputSlot,
+  encodeProxyHandleRef,
+  parseGroupProxyHandle,
+  getConnectionHandleType,
+  getResolvedHandleRef,
+  getNodeInputSpecForHandle,
+  outputTypeCanConnectToTarget,
+  resolveOutputTypeForTarget,
+  checkConnectionValid,
+} from './connectionUtils.js';
 
 import {
   getSpecTypeAndOptions,
@@ -57,50 +70,6 @@ const CANVAS_MIN_ZOOM = 0.2;
 const CANVAS_MAX_ZOOM = 4;
 const CANVAS_RIGHT_DRAG_ZOOM_SENSITIVITY = 0.0065;
 const CANVAS_RIGHT_DRAG_ZOOM_THRESHOLD = 5;
-
-// ── Handle ID helpers ─────────────────────────────────────────────────
-
-function getHandleType(handleId) {
-  return handleId.split('::')[2];
-}
-
-function getInputName(handleId) {
-  return handleId.split('::')[1];
-}
-
-function getOutputSlot(handleId) {
-  return parseInt(handleId.split('::')[1], 10);
-}
-
-function encodeProxyHandleRef(handleId) {
-  return encodeURIComponent(String(handleId || ''));
-}
-
-function decodeProxyHandleRef(encoded) {
-  try {
-    return decodeURIComponent(String(encoded || ''));
-  } catch {
-    return String(encoded || '');
-  }
-}
-
-function parseGroupProxyHandle(handleId) {
-  const text = String(handleId || '');
-  if (!text.startsWith('group-proxy::')) return null;
-  const parts = text.split('::');
-  if (parts.length < 5) return null;
-  return {
-    direction: parts[1],
-    nodeId: parts[2],
-    type: parts[3],
-    realHandle: decodeProxyHandleRef(parts.slice(4).join('::')),
-  };
-}
-
-function getConnectionHandleType(handleId) {
-  const proxy = parseGroupProxyHandle(handleId);
-  return proxy?.type || getHandleType(handleId);
-}
 
 function getNodeDimension(node, axis) {
   if (axis === 'width') return node.measured?.width || node.style?.width || node.width || 200;
@@ -432,61 +401,6 @@ function compareMenuCategories(a, b) {
   return String(a?.name || '').localeCompare(String(b?.name || ''));
 }
 
-function getResolvedHandleRef(nodeId, handleId) {
-  const proxy = parseGroupProxyHandle(handleId);
-  return {
-    nodeId: proxy?.nodeId || nodeId,
-    handleId: proxy?.realHandle || handleId,
-    type: proxy?.type || getHandleType(handleId),
-  };
-}
-
-function getNodeInputSpecForHandle(node, handleId) {
-  const definition = node?.data?.definition;
-  if (!definition?.input) return null;
-  const inputName = getInputName(handleId);
-  return definition.input.required?.[inputName]
-    || definition.input.optional?.[inputName]
-    || null;
-}
-
-function socketTypesCompatible(sourceType, targetSpecOrType) {
-  return socketSpecAcceptsType(sourceType, targetSpecOrType);
-}
-
-function outputTypeCanConnectToTarget(outputType, targetSpecOrType, outputAcceptedTypes = []) {
-  if (socketTypesCompatible(outputType, targetSpecOrType)) {
-    return true;
-  }
-  // Polymorphic output: the output socket declares it can also produce the target type
-  if (outputAcceptedTypes.length > 0) {
-    const targetType = Array.isArray(targetSpecOrType) ? targetSpecOrType[0] : targetSpecOrType;
-    if (outputAcceptedTypes.includes(targetType)) return true;
-  }
-  return outputType === 'ANNOTATION_SOURCE'
-    && !socketTypesCompatible('ANNOTATION_SOURCE', targetSpecOrType)
-    && (
-      socketTypesCompatible('DATA_FIELD', targetSpecOrType)
-      || socketTypesCompatible('IMAGE', targetSpecOrType)
-    );
-}
-
-function resolveOutputTypeForTarget(outputType, targetSpecOrType) {
-  if (outputType !== 'ANNOTATION_SOURCE') {
-    return outputType;
-  }
-  if (socketTypesCompatible('ANNOTATION_SOURCE', targetSpecOrType)) {
-    return 'ANNOTATION_SOURCE';
-  }
-  if (socketTypesCompatible('DATA_FIELD', targetSpecOrType)) {
-    return 'DATA_FIELD';
-  }
-  if (socketTypesCompatible('IMAGE', targetSpecOrType)) {
-    return 'IMAGE';
-  }
-  return 'ANNOTATION_SOURCE';
-}
-
 function getRenderedNodeBounds(nodes) {
   let minX = Infinity;
   let minY = Infinity;
@@ -675,7 +589,7 @@ function ContextMenu({
           const opt = def.input.optional || {};
           const allInputs = { ...req, ...opt };
           const hasMatch = Object.values(allInputs).some((spec) => {
-            return socketTypesCompatible(filterType, spec);
+            return socketSpecAcceptsType(filterType, spec);
           });
           if (!hasMatch) continue;
         } else {
@@ -1328,7 +1242,7 @@ function Flow() {
       const resolvedTarget = getResolvedHandleRef(edge.target, edge.targetHandle);
       const targetNode = reactFlow.getNode(resolvedTarget.nodeId);
       const targetSpec = getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) || resolvedTarget.type;
-      return socketTypesCompatible(outputType, targetSpec);
+      return socketSpecAcceptsType(outputType, targetSpec);
     }));
   }, [reactFlow, setEdges, setNodeOutputs]);
 
@@ -1392,22 +1306,10 @@ function Flow() {
 
   // ── Connection handling ─────────────────────────────────────────────
 
-  const isValidConnection = useCallback((connection) => {
-    const srcType = getConnectionHandleType(connection.sourceHandle);
-    const resolvedTarget = getResolvedHandleRef(connection.target, connection.targetHandle);
-    const targetNode = reactFlow.getNode(resolvedTarget.nodeId);
-    const targetSpec = getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) || resolvedTarget.type;
-    if (socketTypesCompatible(srcType, targetSpec)) return true;
-    // Polymorphic output: check if the source output declares it can produce the target type
-    const srcProxy = parseGroupProxyHandle(connection.sourceHandle);
-    const srcNodeId = srcProxy ? srcProxy.nodeId : connection.source;
-    const srcHandleId = srcProxy ? srcProxy.realHandle : connection.sourceHandle;
-    const srcNode = reactFlow.getNode(srcNodeId);
-    const srcSlot = getOutputSlot(srcHandleId);
-    const srcAcceptedTypes = srcNode?.data?.definition?.output_accepted_types?.[srcSlot] || [];
-    const targetType = Array.isArray(targetSpec) ? targetSpec[0] : targetSpec;
-    return Array.isArray(srcAcceptedTypes) && srcAcceptedTypes.includes(targetType);
-  }, [reactFlow]);
+  const isValidConnection = useCallback(
+    (connection) => checkConnectionValid(connection, (id) => reactFlow.getNode(id)),
+    [reactFlow],
+  );
 
   const onConnect = useCallback((params) => {
     const sourceProxy = parseGroupProxyHandle(params.sourceHandle);
@@ -1759,7 +1661,7 @@ function Flow() {
         // Dragged from an output → connect to the first matching input on the new node
         const allInputs = { ...(def.input.required || {}), ...(def.input.optional || {}) };
         const inputName = Object.entries(allInputs).find(([, spec]) => {
-          return socketTypesCompatible(filterType, spec);
+          return socketSpecAcceptsType(filterType, spec);
         })?.[0];
         if (inputName) {
           const targetType = (() => {

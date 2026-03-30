@@ -42,3 +42,15 @@ def test_mask_operations():
     assert result_xnor[5, 5] == 255
     assert result_xnor[15, 15] == 0
     assert result_xnor[35, 35] == 0
+
+
+def test_mask_operations_unknown_operation():
+    from backend.nodes.mask_operations import MaskOperations
+    node = MaskOperations()
+    a = np.zeros((16, 16), dtype=np.uint8)
+    b = np.zeros((16, 16), dtype=np.uint8)
+    try:
+        node.process(a, b, operation="invalid_op")
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass

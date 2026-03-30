@@ -24,7 +24,7 @@ test('accepted_types extend canonical socket compatibility without reintroducing
   assert.equal(isDataSocketSpec(spec), true);
   assert.deepEqual(
     Array.from(getAcceptedSocketTypes(spec)).sort(),
-    ['RECORD_TABLE', 'DATA_TABLE'],
+    ['DATA_TABLE', 'RECORD_TABLE'],
   );
   assert.equal(socketSpecAcceptsType('DATA_TABLE', spec), true);
   assert.equal(socketSpecAcceptsType('LINE', spec), false);

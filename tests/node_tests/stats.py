@@ -66,3 +66,42 @@ def test_stats():
         pass
 
     Stats._broadcast_value_fn = None
+
+
+def test_stats_empty_inputs():
+    from backend.nodes.stats import Stats
+    from backend.data_types import DataTable
+
+    node = Stats()
+
+    # empty record table (DataTable with no rows)
+    try:
+        node.process(DataTable([]), operation="mean", column="value")
+        assert False, "Expected ValueError for empty table"
+    except ValueError:
+        pass
+
+    # empty ndarray
+    try:
+        node.process(np.array([]), operation="mean", column="value")
+        assert False, "Expected ValueError for empty ndarray"
+    except ValueError:
+        pass
+
+    # empty LINE (1-D array)
+    try:
+        node.process(np.array([], dtype=np.float64), operation="Rq", column="value")
+        assert False, "Expected ValueError for empty LINE"
+    except ValueError:
+        pass
+
+
+def test_stats_unsupported_type():
+    from backend.nodes.stats import Stats
+
+    node = Stats()
+    try:
+        node.process("not_a_valid_input", operation="mean", column="value")
+        assert False, "Expected ValueError for unsupported type"
+    except ValueError:
+        pass

@@ -23,3 +23,17 @@ def test_color_map_node():
     assert custom["stops"][0]["position"] == 0.0
     assert custom["stops"][-1]["position"] == 1.0
     assert len(custom["stops"]) == 3
+
+    # invalid JSON raises ValueError
+    try:
+        node.build(mode="custom", preset="viridis", stops_json="not valid json{")
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass
+
+    # fewer than 2 stops raises ValueError
+    try:
+        node.build(mode="custom", preset="viridis", stops_json=json.dumps([{"position": 0.0, "color": "#000000"}]))
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass

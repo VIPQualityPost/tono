@@ -58,3 +58,14 @@ def test_rotate_field_overlay_warning():
     assert "clears annotation/markup overlays" in warnings[0]
 
     RotateField._broadcast_warning_fn = None
+
+
+def test_rotate_unknown_interpolation():
+    from backend.nodes.rotate import RotateField
+    node = RotateField()
+    field = DataField(data=np.arange(9, dtype=np.float64).reshape(3, 3))
+    try:
+        node.process(field, angle=0.0, interpolation="invalid", expand_canvas=False)
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass

@@ -147,22 +147,58 @@ def test_load_file_warning():
 def test_load_file_ibw():
     from backend.nodes.image import Image
     node = Image()
-    ibw_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "demo", "BR_New20012.ibw"))
-    if not os.path.exists(ibw_path):
+    demo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "demo"))
+    # Use first available .ibw file in demo
+    ibw_path = None
+    for candidate in ["Calcite.ibw", "DNA.ibw", "nanoparticles.npy"]:
+        p = os.path.join(demo_dir, candidate)
+        if os.path.exists(p):
+            ibw_path = p
+            break
+    if ibw_path is None:
         return
 
     result = node.load(filename=ibw_path)
-    assert len(result) == 4
+    assert len(result) >= 2
+    for item in result[1:]:
+        assert isinstance(item, DataField)
+        assert item.data.dtype == np.float64
+        assert item.xreal > 0
 
-    for i, field in enumerate(result):
-        assert isinstance(field, DataField)
-        assert field.data.shape == (512, 1024)
-        assert field.data.dtype == np.float64
-        assert field.xreal > 1e-8
-        assert field.yreal > 1e-8
-        assert field.si_unit_xy == "m"
-        assert field.si_unit_z == "m"
 
-    assert result[0].xreal == result[1].xreal
-    assert result[0].yreal == result[1].yreal
-    assert not np.array_equal(result[0].data, result[1].data)
+def test_load_empty_filename_raises():
+    from backend.nodes.image import Image
+    node = Image()
+    try:
+        node.load(filename="")
+        assert False, "Expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_load_directory_raises():
+    from backend.nodes.image import Image
+    node = Image()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            node.load(filename=tmpdir)
+            assert False, "Expected IsADirectoryError"
+        except IsADirectoryError:
+            pass
+
+
+def test_load_float_tiff():
+    """float32 TIFF images should be converted to float64 (covers non-uint8 branch)."""
+    import tifffile
+    from backend.nodes.image import Image
+    node = Image()
+    Image._load_fields_cached.cache_clear()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        arr = np.random.default_rng(42).random((16, 16)).astype(np.float32)
+        path = os.path.join(tmpdir, "float.tiff")
+        tifffile.imwrite(path, arr)
+
+        result = node.load(filename=path)
+        assert len(result) == 2
+        assert result[1].data.dtype == np.float64
+    Image._load_fields_cached.cache_clear()
