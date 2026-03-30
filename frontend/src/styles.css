@@ -592,7 +592,6 @@ html, body, #root {
 
 .io-inline-widget input[type="text"],
 .io-inline-widget input[type="number"],
-.io-inline-widget input[type="color"],
 .io-inline-widget select {
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -606,7 +605,6 @@ html, body, #root {
 
 .widget-row input[type="text"],
 .widget-row input[type="number"],
-.widget-row input[type="color"],
 .widget-row select {
   background: var(--bg-deep);
   color: var(--text-primary);
@@ -619,8 +617,31 @@ html, body, #root {
 }
 
 .widget-row input[type="color"] {
-  padding: 2px;
-  height: 24px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-default);
+  flex: none;
+  cursor: pointer;
+  overflow: hidden;
+  background: none;
+}
+
+.widget-row input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.widget-row input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.widget-row input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
 }
 
 .widget-row input[type="checkbox"] {

@@ -40,7 +40,7 @@ class ACF1D:
 
     DESCRIPTION = (
         "Compute the one-dimensional autocorrelation function of a line profile. "
-        "The output is symmetric about zero lag with the lag on the x-axis. "
+        "Only positive lags are output on the x-axis. "
         "The measurement table reports the dominant period from the first positive peak."
     )
 
@@ -53,6 +53,14 @@ class ACF1D:
 
         x_unit = profile.x_unit if isinstance(profile, LineData) else ""
         peak_lag = _first_positive_peak(acf_line.data, acf_line.x_axis)
+
+        mask = acf_line.x_axis > 0
+        acf_line = LineData(
+            data=acf_line.data[mask],
+            x_axis=acf_line.x_axis[mask],
+            x_unit=acf_line.x_unit,
+            y_unit=acf_line.y_unit,
+        )
 
         rows = []
         if peak_lag is not None:
