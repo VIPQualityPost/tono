@@ -7,7 +7,7 @@ from backend.server import PNG_SIGNATURE, save_png_bytes
 
 def test_save_png_bytes_writes_exact_png_payload(tmp_path: Path):
     target = tmp_path / "workflow"
-    payload = PNG_SIGNATURE + b"argonode-test-payload"
+    payload = PNG_SIGNATURE + b"tono-test-payload"
 
     saved_path = save_png_bytes(str(target), payload)
 

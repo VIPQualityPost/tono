@@ -1,6 +1,6 @@
-# argonode
+# tono
 
-argonode is a node-based image analysis application with:
+tono is a node-based image analysis application with:
 
 - a Python backend built on `aiohttp`
 - a React + Vite frontend
@@ -11,7 +11,7 @@ The backend serves node definitions, runs workflows, manages file I/O, and strea
 ## Project Layout
 
 ```text
-argonode/
+tono/
   backend/         Python server, execution engine, nodes
   frontend/        React/Vite app
   tests/           Python tests
@@ -86,7 +86,7 @@ Notes:
 
 - The frontend dev server proxies API and WebSocket requests to the backend.
 - `npm run dev` now clears Vite's local cache and stale Python bytecode first, then starts Vite with `--force`.
-- If you open the backend directly in a browser instead of the Vite dev server, argonode now refreshes `frontend/dist` automatically when checked-out frontend sources are newer, such as after a `git pull`.
+- If you open the backend directly in a browser instead of the Vite dev server, tono now refreshes `frontend/dist` automatically when checked-out frontend sources are newer, such as after a `git pull`.
 - If you want the frontend accessible from other devices on your LAN, run:
 
 ```powershell
@@ -131,13 +131,13 @@ powershell -ExecutionPolicy Bypass -File scripts\build-desktop.ps1
 The packaged app is written to:
 
 ```text
-desktop-dist/argonode/
+desktop-dist/tono/
 ```
 
 Main executable:
 
 ```text
-desktop-dist/argonode/argonode.exe
+desktop-dist/tono/tono.exe
 ```
 
 ### One-File Build
@@ -157,20 +157,20 @@ During normal source-based development, input/output folders live under the repo
 In the packaged desktop app, writable data is stored under:
 
 ```text
-%LOCALAPPDATA%\argonode\
+%LOCALAPPDATA%\tono\
 ```
 
 Specifically:
 
 ```text
-%LOCALAPPDATA%\argonode\input
-%LOCALAPPDATA%\argonode\output
+%LOCALAPPDATA%\tono\input
+%LOCALAPPDATA%\tono\output
 ```
 
 You can override the packaged app data directory with:
 
 ```powershell
-$env:ARGONODE_APPDATA="C:\path\to\custom\data"
+$env:TONO_APPDATA="C:\path\to\custom\data"
 ```
 
 ## Useful Commands

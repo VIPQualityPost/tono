@@ -224,7 +224,7 @@ class PreviewBoundary extends React.Component {
   }
 
   componentDidCatch(error) {
-    console.error('[argonode] preview render failed', error);
+    console.error('[tono] preview render failed', error);
   }
 
   componentDidUpdate(prevProps) {

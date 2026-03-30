@@ -15,7 +15,7 @@ from backend.runtime_paths import app_data_dir, ensure_runtime_dirs
 from backend.server import create_app
 
 HOST = "127.0.0.1"
-WINDOW_TITLE = "argonode"
+WINDOW_TITLE = "tono"
 
 
 class _Api:
@@ -141,14 +141,14 @@ def main() -> None:
     server_thread = threading.Thread(
         target=_run_server,
         args=(HOST, port, ready, state),
-        name="argonode-server",
+        name="tono-server",
         daemon=True,
     )
     server_thread.start()
     ready.wait(timeout=15.0)
 
     if "error" in state:
-        raise RuntimeError("argonode server failed to start") from state["error"]
+        raise RuntimeError("tono server failed to start") from state["error"]
 
     _wait_for_server(f"{base_url}/nodes")
 

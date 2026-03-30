@@ -8,10 +8,10 @@ from typing import Any, Callable
 Callback = Callable[[str, Any], None]
 
 _callbacks_var: ContextVar[dict[str, Callback | None]] = ContextVar(
-    "argonode_execution_callbacks",
+    "tono_execution_callbacks",
     default={},
 )
-_node_id_var: ContextVar[str | None] = ContextVar("argonode_execution_node_id", default=None)
+_node_id_var: ContextVar[str | None] = ContextVar("tono_execution_node_id", default=None)
 
 _LEGACY_CALLBACK_ATTRS = {
     "preview": "_broadcast_fn",

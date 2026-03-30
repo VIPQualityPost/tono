@@ -1,7 +1,7 @@
 import { sortNodesForParentOrder } from './nodeHierarchy.js';
 
-export const NODE_CLIPBOARD_KIND = 'argonode/node-selection';
-export const NODE_CLIPBOARD_MIME = 'application/x-argonode-node-selection';
+export const NODE_CLIPBOARD_KIND = 'tono/node-selection';
+export const NODE_CLIPBOARD_MIME = 'application/x-tono-node-selection';
 
 function cloneValue(value) {
   if (value == null) return value;

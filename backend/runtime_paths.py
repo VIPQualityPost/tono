@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-APP_NAME = "argonode"
+APP_NAME = "tono"
 
 
 def project_root() -> Path:
@@ -29,7 +29,7 @@ def frontend_dist_dir() -> Path:
 
 
 def app_data_dir() -> Path:
-    override = os.getenv("ARGONODE_APPDATA")
+    override = os.getenv("TONO_APPDATA")
     if override:
         return Path(override).expanduser().resolve()
 
@@ -71,11 +71,11 @@ def plugins_enabled(*, native: bool) -> bool:
     Return True when the plugin system should be active.
 
     Default behaviour: enabled on native/desktop builds, disabled for web.
-    Override with the ARGONODE_PLUGINS environment variable:
-      ARGONODE_PLUGINS=1   – force on  (useful for testing plugins via main.py)
-      ARGONODE_PLUGINS=0   – force off (disable even on native builds)
+    Override with the TONO_PLUGINS environment variable:
+      TONO_PLUGINS=1   – force on  (useful for testing plugins via main.py)
+      TONO_PLUGINS=0   – force off (disable even on native builds)
     """
-    env = os.getenv("ARGONODE_PLUGINS", "").strip().lower()
+    env = os.getenv("TONO_PLUGINS", "").strip().lower()
     if env in ("1", "true", "yes"):
         return True
     if env in ("0", "false", "no"):

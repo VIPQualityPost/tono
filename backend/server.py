@@ -1,5 +1,5 @@
 """
-aiohttp web server for argonode.
+aiohttp web server for tono.
 
 Routes
 ------
@@ -355,7 +355,7 @@ def create_app(
         plugins, and notify every connected WebSocket client to refresh /nodes.
 
         Warning: uploading Python files is equivalent to remote code execution.
-        This endpoint is intentionally unrestricted because argonode is a
+        This endpoint is intentionally unrestricted because tono is a
         local-first application; do not expose it on a public network.
         """
         reader = await request.multipart()

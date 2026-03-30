@@ -122,7 +122,7 @@ def test_save_generic():
 
         node.save(filename="triangle", directory_path=tmpdir, format="STL", value=mesh)
         stl_text = Path(tmpdir, "triangle.stl").read_text(encoding="utf-8")
-        assert stl_text.startswith("solid argonode")
+        assert stl_text.startswith("solid tono")
         assert "facet normal" in stl_text
 
         try:

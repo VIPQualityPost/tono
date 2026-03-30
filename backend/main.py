@@ -1,11 +1,11 @@
 """
-Entry point for argonode.
+Entry point for tono.
 
 Run with:
     python -m backend.main
 or simply:
     python backend/main.py
-from the argonode/ directory.
+from the tono/ directory.
 """
 
 import asyncio
@@ -36,7 +36,7 @@ def main() -> None:
     app = create_app(loop)
 
     log.info("=" * 60)
-    log.info("  argonode  —  Node-based image analysis")
+    log.info("  tono  —  Node-based image analysis")
     log.info("  Open your browser at  http://%s:%d", HOST, PORT)
     log.info("=" * 60)
 

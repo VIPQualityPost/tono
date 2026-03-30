@@ -57,7 +57,7 @@ $pyInstallerArgs = @(
     "desktop.py",
     "--noconfirm",
     "--clean",
-    "--name", "argonode",
+    "--name", "tono",
     "--windowed",
     $mode,
     "--distpath", "desktop-dist",
@@ -77,4 +77,4 @@ Write-Host "Packaging desktop app..."
 Assert-LastExitCode "PyInstaller packaging"
 
 Write-Host "Desktop build complete."
-Write-Host "Output folder: $repoRoot\desktop-dist\argonode"
+Write-Host "Output folder: $repoRoot\desktop-dist\tono"

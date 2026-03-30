@@ -15,7 +15,7 @@ from backend.session_runtime import (
 
 
 def test_session_paths_round_trip(monkeypatch, tmp_path):
-    monkeypatch.setenv("ARGONODE_APPDATA", str(tmp_path / "appdata"))
+    monkeypatch.setenv("TONO_APPDATA", str(tmp_path / "appdata"))
 
     session_id = "session-test-1234"
     input_dir, _ = ensure_session_runtime_dirs(session_id)
@@ -31,7 +31,7 @@ def test_session_paths_round_trip(monkeypatch, tmp_path):
 
 
 def test_browser_sessions_cannot_escape_workspace(monkeypatch, tmp_path):
-    monkeypatch.setenv("ARGONODE_APPDATA", str(tmp_path / "appdata"))
+    monkeypatch.setenv("TONO_APPDATA", str(tmp_path / "appdata"))
 
     session_id = "session-test-5678"
     ensure_session_runtime_dirs(session_id)

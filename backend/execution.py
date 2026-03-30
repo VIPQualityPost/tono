@@ -1,5 +1,5 @@
 """
-Graph execution engine for argonode.
+Graph execution engine for tono.
 
 Prompt format (same as ComfyUI):
     {

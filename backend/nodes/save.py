@@ -251,7 +251,7 @@ class Save:
             length = float(np.linalg.norm(n))
             return n / length if length > 0 else np.array([0.0, 1.0, 0.0], dtype=np.float32)
 
-        lines = ["solid argonode"]
+        lines = ["solid tono"]
         vertices = np.asarray(mesh.vertices, dtype=np.float32)
         for face in np.asarray(mesh.faces, dtype=np.int32):
             a, b, c = vertices[int(face[0])], vertices[int(face[1])], vertices[int(face[2])]
@@ -263,7 +263,7 @@ class Save:
             lines.append(f"      vertex {c[0]} {c[1]} {c[2]}")
             lines.append("    endloop")
             lines.append("  endfacet")
-        lines.append("endsolid argonode")
+        lines.append("endsolid tono")
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def _send_warning(self, message: str):

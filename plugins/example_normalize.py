@@ -1,7 +1,7 @@
 """
-Example argonode plugin: Normalize Z Range
+Example tono plugin: Normalize Z Range
 
-Drop any .py file into this plugins/ folder and restart argonode (or upload it
+Drop any .py file into this plugins/ folder and restart tono (or upload it
 via POST /upload-plugin) — the node will appear in the Add Node menu immediately.
 
 ─── What you need to import ─────────────────────────────────────────────────

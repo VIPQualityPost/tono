@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const VIEW3D_DIAGNOSTICS_STORAGE_KEY = 'argonode:view3d-diagnostics';
+const VIEW3D_DIAGNOSTICS_STORAGE_KEY = 'tono:view3d-diagnostics';
 const DEFAULT_CAMERA_STATE = {
   // A diagonal home view avoids edge-on framing when one lateral axis is much smaller.
   azimuth: Math.PI / 4,
@@ -109,7 +109,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     try {
       return canvas.toDataURL('image/png');
     } catch (error) {
-      console.warn('[argonode] Failed to capture View3D viewport snapshot', error);
+      console.warn('[tono] Failed to capture View3D viewport snapshot', error);
       updateDiagnostics({
         status: 'snapshot error',
         error: error?.message || String(error),
@@ -454,7 +454,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       }
       scheduleViewportSync(0, false);
     } catch (error) {
-      console.error('[argonode] View3D mesh build failed', error);
+      console.error('[tono] View3D mesh build failed', error);
       updateDiagnostics({
         status: 'mesh build error',
         error: error?.message || String(error),

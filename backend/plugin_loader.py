@@ -1,5 +1,5 @@
 """
-Plugin loader for argonode.
+Plugin loader for tono.
 
 Scans a plugins directory for .py files and packages (directories containing
 __init__.py), imports each one, and lets their @register_node decorators
@@ -96,17 +96,17 @@ def _import_plugin(name: str, path: Path) -> None:
     """
     Import a single plugin file (or package ``__init__.py``) via importlib.
 
-    The module is registered under ``argonode_plugins.<name>`` in
+    The module is registered under ``tono_plugins.<name>`` in
     ``sys.modules``.  This namespace:
     - avoids collisions with any PyPI package of the same name, and
     - makes package-style plugins (with sub-modules) work correctly, because
-      their relative imports resolve against the ``argonode_plugins.*`` parent.
+      their relative imports resolve against the ``tono_plugins.*`` parent.
 
     If the module was previously imported (e.g. on a hot-reload call after an
     upload), it is deleted from ``sys.modules`` first so the file is re-executed
     and any updated ``@register_node`` decorators take effect.
     """
-    module_name = f"argonode_plugins.{name}"
+    module_name = f"tono_plugins.{name}"
 
     # Remove stale module to support hot-reload after /upload-plugin.
     if module_name in sys.modules:

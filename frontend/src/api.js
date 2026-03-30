@@ -1,11 +1,11 @@
 /**
- * api.js — REST + WebSocket client for argonode backend.
+ * api.js — REST + WebSocket client for tono backend.
  *
  * Uses relative URLs so the Vite dev proxy (port 5173 → 8188)
  * and production same-origin serving both work transparently.
  */
 
-const SESSION_STORAGE_KEY = 'argonode-session-id';
+const SESSION_STORAGE_KEY = 'tono-session-id';
 
 let _sessionId = null;
 let _ws = null;
@@ -127,17 +127,17 @@ export function initWS() {
   _ws = new WebSocket(`${protocol}//${window.location.host}/ws?session=${session}`);
 
   _ws.onopen = () => {
-    console.log('[argonode] WebSocket connected');
+    console.log('[tono] WebSocket connected');
   };
 
   _ws.onclose = () => {
-    console.log('[argonode] WebSocket closed, reconnecting in 3s…');
+    console.log('[tono] WebSocket closed, reconnecting in 3s…');
     clearTimeout(_reconnectTimer);
     _reconnectTimer = setTimeout(() => initWS(), 3000);
   };
 
   _ws.onerror = (e) => {
-    console.error('[argonode] WebSocket error', e);
+    console.error('[tono] WebSocket error', e);
   };
 
   _ws.onmessage = (e) => {

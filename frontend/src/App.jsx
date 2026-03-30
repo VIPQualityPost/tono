@@ -1278,7 +1278,7 @@ function Flow() {
 
   useEffect(() => {
     api.setMessageHandler((msg) => {
-      console.log('[argonode] WS:', msg.type, msg.data?.node_id || msg.data?.node || '');
+      console.log('[tono] WS:', msg.type, msg.data?.node_id || msg.data?.node || '');
       switch (msg.type) {
         case 'execution_start':
           setNodes((ns) => ns.map((n) => ({
@@ -1295,7 +1295,7 @@ function Flow() {
           break;
         case 'execution_error':
           setStatus({ text: 'Error: ' + msg.data.message, level: 'error' });
-          console.error('[argonode] execution error', msg.data);
+          console.error('[tono] execution error', msg.data);
           break;
         case 'preview':
           updateNodeData(msg.data.node_id, { previewImage: msg.data.image });
@@ -2799,7 +2799,7 @@ function Flow() {
       <div className="app-container">
         {/* Toolbar */}
         <div id="toolbar">
-          <span id="app-title">argonode</span>
+          <span id="app-title">tono</span>
 
           <div className="toolbar-group">
             <button className="btn btn-primary" onClick={runWorkflow} title="Run workflow (Ctrl+Enter)">

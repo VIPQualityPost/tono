@@ -1,5 +1,5 @@
 """
-Core data types for argonode.
+Core data types for tono.
 
 DataField mirrors Gwyddion's GwyDataField structure:
   xres, yres  – pixel dimensions

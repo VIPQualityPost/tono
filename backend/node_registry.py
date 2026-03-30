@@ -1,5 +1,5 @@
 """
-Node registry for argonode.
+Node registry for tono.
 
 Nodes are plain Python classes decorated with @register_node.
 NODE_CLASS_MAPPINGS is the single source of truth consumed by

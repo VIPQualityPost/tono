@@ -1,4 +1,4 @@
-# Gwyddion Features Not Yet in argonode
+# Gwyddion Features Not Yet in tono
 
 Reference for future implementation. Grouped by value to typical SPM workflows.
 
@@ -61,11 +61,11 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 
 ---
 
-## Already Implemented in argonode
+## Already Implemented in tono
 
 For reference, these Gwyddion equivalents are already covered:
 
-| argonode Node | Category | Gwyddion Equivalent |
+| tono Node | Category | Gwyddion Equivalent |
 |--------------|----------|-------------------|
 | Load Image / Load SPM File | io | File import (gwy, sxm, ibw) |
 | Save Image | io | File export |

@@ -41,7 +41,7 @@ $PYTHON -m PyInstaller \
     desktop.py \
     --noconfirm \
     --clean \
-    --name argonode \
+    --name tono \
     --windowed \
     $MODE \
     --distpath desktop-dist \
@@ -55,12 +55,12 @@ $PYTHON -m PyInstaller \
     --collect-all webview \
     --icon ../resources/icon.icns
 
-APP_BUNDLE="desktop-dist/argonode.app"
+APP_BUNDLE="desktop-dist/tono.app"
 
 if [ ! -d "$APP_BUNDLE" ]; then
     # --onedir puts it inside a folder
-    if [ -d "desktop-dist/argonode/argonode.app" ]; then
-        APP_BUNDLE="desktop-dist/argonode/argonode.app"
+    if [ -d "desktop-dist/tono/tono.app" ]; then
+        APP_BUNDLE="desktop-dist/tono/tono.app"
     else
         echo "Warning: .app bundle not found; skipping DMG creation."
         CREATE_DMG=false
@@ -68,7 +68,7 @@ if [ ! -d "$APP_BUNDLE" ]; then
 fi
 
 if $CREATE_DMG; then
-    DMG_PATH="desktop-dist/argonode.dmg"
+    DMG_PATH="desktop-dist/tono.dmg"
     echo "Creating DMG installer..."
     rm -f "$DMG_PATH"
 
@@ -80,7 +80,7 @@ if $CREATE_DMG; then
     ln -s /Applications "$DMG_STAGING/Applications"
 
     hdiutil create \
-        -volname "argonode" \
+        -volname "tono" \
         -srcfolder "$DMG_STAGING" \
         -ov \
         -format UDZO \

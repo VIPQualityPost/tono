@@ -41,7 +41,7 @@ $PYTHON -m PyInstaller \
     desktop.py \
     --noconfirm \
     --clean \
-    --name argonode \
+    --name tono \
     --windowed \
     $MODE \
     --distpath desktop-dist \
@@ -55,9 +55,9 @@ $PYTHON -m PyInstaller \
     --collect-all webview
 
 if $CREATE_TAR; then
-    TAR_PATH="desktop-dist/argonode-linux.tar.gz"
+    TAR_PATH="desktop-dist/tono-linux.tar.gz"
     echo "Creating tarball..."
-    tar -czf "$TAR_PATH" -C desktop-dist argonode
+    tar -czf "$TAR_PATH" -C desktop-dist tono
     echo "Tarball created: $TAR_PATH"
 fi
 

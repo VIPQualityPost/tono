@@ -1,5 +1,5 @@
 """
-Shared helper functions for argonode nodes.
+Shared helper functions for tono nodes.
 """
 
 from __future__ import annotations
