@@ -480,7 +480,7 @@ class BlindTipEstimate:
 
     OUTPUTS = (
         ('DATA_FIELD', 'tip'),
-        ('DATA_FIELD', 'certainty'),
+        ('IMAGE', 'certainty'),
     )
     FUNCTION = "process"
 
@@ -574,9 +574,7 @@ class BlindTipEstimate:
         cmap_thresh = 50.0 * step
         cmap_data = _certainty_map_fast(surf, tip_data, rsurf, xc, yc, cmap_thresh)
 
-        cmap_field = field.replace(
-            data=cmap_data,
-            si_unit_z="",   # certainty is dimensionless
-        )
+        # Convert the binary 0/1 float map to a uint8 mask (0 = uncertain, 255 = certain).
+        cmap_mask = (cmap_data * 255).astype(np.uint8)
 
-        return (tip_field, cmap_field)
+        return (tip_field, cmap_mask)

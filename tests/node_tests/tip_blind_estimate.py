@@ -16,11 +16,12 @@ def run_blind(field, n_pixels=17, threshold=0.0, method="partial", use_edges=Fal
 
 # ── Output types and dimensions ──────────────────────────────────────────────
 
-def test_outputs_are_data_fields():
+def test_outputs_are_correct_types():
     field = make_field(shape=(32, 32), xreal=32e-9, yreal=32e-9)
     tip, certainty = run_blind(field, n_pixels=9)
     assert isinstance(tip, DataField)
-    assert isinstance(certainty, DataField)
+    assert isinstance(certainty, np.ndarray)
+    assert certainty.dtype == np.uint8
 
 
 def test_tip_output_shape():
@@ -40,16 +41,16 @@ def test_tip_n_pixels_even_bumped():
 def test_certainty_output_matches_field_shape():
     field = make_field(shape=(48, 64))
     _, certainty = run_blind(field, n_pixels=9)
-    assert certainty.data.shape == field.data.shape
+    assert certainty.shape == field.data.shape
 
 
 def test_certainty_is_binary():
-    """Certainty map values must all be 0.0 or 1.0."""
+    """Certainty mask values must all be 0 or 255."""
     field = make_field(shape=(32, 32), xreal=32e-9, yreal=32e-9)
     _, certainty = run_blind(field, n_pixels=9)
-    vals = np.unique(certainty.data)
+    vals = np.unique(certainty)
     for v in vals:
-        assert v in (0.0, 1.0), f"Non-binary certainty value: {v}"
+        assert v in (0, 255), f"Non-binary certainty value: {v}"
 
 
 # ── Tip conventions ───────────────────────────────────────────────────────────
@@ -137,7 +138,7 @@ def test_full_method_runs():
     field = make_field(shape=(24, 24), xreal=24e-9, yreal=24e-9)
     tip, certainty = run_blind(field, n_pixels=7, method="full")
     assert isinstance(tip, DataField)
-    assert isinstance(certainty, DataField)
+    assert isinstance(certainty, np.ndarray)
 
 
 # ── Certainty increases with sharp features ───────────────────────────────────
@@ -165,4 +166,4 @@ def test_certainty_nonzero_for_sharp_image():
     measured = make_field(data=measured_data, xreal=n * pixel_size, yreal=n * pixel_size)
 
     _, certainty = run_blind(measured, n_pixels=17, method="partial")
-    assert certainty.data.sum() > 0, "No certain pixels found for a sharp image"
+    assert certainty.sum() > 0, "No certain pixels found for a sharp image"
