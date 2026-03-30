@@ -254,6 +254,51 @@ class PreviewBoundary extends React.Component {
   }
 }
 
+// ── SI prefix helpers ─────────────────────────────────────────────────
+
+const _SI_PREFIXES = [
+  { prefix: 'T', factor: 1e12 },
+  { prefix: 'G', factor: 1e9 },
+  { prefix: 'M', factor: 1e6 },
+  { prefix: 'k', factor: 1e3 },
+  { prefix: '',  factor: 1 },
+  { prefix: 'm', factor: 1e-3 },
+  { prefix: 'μ', factor: 1e-6 },
+  { prefix: 'n', factor: 1e-9 },
+  { prefix: 'p', factor: 1e-12 },
+  { prefix: 'f', factor: 1e-15 },
+];
+
+// Map of suffix characters → multiplier (accept both 'u' and 'μ' for micro)
+const _SI_PARSE_MAP = { T:1e12, G:1e9, M:1e6, k:1e3, m:1e-3, u:1e-6, μ:1e-6, n:1e-9, p:1e-12, f:1e-15 };
+
+function formatSI(v, prec) {
+  if (!Number.isFinite(v)) return String(v);
+  if (v === 0) return prec != null ? `0.${'0'.repeat(prec)}` : '0';
+  const abs = Math.abs(v);
+  // Pick the largest SI prefix whose factor is ≤ |v| (gives value in [1, 1000))
+  let chosen = _SI_PREFIXES[_SI_PREFIXES.length - 1];
+  for (const p of _SI_PREFIXES) {
+    if (abs >= p.factor * (1 - 1e-10)) { chosen = p; break; }
+  }
+  const scaled = v / chosen.factor;
+  return (prec != null ? scaled.toFixed(prec) : String(scaled)) + chosen.prefix;
+}
+
+// Parse a string that may carry an SI suffix (e.g. "20n", "1.5μ", "500p")
+// Falls back to standard parseFloat for plain numbers and scientific notation.
+function parseSI(text) {
+  const t = (text || '').trim();
+  if (!t) return NaN;
+  const lastChar = t.slice(-1);
+  const factor = _SI_PARSE_MAP[lastChar];
+  if (factor != null) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num)) return num * factor;
+  }
+  return parseFloat(t);
+}
+
 // ── Draggable number input ────────────────────────────────────────────
 
 function DraggableNumber({ value, step, min, max, precision, onChange }) {
@@ -262,7 +307,7 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
   const dragState = useRef(null);
   const elRef = useRef(null);
 
-  const display = precision != null ? Number(value).toFixed(precision) : String(value);
+  const display = precision != null ? formatSI(Number(value), precision) : String(value);
 
   const clamp = useCallback((v) => {
     if (min != null && v < min) v = min;
@@ -282,9 +327,7 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
     const dx = e.clientX - dragState.current.startX;
     const delta = dx * (step || 0.01);
     const raw = dragState.current.startVal + delta;
-    const rounded = precision != null
-      ? parseFloat(raw.toFixed(precision))
-      : Math.round(raw);
+    const rounded = precision != null ? raw : Math.round(raw);
     onChange(clamp(rounded));
   }, [step, precision, clamp, onChange]);
 
@@ -308,16 +351,14 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
     const delta = (e.deltaY < 0 ? 1 : -1) * baseStep * multiplier;
     const startVal = Number(value);
     const raw = (Number.isFinite(startVal) ? startVal : 0) + delta;
-    const rounded = precision != null
-      ? parseFloat(raw.toFixed(precision))
-      : Math.round(raw);
+    const rounded = precision != null ? raw : Math.round(raw);
     onChange(clamp(rounded));
   }, [editing, step, value, precision, onChange, clamp]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
-    const parsed = parseFloat(editText);
-    if (!isNaN(parsed)) onChange(clamp(precision != null ? parseFloat(parsed.toFixed(precision)) : Math.round(parsed)));
+    const parsed = parseSI(editText);
+    if (!isNaN(parsed)) onChange(clamp(precision != null ? parsed : Math.round(parsed)));
   }, [editText, precision, clamp, onChange]);
 
   if (editing) {

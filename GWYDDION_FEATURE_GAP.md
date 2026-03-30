@@ -28,15 +28,15 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 | # | Feature | Gwyddion Source | Description |
 |---|---------|---------------|-------------|
 | 15 | Correlation / Pattern Matching | crosscor.c, maskcor.c | Find repeated features or align images via cross-correlation. |
-| 16 | Slope Distribution | slope_dist.c | Angular histogram of surface slopes. Characterizes surface texture directionality. |
-| 17 | Grain Filtering | grain_filter.c | Remove grains by size, height, or border contact. Refine grain masks post-detection. |
-| 18 | Field Arithmetic | arithmetic.c | Add/subtract/multiply/divide two DATA_FIELDs. Useful for difference maps, normalization. |
+| ~~16~~ | ~~Slope Distribution~~ | ~~slope_dist.c~~ | ~~Angular histogram of surface slopes. Characterizes surface texture directionality.~~ **DONE** |
+| ~~17~~ | ~~Grain Filtering~~ | ~~grain_filter.c~~ | ~~Remove grains by size, height, or border contact. Refine grain masks post-detection.~~ **DONE** |
+| ~~18~~ | ~~Field Arithmetic~~ | ~~arithmetic.c~~ | ~~Add/subtract/multiply/divide two DATA_FIELDs. Useful for difference maps, normalization.~~ **DONE** |
 | 19 | Spot Removal | spotremove.c | Interpolate over selected point defects (dust, spikes). |
-| 20 | Tip Modeling / Deconvolution | tip_blind.c, tip_model.c | Estimate tip shape from image, deconvolve to recover true surface. |
-| 21 | Radial Profile | rprofile tool | Azimuthally averaged profile from a center point. Good for circular features. |
+| ~~20~~ | ~~Tip Modeling / Deconvolution~~ | ~~tip_blind.c, tip_model.c~~ | ~~Estimate tip shape from image, deconvolve to recover true surface.~~ **DONE** |
+| ~~21~~ | ~~Radial Profile~~ | ~~rprofile tool~~ | ~~Azimuthally averaged profile from a center point. Good for circular features.~~ **DONE** |
 | 22 | Wavelet Transform | dwt.c, cwt.c | Discrete/continuous wavelet analysis. Multi-scale roughness decomposition. |
-| 23 | Scale / Resample | scale.c, resample.c | Resize fields with interpolation. |
-| 24 | Gradient | gradient.c | Compute x/y gradient magnitude maps. |
+| ~~23~~ | ~~Scale / Resample~~ | ~~scale.c, resample.c~~ | ~~Resize fields with interpolation.~~ **DONE** |
+| ~~24~~ | ~~Gradient~~ | ~~gradient.c~~ | ~~Compute x/y gradient magnitude maps.~~ **DONE** |
 | 25 | Custom Convolution | convolution_filter.c | User-defined kernel convolution. |
 | 26 | Local Contrast Enhancement | local_contrast.c | Enhance visibility of local features in images. |
 
@@ -99,3 +99,6 @@ For reference, these Gwyddion equivalents are already covered:
 | Watershed Segmentation | grains | grain_wshed.c |
 | Grain Analysis | grains | grain_stat.c |
 | Preview / 3D View / Print Table | display | Presentation, 3D view |
+| Tip Model | tip | tip_model.c, tip.c |
+| Tip Deconvolution | tip | tip_blind.c, tip.c (gwy_tip_erosion) |
+| Blind Tip Estimate | tip | tip_blind.c, morph_lib.c (gwy_tip_estimate_partial/full + gwy_tip_cmap) |

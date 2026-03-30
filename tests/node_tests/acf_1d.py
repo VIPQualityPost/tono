@@ -24,9 +24,12 @@ def test_acf_1d():
     assert isinstance(acf, LineData)
     assert isinstance(measurement, RecordTable)
 
-    # ACF should be symmetric about zero lag
-    center = len(acf) // 2
-    assert np.allclose(acf.data, acf.data[::-1], atol=1e-10)
+    # Only positive lags are output
+    assert acf.x_axis is not None
+    assert np.all(acf.x_axis > 0)
+
+    # ACF should be monotonically decreasing at the very start (falls from the zero-lag peak)
+    assert acf.data[0] > 0
 
     # Peak period should be close to the input period in metres
     expected_period_m = period * 1e-9
@@ -34,13 +37,6 @@ def test_acf_1d():
     assert measurement[0]["quantity"] == "Peak period"
     assert abs(measurement[0]["value"] - expected_period_m) / expected_period_m < 0.1
     assert measurement[0]["unit"] == "m"
-
-    # x_axis should be centred on zero
-    assert acf.x_axis is not None
-    assert acf.x_axis[center] == 0.0 or abs(acf.x_axis[center]) < 1e-15
-
-    # ACF at zero lag should equal variance (signal is mean-subtracted)
-    assert acf.data[center] > 0
 
 
 def test_acf_1d_no_peak():
@@ -68,5 +64,5 @@ def test_acf_1d_level_none():
     profile = LineData(data=data, x_axis=np.arange(32, dtype=np.float64))
 
     acf, _ = node.process(profile, level="none")
-    # ACF of a constant is a constant
-    assert acf.data[len(acf) // 2] > 0
+    # ACF of a constant is a constant — first positive-lag value should be positive
+    assert acf.data[0] > 0

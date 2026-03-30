@@ -41,11 +41,14 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "CropResizeField",
         "RotateField",
         "FlipField",
+        "Resample",
+        "FieldArithmetic",
     ],
     "Filter": [
         "GaussianFilter",
         "MedianFilter",
         "EdgeDetect",
+        "Gradient",
         "FFTFilter",
         "ScarRemoval",
     ],
@@ -76,6 +79,8 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ACF2D",
         "ACF1D",
         "PSDF",
+        "SlopeDistribution",
+        "RadialProfile",
         "Statistics",
         "Stats",
     ],
@@ -92,6 +97,12 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "GrainDistanceTransform",
         "WatershedSegmentation",
         "GrainAnalysis",
+        "GrainFilter",
+    ],
+    "Tip": [
+        "TipModel",
+        "TipDeconvolution",
+        "BlindTipEstimate",
     ],
 }
 

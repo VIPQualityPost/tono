@@ -58,4 +58,14 @@ from backend.nodes import (
     watershed_segmentation,
     grain_analysis,
     fft_1d,
+    # Medium-value nodes (Gwyddion feature-gap)
+    field_arithmetic,
+    gradient,
+    resample,
+    slope_distribution,
+    grain_filter,
+    radial_profile,
+    tip_model,
+    tip_deconvolution,
+    tip_blind_estimate,
 )
