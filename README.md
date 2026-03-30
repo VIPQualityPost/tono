@@ -1,3 +1,5 @@
+[![Build](https://github.com/VIPQualityPost/tono/actions/workflows/build.yml/badge.svg)](https://github.com/VIPQualityPost/tono/actions/workflows/build.yml) [![Tests](https://github.com/VIPQualityPost/tono/actions/workflows/tests.yml/badge.svg)](https://github.com/VIPQualityPost/tono/actions/workflows/tests.yml)
+
 # tono
 
 <img src="resources/icon_1024.png" width="200">
