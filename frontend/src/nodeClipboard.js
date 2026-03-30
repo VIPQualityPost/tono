@@ -177,16 +177,26 @@ export function buildNodeClipboardPayloadForIds(
     ))
     : [];
 
+  const snapDim = (v) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+
   return {
     kind: NODE_CLIPBOARD_KIND,
     version: 1,
-    nodes: selectedNodes.map((node) => ({
+    nodes: selectedNodes.map((node) => {
+      const width = snapDim(node.measured?.width ?? node.width);
+      const height = snapDim(node.measured?.height ?? node.height);
+      return {
       id: String(node.id),
       type: node.type || 'custom',
       position: {
         x: Number(node.position?.x) || 0,
         y: Number(node.position?.y) || 0,
       },
+      ...(width != null ? { width } : {}),
+      ...(height != null ? { height } : {}),
       ...(node.className ? { className: node.className } : {}),
       ...(node.parentId ? { parentId: String(node.parentId) } : {}),
       ...(node.extent ? { extent: node.extent } : {}),
@@ -200,7 +210,8 @@ export function buildNodeClipboardPayloadForIds(
         runtimeValues: clonePlainObject(node.data?.runtimeValues),
         extraData: clonePlainObject(extractExtraData(node.data)),
       },
-    })),
+      };
+    }),
     edges: capturedEdges.map((edge) => ({
       source: String(edge.source),
       sourceHandle: edge.sourceHandle,
@@ -267,6 +278,8 @@ export function instantiateNodeClipboardPayload(
         x: (Number(node.position?.x) || 0) + (Number(offset?.x) || 0),
         y: (Number(node.position?.y) || 0) + (Number(offset?.y) || 0),
       },
+      ...(node.width != null ? { width: node.width } : {}),
+      ...(node.height != null ? { height: node.height } : {}),
       ...(node.parentId ? { parentId: idMap.get(String(node.parentId)) || String(node.parentId) } : {}),
       ...(node.extent ? { extent: node.extent } : {}),
       ...(node.hidden ? { hidden: true } : {}),

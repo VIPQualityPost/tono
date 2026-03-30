@@ -1075,7 +1075,7 @@ function CustomNode({ id, data }) {
     }
     if (opts?.hidden) {
       hiddenWidgets.add(name);
-    } else if (isDataSocketSpec(spec)) {
+    } else if (isDataSocketSpec(spec) || opts?.socket_only) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else {
@@ -1267,7 +1267,7 @@ function CustomNode({ id, data }) {
           <div className="node-warning">{data.warning}</div>
         )}
 
-        {scalarDisplay && (
+        {scalarDisplay && !standaloneWidgets.some((w) => w.opts?.text_input) && (
           <div className="node-value-display">
             <div className="node-value-box">
               <span className="node-value-box-number">{scalarDisplay.valueText}</span>

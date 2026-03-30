@@ -26,14 +26,23 @@ export function serializeWorkflowState(nodes, edges) {
     sanitizeRuntimeValuesForPersistence(node.data?.className, node.data?.runtimeValues),
   );
 
+  const snapDim = (v) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+
   return {
     version: 1,
     nodes: nodes.map((node) => {
       const runtimeValues = getRuntimeValues(node);
+      const width = snapDim(node.measured?.width ?? node.width);
+      const height = snapDim(node.measured?.height ?? node.height);
       return {
         id: node.id,
         type: node.type || 'custom',
         position: node.position,
+        ...(width != null ? { width } : {}),
+        ...(height != null ? { height } : {}),
         ...(node.className ? { className: node.className } : {}),
         ...(node.parentId ? { parentId: node.parentId } : {}),
         ...(node.extent ? { extent: node.extent } : {}),
