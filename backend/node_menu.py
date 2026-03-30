@@ -124,18 +124,22 @@ for category, class_names in MENU_LAYOUT.items():
         })
 
 
-def get_menu_metadata(class_name: str) -> dict[str, Any]:
+def get_menu_metadata(class_name: str, cls: type | None = None) -> dict[str, Any]:
     metadata = _NODE_METADATA.get(class_name)
     if metadata is not None:
         return dict(metadata)
 
+    # Nodes not listed in MENU_LAYOUT (e.g. plugins) can declare their own
+    # menu category via a CATEGORY class attribute.  Falls back to "Unsorted".
+    category = getattr(cls, "CATEGORY", "Unsorted") if cls else "Unsorted"
+    order = len(_CATEGORY_ORDER)
     return {
-        "category": "Unsorted",
-        "category_order": len(_CATEGORY_ORDER),
+        "category": category,
+        "category_order": order,
         "menu_order": 10_000,
         "menu_categories": [{
-            "category": "Unsorted",
-            "category_order": len(_CATEGORY_ORDER),
+            "category": category,
+            "category_order": order,
             "menu_order": 10_000,
         }],
     }

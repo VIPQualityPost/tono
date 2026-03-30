@@ -62,6 +62,29 @@ def output_dir() -> Path:
     return app_data_dir() / "output"
 
 
-def ensure_runtime_dirs() -> None:
+def plugins_dir() -> Path:
+    return app_data_dir() / "plugins"
+
+
+def plugins_enabled(*, native: bool) -> bool:
+    """
+    Return True when the plugin system should be active.
+
+    Default behaviour: enabled on native/desktop builds, disabled for web.
+    Override with the ARGONODE_PLUGINS environment variable:
+      ARGONODE_PLUGINS=1   – force on  (useful for testing plugins via main.py)
+      ARGONODE_PLUGINS=0   – force off (disable even on native builds)
+    """
+    env = os.getenv("ARGONODE_PLUGINS", "").strip().lower()
+    if env in ("1", "true", "yes"):
+        return True
+    if env in ("0", "false", "no"):
+        return False
+    return native
+
+
+def ensure_runtime_dirs(*, with_plugins: bool = False) -> None:
     input_dir().mkdir(parents=True, exist_ok=True)
     output_dir().mkdir(parents=True, exist_ok=True)
+    if with_plugins:
+        plugins_dir().mkdir(parents=True, exist_ok=True)

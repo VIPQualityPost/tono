@@ -1328,6 +1328,12 @@ function Flow() {
         case 'node_warning':
           updateNodeData(msg.data.node_id, { warning: msg.data.message });
           break;
+        case 'nodes_updated':
+          api.getNodes().then((defs) => {
+            nodeDefsRef.current = defs;
+            setStatus({ text: `Plugin loaded — ${Object.keys(defs).length} nodes available.`, level: 'info' });
+          }).catch(() => {});
+          break;
       }
     });
     api.initWS();

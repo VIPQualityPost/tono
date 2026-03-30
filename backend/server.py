@@ -40,7 +40,7 @@ from pathlib import Path
 from aiohttp import web, WSMsgType
 
 from backend.frontend_build import FrontendBuildError, ensure_frontend_dist_ready
-from backend.runtime_paths import ensure_runtime_dirs, frontend_dir, frontend_dist_dir, project_root
+from backend.runtime_paths import ensure_runtime_dirs, frontend_dir, frontend_dist_dir, plugins_dir, plugins_enabled, project_root
 from backend.session_runtime import (
     PATH_INPUT_TYPES,
     SESSION_HEADER,
@@ -110,10 +110,16 @@ def create_app(
     allow_local_filesystem: bool = False,
 ) -> web.Application:
     import backend.nodes  # noqa: F401
+
+    _plugins_on = plugins_enabled(native=allow_local_filesystem)
+    if _plugins_on:
+        from backend.plugin_loader import load_plugins
+        load_plugins(plugins_dir())
+
     from backend.execution import ExecutionEngine, new_prompt_id
     from backend.node_registry import NODE_CLASS_MAPPINGS, get_all_node_info
 
-    ensure_runtime_dirs()
+    ensure_runtime_dirs(with_plugins=_plugins_on)
 
     session_engines: dict[str, ExecutionEngine] = {}
     session_websockets: dict[str, set[web.WebSocketResponse]] = defaultdict(set)
@@ -343,6 +349,58 @@ def create_app(
             content_type="application/json",
         )
 
+    async def upload_plugin(request: web.Request) -> web.Response:
+        """
+        Accept a .py plugin file, save it to plugins_dir(), hot-reload all
+        plugins, and notify every connected WebSocket client to refresh /nodes.
+
+        Warning: uploading Python files is equivalent to remote code execution.
+        This endpoint is intentionally unrestricted because argonode is a
+        local-first application; do not expose it on a public network.
+        """
+        reader = await request.multipart()
+        filename = ""
+        file_bytes = None
+
+        while True:
+            part = await reader.next()
+            if part is None:
+                break
+            if part.name == "file":
+                filename = Path(part.filename or "plugin.py").name
+                chunks = []
+                while True:
+                    chunk = await part.read_chunk(65536)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                file_bytes = b"".join(chunks)
+
+        if file_bytes is None:
+            raise web.HTTPBadRequest(reason="Expected a 'file' field in multipart body")
+        if not filename.endswith(".py"):
+            raise web.HTTPBadRequest(reason="Only .py plugin files are accepted")
+
+        dest = plugins_dir() / filename
+        dest.write_bytes(file_bytes)
+
+        # Hot-reload: re-run the loader (handles re-import of changed files).
+        load_plugins(plugins_dir())
+
+        # Tell every connected frontend to re-fetch GET /nodes.
+        msg = _dumps({"type": "nodes_updated"})
+        for ws_set in session_websockets.values():
+            for ws in list(ws_set):
+                try:
+                    await ws.send_str(msg)
+                except Exception:
+                    pass
+
+        return web.Response(
+            text=_dumps({"filename": filename, "loaded": True}),
+            content_type="application/json",
+        )
+
     async def download_file(request: web.Request) -> web.Response:
         body = await request.read()
         filename = request.query.get("filename", "workflow.png")
@@ -469,6 +527,8 @@ def create_app(
     app.router.add_get("/folder-files", get_folder_files)
     app.router.add_post("/upload-folder", create_upload_folder)
     app.router.add_post("/upload", upload_file)
+    if _plugins_on:
+        app.router.add_post("/upload-plugin", upload_plugin)
     app.router.add_post("/download", download_file)
     app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)

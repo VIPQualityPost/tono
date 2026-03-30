@@ -74,7 +74,7 @@ def get_node_info(class_name: str) -> dict[str, Any]:
     """
     cls = NODE_CLASS_MAPPINGS[class_name]
     input_types: dict = cls.INPUT_TYPES()
-    menu_metadata = get_menu_metadata(class_name)
+    menu_metadata = get_menu_metadata(class_name, cls)
 
     return {
         "name": class_name,
