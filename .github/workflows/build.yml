@@ -13,13 +13,13 @@ jobs:
         include:
           - os: macos-latest
             label: macOS
-            build_cmd: bash scripts/build-mac.sh
+            build_cmd: npm run build:mac
             artifact_path: desktop-dist/tono.dmg
             artifact_name: tono-macos
 
           - os: ubuntu-latest
             label: Linux
-            build_cmd: bash scripts/build-linux.sh
+            build_cmd: npm run build:linux
             artifact_path: desktop-dist/tono-linux.tar.gz
             artifact_name: tono-linux
 
@@ -45,9 +45,11 @@ jobs:
           node-version: "20"
           cache: npm
 
-      # Build scripts call `uv pip install` for Python deps
       - name: Install uv
         run: pip install uv
+
+      - name: Create venv
+        run: uv venv --python 3.13
 
       # Linux: pywebview needs webkit2gtk headers to import during PyInstaller collection
       - name: Install Linux system dependencies

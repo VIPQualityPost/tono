@@ -30,7 +30,6 @@ function Assert-LastExitCode {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-uv venv --python 3.13
 ./.venv/Scripts/Activate
 
 $pythonExe = if (Test-Path ".\.venv\Scripts\python.exe") {

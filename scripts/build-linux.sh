@@ -15,7 +15,6 @@ done
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-uv venv --python 3.13
 source .venv/bin/activate
 
 if [ -d ".venv/bin" ]; then
