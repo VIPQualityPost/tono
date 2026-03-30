@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
-   sodipodi:docname="tono.svg"
+   sodipodi:docname="argonode.svg"
    inkscape:export-filename="tono.png"
    inkscape:export-xdpi="130.05"
    inkscape:export-ydpi="130.05"
@@ -28,7 +28,7 @@
      inkscape:document-units="mm"
      inkscape:clip-to-page="false"
      inkscape:zoom="0.52383534"
-     inkscape:cx="272.03205"
+     inkscape:cx="272.98655"
      inkscape:cy="333.11995"
      inkscape:window-width="1470"
      inkscape:window-height="890"
@@ -49,28 +49,28 @@
        height="194.43169"
        x="2.5203834"
        y="2.9819231"
-       rx="60.325001"
-       ry="60.325001" />
+       rx="52.916668"
+       ry="52.916668" />
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:3.95095;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 78.923283,116.954 85.556777,-87.012977 4.46561,16.665896 -16.7032,-4.47561"
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.251;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 80.438549,119.47945 85.556771,-87.012984 4.46561,16.665896 -16.7032,-4.47561"
        id="path6"
        sodipodi:nodetypes="cccc" />
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:3.95096;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 130.73507,63.406954 H 100.71909 L 47.805771,117.40532 77.48181,116.89278"
+       d="M 133.7656,68.457841 H 103.74962 L 50.836303,122.45621 80.512342,121.94367"
        id="path7"
        sodipodi:nodetypes="cccc" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:68.9567px;line-height:0;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:2.75827;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       x="22.05061"
-       y="162.24162"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:80px;line-height:0;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:2.75827;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="18.009901"
+       y="172.8485"
        id="text8"><tspan
          sodipodi:role="line"
          id="tspan8"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:68.9567px;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:2.75827;stroke-dasharray:none"
-         x="22.05061"
-         y="162.24162">argo</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:80px;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:2.75827;stroke-dasharray:none"
+         x="18.009901"
+         y="172.8485">tono</tspan></text>
   </g>
 </svg>

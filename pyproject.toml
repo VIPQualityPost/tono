@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tono"
 version = "0.1.0"
-description = "Node-based image analysis app with a Python backend and React frontend."
-readme = "GWYDDION_FEATURE_GAP.md"
+description = "topographical node-based image analysis."
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.9,<4",
@@ -28,6 +28,10 @@ dev = [
 desktop = [
     "pyinstaller>=6,<7",
     "pywebview>=5,<6",
+]
+icons = [
+    "svglib>=1.6.0",
+    "reportlab>=4.4.0",
 ]
 
 [tool.setuptools.packages.find]

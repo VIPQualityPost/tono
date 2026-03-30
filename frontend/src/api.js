@@ -90,6 +90,20 @@ export async function uploadFile(file, { relativePath = '' } = {}) {
   return r.json();
 }
 
+export async function uploadPlugin(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/upload-plugin', { method: 'POST', body: fd });
+  if (r.status === 404) {
+    throw new Error('Plugin upload is not available in this build.');
+  }
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(text || `Upload failed (${r.status})`);
+  }
+  return r.json();
+}
+
 export async function getChannels(filepath) {
   const r = await sessionFetch(`/channels?file=${encodeURIComponent(filepath)}`);
   if (!r.ok) return [{ name: 'field', type: 'DATA_FIELD' }];

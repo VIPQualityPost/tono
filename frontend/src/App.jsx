@@ -2130,6 +2130,24 @@ function Flow() {
     input.click();
   }, [applyWorkflowData]);
 
+  const uploadPlugin = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.py';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setStatus({ text: 'Uploading plugin…', level: 'info' });
+      try {
+        await api.uploadPlugin(file);
+        // Node list refresh is handled by the nodes_updated WebSocket message.
+      } catch (err) {
+        setStatus({ text: err.message, level: 'error' });
+      }
+    };
+    input.click();
+  }, []);
+
   // ── Drag-and-drop workflow image loading ───────────────────────────
 
   const onDropFile = useCallback(async (event) => {
@@ -2819,6 +2837,9 @@ function Flow() {
             </button>
             <button className="btn" onClick={copySnapshot} title="Copy workflow screenshot to clipboard">
               ⎘ Snapshot
+            </button>
+            <button className="btn" onClick={uploadPlugin} title="Upload a plugin (.py)">
+              ⊕ Plugin
             </button>
           </div>
 

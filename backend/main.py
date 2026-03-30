@@ -36,7 +36,7 @@ def main() -> None:
     app = create_app(loop)
 
     log.info("=" * 60)
-    log.info("  tono  —  Node-based image analysis")
+    log.info("  tono  -  topographical node-based image analysis")
     log.info("  Open your browser at  http://%s:%d", HOST, PORT)
     log.info("=" * 60)
 
