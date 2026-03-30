@@ -14,7 +14,7 @@ def test_threshold_mask():
     ThresholdMask._broadcast_fn = lambda nid, uri: previews.append(uri)
     ThresholdMask._current_node_id = "test"
 
-    mask, = node.process(field, method="absolute", threshold=0.5, direction="above")
+    mask, table = node.process(field, method="absolute", threshold=0.5, direction="above")
     assert mask.dtype == np.uint8
     assert mask.shape == (64, 64)
     assert np.all(mask[:, :32] == 0)

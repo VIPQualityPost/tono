@@ -629,7 +629,7 @@ def _list_demo_files() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Butterworth / FFT helpers  (from filters.py — used by FFTFilter1D, FFTFilter2D)
+# Butterworth / FFT helpers  (from filters.py — used by FFTFilter
 # ---------------------------------------------------------------------------
 
 def _butterworth_lp(freq, cutoff, order):
