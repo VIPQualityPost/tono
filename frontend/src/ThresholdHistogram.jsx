@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getAxisScale } from './valueFormatting';
 
+export const CAPTURE_SELECTOR = '.lineplot-overlay';
+
 const ASPECT_RATIO = 3.2 / 2.2;
 const MARGINS = { top: 18, right: 16, bottom: 34, left: 56 };
+
+// Hardcoded marker colors so SVG elements render correctly in canvas exports,
+// where CSS custom properties (var(--marker) etc.) are not resolved.
+const MARKER_FILL = '#ffd700';
+const MARKER_STROKE = '#ffffff';
+const MARKER_LOCKED_COLOR = '#e91e63';
+const MARKER_LABEL_FILL = '#0f172a';
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function round4(v) { return parseFloat(v.toFixed(4)); }
@@ -201,6 +210,8 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
             cy={markerY}
             r={markerRadius}
             className={`lineplot-marker ${locked ? 'lineplot-marker-locked' : ''}`}
+            fill={locked ? MARKER_LOCKED_COLOR : MARKER_FILL}
+            stroke={locked ? MARKER_LOCKED_COLOR : MARKER_STROKE}
           />
           <text
             x={markerX}
@@ -209,6 +220,7 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
             dominantBaseline="middle"
             fontSize={markerLabelSize}
             className="lineplot-marker-label"
+            fill={MARKER_LABEL_FILL}
             pointerEvents="none"
           >
             T

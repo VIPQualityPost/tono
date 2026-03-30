@@ -1,5 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 
+export const CAPTURE_SELECTOR = '.angle-overlay';
+
 import {
   getAngleLabelBasePosition,
   getAngleLabelPosition,

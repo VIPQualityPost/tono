@@ -1,5 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 
+export const CAPTURE_SELECTOR = '.cs-overlay';
+
 /**
  * Image preview with two endpoint markers for cross-section line control.
  * Markers are draggable when unlocked (no COORD input connected),

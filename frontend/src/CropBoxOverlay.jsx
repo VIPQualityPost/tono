@@ -1,5 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 
+export const CAPTURE_SELECTOR = '.crop-overlay';
+
 export default function CropBoxOverlay({
   image, x1, y1, x2, y2,
   aLocked, bLocked,

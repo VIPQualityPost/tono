@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+export const CAPTURE_SELECTOR = '.markup-overlay';
 import {
   getArrowGeometry,
   MARKUP_DEFAULT_COLOR,

@@ -1,10 +1,17 @@
 import { toBlob } from 'html-to-image';
 import { CANVAS_COLORS } from './constants.js';
+import { CAPTURE_SELECTOR as linePlotSelector } from './LinePlotOverlay';
+import { CAPTURE_SELECTOR as thresholdSelector } from './ThresholdHistogram';
+import { CAPTURE_SELECTOR as csSelector } from './CrossSectionOverlay';
+import { CAPTURE_SELECTOR as cropSelector } from './CropBoxOverlay';
+import { CAPTURE_SELECTOR as markupSelector } from './MarkupOverlay';
+import { CAPTURE_SELECTOR as angleSelector } from './AngleMeasureOverlay';
 
+// Assembled from each overlay component's CAPTURE_SELECTOR export.
+// To register a new overlay: export CAPTURE_SELECTOR from its file and add
+// an import + entry here. Missing entries produce corrupt ~68-byte PNG output.
 export const OVERLAY_CAPTURE_SELECTORS = [
-  '.lineplot-overlay',
-  '.cs-overlay',
-  '.crop-overlay',
+  ...new Set([linePlotSelector, thresholdSelector, csSelector, cropSelector, markupSelector, angleSelector]),
 ];
 
 function encodeBase64(bytes) {

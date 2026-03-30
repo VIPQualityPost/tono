@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getAxisScale } from './valueFormatting';
 
+export const CAPTURE_SELECTOR = '.lineplot-overlay';
+
 const ASPECT_RATIO = 3.2 / 2.2;
 const MARGINS = { top: 18, right: 16, bottom: 34, left: 56 };
+
+// Hardcoded marker colors so SVG elements render correctly in canvas exports,
+// where CSS custom properties (var(--marker) etc.) are not resolved.
+const MARKER_FILL = '#ffd700';
+const MARKER_STROKE = '#ffffff';
+const MARKER_LOCKED_COLOR = '#e91e63';
+const MARKER_LABEL_FILL = '#0f172a';
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
@@ -263,6 +272,8 @@ export default function LinePlotOverlay({
                 cy={cursorA.y}
                 r={markerRadius}
                 className={`lineplot-marker ${aLocked ? 'lineplot-marker-locked' : ''}`}
+                fill={aLocked ? MARKER_LOCKED_COLOR : MARKER_FILL}
+                stroke={aLocked ? MARKER_LOCKED_COLOR : MARKER_STROKE}
               />
               <text
                 x={cursorA.x}
@@ -271,6 +282,7 @@ export default function LinePlotOverlay({
                 dominantBaseline="middle"
                 fontSize={markerLabelSize}
                 className="lineplot-marker-label"
+                fill={MARKER_LABEL_FILL}
                 pointerEvents="none"
               >
                 A
@@ -282,6 +294,8 @@ export default function LinePlotOverlay({
                 cy={cursorB.y}
                 r={markerRadius}
                 className={`lineplot-marker ${bLocked ? 'lineplot-marker-locked' : ''}`}
+                fill={bLocked ? MARKER_LOCKED_COLOR : MARKER_FILL}
+                stroke={bLocked ? MARKER_LOCKED_COLOR : MARKER_STROKE}
               />
               <text
                 x={cursorB.x}
@@ -290,6 +304,7 @@ export default function LinePlotOverlay({
                 dominantBaseline="middle"
                 fontSize={markerLabelSize}
                 className="lineplot-marker-label"
+                fill={MARKER_LABEL_FILL}
                 pointerEvents="none"
               >
                 B
