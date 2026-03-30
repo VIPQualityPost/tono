@@ -61,6 +61,10 @@ jobs:
             gir1.2-webkit2-4.1
 
       - name: Install Node dependencies
+        run: npm install --ignore-scripts
+
+      - name: Install frontend Node dependencies
+        working-directory: frontend
         run: npm install
 
       - name: Build

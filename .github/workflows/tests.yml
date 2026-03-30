@@ -25,6 +25,10 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Install Node dependencies
+        run: npm install --ignore-scripts
+
+      - name: Install frontend Node dependencies
+        working-directory: frontend
         run: npm install
 
       - name: Run tests
