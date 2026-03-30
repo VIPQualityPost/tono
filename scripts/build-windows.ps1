@@ -50,7 +50,7 @@ npm run build
 Assert-LastExitCode "Frontend build"
 
 Write-Host "Installing desktop build dependencies..."
-& $pythonExe -m pip install -e ".[desktop]"
+& uv pip install -e ".[desktop]"
 Assert-LastExitCode "Desktop dependency installation"
 
 $mode = if ($OneFile) { "--onefile" } else { "--onedir" }
