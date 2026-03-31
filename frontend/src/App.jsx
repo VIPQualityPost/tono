@@ -9,6 +9,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import CustomNode, { NodeContext } from './CustomNode';
+import HelpPanelManager from './HelpPanelManager';
 import * as api from './api';
 import { pickNativeDirectorySelection, pickNativeFileSelection } from './nativePicker';
 import { toBlob } from 'html-to-image';
@@ -854,6 +855,8 @@ function Flow() {
   const [contextMenu, setContextMenu] = useState(null);
   const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
   const [executingNodeId, setExecutingNodeId] = useState(null);
+  const [helpTabs, setHelpTabs] = useState([]);
+  const [activeHelpTab, setActiveHelpTab] = useState(null);
 
   const flowContainerRef = useRef(null);
   const panTimerRef = useRef(null);
@@ -1647,6 +1650,11 @@ function Flow() {
 
   const addNode = useCallback((className, def) => {
     if (!contextMenu) return;
+    if (className === 'TextNote') {
+      openJournalTab();
+      setContextMenu(null);
+      return;
+    }
     const position = reactFlow.screenToFlowPosition({
       x: contextMenu.x,
       y: contextMenu.y,
@@ -1745,7 +1753,7 @@ function Flow() {
 
     setContextMenu(null);
     scheduleAutoRun();
-  }, [contextMenu, reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]); // scheduleAutoRun is stable (no deps)
+  }, [contextMenu, reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes, setEdges]); // scheduleAutoRun stable; openJournalTab stable ([] deps)
 
   // ── Toolbar actions ─────────────────────────────────────────────────
 
@@ -1921,6 +1929,45 @@ function Flow() {
     }));
   }, [setNodes]);
 
+  const openHelp = useCallback(async (label) => {
+    setHelpTabs((prev) => {
+      if (prev.find((t) => t.label === label)) return prev;
+      return [...prev, { label, content: null }];
+    });
+    setActiveHelpTab(label);
+    const text = await api.getNodeDoc(label);
+    setHelpTabs((prev) =>
+      prev.map((t) =>
+        t.label === label
+          ? { ...t, content: text || '*No documentation available for this node.*' }
+          : t,
+      ),
+    );
+  }, []);
+
+  const closeHelpTab = useCallback((label) => {
+    setHelpTabs((prev) => {
+      const next = prev.filter((t) => t.label !== label);
+      setActiveHelpTab((cur) => {
+        if (cur !== label) return cur;
+        return next.length > 0 ? next[next.length - 1].label : null;
+      });
+      return next;
+    });
+  }, []);
+
+  const openJournalTab = useCallback(() => {
+    setHelpTabs((prev) => {
+      if (prev.find((t) => t.label === 'Journal')) return prev;
+      return [...prev, { label: 'Journal', type: 'journal', content: '' }];
+    });
+    setActiveHelpTab('Journal');
+  }, []);
+
+  const updateTabContent = useCallback((label, content) => {
+    setHelpTabs((prev) => prev.map((t) => t.label === label ? { ...t, content } : t));
+  }, []);
+
   const contextValue = useMemo(() => ({
     onWidgetChange,
     onRuntimeValuesChange,
@@ -1931,7 +1978,8 @@ function Flow() {
     onRenameGroup: renameGroup,
     onUngroup: ungroupGroup,
     executingNodeId,
-  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup, executingNodeId]);
+    openHelp,
+  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup, executingNodeId, openHelp]);
 
   const clearGraph = useCallback(() => {
     setNodes([]);
@@ -2949,6 +2997,13 @@ function Flow() {
         </div>
 
       </div>
+      <HelpPanelManager
+        tabs={helpTabs}
+        activeTab={activeHelpTab}
+        onTabSelect={setActiveHelpTab}
+        onTabClose={closeHelpTab}
+        onTabContentChange={updateTabContent}
+      />
     </NodeContext.Provider>
   );
 }

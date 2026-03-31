@@ -17,6 +17,7 @@ const NOTE_COLORS = {
 function TextNoteNode({ id, data }) {
   const ctx = useContext(NodeContext);
   const [isEditing, setIsEditing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const textareaRef = useRef(null);
 
   const selected = useStore(
@@ -95,6 +96,13 @@ function TextNoteNode({ id, data }) {
       >
         {/* Colour picker row */}
         <div className="text-note-toolbar nodrag nopan">
+          <button
+            className="text-note-fold-btn nodrag nopan"
+            onClick={(e) => { e.stopPropagation(); setCollapsed((c) => !c); }}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            {collapsed ? '▶' : '▼'}
+          </button>
           {Object.entries(NOTE_COLORS).map(([key, p]) => (
             <button
               key={key}
@@ -110,7 +118,7 @@ function TextNoteNode({ id, data }) {
         </div>
 
         {/* Content area */}
-        {isEditing ? (
+        {!collapsed && (isEditing ? (
           <textarea
             ref={textareaRef}
             className="text-note-textarea nodrag nopan nowheel"
@@ -135,7 +143,7 @@ function TextNoteNode({ id, data }) {
               <span className="text-note-placeholder">Double-click to write…</span>
             )}
           </div>
-        )}
+        ))}
       </div>
     </>
   );
