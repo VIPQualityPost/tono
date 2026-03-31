@@ -21,6 +21,7 @@ from backend.nodes import (
     mask_threshold,
     note,
     number,
+    text_note,
     range_slider,
     rotate,
     save,

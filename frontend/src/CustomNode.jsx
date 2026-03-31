@@ -10,6 +10,8 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
 
+import TextNoteNode from './TextNoteNode';
+
 import {
   getSpecTypeAndOptions, isDataSocketSpec, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
@@ -970,6 +972,9 @@ function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
   if (data.className === 'Group') {
     return <GroupNode id={id} data={data} />;
+  }
+  if (data.className === 'TextNote') {
+    return <TextNoteNode id={id} data={data} />;
   }
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);

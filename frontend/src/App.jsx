@@ -1649,11 +1649,13 @@ function Flow() {
     const widgetValues = buildDefaultWidgetValues(def);
 
     const newNodeId = String(nextIdRef.current++);
+    const isTextNote = className === 'TextNote';
     const newNode = {
       id: newNodeId,
       type: 'custom',
       position,
       dragHandle: '.drag-handle',
+      ...(isTextNote ? { width: 300, height: 220, style: { width: 300, height: 220 } } : {}),
       data: {
         label: def.display_name || className,
         className,
