@@ -14,6 +14,7 @@ import { pickNativeDirectorySelection, pickNativeFileSelection } from './nativeP
 import { toBlob } from 'html-to-image';
 import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
+import tonoIconUrl from '../../resources/icon_1024.png';
 import { hydrateWorkflowState } from './workflowHydration';
 import { serializeWorkflowState } from './workflowSerialization';
 import { sortNodesForParentOrder } from './nodeHierarchy.js';
@@ -1985,6 +1986,29 @@ function Flow() {
     });
   }, [loadDefaultWorkflow]);
 
+  const stampLogoOnBlob = useCallback(async (blob) => {
+    const [img, logo] = await Promise.all([blob, tonoIconUrl].map((src) => new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = typeof src === 'string' ? src : URL.createObjectURL(src);
+    })));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const margin = 16;
+    const size = Math.min(128, Math.floor(img.naturalWidth / 6), Math.floor(img.naturalHeight / 6));
+    if (size >= 16) {
+      ctx.drawImage(logo, img.naturalWidth - size - margin, img.naturalHeight - size - margin, size, size);
+    }
+
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, []);
+
   const getWorkflowBlob = useCallback(async () => {
     const viewportEl = document.querySelector('.react-flow__viewport');
     if (!viewportEl) throw new Error('Flow element not found');
@@ -2013,8 +2037,9 @@ function Flow() {
     });
     if (!blob) throw new Error('Capture returned empty');
 
+    const stampedBlob = await stampLogoOnBlob(blob);
     const workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
-    return embedWorkflow(blob, workflow);
+    return embedWorkflow(stampedBlob, workflow);
   }, [reactFlow]);
 
   const saveWorkflow = useCallback(async () => {

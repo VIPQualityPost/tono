@@ -10,7 +10,6 @@ from backend.node_registry import register_node
 from backend.execution_context import emit_warning
 from backend.data_types import DataField, LineData, MeshModel, datafield_to_uint8, image_to_uint8
 
-
 @register_node(display_name="Save")
 class Save:
     @classmethod
