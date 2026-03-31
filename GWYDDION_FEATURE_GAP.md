@@ -27,18 +27,18 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 
 | # | Feature | Gwyddion Source | Description |
 |---|---------|---------------|-------------|
-| 15 | Correlation / Pattern Matching | crosscor.c, maskcor.c | Find repeated features or align images via cross-correlation. |
+| ~~15~~ | ~~Correlation / Pattern Matching~~ | ~~crosscor.c, maskcor.c~~ | ~~Find repeated features or align images via cross-correlation.~~ **DONE** |
 | ~~16~~ | ~~Slope Distribution~~ | ~~slope_dist.c~~ | ~~Angular histogram of surface slopes. Characterizes surface texture directionality.~~ **DONE** |
 | ~~17~~ | ~~Grain Filtering~~ | ~~grain_filter.c~~ | ~~Remove grains by size, height, or border contact. Refine grain masks post-detection.~~ **DONE** |
 | ~~18~~ | ~~Field Arithmetic~~ | ~~arithmetic.c~~ | ~~Add/subtract/multiply/divide two DATA_FIELDs. Useful for difference maps, normalization.~~ **DONE** |
-| 19 | Spot Removal | spotremove.c | Interpolate over selected point defects (dust, spikes). |
+| ~~19~~ | ~~Spot Removal~~ | ~~spotremove.c~~ | ~~Interpolate over selected point defects (dust, spikes).~~ **DONE** |
 | ~~20~~ | ~~Tip Modeling / Deconvolution~~ | ~~tip_blind.c, tip_model.c~~ | ~~Estimate tip shape from image, deconvolve to recover true surface.~~ **DONE** |
 | ~~21~~ | ~~Radial Profile~~ | ~~rprofile tool~~ | ~~Azimuthally averaged profile from a center point. Good for circular features.~~ **DONE** |
-| 22 | Wavelet Transform | dwt.c, cwt.c | Discrete/continuous wavelet analysis. Multi-scale roughness decomposition. |
+| ~~22~~ | ~~Wavelet Transform~~ | ~~dwt.c, cwt.c~~ | ~~Discrete/continuous wavelet analysis. Multi-scale roughness decomposition.~~ **DONE** |
 | ~~23~~ | ~~Scale / Resample~~ | ~~scale.c, resample.c~~ | ~~Resize fields with interpolation.~~ **DONE** |
 | ~~24~~ | ~~Gradient~~ | ~~gradient.c~~ | ~~Compute x/y gradient magnitude maps.~~ **DONE** |
-| 25 | Custom Convolution | convolution_filter.c | User-defined kernel convolution. |
-| 26 | Local Contrast Enhancement | local_contrast.c | Enhance visibility of local features in images. |
+| ~~25~~ | ~~Custom Convolution~~ | ~~convolution_filter.c~~ | ~~User-defined kernel convolution.~~ **DONE** |
+| ~~26~~ | ~~Local Contrast Enhancement~~ | ~~local_contrast.c~~ | ~~Enhance visibility of local features in images.~~ **DONE** |
 
 ## Lower Priority
 
@@ -53,11 +53,11 @@ Reference for future implementation. Grouped by value to typical SPM workflows.
 | 33 | Facet Analysis | facet_analysis.c | Orientation distribution of surface facets (stereographic projection). |
 | 34 | Shape Fitting | fit-shape.c | Fit geometric primitives: sphere, paraboloid, cylinder, etc. |
 | 35 | Synthetic Surface Generation | *_synth.c (~20 modules) | Generate test surfaces: FBM, noise, lattice, waves, particles, fibers, etc. |
-| 36 | Entropy | entropy.c | Information entropy of height distribution. |
+| ~~36~~ | ~~Entropy~~ | ~~entropy.c~~ | ~~Information entropy of height distribution.~~ **DONE** |
 | 37 | Indentation Analysis | indent_analyze.c, hertz.c | Nanoindentation curve fitting (Hertz model). |
 | 38 | Deconvolution | deconvolve.c | Blind/regularized deconvolution for image restoration. |
 | 39 | Canny / Harris Detection | filters.c | Corner and edge feature detection beyond basic Sobel/Prewitt. |
-| 40 | Kuwahara Filter | filters.c | Edge-preserving smoothing filter. |
+| ~~40~~ | ~~Kuwahara Filter~~ | ~~filters.c~~ | ~~Edge-preserving smoothing filter.~~ **DONE** |
 
 ---
 

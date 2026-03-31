@@ -156,10 +156,16 @@ def test_save_generic():
         except ValueError:
             pass
 
+        # LINE as plot image (PNG / TIFF)
+        node.save(filename="line_plot_png", directory_path=tmpdir, format="PNG", value=line)
+        assert Path(tmpdir, "line_plot_png.png").exists()
+        node.save(filename="line_plot_tiff", directory_path=tmpdir, format="TIFF", value=line)
+        assert Path(tmpdir, "line_plot_tiff.tiff").exists()
+
         # Unsupported LINE format
         try:
-            node.save(filename="line_bad", directory_path=tmpdir, format="TIFF", value=line)
-            assert False, "Expected ValueError for LINE + TIFF"
+            node.save(filename="line_bad", directory_path=tmpdir, format="OBJ", value=line)
+            assert False, "Expected ValueError for LINE + OBJ"
         except ValueError:
             pass
 

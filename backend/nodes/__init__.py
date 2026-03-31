@@ -69,4 +69,13 @@ from backend.nodes import (
     tip_model,
     tip_deconvolution,
     tip_blind_estimate,
+    # New: remaining Gwyddion feature-gap nodes
+    filter_kuwahara,
+    entropy,
+    local_contrast,
+    filter_custom,
+    spot_removal,
+    wavelet_denoise,
+    cross_correlate,
+    template_match,
 )
