@@ -873,6 +873,7 @@ function Flow() {
   const canvasRightZoomRef = useRef(null);
   const suppressPaneContextMenuUntilRef = useRef(0);
   const loadNodeOutputRequestVersionsRef = useRef(new Map());
+  const journalContentRef = useRef('');
   const reactFlow = useReactFlow();
 
   // ── WebSocket ───────────────────────────────────────────────────────
@@ -1959,12 +1960,13 @@ function Flow() {
   const openJournalTab = useCallback(() => {
     setHelpTabs((prev) => {
       if (prev.find((t) => t.label === 'Journal')) return prev;
-      return [...prev, { label: 'Journal', type: 'journal', content: '' }];
+      return [...prev, { label: 'Journal', type: 'journal', content: journalContentRef.current }];
     });
     setActiveHelpTab('Journal');
   }, []);
 
   const updateTabContent = useCallback((label, content) => {
+    if (label === 'Journal') journalContentRef.current = content;
     setHelpTabs((prev) => prev.map((t) => t.label === label ? { ...t, content } : t));
   }, []);
 
@@ -1993,6 +1995,10 @@ function Flow() {
     setNodes(sortNodesForParentOrder(hydrated.nodes));
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
+    journalContentRef.current = data.journalContent || '';
+    setHelpTabs((prev) => prev.map((t) =>
+      t.label === 'Journal' ? { ...t, content: journalContentRef.current } : t,
+    ));
     initializeDynamicNodes(hydrated.nodes);
   }, [initializeDynamicNodes, setNodes, setEdges]);
 
@@ -2095,6 +2101,7 @@ function Flow() {
 
     const stampedBlob = await stampLogoOnBlob(blob);
     const workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
+    if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
     return embedWorkflow(stampedBlob, workflow);
   }, [reactFlow]);
 
@@ -3003,6 +3010,7 @@ function Flow() {
         onTabSelect={setActiveHelpTab}
         onTabClose={closeHelpTab}
         onTabContentChange={updateTabContent}
+        onOpenJournal={openJournalTab}
       />
     </NodeContext.Provider>
   );

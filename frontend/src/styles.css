@@ -543,6 +543,25 @@ html, body, #root {
 }
 .node-help-tab-close:hover { opacity: 1; }
 
+.node-help-tab-add {
+  background: none;
+  border: 1px dashed #334155;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.12s, border-color 0.12s;
+}
+.node-help-tab-add:hover { color: #f1f5f9; border-color: #64748b; }
+
 .node-help-panel {
   position: fixed;
   top: 60px;

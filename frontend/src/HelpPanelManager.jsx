@@ -4,7 +4,11 @@ import { marked } from 'marked';
 
 function JournalTab({ content, onChange }) {
   const [isEditing, setIsEditing] = useState(false);
-  const renderedHtml = content?.trim() ? marked.parse(content) : '';
+
+  let renderedHtml = '';
+  if (!isEditing && content?.trim()) {
+    try { renderedHtml = marked.parse(content); } catch { /* fallback to raw */ renderedHtml = content; }
+  }
 
   return (
     <div className="node-help-journal">
@@ -34,23 +38,26 @@ function JournalTab({ content, onChange }) {
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
-      ) : (
+      ) : renderedHtml ? (
         <div
           className="node-help-panel-body node-help-journal-preview nowheel"
           onDoubleClick={() => setIsEditing(true)}
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={renderedHtml ? { __html: renderedHtml } : undefined}
+          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+        />
+      ) : (
+        <div
+          className="node-help-panel-body node-help-journal-preview nowheel"
+          onDoubleClick={() => setIsEditing(true)}
         >
-          {!renderedHtml && (
-            <span className="node-help-journal-placeholder">Double-click to write…</span>
-          )}
+          <span className="node-help-journal-placeholder">Double-click to write…</span>
         </div>
       )}
     </div>
   );
 }
 
-function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange }) {
+function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange, onOpenJournal }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -92,6 +99,15 @@ function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabConte
             </button>
           </div>
         ))}
+        {!tabs.some((t) => t.type === 'journal') && (
+          <button
+            className="node-help-tab-add"
+            title="Open Journal"
+            onClick={onOpenJournal}
+          >
+            +
+          </button>
+        )}
       </div>
 
       {/* Content */}

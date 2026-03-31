@@ -3,7 +3,7 @@ from __future__ import annotations
 from backend.node_registry import register_node
 
 
-@register_node(display_name="Text Note")
+@register_node(display_name="Journal")
 class TextNote:
     """A floating text card for annotating workflows. Supports Markdown."""
 
