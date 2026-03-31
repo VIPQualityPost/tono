@@ -5,9 +5,10 @@ Asylum Research instruments store scan metadata in a sidecar group rather
 than as dataset attributes.  This importer reads physical dimensions from:
 
   Image/DataSetInfo/Global/Channels/<channel>/ImageDims
-    DimScaling   – (2,2) array: [[px_size_x, offset_x], [px_size_y, offset_y]]
-    DimExtents   – pixel counts [xres, yres] (stored in a child group)
-    DimUnits     – lateral unit strings
+    DimScaling   – (2,2) array: [[Y_start, Y_end], [X_start, X_end]]
+                   absolute physical coordinate ranges in DimUnits
+    DimExtents   – pixel counts [yres, xres] (stored in a child group, not used for sizing)
+    DimUnits     – lateral unit strings [Y_unit, X_unit]
     DataUnits    – Z unit string
 
 If the sidecar group is absent (generic HDF5), standard dataset attributes
@@ -78,6 +79,12 @@ def _ar_image_dims(f, ds_name: str) -> dict | None:
     and the metadata lives at:
       "Image/DataSetInfo/Global/Channels/<channel>/ImageDims"
 
+    DimScaling is a (2, 2) array of *absolute physical coordinate ranges*
+    (not per-pixel step sizes), stored Y-first:
+      scaling[0, :] = [Y_start, Y_end]
+      scaling[1, :] = [X_start, X_end]
+    Both values are in the unit given by DimUnits.
+
     Returns a dict with xreal, yreal, xoff, yoff, si_unit_xy, si_unit_z,
     or None if the group isn't found.
     """
@@ -93,30 +100,22 @@ def _ar_image_dims(f, ds_name: str) -> dict | None:
     if not isinstance(grp, h5py.Group):
         return None
 
-    scaling = grp.attrs.get("DimScaling")   # shape (2, 2): [[px_x, off_x], [px_y, off_y]]
-    dim_units = grp.attrs.get("DimUnits")   # array of unit strings, e.g. ['m', 'm']
+    scaling = grp.attrs.get("DimScaling")   # shape (2, 2): [[Y_start, Y_end], [X_start, X_end]]
+    dim_units = grp.attrs.get("DimUnits")   # array of unit strings, e.g. ['m', 'm'] (Y then X)
     data_units = grp.attrs.get("DataUnits") # Z unit string, e.g. 'N'
 
     if scaling is None or np.asarray(scaling).shape != (2, 2):
         return None
 
     scaling = np.asarray(scaling, dtype=np.float64)
-    px_x, off_x = float(scaling[0, 0]), float(scaling[0, 1])
-    px_y, off_y = float(scaling[1, 0]), float(scaling[1, 1])
+    # Y axis first (row-major), then X — matching numpy's (rows, cols) convention.
+    y_start, y_end = float(scaling[0, 0]), float(scaling[0, 1])
+    x_start, x_end = float(scaling[1, 0]), float(scaling[1, 1])
 
-    # DimExtents gives pixel counts; use to compute total physical size.
-    extents_grp = None
-    for child_name in grp:
-        child = grp[child_name]
-        if isinstance(child, h5py.Group) and "DimExtents" in child.attrs:
-            extents_grp = child
-            break
-
-    xres, yres = 1, 1
-    if extents_grp is not None:
-        ext = np.asarray(extents_grp.attrs["DimExtents"])
-        if ext.size >= 2:
-            xres, yres = int(ext[0]), int(ext[1])
+    xreal = abs(x_end - x_start) or 1e-6
+    yreal = abs(y_end - y_start) or 1e-6
+    xoff  = min(x_start, x_end)
+    yoff  = min(y_start, y_end)
 
     def _decode(raw, default="m") -> str:
         if raw is None:
@@ -127,12 +126,20 @@ def _ar_image_dims(f, ds_name: str) -> dict | None:
             return raw.decode("utf-8", errors="replace").strip() or default
         return str(raw).strip() or default
 
+    # DimUnits is [Y_unit, X_unit]; X unit is the canonical lateral unit.
+    if dim_units is not None and len(dim_units) >= 2:
+        xy_unit = _decode(dim_units[1])
+    elif dim_units is not None and len(dim_units) >= 1:
+        xy_unit = _decode(dim_units[0])
+    else:
+        xy_unit = "m"
+
     return {
-        "xreal": abs(px_x * xres) or 1e-6,
-        "yreal": abs(px_y * yres) or 1e-6,
-        "xoff":  off_x,
-        "yoff":  off_y,
-        "si_unit_xy": _decode(dim_units[0] if dim_units is not None and len(dim_units) >= 1 else None),
+        "xreal": xreal,
+        "yreal": yreal,
+        "xoff":  xoff,
+        "yoff":  yoff,
+        "si_unit_xy": xy_unit,
         "si_unit_z":  _decode(data_units),
     }
 

@@ -3,7 +3,7 @@ import base64
 import io
 import numpy as np
 from backend.node_registry import register_node
-from backend.execution_context import emit_mesh
+from backend.execution_context import emit_mesh, emit_warning
 from backend.data_types import (
     COLORMAPS,
     DataField,
@@ -163,6 +163,14 @@ class View3D:
 
         data = field.data
         yres, xres = data.shape
+
+        phys_ratio = field.xreal / field.yreal if field.yreal else 1.0
+        pixel_ratio = xres / yres if yres else 1.0
+        if abs(phys_ratio / pixel_ratio - 1.0) > 0.02:
+            emit_warning(
+                f"Non-square pixels ({xres}\u00d7{yres} px). "
+                f"The 3D surface shows the physical scan area, not the pixel grid."
+            )
 
         step_y = max(1, yres // resolution)
         step_x = max(1, xres // resolution)

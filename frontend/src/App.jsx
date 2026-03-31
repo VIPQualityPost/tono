@@ -852,6 +852,7 @@ function Flow() {
   const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
   const [contextMenu, setContextMenu] = useState(null);
   const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
+  const [executingNodeId, setExecutingNodeId] = useState(null);
 
   const flowContainerRef = useRef(null);
   const panTimerRef = useRef(null);
@@ -1285,15 +1286,19 @@ function Flow() {
             ...n,
             data: { ...n.data, processingTimeMs: null },
           })));
+          setExecutingNodeId(null);
           setStatus({ text: 'Running workflow…', level: 'info' });
           break;
         case 'executing':
+          setExecutingNodeId(String(msg.data.node));
           setStatus({ text: `Executing node ${msg.data.node}…`, level: 'info' });
           break;
         case 'execution_complete':
+          setExecutingNodeId(null);
           setStatus({ text: 'Done.', level: 'info' });
           break;
         case 'execution_error':
+          setExecutingNodeId(null);
           setStatus({ text: 'Error: ' + msg.data.message, level: 'error' });
           console.error('[tono] execution error', msg.data);
           break;
@@ -1924,7 +1929,8 @@ function Flow() {
     onResizeGroup: resizeGroup,
     onRenameGroup: renameGroup,
     onUngroup: ungroupGroup,
-  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup]);
+    executingNodeId,
+  }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup, executingNodeId]);
 
   const clearGraph = useCallback(() => {
     setNodes([]);

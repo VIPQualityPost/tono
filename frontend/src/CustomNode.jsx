@@ -413,9 +413,16 @@ function LayerGalleryPreview({ overlay }) {
   const layers = Array.isArray(overlay?.layers) ? overlay.layers : [];
   const [index, setIndex] = useState(0);
 
+  // Reset to 0 only when the layer names change (different file/channels loaded),
+  // not on every graph re-run which produces a new overlay object reference.
+  const layerNamesKey = layers.map((l) => l.name ?? '').join('\0');
+  const prevLayerNamesKeyRef = useRef(layerNamesKey);
   useEffect(() => {
-    setIndex(0);
-  }, [overlay]);
+    if (layerNamesKey !== prevLayerNamesKeyRef.current) {
+      prevLayerNamesKeyRef.current = layerNamesKey;
+      setIndex(0);
+    }
+  }, [layerNamesKey]);
 
   useEffect(() => {
     if (layers.length === 0) {
@@ -1168,6 +1175,8 @@ function CustomNode({ id, data }) {
   })();
 
   return (
+    <>
+      {ctx?.executingNodeId === id && <div className="node-executing-glow" aria-hidden="true" />}
     <div className="custom-node">
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
@@ -1519,6 +1528,7 @@ function CustomNode({ id, data }) {
         )}
       </div>
     </div>
+    </>
   );
 }
 

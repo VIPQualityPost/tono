@@ -230,6 +230,7 @@ html, body, #root {
 
 /* ── Custom node ───────────────────────────────────────────────────── */
 .custom-node {
+  position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: 6px;
@@ -1425,6 +1426,43 @@ html, body, #root {
   background: var(--selection) !important;
   width: 8px !important;
   height: 8px !important;
+}
+
+/* ── Executing node glow ───────────────────────────────────────────── */
+.node-executing-glow {
+  position: absolute;
+  inset: -3px;
+  border-radius: 9px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.node-executing-glow::before {
+  content: '';
+  position: absolute;
+  /* large centered square so conic sweep stays circular on any node size */
+  width: 800px;
+  height: 800px;
+  top: 50%;
+  left: 50%;
+  margin-top: -400px;
+  margin-left: -400px;
+  background: conic-gradient(
+    from 0deg,
+    transparent       0deg,
+    transparent     310deg,
+    rgba(59, 130, 246, 0.12) 330deg,
+    rgba(99, 102, 241, 0.55) 348deg,
+    rgba(167, 139, 250, 1)   354deg,
+    rgba(255, 255, 255, 0.9) 357deg,
+    rgba(167, 139, 250, 0.7) 360deg
+  );
+  animation: node-glow-rotate 1.4s linear infinite;
+  transform-origin: center center;
+}
+@keyframes node-glow-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* ── Text Note node ────────────────────────────────────────────────── */
