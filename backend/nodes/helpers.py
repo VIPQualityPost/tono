@@ -527,13 +527,9 @@ OUTPUT_DIR = output_dir()
 
 _MAX_SAVE_FIELDS = 8
 
-_DEMO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".npy", ".npz",
-                    ".gwy", ".sxm", ".ibw"}
+from backend.importers import all_extensions, get_importer
 
-_SPM_EXTENSIONS = {".gwy", ".sxm", ".ibw"}
-_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp"}
-_ARRAY_EXTENSIONS = {".npy", ".npz"}
-_PATH_COMPATIBLE_EXTENSIONS = _IMAGE_EXTENSIONS | _ARRAY_EXTENSIONS | _SPM_EXTENSIONS
+_PATH_COMPATIBLE_EXTENSIONS = all_extensions()
 
 
 def _resolve_path(filepath: str):
@@ -554,52 +550,16 @@ def list_channels(filepath: str) -> list[dict]:
     if not path.exists():
         return [{"name": "field", "type": "DATA_FIELD"}]
 
-    ext = path.suffix.lower()
-
-    if ext == ".gwy":
-        try:
-            import gwyfile
-            obj = gwyfile.load(str(path))
-            channels = gwyfile.util.get_datafields(obj)
-            if channels:
-                return [{"name": k, "type": "DATA_FIELD"} for k in channels]
-        except Exception:
-            pass
+    importer = get_importer(path.suffix.lower())
+    if importer is None:
         return [{"name": "field", "type": "DATA_FIELD"}]
 
-    if ext == ".sxm":
-        try:
-            import nanonispy as nap
-            sxm = nap.read.Scan(str(path))
-            if sxm.signals:
-                return [{"name": k, "type": "DATA_FIELD"} for k in sxm.signals]
-        except Exception:
-            pass
-        return [{"name": "field", "type": "DATA_FIELD"}]
-
-    if ext == ".ibw":
-        try:
-            load_ibw = _import_ibw_loader()
-            wave = load_ibw(str(path))
-            raw = wave["wave"]["wData"]
-            labels = wave["wave"].get("labels", None)
-            if raw.ndim >= 3 and labels:
-                dim_idx = min(2, len(labels) - 1)
-                if dim_idx >= 0 and labels[dim_idx]:
-                    decoded = []
-                    for lbl in labels[dim_idx]:
-                        if lbl:
-                            name = lbl.split(b"\x00")[0].decode("ascii", errors="replace").strip()
-                            if name:
-                                decoded.append(name)
-                    if decoded:
-                        return [{"name": n, "type": "DATA_FIELD"} for n in decoded]
-            if raw.ndim >= 3 and raw.shape[2] > 1:
-                return [{"name": f"ch{i}", "type": "DATA_FIELD"} for i in range(raw.shape[2])]
-        except Exception:
-            pass
-        return [{"name": "field", "type": "DATA_FIELD"}]
-
+    try:
+        names = importer.channel_names(path)
+        if names:
+            return [{"name": n, "type": "DATA_FIELD"} for n in names]
+    except Exception:
+        pass
     return [{"name": "field", "type": "DATA_FIELD"}]
 
 
@@ -624,7 +584,7 @@ def _list_demo_files() -> list[str]:
         return []
     return sorted(
         f.name for f in DEMO_DIR.iterdir()
-        if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in _DEMO_EXTENSIONS
+        if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in _PATH_COMPATIBLE_EXTENSIONS
     )
 
 

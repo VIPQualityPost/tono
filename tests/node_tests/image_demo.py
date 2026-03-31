@@ -53,7 +53,8 @@ def test_load_cache():
     Image._load_fields_cached.cache_clear()
 
     with patch("backend.nodes.image_demo.DEMO_DIR", FIXTURES):
-        with patch.object(Image, "_load_image_or_array", wraps=Image._load_image_or_array) as loader:
+        import backend.importers.array_image as _ai
+        with patch.object(_ai, "load", wraps=_ai.load) as loader:
             _, first = node.load(name="nanoparticles.npy")
             _, second = node.load(name="nanoparticles.npy")
             assert loader.call_count == 1

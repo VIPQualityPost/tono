@@ -83,7 +83,8 @@ def test_load_file_cache():
         path = os.path.join(tmpdir, "cached.npy")
         np.save(path, data)
 
-        with patch.object(Image, "_load_image_or_array", wraps=Image._load_image_or_array) as loader:
+        import backend.importers.array_image as _ai
+        with patch.object(_ai, "load", wraps=_ai.load) as loader:
             _, first = node.load(filename=path)
             _, second = node.load(filename=path)
             assert loader.call_count == 1
