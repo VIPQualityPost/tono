@@ -271,6 +271,18 @@ def create_app(
             content_type="application/json",
         )
 
+    async def get_node_doc(request: web.Request) -> web.Response:
+        name = request.rel_url.query.get("name", "").strip()
+        if not name:
+            raise web.HTTPBadRequest(reason="Missing 'name' query parameter")
+        docs_dir = project_root() / "docs" / "nodes"
+        # Try exact match first, then fall back to replacing " / " with "-"
+        candidates = [docs_dir / f"{name}.md", docs_dir / f"{name.replace(' / ', '-')}.md"]
+        for path in candidates:
+            if path.exists() and path.is_file():
+                return web.Response(text=path.read_text(encoding="utf-8"), content_type="text/plain")
+        raise web.HTTPNotFound(reason=f"No documentation found for '{name}'")
+
     async def list_files(request: web.Request) -> web.Response:
         session_id = require_session_id(request)
         input_path = session_input_dir(session_id)
@@ -532,6 +544,7 @@ def create_app(
     app.router.add_post("/download", download_file)
     app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)
+    app.router.add_get("/docs", get_node_doc)
     app.router.add_post("/prompt", submit_prompt)
     app.router.add_get("/ws", websocket_handler)
 

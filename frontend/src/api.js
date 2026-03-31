@@ -62,6 +62,12 @@ export async function getNodes() {
   return r.json();
 }
 
+export async function getNodeDoc(displayName) {
+  const r = await sessionFetch(`/docs?name=${encodeURIComponent(displayName)}`);
+  if (!r.ok) return null;
+  return r.text();
+}
+
 export async function getFiles() {
   const r = await sessionFetch('/files');
   if (!r.ok) return [];

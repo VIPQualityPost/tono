@@ -1,6 +1,11 @@
 import React, { useContext, useRef, useCallback, useState, useEffect, memo, lazy, Suspense } from 'react';
+import ReactDOM from 'react-dom';
 import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
+import { marked } from 'marked';
+import { getNodeDoc } from './api';
 import LinePlotOverlay from './LinePlotOverlay';
+
+marked.use({ breaks: true, gfm: true });
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
@@ -973,10 +978,48 @@ function NodeTable({ rows }) {
   );
 }
 
+// ── Node help panel (portal) ──────────────────────────────────────────
+
+function NodeHelpPanel({ title, content, onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div className="node-help-panel">
+      <div className="node-help-panel-header">
+        <span className="node-help-panel-title">{title}</span>
+        <button className="node-help-panel-close" onClick={onClose} title="Close">×</button>
+      </div>
+      <div
+        className="node-help-panel-body nowheel"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: marked.parse(content || '') }}
+      />
+    </div>,
+    document.body,
+  );
+}
+
 // ── CustomNode component ──────────────────────────────────────────────
 
 function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpContent, setHelpContent] = useState(null);
+
+  const onHelpClick = useCallback(async (e) => {
+    e.stopPropagation();
+    if (helpOpen) { setHelpOpen(false); return; }
+    setHelpOpen(true);
+    if (helpContent === null) {
+      const text = await getNodeDoc(data.label);
+      setHelpContent(text || '*No documentation available for this node.*');
+    }
+  }, [helpOpen, helpContent, data.label]);
+
   if (data.className === 'Group') {
     return <GroupNode id={id} data={data} />;
   }
@@ -1181,7 +1224,10 @@ function CustomNode({ id, data }) {
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
         <span className="node-title-main">{data.label}</span>
-        {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
+        <div className="node-title-right">
+          {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
+          <button className="node-help-btn nodrag nopan" title="Documentation" onClick={onHelpClick}>?</button>
+        </div>
       </div>
 
       <div className="node-body">
@@ -1528,6 +1574,13 @@ function CustomNode({ id, data }) {
         )}
       </div>
     </div>
+    {helpOpen && (
+      <NodeHelpPanel
+        title={data.label}
+        content={helpContent ?? '*Loading…*'}
+        onClose={() => setHelpOpen(false)}
+      />
+    )}
     </>
   );
 }
