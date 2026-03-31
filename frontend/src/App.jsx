@@ -2003,7 +2003,15 @@ function Flow() {
     const margin = 16;
     const size = Math.min(128, Math.floor(img.naturalWidth / 6), Math.floor(img.naturalHeight / 6));
     if (size >= 16) {
-      ctx.drawImage(logo, img.naturalWidth - size - margin, img.naturalHeight - size - margin, size, size);
+      const logoX = img.naturalWidth - size - margin;
+      const logoY = img.naturalHeight - size - margin;
+      const fontSize = Math.max(11, Math.round(size * 0.18));
+      ctx.font = `500 ${fontSize}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('open with', logoX + size / 2, logoY - 6);
+      ctx.drawImage(logo, logoX, logoY, size, size);
     }
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
