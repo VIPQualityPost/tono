@@ -419,6 +419,18 @@ html, body, #root {
 
 .node-title-main {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-title-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  flex-shrink: 1;
 }
 
 .node-title-meta {
@@ -435,12 +447,6 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
-.node-title-right {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
 
 .node-help-btn {
   width: 15px;

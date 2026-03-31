@@ -1223,11 +1223,11 @@ function CustomNode({ id, data }) {
     <div className="custom-node">
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
-        <span className="node-title-main">{data.label}</span>
-        <div className="node-title-right">
-          {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
+        <div className="node-title-left">
+          <span className="node-title-main">{data.label}</span>
           <button className="node-help-btn nodrag nopan" title="Documentation" onClick={onHelpClick}>?</button>
         </div>
+        {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
       </div>
 
       <div className="node-body">

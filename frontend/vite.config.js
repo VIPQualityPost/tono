@@ -12,6 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/nodes': 'http://127.0.0.1:8188',
+      '/docs': 'http://127.0.0.1:8188',
       '/files': 'http://127.0.0.1:8188',
       '/folder-files': 'http://127.0.0.1:8188',
       '/channels': 'http://127.0.0.1:8188',
