@@ -877,6 +877,11 @@ function Flow() {
   const journalContentRef = useRef('');
   const reactFlow = useReactFlow();
 
+  const scheduleAutoRun = useCallback(() => {
+    clearTimeout(autoRunTimer.current);
+    autoRunTimer.current = setTimeout(() => autoRunRef.current?.(), 300);
+  }, []);
+
   // ── WebSocket ───────────────────────────────────────────────────────
 
   const updateNodeData = useCallback((nodeId, patch) => {
@@ -1648,6 +1653,14 @@ function Flow() {
     });
   }, [reactFlow]);
 
+  const openJournalTab = useCallback(() => {
+    setHelpTabs((prev) => {
+      if (prev.find((t) => t.label === 'Journal')) return prev;
+      return [...prev, { label: 'Journal', type: 'journal', content: journalContentRef.current }];
+    });
+    setActiveHelpTab('Journal');
+  }, []);
+
   // ── Add node from context menu ──────────────────────────────────────
 
   const addNode = useCallback((className, def) => {
@@ -1796,11 +1809,6 @@ function Flow() {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     });
   };
-
-  const scheduleAutoRun = useCallback(() => {
-    clearTimeout(autoRunTimer.current);
-    autoRunTimer.current = setTimeout(() => autoRunRef.current?.(), 300);
-  }, []);
 
   const onRuntimeValuesChange = useCallback((nodeId, patch, { scheduleRun = false } = {}) => {
     if (!patch || typeof patch !== 'object') return;
@@ -1956,14 +1964,6 @@ function Flow() {
       });
       return next;
     });
-  }, []);
-
-  const openJournalTab = useCallback(() => {
-    setHelpTabs((prev) => {
-      if (prev.find((t) => t.label === 'Journal')) return prev;
-      return [...prev, { label: 'Journal', type: 'journal', content: journalContentRef.current }];
-    });
-    setActiveHelpTab('Journal');
   }, []);
 
   const updateTabContent = useCallback((label, content) => {

@@ -980,13 +980,6 @@ function NodeTable({ rows }) {
 
 function CustomNode({ id, data }) {
   const ctx = useContext(NodeContext);
-
-  if (data.className === 'Group') {
-    return <GroupNode id={id} data={data} />;
-  }
-  if (data.className === 'TextNote') {
-    return <TextNoteNode id={id} data={data} />;
-  }
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
@@ -996,6 +989,7 @@ function CustomNode({ id, data }) {
 
   // Find the COORDPAIR input name (if any) so we can resolve live upstream positions
   const coordPairInputName = React.useMemo(() => {
+    if (!def) return null;
     const allInputs = { ...def.input.required, ...def.input.optional };
     for (const [name, spec] of Object.entries(allInputs)) {
       const type = Array.isArray(spec) ? spec[0] : spec;
@@ -1018,8 +1012,8 @@ function CustomNode({ id, data }) {
   );
 
   // Parse inputs into data handles and widgets
-  const required = def.input.required || {};
-  const optional = def.input.optional || {};
+  const required = def?.input?.required || {};
+  const optional = def?.input?.optional || {};
 
   const dataInputs = [];
   const widgets = [];
@@ -1044,7 +1038,7 @@ function CustomNode({ id, data }) {
 
   // For manual-trigger nodes (Save), show progressive optional inputs:
   // show field_N only if field_(N-1) is connected (or N==0).
-  const isProgressive = def.manual_trigger;
+  const isProgressive = def?.manual_trigger;
   const connectedInputs = useStore(
     useCallback(
       (s) => {
@@ -1074,6 +1068,13 @@ function CustomNode({ id, data }) {
       [id, required, optional],
     ),
   );
+
+  if (data.className === 'Group') {
+    return <GroupNode id={id} data={data} />;
+  }
+  if (data.className === 'TextNote') {
+    return <TextNoteNode id={id} data={data} />;
+  }
 
   for (const [name, spec] of Object.entries(optional)) {
     const [type, opts] = getSpecTypeAndOptions(spec);
@@ -1210,7 +1211,7 @@ function CustomNode({ id, data }) {
                       style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
                     />
                   )}
-                  {!!(
+                  {(
                     (w.socketType && connectedInputs?.has(w.name))
                     || (combinedInputName && connectedInputs?.has(combinedInputName))
                   ) ? (
@@ -1556,7 +1557,6 @@ function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, o
       >
         {editing ? (
           <input
-            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             className="nodrag"
             type="text"

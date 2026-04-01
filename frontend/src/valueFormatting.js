@@ -7,6 +7,10 @@ const SI_PREFIX_MULTIPLIERS = {
 
 const NUMBER_WITH_UNIT_RE = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*(.*)?$/;
 
+const PREFIXABLE_UNITS = new Set([
+  'm', 's', 'A', 'V', 'W', 'Hz', 'F', 'C', 'J', 'N', 'Pa', 'T', 'H', 'S', 'g', 'K', 'Ohm', 'ohm', 'Ω',
+]);
+
 /**
  * Parse a string like "1.5 nm" into { numeric: 1.5e-9, unit: "m" }.
  * Returns null if the string does not start with a valid number.
@@ -55,10 +59,6 @@ const SI_PREFIXES = [
   { exp: 21, prefix: 'Z' },
   { exp: 24, prefix: 'Y' },
 ];
-
-const PREFIXABLE_UNITS = new Set([
-  'm', 's', 'A', 'V', 'W', 'Hz', 'F', 'C', 'J', 'N', 'Pa', 'T', 'H', 'S', 'g', 'K', 'Ohm', 'ohm', 'Ω',
-]);
 
 const SUPERSCRIPT_DIGITS = {
   '-': '⁻',

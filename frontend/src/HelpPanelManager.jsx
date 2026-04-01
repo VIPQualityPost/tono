@@ -11,7 +11,7 @@ function parseHeadings(md) {
   for (const line of lines) {
     const m = line.match(/^(#{1,6})\s+(.+)/);
     if (m) {
-      const text = m[2].replace(/[*_`~\[\]]/g, '').trim();
+      const text = m[2].replace(/[*_`~[\]]/g, '').trim();
       const id = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
       headings.push({ level: m[1].length, text, id });
     }
@@ -187,7 +187,6 @@ function JournalTab({ content, onChange, onOpenDoc }) {
             }
           }}
           placeholder="Write your notes here (Markdown supported)…"
-          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
       ) : renderedHtml ? (
