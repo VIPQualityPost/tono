@@ -5,7 +5,7 @@ import {
   GROUP_DRAG_RELEASE_DISTANCE,
   getPointDistanceOutsideRect,
   shouldReleaseFromGroup,
-} from '../src/groupDrag.js';
+} from '../src/groupDrag.ts';
 
 test('getPointDistanceOutsideRect returns zero inside the rect', () => {
   const rect = { left: 10, top: 20, right: 110, bottom: 120 };

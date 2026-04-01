@@ -1,4 +1,4 @@
-import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.js';
+import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.ts';
 
 export function getDefaultWidgetValue(spec) {
   const [type, opts] = getSpecTypeAndOptions(spec);

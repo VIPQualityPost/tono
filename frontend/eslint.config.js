@@ -1,11 +1,13 @@
 import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import tseslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     plugins: {
       react,
       'react-hooks': reactHooks,
@@ -13,6 +15,7 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parser: tseslint.parser,
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: {
         // Browser APIs
@@ -77,7 +80,10 @@ export default [
       'react/react-in-jsx-scope': 'off',       // not needed with React 17+ JSX transform
       'react/prop-types': 'off',                // no PropTypes in this codebase
       'react/no-unknown-property': 'off',       // false positives with Three.js / custom attrs
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       'no-empty': 'off',
       'no-prototype-builtins': 'off',
     },

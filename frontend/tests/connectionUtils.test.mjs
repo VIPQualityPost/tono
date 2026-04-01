@@ -14,7 +14,7 @@ import {
   outputTypeCanConnectToTarget,
   resolveOutputTypeForTarget,
   checkConnectionValid,
-} from '../src/connectionUtils.js';
+} from '../src/connectionUtils.ts';
 
 // ── Handle ID helpers ─────────────────────────────────────────────────
 

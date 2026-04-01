@@ -6,7 +6,7 @@ import {
   getAngleLabelPosition,
   measureAngleDegrees,
   moveAngleWidget,
-} from '../src/angleMeasureGeometry.js';
+} from '../src/angleMeasureGeometry.ts';
 
 test('measureAngleDegrees returns the included angle', () => {
   assert.equal(measureAngleDegrees(0, 1, 0, 0, 1, 0), 90);

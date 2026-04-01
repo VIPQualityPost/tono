@@ -9,7 +9,7 @@ import {
   parseMarkupShapes,
   sanitizeMarkupColor,
   sanitizeMarkupShape,
-} from './markupShapeGeometry.js';
+} from './markupShapeGeometry';
 
 function clampFraction(value) {
   const numeric = Number(value);

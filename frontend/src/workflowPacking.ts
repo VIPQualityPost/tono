@@ -5,7 +5,7 @@
  * portable across machines and sessions.
  */
 
-import * as api from './api';
+import * as api from './api.ts';
 
 const MAX_PACKED_BYTES = 100 * 1024 * 1024; // 100 MB
 

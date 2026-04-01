@@ -1,7 +1,7 @@
 // ── Connection utility functions ───────────────────────────────────────
 // Pure functions extracted from App.jsx so they can be independently tested.
 
-import { socketSpecAcceptsType } from './constants.js';
+import { socketSpecAcceptsType } from './constants.ts';
 
 // ── Handle ID helpers ─────────────────────────────────────────────────
 

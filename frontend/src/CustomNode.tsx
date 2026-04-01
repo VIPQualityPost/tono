@@ -18,9 +18,9 @@ import TextNoteNode from './TextNoteNode';
 import {
   getSpecTypeAndOptions, isDataSocketSpec, SOCKET_WIDGET_TYPES, TYPE_COLORS, CAT_COLORS,
 } from './constants';
-import { getGroupMinimumSize } from './groupSizing.js';
-import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout.js';
-import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit } from './valueFormatting.js';
+import { getGroupMinimumSize } from './groupSizing';
+import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout';
+import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit } from './valueFormatting';
 
 // ── Context (provided by App) ─────────────────────────────────────────
 

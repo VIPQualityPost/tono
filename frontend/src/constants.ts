@@ -1,3 +1,5 @@
+import type { InputSpec, InputOptions } from './types.ts';
+
 // ── Shared type & color constants ─────────────────────────────────────
 
 export const DATA_TYPES = new Set([
@@ -8,7 +10,7 @@ export const DATA_TYPES = new Set([
 
 export const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
 
-export const TYPE_COLORS = {
+export const TYPE_COLORS: Record<string, string> = {
   DATA_FIELD:    '#3a7abf',
   IMAGE:         '#00ff08a0',
   LINE:          '#ffbe5c',
@@ -26,7 +28,7 @@ export const TYPE_COLORS = {
   DIRECTORY:     '#f97316',
 };
 
-export const CAT_COLORS = {
+export const CAT_COLORS: Record<string, string> = {
   Input:           '#37474f',
   Display:         '#212121',
   Overlay:         '#0f766e',
@@ -39,34 +41,34 @@ export const CAT_COLORS = {
   Grains:    '#bf360c',
 };
 
-export const SOCKET_COMPATIBILITY = {
+export const SOCKET_COMPATIBILITY: Record<string, Set<string>> = {
   FLOAT:         new Set(['INT']),
   INT:           new Set(['FLOAT']),
   LINE:          new Set(['COORDPAIR']),
 };
 
-const EMPTY_SOCKET_TYPE_SET = new Set();
+const EMPTY_SOCKET_TYPE_SET: Set<string> = new Set();
 
-export function getSpecTypeAndOptions(spec) {
+export function getSpecTypeAndOptions(spec: InputSpec): [string | string[], InputOptions] {
   if (Array.isArray(spec)) {
-    return [spec[0], spec[1] || {}];
+    return [spec[0], (spec[1] || {}) as InputOptions];
   }
   return [spec, {}];
 }
 
-export function isDataSocketType(type) {
+export function isDataSocketType(type: unknown): boolean {
   return typeof type === 'string' && DATA_TYPES.has(type);
 }
 
-export function isDataSocketSpec(spec) {
+export function isDataSocketSpec(spec: InputSpec): boolean {
   const [type] = getSpecTypeAndOptions(spec);
   return isDataSocketType(type);
 }
 
-export function getAcceptedSocketTypes(specOrType) {
+export function getAcceptedSocketTypes(specOrType: InputSpec | string): Set<string> {
   const [type, opts] = Array.isArray(specOrType)
-    ? getSpecTypeAndOptions(specOrType)
-    : [specOrType, {}];
+    ? getSpecTypeAndOptions(specOrType as InputSpec)
+    : [specOrType, {} as InputOptions];
   if (typeof type !== 'string') {
     return EMPTY_SOCKET_TYPE_SET;
   }
@@ -89,7 +91,7 @@ export function getAcceptedSocketTypes(specOrType) {
   return accepted;
 }
 
-export function socketSpecAcceptsType(sourceType, targetSpecOrType) {
+export function socketSpecAcceptsType(sourceType: string, targetSpecOrType: InputSpec | string): boolean {
   if (typeof sourceType !== 'string' || !sourceType) return false;
   return getAcceptedSocketTypes(targetSpecOrType).has(sourceType);
 }

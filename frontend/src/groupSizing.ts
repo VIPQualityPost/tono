@@ -1,7 +1,15 @@
 const DEFAULT_CHILD_WIDTH = 200;
 const DEFAULT_CHILD_HEIGHT = 120;
 
-function getNodeSize(node, axis) {
+interface SizableNode {
+  position?: { x: number; y: number };
+  measured?: { width?: number; height?: number };
+  width?: number;
+  height?: number;
+  style?: Record<string, unknown>;
+}
+
+function getNodeSize(node: SizableNode | null | undefined, axis: 'width' | 'height'): number {
   const fallback = axis === 'width' ? DEFAULT_CHILD_WIDTH : DEFAULT_CHILD_HEIGHT;
   const measured = Number(node?.measured?.[axis]);
   if (Number.isFinite(measured) && measured > 0) return measured;
@@ -12,7 +20,7 @@ function getNodeSize(node, axis) {
   return fallback;
 }
 
-export function getGroupMinimumSize(memberNodes, {
+export function getGroupMinimumSize(memberNodes: SizableNode[] | null | undefined, {
   minWidth = 260,
   minHeight = 180,
   paddingX = 24,

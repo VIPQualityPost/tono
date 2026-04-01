@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getGroupMinimumSize } from '../src/groupSizing.js';
+import { getGroupMinimumSize } from '../src/groupSizing.ts';
 
 test('getGroupMinimumSize keeps the base minimum for empty groups', () => {
   assert.deepEqual(getGroupMinimumSize([]), { width: 260, height: 180 });

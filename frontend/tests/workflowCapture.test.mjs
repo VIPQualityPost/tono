@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { OVERLAY_CAPTURE_SELECTORS, captureViewportBlob } from '../src/workflowCapture.js';
+import { OVERLAY_CAPTURE_SELECTORS, captureViewportBlob } from '../src/workflowCapture.ts';
 
 function makeElement(name, { tagName = 'DIV', width = 160, height = 90, src = '' } = {}) {
   return {

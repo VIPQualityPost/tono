@@ -20,7 +20,7 @@ import { hydrateWorkflowState } from './workflowHydration';
 import useUndoRedo from './useUndoRedo';
 import { packWorkflow, unpackWorkflow } from './workflowPacking';
 import { serializeWorkflowState } from './workflowSerialization';
-import { sortNodesForParentOrder } from './nodeHierarchy.js';
+import { sortNodesForParentOrder } from './nodeHierarchy';
 import {
   buildNodeClipboardPayload,
   buildNodeClipboardPayloadForIds,
@@ -38,8 +38,8 @@ import {
   beginTrackedNodeRequest,
   isTrackedNodeRequestCurrent,
   resolveLoadNodeChannelPath,
-} from './loadNodeOutputs.js';
-import { buildDefaultWidgetValues } from './nodeWidgetDefaults.js';
+} from './loadNodeOutputs';
+import { buildDefaultWidgetValues } from './nodeWidgetDefaults';
 import {
   getHandleType,
   getInputName,
@@ -52,7 +52,7 @@ import {
   outputTypeCanConnectToTarget,
   resolveOutputTypeForTarget,
   checkConnectionValid,
-} from './connectionUtils.js';
+} from './connectionUtils';
 
 import {
   getSpecTypeAndOptions,
@@ -2624,7 +2624,7 @@ function Flow() {
 
     let nextNodes = currentNodes;
     let changed = false;
-    let structureChanged = false;
+    const structureChanged = false;
 
     nextNodes = nextNodes.map((candidate) => {
       const candidateId = String(candidate.id);

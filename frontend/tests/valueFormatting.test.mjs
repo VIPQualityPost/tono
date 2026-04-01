@@ -6,7 +6,7 @@ import {
   formatDisplayUnit,
   formatTableRowCell,
   getTableColumns,
-} from '../src/valueFormatting.js';
+} from '../src/valueFormatting.ts';
 
 test('getTableColumns hides companion record-table unit columns', () => {
   const columns = getTableColumns([

@@ -1,5 +1,5 @@
 import { toBlob } from 'html-to-image';
-import { CANVAS_COLORS } from './constants.js';
+import { CANVAS_COLORS } from './constants.ts';
 import { CAPTURE_SELECTOR as linePlotSelector } from './LinePlotOverlay';
 import { CAPTURE_SELECTOR as thresholdSelector } from './ThresholdHistogram';
 import { CAPTURE_SELECTOR as csSelector } from './CrossSectionOverlay';

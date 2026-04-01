@@ -5,7 +5,7 @@ import {
   beginTrackedNodeRequest,
   isTrackedNodeRequestCurrent,
   resolveLoadNodeChannelPath,
-} from '../src/loadNodeOutputs.js';
+} from '../src/loadNodeOutputs.ts';
 
 test('resolveLoadNodeChannelPath can resolve a new ImageDemo node from its explicit selection before mount', () => {
   const resolvedPath = resolveLoadNodeChannelPath({

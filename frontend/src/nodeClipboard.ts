@@ -1,4 +1,4 @@
-import { sortNodesForParentOrder } from './nodeHierarchy.js';
+import { sortNodesForParentOrder } from './nodeHierarchy.ts';
 
 export const NODE_CLIPBOARD_KIND = 'tono/node-selection';
 export const NODE_CLIPBOARD_MIME = 'application/x-tono-node-selection';

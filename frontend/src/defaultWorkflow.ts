@@ -1,4 +1,4 @@
-import { extractWorkflow } from './pngMetadata.js';
+import { extractWorkflow } from './pngMetadata.ts';
 
 const DEFAULT_WORKFLOW_CANDIDATES = [
   { path: '/default-workflow.json', type: 'json' },

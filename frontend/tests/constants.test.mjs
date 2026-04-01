@@ -6,7 +6,7 @@ import {
   getAcceptedSocketTypes,
   isDataSocketSpec,
   socketSpecAcceptsType,
-} from '../src/constants.js';
+} from '../src/constants.ts';
 
 test('intrinsic socket compatibility still allows INT to connect to FLOAT sockets', () => {
   assert.equal(socketSpecAcceptsType('INT', 'FLOAT'), true);

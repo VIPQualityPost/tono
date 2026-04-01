@@ -1,4 +1,4 @@
-export function sanitizeRuntimeValuesForPersistence(className, runtimeValues) {
+export function sanitizeRuntimeValuesForPersistence(className: string | undefined, runtimeValues: Record<string, unknown> | undefined): Record<string, unknown> {
   if (!runtimeValues || typeof runtimeValues !== 'object' || Array.isArray(runtimeValues)) {
     return {};
   }

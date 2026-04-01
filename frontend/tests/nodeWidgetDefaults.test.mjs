@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildDefaultWidgetValues, getDefaultWidgetValue } from '../src/nodeWidgetDefaults.js';
+import { buildDefaultWidgetValues, getDefaultWidgetValue } from '../src/nodeWidgetDefaults.ts';
 
 test('enum widget defaults honor opts.default instead of the first option', () => {
   assert.equal(

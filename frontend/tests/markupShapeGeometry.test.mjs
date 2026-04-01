@@ -8,7 +8,7 @@ import {
   getMarkupPreviewStrokeWidth,
   sanitizeMarkupColor,
   sanitizeMarkupShape,
-} from '../src/markupShapeGeometry.js';
+} from '../src/markupShapeGeometry.ts';
 
 test('markup defaults use arrow and red', () => {
   assert.equal(MARKUP_DEFAULT_SHAPE, 'arrow');

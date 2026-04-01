@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { sortNodesForParentOrder } from '../src/nodeHierarchy.js';
-import { hydrateWorkflowState } from '../src/workflowHydration.js';
-import { instantiateNodeClipboardPayload, NODE_CLIPBOARD_KIND } from '../src/nodeClipboard.js';
+import { sortNodesForParentOrder } from '../src/nodeHierarchy.ts';
+import { hydrateWorkflowState } from '../src/workflowHydration.ts';
+import { instantiateNodeClipboardPayload, NODE_CLIPBOARD_KIND } from '../src/nodeClipboard.ts';
 
 test('sortNodesForParentOrder places parents before descendants', () => {
   const nodes = [

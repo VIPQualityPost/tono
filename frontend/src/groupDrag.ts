@@ -1,6 +1,18 @@
 export const GROUP_DRAG_RELEASE_DISTANCE = 18;
 
-export function getPointDistanceOutsideRect(rect, point) {
+interface Rect {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+export function getPointDistanceOutsideRect(rect: Rect | null, point: Point | null): number {
   if (!rect || !point) return Infinity;
 
   const dx = point.x < rect.left
@@ -13,6 +25,6 @@ export function getPointDistanceOutsideRect(rect, point) {
   return Math.hypot(dx, dy);
 }
 
-export function shouldReleaseFromGroup(rect, point, threshold = GROUP_DRAG_RELEASE_DISTANCE) {
+export function shouldReleaseFromGroup(rect: Rect | null, point: Point | null, threshold = GROUP_DRAG_RELEASE_DISTANCE): boolean {
   return getPointDistanceOutsideRect(rect, point) >= threshold;
 }

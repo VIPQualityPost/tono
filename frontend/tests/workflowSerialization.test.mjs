@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hydrateWorkflowState } from '../src/workflowHydration.js';
-import { serializeWorkflowState } from '../src/workflowSerialization.js';
+import { hydrateWorkflowState } from '../src/workflowHydration.ts';
+import { serializeWorkflowState } from '../src/workflowSerialization.ts';
 
 test('serializeWorkflowState keeps only stable workflow fields needed for reload', () => {
   const nodes = [

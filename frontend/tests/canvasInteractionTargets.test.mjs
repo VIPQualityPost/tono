@@ -6,7 +6,7 @@ import {
   canStartCanvasRightDragZoomTarget,
   isEditableInteractionTarget,
   isSecondaryCanvasContextEvent,
-} from '../src/canvasInteractionTargets.js';
+} from '../src/canvasInteractionTargets.ts';
 
 function makeTarget(activeSelectors = []) {
   const selectorSet = new Set(activeSelectors);

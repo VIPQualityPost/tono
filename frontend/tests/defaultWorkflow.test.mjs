@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { embedWorkflow } from '../src/pngMetadata.js';
-import { loadDefaultWorkflowAsset } from '../src/defaultWorkflow.js';
+import { embedWorkflow } from '../src/pngMetadata.ts';
+import { loadDefaultWorkflowAsset } from '../src/defaultWorkflow.ts';
 
 const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF9sAAAAASUVORK5CYII=';
 

@@ -1,9 +1,9 @@
 export function resolveLoadNodeChannelPath({
-  explicitPath = null,
-  resolvedPathInput = null,
+  explicitPath = null as string | null,
+  resolvedPathInput = null as string | null,
   className = '',
-  widgetValues = {},
-} = {}) {
+  widgetValues = {} as Record<string, unknown>,
+} = {}): string {
   if (typeof explicitPath === 'string' && explicitPath) {
     return explicitPath;
   }
@@ -19,12 +19,12 @@ export function resolveLoadNodeChannelPath({
   return '';
 }
 
-export function beginTrackedNodeRequest(requestVersions, nodeId) {
+export function beginTrackedNodeRequest(requestVersions: Map<string, number>, nodeId: string): number {
   const nextVersion = (requestVersions.get(nodeId) || 0) + 1;
   requestVersions.set(nodeId, nextVersion);
   return nextVersion;
 }
 
-export function isTrackedNodeRequestCurrent(requestVersions, nodeId, version) {
+export function isTrackedNodeRequestCurrent(requestVersions: Map<string, number>, nodeId: string, version: number): boolean {
   return requestVersions.get(nodeId) === version;
 }

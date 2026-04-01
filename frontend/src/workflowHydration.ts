@@ -1,5 +1,5 @@
-import { sortNodesForParentOrder } from './nodeHierarchy.js';
-import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.js';
+import { sortNodesForParentOrder } from './nodeHierarchy.ts';
+import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.ts';
 
 function mergeDefinition(nodeData, defs) {
   const savedData = nodeData || {};

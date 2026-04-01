@@ -5,7 +5,7 @@ import {
   serializeExecutionGraph,
   getAutoRunnableNodes,
   hasBlockingAutoRunInput,
-} from '../src/executionGraph.js';
+} from '../src/executionGraph.ts';
 
 test('serializeExecutionGraph excludes isolated nodes from the backend prompt', () => {
   const nodes = [

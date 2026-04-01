@@ -1,4 +1,4 @@
-import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.js';
+import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.ts';
 
 export function serializeWorkflowState(nodes, edges) {
   const compactObject = (value) => {

@@ -1,4 +1,4 @@
-export function formatUiLabel(text) {
+export function formatUiLabel(text: unknown): string {
   return String(text ?? '')
     .replace(/_/g, ' ')
     .replace(/\s+/g, ' ')
@@ -6,7 +6,7 @@ export function formatUiLabel(text) {
     .toLowerCase();
 }
 
-function normalizeInputNames(raw) {
+function normalizeInputNames(raw: unknown): string[] {
   if (!raw) return [];
   return (Array.isArray(raw) ? raw : [raw])
     .map((value) => String(value))

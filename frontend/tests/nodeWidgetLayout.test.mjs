@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildCombinedInputNameByWidgetName,
   getWidgetCombinedInputName,
-} from '../src/nodeWidgetLayout.js';
+} from '../src/nodeWidgetLayout.ts';
 
 test('getWidgetCombinedInputName pairs same-label hide_when_input_connected widgets with their matching input', () => {
   const dataInputByName = new Map([

@@ -1,4 +1,4 @@
-import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.js';
+import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.ts';
 
 const OMITTED_WIDGET_INPUTS_BY_CLASS = {
   View3D: new Set([

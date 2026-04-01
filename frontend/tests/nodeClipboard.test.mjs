@@ -7,7 +7,7 @@ import {
   instantiateNodeClipboardPayload,
   NODE_CLIPBOARD_KIND,
   parseNodeClipboardPayload,
-} from '../src/nodeClipboard.js';
+} from '../src/nodeClipboard.ts';
 
 test('buildNodeClipboardPayload keeps only selected nodes and internal edges', () => {
   const nodes = [
