@@ -116,6 +116,15 @@ export async function getChannels(filepath) {
   return r.json();
 }
 
+export async function getFileContent(path) {
+  const r = await sessionFetch(`/file-content?path=${encodeURIComponent(path)}`);
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(`Failed to read file (${r.status}): ${text}`);
+  }
+  return r.arrayBuffer();
+}
+
 export async function getFolderFiles(folderpath) {
   const r = await sessionFetch(`/folder-files?folder=${encodeURIComponent(folderpath)}`);
   if (!r.ok) return [];

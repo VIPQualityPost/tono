@@ -17,6 +17,7 @@ import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import tonoIconUrl from '../../resources/icon_1024.png';
 import { hydrateWorkflowState } from './workflowHydration';
+import { packWorkflow, unpackWorkflow } from './workflowPacking';
 import { serializeWorkflowState } from './workflowSerialization';
 import { sortNodesForParentOrder } from './nodeHierarchy.js';
 import {
@@ -2008,8 +2009,8 @@ function Flow() {
     setStatus({ text: 'Graph cleared.', level: 'info' });
   }, [setNodes, setEdges]);
 
-  const applyWorkflowData = useCallback((data) => {
-    const hydrated = hydrateWorkflowState(data, nodeDefsRef.current);
+  const applyWorkflowData = useCallback((data, { preservedPaths } = {}) => {
+    const hydrated = hydrateWorkflowState(data, nodeDefsRef.current, { preservedPaths });
     setNodes(sortNodesForParentOrder(hydrated.nodes));
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
@@ -2029,6 +2030,16 @@ function Flow() {
     initializeDynamicNodes(hydrated.nodes);
   }, [initializeDynamicNodes, setNodes, setEdges]);
 
+  const applyMaybePackedWorkflow = useCallback(async (data) => {
+    if (data.packed && data.packedFiles) {
+      setStatus({ text: 'Unpacking files…', level: 'info' });
+      const { workflow, restoredPaths } = await unpackWorkflow(data);
+      applyWorkflowData(workflow, { preservedPaths: restoredPaths });
+    } else {
+      applyWorkflowData(data);
+    }
+  }, [applyWorkflowData]);
+
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
     defaultWorkflowLoadAttemptedRef.current = true;
@@ -2045,7 +2056,7 @@ function Flow() {
       const loaded = await loadDefaultWorkflowAsset();
       if (!loaded || graphHasContent()) return;
 
-      applyWorkflowData(loaded.workflow);
+      await applyMaybePackedWorkflow(loaded.workflow);
       setStatus({ text: `Loaded default workflow from ${loaded.source}.`, level: 'info' });
       requestAnimationFrame(() => {
         requestAnimationFrame(() => scheduleAutoRun());
@@ -2053,7 +2064,7 @@ function Flow() {
     } catch (err) {
       setStatus({ text: 'Default workflow failed to load: ' + err.message, level: 'error' });
     }
-  }, [applyWorkflowData, reactFlow, scheduleAutoRun]);
+  }, [applyMaybePackedWorkflow, reactFlow, scheduleAutoRun]);
 
   // ── Load node definitions ───────────────────────────────────────────
 
@@ -2224,6 +2235,90 @@ function Flow() {
     }
   }, [getWorkflowBlob]);
 
+  const savePackedWorkflow = useCallback(async () => {
+    setStatus({ text: 'Packing files…', level: 'info' });
+    try {
+      const viewportEl = document.querySelector('.react-flow__viewport');
+      if (!viewportEl) throw new Error('Flow element not found');
+
+      const allNodes = reactFlow.getNodes();
+      if (allNodes.length === 0) throw new Error('No nodes to capture');
+
+      const bounds = getRenderedNodeBounds(allNodes);
+      if (!bounds) throw new Error('Could not determine rendered node bounds');
+      const pad = 0.1;
+      const imageWidth = Math.ceil(bounds.width * (1 + pad * 2));
+      const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
+      const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
+
+      const blob = await captureWorkflowViewportBlob(viewportEl, {
+        backgroundColor: CANVAS_COLORS.bgDeep,
+        width: imageWidth,
+        height: imageHeight,
+        style: {
+          width: `${imageWidth}px`,
+          height: `${imageHeight}px`,
+          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        },
+      });
+      if (!blob) throw new Error('Capture returned empty');
+
+      const stampedBlob = await stampLogoOnBlob(blob);
+      let workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
+      if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
+
+      workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed, total) => {
+        setStatus({ text: `Packing files… (${packed}/${total})`, level: 'info' });
+      });
+
+      const finalBlob = await embedWorkflow(stampedBlob, workflow);
+      const defaultName = 'workflow-packed.png';
+
+      if (window.pywebview?.api?.choose_save_workflow_png_path) {
+        const requestedPath = await window.pywebview.api.choose_save_workflow_png_path(defaultName);
+        if (!requestedPath) { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
+        const resp = await fetch(`/save-workflow-png?path=${encodeURIComponent(requestedPath)}`, {
+          method: 'POST', headers: { 'Content-Type': 'image/png' }, body: finalBlob,
+        });
+        if (!resp.ok) throw new Error(await resp.text() || `Save failed (${resp.status})`);
+        const { path: savedPath } = await resp.json();
+        if (!savedPath) { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
+        setStatus({ text: `Packed workflow saved to ${savedPath}.`, level: 'info' });
+        return;
+      }
+
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: defaultName,
+            types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(finalBlob);
+          await writable.close();
+          setStatus({ text: 'Packed workflow saved.', level: 'info' });
+          return;
+        } catch (err) {
+          if (err?.name === 'AbortError') { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
+          throw err;
+        }
+      }
+
+      const resp = await fetch('/download?filename=' + defaultName, { method: 'POST', body: finalBlob });
+      const dlBlob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(dlBlob);
+      a.download = defaultName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      setStatus({ text: `Packed workflow downloaded as ${defaultName}.`, level: 'info' });
+    } catch (err) {
+      setStatus({ text: 'Pack failed: ' + err.message, level: 'error' });
+    }
+  }, [reactFlow]);
+
   const copySnapshot = useCallback(() => {
     setStatus({ text: 'Copying snapshot…', level: 'info' });
     // Pass a Promise<Blob> to ClipboardItem so the clipboard.write() call
@@ -2258,14 +2353,14 @@ function Flow() {
         } else {
           data = JSON.parse(await file.text());
         }
-        applyWorkflowData(data);
+        await applyMaybePackedWorkflow(data);
         setStatus({ text: 'Workflow loaded.', level: 'info' });
       } catch {
         setStatus({ text: 'Invalid workflow file.', level: 'error' });
       }
     };
     input.click();
-  }, [applyWorkflowData]);
+  }, [applyMaybePackedWorkflow]);
 
   const uploadPlugin = useCallback(() => {
     const input = document.createElement('input');
@@ -2302,12 +2397,12 @@ function Flow() {
         setStatus({ text: 'No workflow data in this image.', level: 'error' });
         return;
       }
-      applyWorkflowData(data);
+      await applyMaybePackedWorkflow(data);
       setStatus({ text: 'Workflow loaded from image.', level: 'info' });
     } catch (err) {
       setStatus({ text: 'Failed to load: ' + err.message, level: 'error' });
     }
-  }, [applyWorkflowData]);
+  }, [applyMaybePackedWorkflow]);
 
   const onDragOver = useCallback((event) => {
     if (event.dataTransfer?.types?.includes('Files')) {
@@ -2968,6 +3063,9 @@ function Flow() {
           <div className="toolbar-group">
             <button className="btn" onClick={saveWorkflow} title="Save workflow as PNG">
               ⤓ Save
+            </button>
+            <button className="btn" onClick={savePackedWorkflow} title="Save packed workflow (with files)">
+              ⊞ Pack
             </button>
             <button className="btn" onClick={loadWorkflow} title="Load workflow (JSON or PNG)">
               ⤒ Load

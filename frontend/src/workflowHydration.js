@@ -20,12 +20,13 @@ function getInputEntries(definition) {
   ];
 }
 
-function sanitizeWidgetValues(widgetValues, definition) {
+function sanitizeWidgetValues(widgetValues, definition, preservedPaths) {
   const nextValues = { ...(widgetValues || {}) };
 
   getInputEntries(definition).forEach(([inputName, inputDef]) => {
     const type = getSocketType(inputDef);
     if (type === 'FILE_PICKER' || type === 'FOLDER_PICKER') {
+      if (preservedPaths && preservedPaths.has(nextValues[inputName])) return;
       nextValues[inputName] = '';
     }
   });
@@ -33,7 +34,7 @@ function sanitizeWidgetValues(widgetValues, definition) {
   return nextValues;
 }
 
-export function hydrateWorkflowState(data, defs = {}) {
+export function hydrateWorkflowState(data, defs = {}, { preservedPaths } = {}) {
   const loadedNodes = Array.isArray(data?.nodes) ? data.nodes : [];
   const loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
 
@@ -52,7 +53,7 @@ export function hydrateWorkflowState(data, defs = {}) {
       data: {
         ...node.data,
         label: node.data?.label || node.data?.className || 'Node',
-        widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition),
+        widgetValues: sanitizeWidgetValues(node.data?.widgetValues, definition, preservedPaths),
         runtimeValues: sanitizeRuntimeValuesForPersistence(
           node.data?.className,
           node.data?.runtimeValues,

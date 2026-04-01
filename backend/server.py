@@ -315,6 +315,16 @@ def create_app(
         ) if input_path.exists() else []
         return web.Response(text=_dumps(files), content_type="application/json")
 
+    async def get_file_content(request: web.Request) -> web.Response:
+        session_id = require_session_id(request)
+        path_value = request.query.get("path", "")
+        if not path_value:
+            raise web.HTTPBadRequest(reason="Missing 'path' query parameter")
+        resolved = resolve_request_path(session_id, path_value)
+        if not resolved.is_file():
+            raise web.HTTPNotFound(reason=f"File not found: {path_value}")
+        return web.FileResponse(resolved)
+
     async def create_upload_folder(request: web.Request) -> web.Response:
         session_id = require_session_id(request)
         body = await request.json()
@@ -567,6 +577,7 @@ def create_app(
     app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)
     app.router.add_get("/docs", get_node_doc)
+    app.router.add_get("/file-content", get_file_content)
     app.router.add_get("/help-docs", get_help_docs)
     app.router.add_get("/help-docs/{filename}", get_help_doc_file)
     app.router.add_post("/prompt", submit_prompt)
