@@ -5,11 +5,11 @@ const FILE_ACCEPT = [
   '.ttf', '.otf', '.woff', '.woff2',
 ].join(',');
 
-function normalizeRelativePath(path) {
+function normalizeRelativePath(path: string) {
   return String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
 }
 
-function pickWithInput({ directory = false } = {}) {
+function pickWithInput({ directory = false } = {}): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -38,9 +38,14 @@ function pickWithInput({ directory = false } = {}) {
   });
 }
 
-async function collectDirectoryEntries(handle, prefix = handle.name) {
-  const entries = [];
-  for await (const [name, child] of handle.entries()) {
+interface FileEntry {
+  file: File;
+  relativePath: string;
+}
+
+async function collectDirectoryEntries(handle: FileSystemDirectoryHandle, prefix: string = handle.name): Promise<FileEntry[]> {
+  const entries: FileEntry[] = [];
+  for await (const [name, child] of (handle as any).entries()) {
     const relativePath = prefix ? `${prefix}/${name}` : name;
     if (child.kind === 'file') {
       const file = await child.getFile();
@@ -56,8 +61,8 @@ async function collectDirectoryEntries(handle, prefix = handle.name) {
 
 export async function pickNativeFileSelection() {
   try {
-    if (typeof window.showOpenFilePicker === 'function') {
-      const [handle] = await window.showOpenFilePicker({
+    if (typeof (window as any).showOpenFilePicker === 'function') {
+      const [handle] = await (window as any).showOpenFilePicker({
         multiple: false,
         types: [{
           description: 'Supported files',
@@ -74,7 +79,7 @@ export async function pickNativeFileSelection() {
         entries: [{ file, relativePath: normalizeRelativePath(file.name) }],
       };
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error?.name !== 'AbortError') throw error;
     return null;
   }
@@ -89,8 +94,8 @@ export async function pickNativeFileSelection() {
 
 export async function pickNativeDirectorySelection() {
   try {
-    if (typeof window.showDirectoryPicker === 'function') {
-      const handle = await window.showDirectoryPicker();
+    if (typeof (window as any).showDirectoryPicker === 'function') {
+      const handle: FileSystemDirectoryHandle = await (window as any).showDirectoryPicker();
       if (!handle) return null;
       const entries = await collectDirectoryEntries(handle, handle.name);
       return {
@@ -98,14 +103,14 @@ export async function pickNativeDirectorySelection() {
         entries,
       };
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error?.name !== 'AbortError') throw error;
     return null;
   }
 
   const files = await pickWithInput({ directory: true });
   if (files.length === 0) return null;
-  const entries = files.map((file) => ({
+  const entries = files.map((file: File) => ({
     file,
     relativePath: normalizeRelativePath(file.webkitRelativePath || file.name),
   }));

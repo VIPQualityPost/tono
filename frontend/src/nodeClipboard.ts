@@ -1,9 +1,52 @@
 import { sortNodesForParentOrder } from './nodeHierarchy.ts';
+import type { TonoNode, TonoEdge, NodeData, NodeDefsRegistry } from './types.ts';
 
 export const NODE_CLIPBOARD_KIND = 'tono/node-selection';
 export const NODE_CLIPBOARD_MIME = 'application/x-tono-node-selection';
 
-function cloneValue(value) {
+interface ClipboardNodeData {
+  label: string;
+  className: string;
+  widgetValues: Record<string, unknown>;
+  runtimeValues: Record<string, unknown>;
+  extraData: Record<string, unknown>;
+}
+
+interface ClipboardNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  width?: number;
+  height?: number;
+  className?: string;
+  parentId?: string;
+  extent?: unknown;
+  hidden?: boolean;
+  style?: unknown;
+  dragHandle?: string;
+  data: ClipboardNodeData;
+  [key: string]: unknown;
+}
+
+interface ClipboardEdge {
+  source: string;
+  sourceHandle?: string | null;
+  target: string;
+  targetHandle?: string | null;
+  style?: unknown;
+  hidden?: boolean;
+  data?: unknown;
+  [key: string]: unknown;
+}
+
+interface ClipboardPayload {
+  kind: string;
+  version: number;
+  nodes: ClipboardNode[];
+  edges: ClipboardEdge[];
+}
+
+function cloneValue<T>(value: T): T {
   if (value == null) return value;
   if (typeof structuredClone === 'function') {
     try {
@@ -15,16 +58,16 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function clonePlainObject(value) {
+function clonePlainObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return cloneValue(value) || {};
+  return cloneValue(value as Record<string, unknown>) || {};
 }
 
-function encodeProxyHandleRef(handleId) {
+function encodeProxyHandleRef(handleId: string): string {
   return encodeURIComponent(String(handleId || ''));
 }
 
-function decodeProxyHandleRef(encoded) {
+function decodeProxyHandleRef(encoded: string): string {
   try {
     return decodeURIComponent(String(encoded || ''));
   } catch {
@@ -32,7 +75,7 @@ function decodeProxyHandleRef(encoded) {
   }
 }
 
-function parseGroupProxyHandle(handleId) {
+function parseGroupProxyHandle(handleId: string) {
   const text = String(handleId || '');
   if (!text.startsWith('group-proxy::')) return null;
   const parts = text.split('::');
@@ -45,41 +88,42 @@ function parseGroupProxyHandle(handleId) {
   };
 }
 
-function hasOwn(obj, key) {
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-function remapNodeId(value, idMap) {
+function remapNodeId(value: string | null | undefined, idMap: Map<string, string>): string | null | undefined {
   if (value == null) return value;
   return idMap.get(String(value)) || String(value);
 }
 
-function remapGroupProxyHandle(handleId, idMap) {
+function remapGroupProxyHandle(handleId: string | null | undefined, idMap: Map<string, string>): string | null | undefined {
+  if (!handleId) return handleId;
   const proxy = parseGroupProxyHandle(handleId);
   if (!proxy) return handleId;
   return `group-proxy::${proxy.direction}::${remapNodeId(proxy.nodeId, idMap)}::${proxy.type}::${encodeProxyHandleRef(proxy.realHandle)}`;
 }
 
-function remapGroupProxyDescriptors(items, idMap) {
+function remapGroupProxyDescriptors(items: unknown, idMap: Map<string, string>): unknown {
   if (!Array.isArray(items)) return items;
-  return items.map((item) => {
+  return items.map((item: Record<string, unknown>) => {
     if (!item || typeof item !== 'object') return item;
     const nextItem = { ...item };
     if (typeof nextItem.key === 'string') {
-      const separator = nextItem.key.indexOf('::');
+      const separator = (nextItem.key as string).indexOf('::');
       if (separator !== -1) {
-        const handleId = nextItem.key.slice(separator + 2);
-        nextItem.key = `${remapNodeId(nextItem.key.slice(0, separator), idMap)}::${remapGroupProxyHandle(handleId, idMap)}`;
+        const handleId = (nextItem.key as string).slice(separator + 2);
+        nextItem.key = `${remapNodeId((nextItem.key as string).slice(0, separator), idMap)}::${remapGroupProxyHandle(handleId, idMap)}`;
       }
     }
     if (typeof nextItem.handleId === 'string') {
-      nextItem.handleId = remapGroupProxyHandle(nextItem.handleId, idMap);
+      nextItem.handleId = remapGroupProxyHandle(nextItem.handleId as string, idMap);
     }
     return nextItem;
   });
 }
 
-function remapClipboardExtraData(extraData, idMap) {
+function remapClipboardExtraData(extraData: unknown, idMap: Map<string, string>): Record<string, unknown> {
   const nextExtraData = clonePlainObject(extraData);
   if (Array.isArray(nextExtraData.proxyInputs)) {
     nextExtraData.proxyInputs = remapGroupProxyDescriptors(nextExtraData.proxyInputs, idMap);
@@ -90,34 +134,35 @@ function remapClipboardExtraData(extraData, idMap) {
   return nextExtraData;
 }
 
-function remapClipboardEdgeData(data, idMap) {
+function remapClipboardEdgeData(data: unknown, idMap: Map<string, string>): unknown {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return cloneValue(data);
 
-  const nextData = cloneValue(data);
+  const nextData = cloneValue(data) as Record<string, unknown>;
   if (hasOwn(nextData, 'groupInternalHiddenBy')) {
-    nextData.groupInternalHiddenBy = remapNodeId(nextData.groupInternalHiddenBy, idMap);
+    nextData.groupInternalHiddenBy = remapNodeId(nextData.groupInternalHiddenBy as string, idMap);
   }
   if (hasOwn(nextData, 'groupProxyOwner')) {
-    nextData.groupProxyOwner = remapNodeId(nextData.groupProxyOwner, idMap);
+    nextData.groupProxyOwner = remapNodeId(nextData.groupProxyOwner as string, idMap);
   }
 
   const original = nextData.groupProxyOriginal;
   if (original && typeof original === 'object' && !Array.isArray(original)) {
-    if (hasOwn(original, 'source')) original.source = remapNodeId(original.source, idMap);
-    if (hasOwn(original, 'target')) original.target = remapNodeId(original.target, idMap);
-    if (hasOwn(original, 'sourceHandle')) {
-      original.sourceHandle = remapGroupProxyHandle(original.sourceHandle, idMap);
+    const orig = original as Record<string, unknown>;
+    if (hasOwn(orig, 'source')) orig.source = remapNodeId(orig.source as string, idMap);
+    if (hasOwn(orig, 'target')) orig.target = remapNodeId(orig.target as string, idMap);
+    if (hasOwn(orig, 'sourceHandle')) {
+      orig.sourceHandle = remapGroupProxyHandle(orig.sourceHandle as string, idMap);
     }
-    if (hasOwn(original, 'targetHandle')) {
-      original.targetHandle = remapGroupProxyHandle(original.targetHandle, idMap);
+    if (hasOwn(orig, 'targetHandle')) {
+      orig.targetHandle = remapGroupProxyHandle(orig.targetHandle as string, idMap);
     }
   }
 
   return nextData;
 }
 
-function collectSelectedNodeIds(nodes, nodeIds) {
-  const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id)));
+function collectSelectedNodeIds(nodes: TonoNode[], nodeIds: string[]): Set<string> {
+  const selectedIdSet = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id: string) => String(id)));
   if (selectedIdSet.size === 0) return selectedIdSet;
 
   let changed = true;
@@ -135,7 +180,7 @@ function collectSelectedNodeIds(nodes, nodeIds) {
   return selectedIdSet;
 }
 
-function extractExtraData(data) {
+function extractExtraData(data: NodeData): Record<string, unknown> {
   const source = data || {};
   return Object.fromEntries(
     Object.entries(source).filter(([key]) => ![
@@ -156,11 +201,11 @@ function extractExtraData(data) {
 }
 
 export function buildNodeClipboardPayloadForIds(
-  nodes,
-  edges,
-  nodeIds,
+  nodes: TonoNode[],
+  edges: TonoEdge[],
+  nodeIds: string[],
   { includeIncomingExternalEdges = false } = {},
-) {
+): ClipboardPayload | null {
   const selectedIdSet = collectSelectedNodeIds(nodes, nodeIds);
   const selectedNodes = Array.isArray(nodes)
     ? nodes.filter((node) => selectedIdSet.has(String(node.id)))
@@ -177,7 +222,7 @@ export function buildNodeClipboardPayloadForIds(
     ))
     : [];
 
-  const snapDim = (v) => {
+  const snapDim = (v: number | undefined) => {
     const n = Math.round(Number(v));
     return Number.isFinite(n) && n > 0 ? n : undefined;
   };
@@ -224,7 +269,7 @@ export function buildNodeClipboardPayloadForIds(
   };
 }
 
-export function buildNodeClipboardPayload(nodes, edges) {
+export function buildNodeClipboardPayload(nodes: TonoNode[], edges: TonoEdge[]) {
   const selectedNodes = Array.isArray(nodes)
     ? nodes.filter((node) => node?.selected)
     : [];
@@ -233,7 +278,7 @@ export function buildNodeClipboardPayload(nodes, edges) {
   return buildNodeClipboardPayloadForIds(nodes, edges, selectedIds, { includeIncomingExternalEdges });
 }
 
-export function parseNodeClipboardPayload(text) {
+export function parseNodeClipboardPayload(text: string): ClipboardPayload | null {
   if (typeof text !== 'string' || !text.trim()) return null;
 
   try {
@@ -247,10 +292,10 @@ export function parseNodeClipboardPayload(text) {
 }
 
 export function instantiateNodeClipboardPayload(
-  payload,
-  defs = {},
-  nextNodeId = 1,
-  offset = { x: 40, y: 40 },
+  payload: ClipboardPayload | null,
+  defs: NodeDefsRegistry = {},
+  nextNodeId: number = 1,
+  offset: { x: number; y: number } = { x: 40, y: 40 },
   { keepExternalSources = false } = {},
 ) {
   if (!payload || !Array.isArray(payload.nodes) || payload.nodes.length === 0) {
@@ -260,11 +305,11 @@ export function instantiateNodeClipboardPayload(
   const idMap = new Map();
   let currentId = Number(nextNodeId) || 1;
 
-  payload.nodes.forEach((node) => {
+  payload.nodes.forEach((node: ClipboardNode) => {
     idMap.set(String(node.id), String(currentId++));
   });
 
-  const nodes = sortNodesForParentOrder(payload.nodes.map((node) => {
+  const nodes = sortNodesForParentOrder(payload.nodes.map((node: ClipboardNode) => {
     const newId = idMap.get(String(node.id));
     const className = node.data?.className || '';
     const definition = className ? defs[className] || null : null;
@@ -305,11 +350,11 @@ export function instantiateNodeClipboardPayload(
   }));
 
   const edges = payload.edges
-    .filter((edge) => (
+    .filter((edge: ClipboardEdge) => (
       idMap.has(String(edge.target))
       && (idMap.has(String(edge.source)) || keepExternalSources)
     ))
-    .map((edge, index) => {
+    .map((edge: ClipboardEdge, index: number) => {
       const source = idMap.get(String(edge.source)) || String(edge.source);
       const target = idMap.get(String(edge.target));
       return {

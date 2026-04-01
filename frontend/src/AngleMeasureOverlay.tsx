@@ -10,17 +10,17 @@ import {
   round3,
 } from './angleMeasureGeometry';
 
-function clamp01(value) {
+function clamp01(value: number) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
-function sanitizeHexColor(value, fallback = '#ff9800') {
+function sanitizeHexColor(value: unknown, fallback = '#ff9800') {
   if (typeof value !== 'string') return fallback;
   const text = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text.toLowerCase() : fallback;
 }
 
-function hexToRgb(value) {
+function hexToRgb(value: string) {
   const color = sanitizeHexColor(value);
   return {
     r: parseInt(color.slice(1, 3), 16),
@@ -29,7 +29,7 @@ function hexToRgb(value) {
   };
 }
 
-function mixColor(baseColor, mixWith, weight) {
+function mixColor(baseColor: string, mixWith: string, weight: number) {
   const alpha = Math.max(0, Math.min(1, Number(weight) || 0));
   const base = hexToRgb(baseColor);
   const target = hexToRgb(mixWith);
@@ -39,13 +39,13 @@ function mixColor(baseColor, mixWith, weight) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function formatAngle(value) {
+function formatAngle(value: number) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return '0.0 deg';
   return `${numeric.toFixed(1)} deg`;
 }
 
-function buildAngleArcPath(x1, y1, xm, ym, x2, y2) {
+function buildAngleArcPath(x1: number, y1: number, xm: number, ym: number, x2: number, y2: number) {
   const va = { x: x1 - xm, y: y1 - ym };
   const vb = { x: x2 - xm, y: y2 - ym };
   const lenA = Math.hypot(va.x, va.y);
@@ -63,6 +63,29 @@ function buildAngleArcPath(x1, y1, xm, ym, x2, y2) {
   ].join(' ');
 }
 
+interface AngleMeasureOverlayProps {
+  image: string;
+  x1: number;
+  y1: number;
+  xm: number;
+  ym: number;
+  x2: number;
+  y2: number;
+  labelDx: number;
+  labelDy: number;
+  angleDeg: number;
+  color: string;
+  strokeWidth: number;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+}
+
+interface AngleDragState {
+  handle: string;
+  start?: { fx: number; fy: number };
+  points?: { x1: number; y1: number; xm: number; ym: number; x2: number; y2: number };
+}
+
 export default function AngleMeasureOverlay({
   image,
   x1,
@@ -78,9 +101,9 @@ export default function AngleMeasureOverlay({
   strokeWidth,
   nodeId,
   onWidgetChange,
-}) {
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
+}: AngleMeasureOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<AngleDragState | null>(null);
   const resolvedColor = sanitizeHexColor(color, '#ff9800');
   const resolvedStrokeWidth = Math.max(0.35, Math.min(6, Number(strokeWidth) || 1.35));
   const resolvedArcColor = mixColor(resolvedColor, '#ffffff', 0.42);
@@ -88,21 +111,21 @@ export default function AngleMeasureOverlay({
   const resolvedBadgeTextColor = mixColor(resolvedColor, '#ffffff', 0.72);
   const resolvedBadgeBorderColor = mixColor(resolvedColor, '#ffffff', 0.32);
 
-  const getCoords = useCallback((event) => {
-    const rect = containerRef.current.getBoundingClientRect();
+  const getCoords = useCallback((event: React.PointerEvent<Element>) => {
+    const rect = containerRef.current!.getBoundingClientRect();
     return {
       fx: clamp01((event.clientX - rect.left) / rect.width),
       fy: clamp01((event.clientY - rect.top) / rect.height),
     };
   }, []);
 
-  const updateWidgets = useCallback((updates) => {
+  const updateWidgets = useCallback((updates: Record<string, unknown>) => {
     Object.entries(updates).forEach(([name, value]) => {
       onWidgetChange(nodeId, name, value);
     });
   }, [nodeId, onWidgetChange]);
 
-  const onPointerDown = useCallback((handle) => (event) => {
+  const onPointerDown = useCallback((handle: string) => (event: React.PointerEvent<Element>) => {
     event.stopPropagation();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -120,15 +143,15 @@ export default function AngleMeasureOverlay({
     setDragging({ handle });
   }, [getCoords, x1, y1, xm, ym, x2, y2]);
 
-  const onPointerMove = useCallback((event) => {
+  const onPointerMove = useCallback((event: React.PointerEvent<Element>) => {
     if (!dragging || !containerRef.current) return;
     const { fx, fy } = getCoords(event);
 
     if (dragging.handle === 'mid') {
       updateWidgets(moveAngleWidget(
-        dragging.points,
-        fx - dragging.start.fx,
-        fy - dragging.start.fy,
+        dragging.points!,
+        fx - dragging.start!.fx,
+        fy - dragging.start!.fy,
       ));
       return;
     }
@@ -168,7 +191,7 @@ export default function AngleMeasureOverlay({
         '--angle-badge-text-color': resolvedBadgeTextColor,
         '--angle-badge-border-color': resolvedBadgeBorderColor,
         '--angle-stroke-width': `${resolvedStrokeWidth}`,
-      }}
+      } as React.CSSProperties}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onLostPointerCapture={onPointerUp}

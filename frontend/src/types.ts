@@ -19,6 +19,7 @@ export interface InputOptions {
   text_input?: boolean;
   color_picker?: boolean;
   colormap_stops?: boolean;
+  top_socket_input?: string | string[];
   set_widgets?: Record<string, unknown>;
   show_when_source_type?: Record<string, string[]>;
   show_when_widget_value?: Record<string, unknown[]>;
@@ -45,6 +46,7 @@ export interface NodeDefinition {
   output: string[];
   output_name: string[];
   output_paths?: string[];
+  output_accepted_types?: string[][];
   category: string;
   manual_trigger?: boolean;
 }

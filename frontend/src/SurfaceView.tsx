@@ -10,7 +10,62 @@ const DEFAULT_CAMERA_STATE = {
   distance: 1.8,
 };
 
-function getFiniteNumber(...values) {
+interface MeshData {
+  width: number;
+  height: number;
+  z_data?: string;
+  colors?: string;
+  z_min: number;
+  z_max: number;
+  z_scale: number;
+  x_range?: [number, number];
+  y_range?: [number, number];
+  positions?: string;
+  indices?: string;
+  vertex_colors?: string;
+  surface_extent_x?: number;
+  surface_extent_y?: number;
+  make_solid?: boolean;
+}
+
+interface CameraState {
+  azimuth?: number;
+  polar?: number;
+  distance?: number;
+}
+
+interface DiagnosticsState {
+  status: string;
+  webgl: string;
+  canvas: string;
+  mesh: string;
+  bounds: string;
+  camera: string;
+  target: string;
+  render: string;
+  error: string;
+}
+
+interface ThreeState {
+  renderer: THREE.WebGLRenderer;
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  controls: OrbitControls;
+  mesh: THREE.Mesh | null;
+  animId: number | undefined;
+}
+
+interface Props {
+  meshData: MeshData | null;
+  nodeId?: string;
+  widgetValues?: Record<string, unknown>;
+  runtimeValues?: Record<string, unknown>;
+  onRuntimeValuesChange?: (nodeId: string, patch: Record<string, unknown>, options: { scheduleRun: boolean }) => void;
+}
+
+type TypedArrayConstructor = Float32ArrayConstructor | Uint8ArrayConstructor | Uint32ArrayConstructor;
+
+function getFiniteNumber(...values: (number | string | null | undefined)[]): number | null {
   for (const value of values) {
     const numeric = Number(value);
     if (Number.isFinite(numeric)) {
@@ -20,17 +75,17 @@ function getFiniteNumber(...values) {
   return null;
 }
 
-function formatNumber(value, digits = 2) {
+function formatNumber(value: number | string | null | undefined, digits = 2): string {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
 }
 
-function formatVector3(value, digits = 2) {
+function formatVector3(value: THREE.Vector3 | null | undefined, digits = 2): string {
   if (!value) return 'n/a';
   return `${formatNumber(value.x, digits)}, ${formatNumber(value.y, digits)}, ${formatNumber(value.z, digits)}`;
 }
 
-function areView3dDiagnosticsEnabled() {
+function areView3dDiagnosticsEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     return window.localStorage?.getItem(VIEW3D_DIAGNOSTICS_STORAGE_KEY) === '1';
@@ -39,7 +94,7 @@ function areView3dDiagnosticsEnabled() {
   }
 }
 
-function buildGeometrySignature(meshData) {
+function buildGeometrySignature(meshData: MeshData | null): string {
   if (!meshData) return '';
   const positionSource = String(meshData.positions || meshData.z_data || '');
   const indexSource = String(meshData.indices || '');
@@ -65,20 +120,20 @@ function buildGeometrySignature(meshData) {
  *   meshData: { width, height, z_data (b64 float32), colors (b64 uint8 RGB),
  *               z_min, z_max, z_scale, x_range, y_range }
  */
-export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeValues, onRuntimeValuesChange }) {
+export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeValues, onRuntimeValuesChange }: Props) {
   const [showDiagnostics] = useState(() => areView3dDiagnosticsEnabled());
-  const containerRef = useRef(null);
-  const threeRef = useRef(null); // { renderer, scene, camera, controls, mesh }
+  const containerRef = useRef<HTMLDivElement>(null);
+  const threeRef = useRef<ThreeState | null>(null); // { renderer, scene, camera, controls, mesh }
   const meshCenterRef = useRef(new THREE.Vector3());
   const fitDistanceRef = useRef(DEFAULT_CAMERA_STATE.distance);
   const lastGeometrySignatureRef = useRef('');
-  const syncTimerRef = useRef(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSnapshotRef = useRef('');
   const isInsideRef = useRef(false);
   const pointerEnteredAtRef = useRef(0);
   const lastWheelAtRef = useRef(0);
   const gestureStartedInsideRef = useRef(false);
-  const [diagnostics, setDiagnostics] = useState({
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({
     status: meshData ? 'initializing' : 'waiting for mesh',
     webgl: 'pending',
     canvas: 'n/a',
@@ -90,17 +145,17 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     error: '',
   });
 
-  const updateDiagnostics = useCallback((patch) => {
+  const updateDiagnostics = useCallback((patch: Partial<DiagnosticsState>) => {
     if (!showDiagnostics) return;
     setDiagnostics((prev) => ({ ...prev, ...patch }));
   }, [showDiagnostics]);
 
   // Decode base64 to typed arrays
-  const decode = useCallback((b64, ArrayType) => {
+  const decode = useCallback(<T extends TypedArrayConstructor>(b64: string, ArrayType: T): InstanceType<T> => {
     const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new ArrayType(bytes.buffer);
+    return new ArrayType(bytes.buffer) as InstanceType<T>;
   }, []);
 
   const captureViewportSnapshot = useCallback(() => {
@@ -108,11 +163,11 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     if (!canvas) return null;
     try {
       return canvas.toDataURL('image/png');
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('[tono] Failed to capture View3D viewport snapshot', error);
       updateDiagnostics({
         status: 'snapshot error',
-        error: error?.message || String(error),
+        error: error instanceof Error ? error.message : String(error),
       });
       return null;
     }
@@ -130,7 +185,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       render: `calls ${renderer.info.render.calls} tris ${renderer.info.render.triangles} geo ${renderer.info.memory.geometries}`,
     });
     if (!nodeId || !onRuntimeValuesChange) return;
-    const patch = {};
+    const patch: Record<string, unknown> = {};
     if (snapshot && snapshot !== lastSnapshotRef.current) patch.viewport_snapshot = snapshot;
     if (Object.keys(patch).length > 0) {
       onRuntimeValuesChange(nodeId, patch, { scheduleRun });
@@ -150,24 +205,24 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     }, delay);
   }, [syncViewportState]);
 
-  const applyCameraState = useCallback((cameraState = {}) => {
+  const applyCameraState = useCallback((cameraState: CameraState = {}) => {
     const state = threeRef.current;
     if (!state) return;
     const { camera, controls } = state;
     const target = meshCenterRef.current.clone();
     const distance = THREE.MathUtils.clamp(
-      getFiniteNumber(cameraState.distance, fitDistanceRef.current, DEFAULT_CAMERA_STATE.distance),
+      getFiniteNumber(cameraState.distance, fitDistanceRef.current, DEFAULT_CAMERA_STATE.distance) ?? DEFAULT_CAMERA_STATE.distance,
       controls.minDistance,
       controls.maxDistance,
     );
     const spherical = new THREE.Spherical(
       distance,
       THREE.MathUtils.clamp(
-        getFiniteNumber(cameraState.polar, DEFAULT_CAMERA_STATE.polar),
+        getFiniteNumber(cameraState.polar, DEFAULT_CAMERA_STATE.polar) ?? DEFAULT_CAMERA_STATE.polar,
         0.01,
         Math.PI - 0.01,
       ),
-      getFiniteNumber(cameraState.azimuth, DEFAULT_CAMERA_STATE.azimuth),
+      getFiniteNumber(cameraState.azimuth, DEFAULT_CAMERA_STATE.azimuth) ?? DEFAULT_CAMERA_STATE.azimuth,
     );
     const offset = new THREE.Vector3().setFromSpherical(spherical);
     controls.target.copy(target);
@@ -209,7 +264,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       error: '',
     });
 
-    const handleContextLost = (event) => {
+    const handleContextLost = (event: Event) => {
       event.preventDefault();
       updateDiagnostics({
         status: 'webgl context lost',
@@ -262,7 +317,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     scene.add(dir2);
 
     // Animation loop
-    let animId;
+    let animId: number | undefined;
     const animate = () => {
       animId = requestAnimationFrame(animate);
       controls.update();
@@ -270,7 +325,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     };
     animate();
 
-    threeRef.current = { renderer, scene, camera, controls, mesh: null, animId };
+    threeRef.current = { renderer, scene, camera, controls, mesh: null, animId } as ThreeState;
     applyCameraState({
       azimuth: DEFAULT_CAMERA_STATE.azimuth,
       polar: DEFAULT_CAMERA_STATE.polar,
@@ -294,7 +349,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
 
     return () => {
       ro.disconnect();
-      cancelAnimationFrame(animId);
+      if (animId !== undefined) cancelAnimationFrame(animId);
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       controls.removeEventListener('end', handleControlsEnd);
       renderer.domElement.removeEventListener('webglcontextlost', handleContextLost, false);
@@ -348,15 +403,20 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       if (threeRef.current.mesh) {
         scene.remove(threeRef.current.mesh);
         threeRef.current.mesh.geometry.dispose();
-        threeRef.current.mesh.material.dispose();
+        const mat = threeRef.current.mesh.material;
+        if (Array.isArray(mat)) {
+          mat.forEach((m) => m.dispose());
+        } else {
+          mat.dispose();
+        }
       }
 
       // Build geometry
       const geom = new THREE.BufferGeometry();
       const positionsArray = posArr ?? new Float32Array(nx * ny * 3);
       const colorAttr = new Float32Array((vertexColorArr ? vertexColorArr.length : (nx * ny * 3)));
-      const surfaceExtentX = getFiniteNumber(surface_extent_x, 1.0);
-      const surfaceExtentY = getFiniteNumber(surface_extent_y, 1.0);
+      const surfaceExtentX = getFiniteNumber(surface_extent_x, 1.0) ?? 1.0;
+      const surfaceExtentY = getFiniteNumber(surface_extent_y, 1.0) ?? 1.0;
 
       if (!posArr) {
         const zRange = z_max - z_min || 1;
@@ -365,7 +425,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
             const idx = iy * nx + ix;
             const px = (ix / Math.max(nx - 1, 1) - 0.5) * surfaceExtentX;
             const py = (iy / Math.max(ny - 1, 1) - 0.5) * surfaceExtentY;
-            const pz = ((zArr[idx] - z_min) / zRange - 0.5) * z_scale;
+            const pz = ((zArr![idx] - z_min) / zRange - 0.5) * z_scale;
 
             positionsArray[idx * 3] = px;
             positionsArray[idx * 3 + 1] = pz;
@@ -453,11 +513,11 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
         lastGeometrySignatureRef.current = geometrySignature;
       }
       scheduleViewportSync(0, false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[tono] View3D mesh build failed', error);
       updateDiagnostics({
         status: 'mesh build error',
-        error: error?.message || String(error),
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }, [applyCameraState, decode, meshData, scheduleViewportSync, updateDiagnostics]);
@@ -494,7 +554,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     };
 
     // Bubble phase: fires after OrbitControls has already run (or skipped due to enableZoom=false)
-    const onWheelBubble = (e) => {
+    const onWheelBubble = (e: WheelEvent) => {
       if (threeRef.current) {
         threeRef.current.controls.enableZoom = true;
       }
@@ -517,7 +577,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     };
   }, []);
 
-  const onContextMenu = useCallback((e) => {
+  const onContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
   }, []);

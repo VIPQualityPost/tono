@@ -2,32 +2,44 @@ import React, { useRef, useState, useCallback } from 'react';
 
 export const CAPTURE_SELECTOR = '.crop-overlay';
 
+interface CropBoxOverlayProps {
+  image: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  aLocked: boolean;
+  bLocked: boolean;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+}
+
 export default function CropBoxOverlay({
   image, x1, y1, x2, y2,
   aLocked, bLocked,
   nodeId, onWidgetChange,
-}) {
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
+}: CropBoxOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
 
-  const getCoords = useCallback((e) => {
-    const rect = containerRef.current.getBoundingClientRect();
+  const getCoords = useCallback((e: React.PointerEvent<Element>) => {
+    const rect = containerRef.current!.getBoundingClientRect();
     return {
       fx: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
       fy: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
     };
   }, []);
 
-  const onPointerDown = useCallback((point) => (e) => {
+  const onPointerDown = useCallback((point: string) => (e: React.PointerEvent<Element>) => {
     if (point === 'p1' && aLocked) return;
     if (point === 'p2' && bLocked) return;
     e.stopPropagation();
     e.preventDefault();
-    e.target.setPointerCapture(e.pointerId);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
     setDragging(point);
   }, [aLocked, bLocked]);
 
-  const onPointerMove = useCallback((e) => {
+  const onPointerMove = useCallback((e: React.PointerEvent<Element>) => {
     if (!dragging || !containerRef.current) return;
     const { fx, fy } = getCoords(e);
     const vx = parseFloat(fx.toFixed(3));

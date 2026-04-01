@@ -7,10 +7,10 @@
 
 const SESSION_STORAGE_KEY = 'tono-session-id';
 
-let _sessionId = null;
-let _ws = null;
-let _handler = null;
-let _reconnectTimer = null;
+let _sessionId: string | null = null;
+let _ws: WebSocket | null = null;
+let _handler: ((msg: any) => void) | null = null;
+let _reconnectTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 
 function generateSessionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -46,13 +46,13 @@ export function getSessionId() {
   return _sessionId;
 }
 
-function withSessionHeaders(init = {}) {
+function withSessionHeaders(init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
   headers.set('X-Argonode-Session', getSessionId());
   return { ...init, headers };
 }
 
-async function sessionFetch(input, init) {
+async function sessionFetch(input: string, init?: RequestInit) {
   return fetch(input, withSessionHeaders(init));
 }
 
@@ -62,7 +62,7 @@ export async function getNodes() {
   return r.json();
 }
 
-export async function getNodeDoc(displayName) {
+export async function getNodeDoc(displayName: string) {
   const r = await sessionFetch(`/docs?name=${encodeURIComponent(displayName)}`);
   if (!r.ok) return null;
   return r.text();
@@ -74,7 +74,7 @@ export async function getFiles() {
   return r.json();
 }
 
-export async function createUploadFolder(relativePath) {
+export async function createUploadFolder(relativePath: string) {
   const r = await sessionFetch('/upload-folder', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ export async function createUploadFolder(relativePath) {
   return r.json();
 }
 
-export async function uploadFile(file, { relativePath = '' } = {}) {
+export async function uploadFile(file: File, { relativePath = '' } = {}) {
   const fd = new FormData();
   if (relativePath) fd.append('relative_path', relativePath);
   fd.append('file', file);
@@ -96,7 +96,7 @@ export async function uploadFile(file, { relativePath = '' } = {}) {
   return r.json();
 }
 
-export async function uploadPlugin(file) {
+export async function uploadPlugin(file: File) {
   const fd = new FormData();
   fd.append('file', file);
   const r = await fetch('/upload-plugin', { method: 'POST', body: fd });
@@ -110,13 +110,13 @@ export async function uploadPlugin(file) {
   return r.json();
 }
 
-export async function getChannels(filepath) {
+export async function getChannels(filepath: string) {
   const r = await sessionFetch(`/channels?file=${encodeURIComponent(filepath)}`);
   if (!r.ok) return [{ name: 'field', type: 'DATA_FIELD' }];
   return r.json();
 }
 
-export async function getFileContent(path) {
+export async function getFileContent(path: string) {
   const r = await sessionFetch(`/file-content?path=${encodeURIComponent(path)}`);
   if (!r.ok) {
     const text = await r.text();
@@ -125,13 +125,13 @@ export async function getFileContent(path) {
   return r.arrayBuffer();
 }
 
-export async function getFolderFiles(folderpath) {
+export async function getFolderFiles(folderpath: string) {
   const r = await sessionFetch(`/folder-files?folder=${encodeURIComponent(folderpath)}`);
   if (!r.ok) return [];
   return r.json();
 }
 
-export async function runPrompt(prompt) {
+export async function runPrompt(prompt: Record<string, unknown>) {
   const r = await sessionFetch('/prompt', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -144,7 +144,7 @@ export async function runPrompt(prompt) {
   return r.json();
 }
 
-export function setMessageHandler(fn) {
+export function setMessageHandler(fn: ((msg: any) => void) | null) {
   _handler = fn;
 }
 

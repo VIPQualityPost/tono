@@ -10,33 +10,47 @@ export const CAPTURE_SELECTOR = '.cs-overlay';
  * Marker positions are driven by widget values (immediate React state),
  * not by backend overlay coords, so they move instantly during drag.
  */
+
+interface CrossSectionOverlayProps {
+  image: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  aLocked: boolean;
+  bLocked: boolean;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+  showLine?: boolean;
+}
+
 export default function CrossSectionOverlay({
   image, x1, y1, x2, y2,
   aLocked, bLocked,
   nodeId, onWidgetChange,
   showLine = true,
-}) {
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null); // 'p1' or 'p2'
+}: CrossSectionOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<string | null>(null); // 'p1' or 'p2'
 
-  const getCoords = useCallback((e) => {
-    const rect = containerRef.current.getBoundingClientRect();
+  const getCoords = useCallback((e: React.PointerEvent<Element>) => {
+    const rect = containerRef.current!.getBoundingClientRect();
     return {
       fx: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
       fy: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
     };
   }, []);
 
-  const onPointerDown = useCallback((point) => (e) => {
+  const onPointerDown = useCallback((point: string) => (e: React.PointerEvent<Element>) => {
     if (point === 'p1' && aLocked) return;
     if (point === 'p2' && bLocked) return;
     e.stopPropagation();
     e.preventDefault();
-    e.target.setPointerCapture(e.pointerId);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
     setDragging(point);
   }, [aLocked, bLocked]);
 
-  const onPointerMove = useCallback((e) => {
+  const onPointerMove = useCallback((e: React.PointerEvent<Element>) => {
     if (!dragging || !containerRef.current) return;
     const { fx, fy } = getCoords(e);
     const vx = parseFloat(fx.toFixed(3));

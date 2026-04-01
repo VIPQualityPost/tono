@@ -1,4 +1,4 @@
-const SI_PREFIX_MULTIPLIERS = {
+const SI_PREFIX_MULTIPLIERS: Record<string, number> = {
   Y: 1e24, Z: 1e21, E: 1e18, P: 1e15, T: 1e12,
   G: 1e9, M: 1e6, k: 1e3,
   m: 1e-3, u: 1e-6, µ: 1e-6, n: 1e-9, p: 1e-12,
@@ -16,7 +16,7 @@ const PREFIXABLE_UNITS = new Set([
  * Returns null if the string does not start with a valid number.
  * The numeric value is scaled to the base SI unit via the prefix.
  */
-export function parseNumberWithUnit(text) {
+export function parseNumberWithUnit(text: unknown) {
   const s = String(text ?? '').trim();
   if (!s) return { numeric: 0, unit: '' };
 
@@ -60,7 +60,7 @@ const SI_PREFIXES = [
   { exp: 24, prefix: 'Y' },
 ];
 
-const SUPERSCRIPT_DIGITS = {
+const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '-': '⁻',
   '0': '⁰',
   '1': '¹',
@@ -74,7 +74,7 @@ const SUPERSCRIPT_DIGITS = {
   '9': '⁹',
 };
 
-export function formatNumericCell(value) {
+export function formatNumericCell(value: unknown) {
   if (value == null) return '';
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return String(value);
@@ -87,18 +87,18 @@ export function formatNumericCell(value) {
   return String(value);
 }
 
-function toSuperscript(text) {
+function toSuperscript(text: string | number) {
   return String(text)
     .split('')
     .map((char) => SUPERSCRIPT_DIGITS[char] || char)
     .join('');
 }
 
-export function formatDisplayUnit(unit) {
+export function formatDisplayUnit(unit: unknown) {
   return String(unit ?? '').replace(/\^(-?\d+)/g, (_, exponent) => toSuperscript(exponent));
 }
 
-function parsePrefixableUnit(unit) {
+function parsePrefixableUnit(unit: unknown) {
   const text = String(unit ?? '').trim();
   if (!text) return null;
 
@@ -113,11 +113,11 @@ function parsePrefixableUnit(unit) {
   return { baseUnit: text, power: 1 };
 }
 
-function formatPrefixedUnit(baseUnit, prefix, power) {
+function formatPrefixedUnit(baseUnit: string, prefix: string, power: number) {
   return power === 1 ? `${prefix}${baseUnit}` : `${prefix}${baseUnit}${toSuperscript(power)}`;
 }
 
-function choosePrefixExponent(value, power) {
+function choosePrefixExponent(value: number, power: number) {
   const abs = Math.abs(value);
   const candidates = SI_PREFIXES.map(({ exp, prefix }) => {
     const scaled = value / (10 ** (exp * power));
@@ -147,7 +147,7 @@ function choosePrefixExponent(value, power) {
  * and prefixed unit label to use for a whole axis.
  * All tick values should be divided by `scale` before display, and `unitLabel` shown once.
  */
-export function getAxisScale(representativeValue, unit) {
+export function getAxisScale(representativeValue: unknown, unit: string) {
   if (!unit || typeof representativeValue !== 'number' || !Number.isFinite(representativeValue) || representativeValue === 0) {
     return { scale: 1, unitLabel: unit || '' };
   }
@@ -157,7 +157,7 @@ export function getAxisScale(representativeValue, unit) {
   return { scale: representativeValue / scaled, unitLabel: unitText };
 }
 
-export function applySIPrefix(value, unit) {
+export function applySIPrefix(value: unknown, unit: unknown) {
   const formattedUnit = formatDisplayUnit(unit);
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return { valueText: formatNumericCell(value), unitText: formattedUnit };
@@ -178,17 +178,17 @@ export function applySIPrefix(value, unit) {
   };
 }
 
-function getCompanionUnitColumn(column, row) {
+function getCompanionUnitColumn(column: unknown, row: unknown) {
   if (!row || typeof row !== 'object' || typeof column !== 'string' || column === 'unit') {
     return null;
   }
   const unitColumn = `${column}_unit`;
-  return typeof row?.[unitColumn] === 'string' ? unitColumn : null;
+  return typeof (row as Record<string, unknown>)?.[unitColumn] === 'string' ? unitColumn : null;
 }
 
-export function getTableColumns(rows) {
-  const columns = [];
-  const hiddenColumns = new Set();
+export function getTableColumns(rows: Array<Record<string, unknown>> | null | undefined) {
+  const columns: string[] = [];
+  const hiddenColumns = new Set<string>();
 
   for (const row of rows || []) {
     if (!row || typeof row !== 'object') continue;
@@ -208,7 +208,7 @@ export function getTableColumns(rows) {
   return columns.filter((column) => !hiddenColumns.has(column));
 }
 
-export function formatTableRowCell(row, column) {
+export function formatTableRowCell(row: Record<string, unknown>, column: string) {
   const companionUnitColumn = getCompanionUnitColumn(column, row);
   if (companionUnitColumn) {
     const formatted = applySIPrefix(row?.[column], row?.[companionUnitColumn]);

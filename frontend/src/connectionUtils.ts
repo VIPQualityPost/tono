@@ -2,26 +2,27 @@
 // Pure functions extracted from App.jsx so they can be independently tested.
 
 import { socketSpecAcceptsType } from './constants.ts';
+import type { InputSpec, TonoNode } from './types.ts';
 
 // ── Handle ID helpers ─────────────────────────────────────────────────
 
-export function getHandleType(handleId) {
+export function getHandleType(handleId: string): string {
   return handleId.split('::')[2];
 }
 
-export function getInputName(handleId) {
+export function getInputName(handleId: string): string {
   return handleId.split('::')[1];
 }
 
-export function getOutputSlot(handleId) {
+export function getOutputSlot(handleId: string): number {
   return parseInt(handleId.split('::')[1], 10);
 }
 
-export function encodeProxyHandleRef(handleId) {
+export function encodeProxyHandleRef(handleId: string): string {
   return encodeURIComponent(String(handleId || ''));
 }
 
-export function decodeProxyHandleRef(encoded) {
+export function decodeProxyHandleRef(encoded: string): string {
   try {
     return decodeURIComponent(String(encoded || ''));
   } catch {
@@ -29,7 +30,7 @@ export function decodeProxyHandleRef(encoded) {
   }
 }
 
-export function parseGroupProxyHandle(handleId) {
+export function parseGroupProxyHandle(handleId: string) {
   const text = String(handleId || '');
   if (!text.startsWith('group-proxy::')) return null;
   const parts = text.split('::');
@@ -42,12 +43,12 @@ export function parseGroupProxyHandle(handleId) {
   };
 }
 
-export function getConnectionHandleType(handleId) {
+export function getConnectionHandleType(handleId: string): string {
   const proxy = parseGroupProxyHandle(handleId);
   return proxy?.type || getHandleType(handleId);
 }
 
-export function getResolvedHandleRef(nodeId, handleId) {
+export function getResolvedHandleRef(nodeId: string, handleId: string) {
   const proxy = parseGroupProxyHandle(handleId);
   return {
     nodeId: proxy?.nodeId || nodeId,
@@ -56,7 +57,7 @@ export function getResolvedHandleRef(nodeId, handleId) {
   };
 }
 
-export function getNodeInputSpecForHandle(node, handleId) {
+export function getNodeInputSpecForHandle(node: TonoNode, handleId: string): InputSpec | null {
   const definition = node?.data?.definition;
   if (!definition?.input) return null;
   const inputName = getInputName(handleId);
@@ -67,14 +68,14 @@ export function getNodeInputSpecForHandle(node, handleId) {
 
 // ── Type compatibility ────────────────────────────────────────────────
 
-export function outputTypeCanConnectToTarget(outputType, targetSpecOrType, outputAcceptedTypes = []) {
+export function outputTypeCanConnectToTarget(outputType: string, targetSpecOrType: InputSpec | string, outputAcceptedTypes: string[] = []) {
   if (socketSpecAcceptsType(outputType, targetSpecOrType)) {
     return true;
   }
   // Polymorphic output: the output socket declares it can also produce the target type
   if (outputAcceptedTypes.length > 0) {
     const targetType = Array.isArray(targetSpecOrType) ? targetSpecOrType[0] : targetSpecOrType;
-    if (outputAcceptedTypes.includes(targetType)) return true;
+    if (outputAcceptedTypes.includes(targetType as string)) return true;
   }
   return outputType === 'ANNOTATION_SOURCE'
     && !socketSpecAcceptsType('ANNOTATION_SOURCE', targetSpecOrType)
@@ -84,7 +85,7 @@ export function outputTypeCanConnectToTarget(outputType, targetSpecOrType, outpu
     );
 }
 
-export function resolveOutputTypeForTarget(outputType, targetSpecOrType) {
+export function resolveOutputTypeForTarget(outputType: string, targetSpecOrType: InputSpec | string): string {
   if (outputType !== 'ANNOTATION_SOURCE') {
     return outputType;
   }
@@ -104,11 +105,18 @@ export function resolveOutputTypeForTarget(outputType, targetSpecOrType) {
 // Extracted from the isValidConnection useCallback so it can be unit-tested
 // without a ReactFlow context. Pass a `getNodeFn` that mirrors reactFlow.getNode.
 
-export function checkConnectionValid(connection, getNodeFn) {
+interface ConnectionParams {
+  source: string;
+  sourceHandle: string;
+  target: string;
+  targetHandle: string;
+}
+
+export function checkConnectionValid(connection: ConnectionParams, getNodeFn: (id: string) => TonoNode | undefined) {
   const srcType = getConnectionHandleType(connection.sourceHandle);
   const resolvedTarget = getResolvedHandleRef(connection.target, connection.targetHandle);
   const targetNode = getNodeFn(resolvedTarget.nodeId);
-  const targetSpec = getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) || resolvedTarget.type;
+  const targetSpec = (targetNode ? getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) : null) || resolvedTarget.type;
   if (socketSpecAcceptsType(srcType, targetSpec)) return true;
   // Polymorphic output: check if the source output declares it can produce the target type
   const srcProxy = parseGroupProxyHandle(connection.sourceHandle);
@@ -117,6 +125,7 @@ export function checkConnectionValid(connection, getNodeFn) {
   const srcNode = getNodeFn(srcNodeId);
   const srcSlot = getOutputSlot(srcHandleId);
   const srcAcceptedTypes = srcNode?.data?.definition?.output_accepted_types?.[srcSlot] || [];
-  const targetType = Array.isArray(targetSpec) ? targetSpec[0] : targetSpec;
+  const targetTypeRaw = Array.isArray(targetSpec) ? targetSpec[0] : targetSpec;
+  const targetType = Array.isArray(targetTypeRaw) ? targetTypeRaw[0] : targetTypeRaw;
   return Array.isArray(srcAcceptedTypes) && srcAcceptedTypes.includes(targetType);
 }

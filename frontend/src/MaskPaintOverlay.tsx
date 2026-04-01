@@ -1,48 +1,63 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CANVAS_COLORS } from './constants';
 
-function clampFraction(value) {
+interface StrokePoint {
+  x: number;
+  y: number;
+}
+
+interface Stroke {
+  size: number;
+  points: StrokePoint[];
+}
+
+interface DrawStrokeStyles {
+  strokeStyle?: string;
+  fillStyle?: string;
+}
+
+function clampFraction(value: number) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));
 }
 
-function sanitizeStroke(stroke, fallbackPenSize) {
+function sanitizeStroke(stroke: any, fallbackPenSize: number): Stroke | null {
   if (!stroke || typeof stroke !== 'object' || !Array.isArray(stroke.points) || stroke.points.length === 0) {
     return null;
   }
 
   const size = Math.max(1, Math.round(Number(stroke.size) || fallbackPenSize || 1));
   const points = stroke.points
-    .map((point) => {
+    .map((point: any) => {
       if (!point || typeof point !== 'object') return null;
       return {
         x: Number(clampFraction(point.x).toFixed(4)),
         y: Number(clampFraction(point.y).toFixed(4)),
       };
     })
-    .filter(Boolean);
+    .filter(Boolean) as StrokePoint[];
 
   if (points.length === 0) return null;
   return { size, points };
 }
 
-function parseMaskPaths(maskPaths, fallbackPenSize) {
+function parseMaskPaths(maskPaths: any, fallbackPenSize: number): Stroke[] {
   if (Array.isArray(maskPaths)) {
-    return maskPaths.map((stroke) => sanitizeStroke(stroke, fallbackPenSize)).filter(Boolean);
+    return maskPaths.map((stroke: any) => sanitizeStroke(stroke, fallbackPenSize)).filter(Boolean) as Stroke[];
   }
   if (typeof maskPaths !== 'string' || !maskPaths.trim()) return [];
 
   try {
     const parsed = JSON.parse(maskPaths);
     if (!Array.isArray(parsed)) return [];
-    return parsed.map((stroke) => sanitizeStroke(stroke, fallbackPenSize)).filter(Boolean);
+    return parsed.map((stroke: any) => sanitizeStroke(stroke, fallbackPenSize)).filter(Boolean) as Stroke[];
   } catch {
     return [];
   }
 }
 
-function drawStroke(ctx, stroke, width, height, imageWidth, imageHeight, styles = {}) {
+function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, width: number, height: number, imageWidth: number, imageHeight: number, styles: DrawStrokeStyles = {}) {
   if (!stroke || !Array.isArray(stroke.points) || stroke.points.length === 0) return;
 
   const scaleX = imageWidth > 0 ? width / imageWidth : 1;
@@ -87,6 +102,16 @@ function drawStroke(ctx, stroke, width, height, imageWidth, imageHeight, styles 
   ctx.restore();
 }
 
+interface MaskPaintOverlayProps {
+  image: string;
+  imageWidth: number;
+  imageHeight: number;
+  penSize: number;
+  maskPaths: any;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+}
+
 export default function MaskPaintOverlay({
   image,
   imageWidth,
@@ -95,15 +120,15 @@ export default function MaskPaintOverlay({
   maskPaths,
   nodeId,
   onWidgetChange,
-}) {
-  const containerRef = useRef(null);
-  const canvasRef = useRef(null);
-  const strokesRef = useRef([]);
-  const draftStrokeRef = useRef(null);
-  const [strokes, setStrokes] = useState(() => parseMaskPaths(maskPaths, penSize));
-  const [draftStroke, setDraftStroke] = useState(null);
+}: MaskPaintOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const strokesRef = useRef<Stroke[]>([]);
+  const draftStrokeRef = useRef<Stroke | null>(null);
+  const [strokes, setStrokes] = useState<Stroke[]>(() => parseMaskPaths(maskPaths, penSize));
+  const [draftStroke, setDraftStroke] = useState<Stroke | null>(null);
   const [drawing, setDrawing] = useState(false);
-  const [cursorPoint, setCursorPoint] = useState(null);
+  const [cursorPoint, setCursorPoint] = useState<StrokePoint | null>(null);
 
   useEffect(() => {
     const parsed = parseMaskPaths(maskPaths, penSize);
@@ -121,7 +146,7 @@ export default function MaskPaintOverlay({
     draftStrokeRef.current = draftStroke;
   }, [draftStroke]);
 
-  const redrawCanvas = useCallback((committedStrokes, activeStroke) => {
+  const redrawCanvas = useCallback((committedStrokes: Stroke[], activeStroke: Stroke | null) => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -154,7 +179,7 @@ export default function MaskPaintOverlay({
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     maskCtx.scale(dpr, dpr);
 
-    const drawMaskStroke = (stroke) => drawStroke(
+    const drawMaskStroke = (stroke: Stroke) => drawStroke(
       maskCtx,
       stroke,
       cssWidth,
@@ -193,7 +218,7 @@ export default function MaskPaintOverlay({
     return () => observer.disconnect();
   }, [draftStroke, redrawCanvas]);
 
-  const getPoint = useCallback((event) => {
+  const getPoint = useCallback((event: React.PointerEvent<Element>): StrokePoint | null => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return null;
     return {
@@ -211,7 +236,7 @@ export default function MaskPaintOverlay({
     return Math.max(1, (Math.max(1, Math.round(Number(penSize) || 1)) * brushScale));
   }, [imageHeight, imageWidth, penSize]);
 
-  const appendPoint = useCallback((stroke, point) => {
+  const appendPoint = useCallback((stroke: Stroke | null, point: StrokePoint | null): Stroke | null => {
     if (!stroke || !point) return stroke;
     const lastPoint = stroke.points[stroke.points.length - 1];
     if (lastPoint && Math.abs(lastPoint.x - point.x) < 0.001 && Math.abs(lastPoint.y - point.y) < 0.001) {
@@ -223,7 +248,7 @@ export default function MaskPaintOverlay({
     };
   }, []);
 
-  const commitStroke = useCallback((stroke) => {
+  const commitStroke = useCallback((stroke: Stroke | null) => {
     const normalizedStroke = sanitizeStroke(stroke, penSize);
     setDraftStroke(null);
     setDrawing(false);
@@ -235,8 +260,8 @@ export default function MaskPaintOverlay({
     onWidgetChange(nodeId, 'mask_paths', JSON.stringify(nextStrokes));
   }, [nodeId, onWidgetChange, penSize]);
 
-  const handlePointerDown = useCallback((event) => {
-    if (event.target.closest('button')) return;
+  const handlePointerDown = useCallback((event: React.PointerEvent<Element>) => {
+    if ((event.target as HTMLElement).closest('button')) return;
     const point = getPoint(event);
     if (!point) return;
 
@@ -251,7 +276,7 @@ export default function MaskPaintOverlay({
     });
   }, [getPoint, penSize]);
 
-  const handlePointerMove = useCallback((event) => {
+  const handlePointerMove = useCallback((event: React.PointerEvent<Element>) => {
     const point = getPoint(event);
     if (!point) return;
     setCursorPoint(point);

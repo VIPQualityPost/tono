@@ -13,19 +13,19 @@ const MARKER_STROKE = '#ffffff';
 const MARKER_LOCKED_COLOR = '#e91e63';
 const MARKER_LABEL_FILL = '#0f172a';
 
-function clamp(v, min, max) {
+function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
-function round3(v) {
+function round3(v: number) {
   return parseFloat(v.toFixed(3));
 }
 
-function trimZeros(text) {
+function trimZeros(text: string) {
   return text.replace(/(?:\.0+|(\.\d+?)0+)$/, '$1');
 }
 
-function formatTick(value) {
+function formatTick(value: number) {
   const abs = Math.abs(value);
   if (abs === 0) return '0';
   if (abs >= 1e4 || abs < 1e-3) {
@@ -37,17 +37,17 @@ function formatTick(value) {
   return trimZeros(value.toFixed(3));
 }
 
-function makeTicks(min, max, count = 5) {
+function makeTicks(min: number, max: number, count = 5) {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
   if (min === max) return [min];
-  const ticks = [];
+  const ticks: number[] = [];
   for (let i = 0; i < count; i += 1) {
     ticks.push(min + ((max - min) * i) / (count - 1));
   }
   return ticks;
 }
 
-function getExtent(values, fallbackMin = 0, fallbackMax = 1) {
+function getExtent(values: number[], fallbackMin = 0, fallbackMax = 1) {
   if (!Array.isArray(values) || values.length === 0) {
     return [fallbackMin, fallbackMax];
   }
@@ -66,6 +66,17 @@ function getExtent(values, fallbackMin = 0, fallbackMax = 1) {
   return [min, max];
 }
 
+interface LinePlotOverlayProps {
+  overlay: any;
+  x1: number;
+  x2: number;
+  aLocked: boolean;
+  bLocked: boolean;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+  interactive?: boolean;
+}
+
 export default function LinePlotOverlay({
   overlay,
   x1,
@@ -75,9 +86,9 @@ export default function LinePlotOverlay({
   nodeId,
   onWidgetChange,
   interactive = true,
-}) {
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
+}: LinePlotOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -110,10 +121,10 @@ export default function LinePlotOverlay({
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  const xValues = Array.isArray(overlay?.x_axis) && overlay.x_axis.length === overlay.line?.length
+  const xValues: number[] = Array.isArray(overlay?.x_axis) && overlay.x_axis.length === overlay.line?.length
     ? overlay.x_axis
-    : overlay?.line?.map((_, i) => i) || [];
-  const yValues = Array.isArray(overlay?.line) ? overlay.line : [];
+    : overlay?.line?.map((_: unknown, i: number) => i) || [];
+  const yValues: number[] = Array.isArray(overlay?.line) ? overlay.line : [];
 
   const width = size.width || 320;
   const height = size.height || Math.round(width / ASPECT_RATIO);
@@ -128,17 +139,17 @@ export default function LinePlotOverlay({
   const yMin = yMinRaw - yPad;
   const yMax = yMaxRaw + yPad;
 
-  const scaleX = useCallback((value) => {
+  const scaleX = useCallback((value: number) => {
     if (xMax === xMin) return plotLeft + plotWidth / 2;
     return plotLeft + ((value - xMin) / (xMax - xMin)) * plotWidth;
   }, [plotLeft, plotWidth, xMin, xMax]);
 
-  const scaleY = useCallback((value) => {
+  const scaleY = useCallback((value: number) => {
     if (yMax === yMin) return plotTop + plotHeight / 2;
     return plotTop + (1 - ((value - yMin) / (yMax - yMin))) * plotHeight;
   }, [plotTop, plotHeight, yMin, yMax]);
 
-  const pickCursorPoint = useCallback((fraction) => {
+  const pickCursorPoint = useCallback((fraction: number) => {
     if (!xValues.length || !yValues.length) {
       return {
         x: plotLeft,
@@ -173,7 +184,7 @@ export default function LinePlotOverlay({
   const cursorA = pickCursorPoint(x1 ?? overlay?.x1 ?? 0.25);
   const cursorB = pickCursorPoint(x2 ?? overlay?.x2 ?? 0.75);
 
-  const path = yValues.map((y, i) => `${i === 0 ? 'M' : 'L'} ${scaleX(xValues[i])} ${scaleY(y)}`).join(' ');
+  const path = yValues.map((y: number, i: number) => `${i === 0 ? 'M' : 'L'} ${scaleX(xValues[i])} ${scaleY(y)}`).join(' ');
   const xTickCount = Math.max(2, Math.min(5, Math.floor(plotWidth / 70)));
   const yTickCount = Math.max(2, Math.min(5, Math.floor(plotHeight / 40)));
   const xTicks = makeTicks(xMin, xMax, xTickCount);
@@ -187,7 +198,7 @@ export default function LinePlotOverlay({
   const markerRadius = clamp(plotWidth / 42, 5.5, 9);
   const markerLabelSize = clamp(plotWidth / 34, 8, 11);
 
-  const updateCursor = useCallback((point, event) => {
+  const updateCursor = useCallback((point: string, event: React.PointerEvent<Element>) => {
     if (!interactive || !onWidgetChange || !nodeId) return;
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -202,7 +213,7 @@ export default function LinePlotOverlay({
     }
   }, [interactive, nodeId, onWidgetChange, pickCursorPoint, plotLeft, plotWidth]);
 
-  const onPointerDown = useCallback((point) => (event) => {
+  const onPointerDown = useCallback((point: string) => (event: React.PointerEvent<Element>) => {
     if (!interactive) return;
     if ((point === 'p1' && aLocked) || (point === 'p2' && bLocked)) return;
     event.preventDefault();
@@ -211,7 +222,7 @@ export default function LinePlotOverlay({
     setDragging(point);
   }, [interactive, aLocked, bLocked]);
 
-  const onPointerMove = useCallback((event) => {
+  const onPointerMove = useCallback((event: React.PointerEvent<Element>) => {
     if (!dragging) return;
     updateCursor(dragging, event);
   }, [dragging, updateCursor]);

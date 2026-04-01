@@ -1,22 +1,21 @@
 import { toBlob } from 'html-to-image';
 import { CANVAS_COLORS } from './constants.ts';
-import { CAPTURE_SELECTOR as linePlotSelector } from './LinePlotOverlay';
-import { CAPTURE_SELECTOR as thresholdSelector } from './ThresholdHistogram';
-import { CAPTURE_SELECTOR as csSelector } from './CrossSectionOverlay';
-import { CAPTURE_SELECTOR as cropSelector } from './CropBoxOverlay';
-import { CAPTURE_SELECTOR as markupSelector } from './MarkupOverlay';
-import { CAPTURE_SELECTOR as angleSelector } from './AngleMeasureOverlay';
-
-// Assembled from each overlay component's CAPTURE_SELECTOR export.
-// To register a new overlay: export CAPTURE_SELECTOR from its file and add
-// an import + entry here. Missing entries produce corrupt ~68-byte PNG output.
+// Mirror the CAPTURE_SELECTOR values from each overlay component.
+// Duplicated here so workflowCapture.ts stays a plain .ts file that
+// Node can run without a JSX transform (needed for tests).
+// To register a new overlay, add its selector string here AND export
+// CAPTURE_SELECTOR from the overlay component file.
 export const OVERLAY_CAPTURE_SELECTORS = [
-  ...new Set([linePlotSelector, thresholdSelector, csSelector, cropSelector, markupSelector, angleSelector]),
+  '.lineplot-overlay',   // LinePlotOverlay + ThresholdHistogram
+  '.cs-overlay',         // CrossSectionOverlay
+  '.crop-overlay',       // CropBoxOverlay
+  '.markup-overlay',     // MarkupOverlay
+  '.angle-overlay',      // AngleMeasureOverlay
 ];
 
-function encodeBase64(bytes) {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(bytes).toString('base64');
+function encodeBase64(bytes: Uint8Array) {
+  if (typeof (globalThis as any).Buffer !== 'undefined') {
+    return (globalThis as any).Buffer.from(bytes).toString('base64');
   }
 
   let binary = '';
@@ -26,13 +25,13 @@ function encodeBase64(bytes) {
   return btoa(binary);
 }
 
-async function blobToDataUrl(blob) {
+async function blobToDataUrl(blob: Blob | null) {
   if (!blob) return null;
   const bytes = new Uint8Array(await blob.arrayBuffer());
   return `data:${blob.type || 'image/png'};base64,${encodeBase64(bytes)}`;
 }
 
-function getElementSize(el) {
+function getElementSize(el: HTMLElement) {
   const rect = el.getBoundingClientRect?.() ?? { width: 0, height: 0 };
   return {
     width: Math.max(1, Math.round(el.clientWidth || rect.width || 0)),
@@ -40,7 +39,7 @@ function getElementSize(el) {
   };
 }
 
-export async function waitForImageElement(img) {
+export async function waitForImageElement(img: HTMLImageElement) {
   if (img.complete && img.naturalWidth > 0) return;
   if (typeof img.decode === 'function') {
     try {
@@ -50,7 +49,7 @@ export async function waitForImageElement(img) {
       // Fall back to load/error listeners below.
     }
   }
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const done = () => {
       img.removeEventListener('load', done);
       img.removeEventListener('error', done);
@@ -61,7 +60,7 @@ export async function waitForImageElement(img) {
   });
 }
 
-export async function getCaptureImageDataUrl(img) {
+export async function getCaptureImageDataUrl(img: HTMLImageElement) {
   const src = img.currentSrc || img.src;
   if (!src) return null;
   if (!src.startsWith('data:')) return src;
@@ -85,9 +84,9 @@ export async function getCaptureImageDataUrl(img) {
 }
 
 export function createCapturePlaceholder(
-  el,
-  dataUrl,
-  { stretch = false, documentRef = globalThis.document, getComputedStyleFn = globalThis.window?.getComputedStyle?.bind(globalThis.window) } = {},
+  el: HTMLElement,
+  dataUrl: string,
+  { stretch = false, documentRef = globalThis.document, getComputedStyleFn = globalThis.window?.getComputedStyle?.bind(globalThis.window) }: { stretch?: boolean; documentRef?: Document; getComputedStyleFn?: typeof getComputedStyle } = {},
 ) {
   const rect = el.getBoundingClientRect();
   const style = getComputedStyleFn(el);
@@ -110,7 +109,7 @@ export function createCapturePlaceholder(
   return placeholder;
 }
 
-async function renderCanvasToDataUrl(canvas) {
+async function renderCanvasToDataUrl(canvas: HTMLCanvasElement) {
   try {
     return canvas.toDataURL('image/png');
   } catch {
@@ -118,7 +117,7 @@ async function renderCanvasToDataUrl(canvas) {
   }
 }
 
-async function renderElementToDataUrl(el, toBlobImpl) {
+async function renderElementToDataUrl(el: HTMLElement, toBlobImpl: typeof toBlob) {
   const { width, height } = getElementSize(el);
   const blob = await toBlobImpl(el, {
     width,
@@ -133,7 +132,7 @@ async function renderElementToDataUrl(el, toBlobImpl) {
   return blobToDataUrl(blob);
 }
 
-async function replaceElementsWithPlaceholders(elements, renderDataUrl, createPlaceholderFn, stretch) {
+async function replaceElementsWithPlaceholders(elements: HTMLElement[], renderDataUrl: (el: HTMLElement) => Promise<string | null>, createPlaceholderFn: (el: HTMLElement, dataUrl: string, opts: { stretch: boolean }) => HTMLElement, stretch: boolean) {
   const restorers = [];
 
   for (const el of elements) {
@@ -153,21 +152,33 @@ async function replaceElementsWithPlaceholders(elements, renderDataUrl, createPl
   return restorers;
 }
 
-function defaultQueryAll(root, selector) {
-  return Array.from(root.querySelectorAll(selector));
+function defaultQueryAll(root: HTMLElement, selector: string): HTMLElement[] {
+  return Array.from(root.querySelectorAll(selector)) as HTMLElement[];
 }
 
 function defaultNextFrame() {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-export async function captureViewportBlob(viewportEl, options, deps = {}) {
+interface CaptureViewportDeps {
+  queryAll?: (root: HTMLElement, selector: string) => HTMLElement[];
+  toBlobImpl?: typeof toBlob;
+  waitForImageElement?: (img: HTMLImageElement) => Promise<void>;
+  renderImageToDataUrl?: (img: HTMLImageElement) => Promise<string | null>;
+  renderCanvasToDataUrl?: (canvas: HTMLCanvasElement) => Promise<string | null>;
+  renderOverlayToDataUrl?: (el: HTMLElement) => Promise<string | null>;
+  createPlaceholder?: (el: HTMLElement, dataUrl: string, opts: { stretch: boolean }) => HTMLElement;
+  nextFrame?: () => Promise<void>;
+  overlaySelectors?: string[];
+}
+
+export async function captureViewportBlob(viewportEl: HTMLElement, options: Record<string, unknown>, deps: CaptureViewportDeps = {}) {
   const queryAll = deps.queryAll ?? defaultQueryAll;
   const toBlobImpl = deps.toBlobImpl ?? toBlob;
   const waitForImage = deps.waitForImageElement ?? waitForImageElement;
   const renderImage = deps.renderImageToDataUrl ?? getCaptureImageDataUrl;
   const renderCanvas = deps.renderCanvasToDataUrl ?? renderCanvasToDataUrl;
-  const renderOverlay = deps.renderOverlayToDataUrl ?? ((el) => renderElementToDataUrl(el, toBlobImpl));
+  const renderOverlay = deps.renderOverlayToDataUrl ?? ((el: HTMLElement) => renderElementToDataUrl(el, toBlobImpl));
   const createPlaceholderFn = deps.createPlaceholder ?? createCapturePlaceholder;
   const nextFrame = deps.nextFrame ?? defaultNextFrame;
   const overlaySelectors = deps.overlaySelectors ?? OVERLAY_CAPTURE_SELECTORS;
@@ -183,13 +194,13 @@ export async function captureViewportBlob(viewportEl, options, deps = {}) {
     }
   }
 
-  const images = queryAll(viewportEl, 'img');
+  const images = queryAll(viewportEl, 'img') as HTMLImageElement[];
   await Promise.all(images.map(waitForImage));
 
   try {
     restorers.push(...await replaceElementsWithPlaceholders(overlays, renderOverlay, createPlaceholderFn, true));
-    restorers.push(...await replaceElementsWithPlaceholders(queryAll(viewportEl, 'img'), renderImage, createPlaceholderFn, false));
-    restorers.push(...await replaceElementsWithPlaceholders(queryAll(viewportEl, 'canvas'), renderCanvas, createPlaceholderFn, true));
+    restorers.push(...await replaceElementsWithPlaceholders(queryAll(viewportEl, 'img'), renderImage as (el: HTMLElement) => Promise<string | null>, createPlaceholderFn, false));
+    restorers.push(...await replaceElementsWithPlaceholders(queryAll(viewportEl, 'canvas'), renderCanvas as (el: HTMLElement) => Promise<string | null>, createPlaceholderFn, true));
 
     await nextFrame();
     await nextFrame();

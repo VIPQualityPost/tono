@@ -22,11 +22,44 @@ import { getGroupMinimumSize } from './groupSizing';
 import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout';
 import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit } from './valueFormatting';
 
+import type { NodeData, NodeContextValue, InputSpec, InputOptions, WidgetDescriptor, PreviewPayload, OverlayData } from './types';
+
+// ── Extended context type (adds methods not in base NodeContextValue) ──
+
+interface ExtendedNodeContextValue extends NodeContextValue {
+  onRenameGroup?: (id: string, label: string) => void;
+  onResizeGroup?: (id: string, params: any) => void;
+  onToggleGroupCollapse?: (id: string) => void;
+  onUngroup?: (id: string) => void;
+  onManualTrigger?: (id: string) => void;
+  onRuntimeValuesChange?: (nodeId: string, values: Record<string, unknown>) => void;
+}
+
+// ── Helper types ─────────────────────────────────────────────────────
+
+interface ColorMapStop {
+  position: number;
+  color: string;
+}
+
+interface DragState {
+  startX: number;
+  startVal: number;
+}
+
+interface DataInput {
+  name: string;
+  type: string | string[];
+  label: string;
+}
+
+type WidgetEntry = WidgetDescriptor;
+
 // ── Context (provided by App) ─────────────────────────────────────────
 
-export const NodeContext = React.createContext(null);
+export const NodeContext = React.createContext<ExtendedNodeContextValue | null>(null);
 
-function parseProxyHandle(handleId) {
+function parseProxyHandle(handleId: string | null | undefined) {
   const text = String(handleId || '');
   if (!text.startsWith('group-proxy::')) return null;
   const parts = text.split('::');
@@ -39,7 +72,7 @@ function parseProxyHandle(handleId) {
   };
 }
 
-function GroupNode({ id, data }) {
+function GroupNode({ id, data }: { id: string; data: NodeData }) {
   const ctx = useContext(NodeContext);
   const proxyInputs = Array.isArray(data.proxyInputs) ? data.proxyInputs : [];
   const proxyOutputs = Array.isArray(data.proxyOutputs) ? data.proxyOutputs : [];
@@ -48,11 +81,11 @@ function GroupNode({ id, data }) {
   const maxRows = Math.max(proxyInputs.length, proxyOutputs.length, collapsed ? 1 : 0);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [draftLabel, setDraftLabel] = useState(String(data.label || 'group'));
-  const labelInputRef = useRef(null);
+  const labelInputRef = useRef<HTMLInputElement | null>(null);
   const selected = useStore(
     useCallback(
-      (s) => {
-        const node = s.nodeLookup?.get(id) || s.nodes?.find((candidate) => candidate.id === id);
+      (s: any) => {
+        const node = s.nodeLookup?.get(id) || s.nodes?.find((candidate: any) => candidate.id === id);
         return !!node?.selected;
       },
       [id],
@@ -60,8 +93,8 @@ function GroupNode({ id, data }) {
   );
   const groupMinSize = useStore(
     useCallback(
-      (s) => getGroupMinimumSize(
-        (s.nodes || []).filter((candidate) => String(candidate.parentId || '') === String(id)),
+      (s: any) => getGroupMinimumSize(
+        (s.nodes || []).filter((candidate: any) => String(candidate.parentId || '') === String(id)),
       ),
       [id],
     ),
@@ -86,7 +119,7 @@ function GroupNode({ id, data }) {
     setIsEditingLabel(false);
     setDraftLabel(nextLabel);
     if (nextLabel !== displayLabel) {
-      ctx.onRenameGroup?.(id, nextLabel);
+      ctx?.onRenameGroup?.(id, nextLabel);
     }
   }, [ctx, displayLabel, draftLabel, id]);
 
@@ -103,7 +136,7 @@ function GroupNode({ id, data }) {
           className="node-resize-handle"
           minWidth={groupMinSize.width}
           minHeight={groupMinSize.height}
-          onResizeEnd={(_event, params) => ctx.onResizeGroup?.(id, params)}
+          onResizeEnd={(_event, params) => ctx?.onResizeGroup?.(id, params)}
         />
       )}
       <div className={`custom-node group-node ${collapsed ? 'group-node-collapsed' : 'group-node-expanded'}`}>
@@ -111,7 +144,7 @@ function GroupNode({ id, data }) {
         <button
           type="button"
           className="group-toggle group-toggle-collapse nodrag"
-          onClick={() => ctx.onToggleGroupCollapse?.(id)}
+          onClick={() => ctx?.onToggleGroupCollapse?.(id)}
           title={collapsed ? 'expand group' : 'collapse group'}
         >
           {collapsed ? '▸' : '▾'}
@@ -157,7 +190,7 @@ function GroupNode({ id, data }) {
           <button
             type="button"
             className="group-toggle nodrag"
-            onClick={() => ctx.onUngroup?.(id)}
+            onClick={() => ctx?.onUngroup?.(id)}
             title="ungroup"
           >
             ungroup
@@ -218,8 +251,18 @@ function GroupNode({ id, data }) {
   );
 }
 
-class PreviewBoundary extends React.Component {
-  constructor(props) {
+interface PreviewBoundaryProps {
+  resetKey?: string | null;
+  fallbackImage?: string | null;
+  children?: React.ReactNode;
+}
+
+interface PreviewBoundaryState {
+  hasError: boolean;
+}
+
+class PreviewBoundary extends React.Component<PreviewBoundaryProps, PreviewBoundaryState> {
+  constructor(props: PreviewBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -228,11 +271,11 @@ class PreviewBoundary extends React.Component {
     return { hasError: true };
   }
 
-  componentDidCatch(error) {
+  componentDidCatch(error: unknown) {
     console.error('[tono] preview render failed', error);
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: PreviewBoundaryProps) {
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
       this.setState({ hasError: false });
     }
@@ -277,7 +320,7 @@ const _SI_PREFIXES = [
 // Map of suffix characters → multiplier (accept both 'u' and 'μ' for micro)
 const _SI_PARSE_MAP = { T:1e12, G:1e9, M:1e6, k:1e3, m:1e-3, u:1e-6, μ:1e-6, n:1e-9, p:1e-12, f:1e-15 };
 
-function formatSI(v, prec) {
+function formatSI(v: number, prec: number | null | undefined) {
   if (!Number.isFinite(v)) return String(v);
   if (v === 0) return prec != null ? `0.${'0'.repeat(prec)}` : '0';
   const abs = Math.abs(v);
@@ -292,11 +335,11 @@ function formatSI(v, prec) {
 
 // Parse a string that may carry an SI suffix (e.g. "20n", "1.5μ", "500p")
 // Falls back to standard parseFloat for plain numbers and scientific notation.
-function parseSI(text) {
+function parseSI(text: string) {
   const t = (text || '').trim();
   if (!t) return NaN;
   const lastChar = t.slice(-1);
-  const factor = _SI_PARSE_MAP[lastChar];
+  const factor = _SI_PARSE_MAP[lastChar as keyof typeof _SI_PARSE_MAP];
   if (factor != null) {
     const num = parseFloat(t.slice(0, -1));
     if (!isNaN(num)) return num * factor;
@@ -306,28 +349,36 @@ function parseSI(text) {
 
 // ── Draggable number input ────────────────────────────────────────────
 
-function DraggableNumber({ value, step, min, max, precision, onChange }) {
+function DraggableNumber({ value, step, min, max, precision, onChange }: {
+  value: unknown;
+  step: number | undefined;
+  min: number | undefined;
+  max: number | undefined;
+  precision: number | null | undefined;
+  onChange: (v: number) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState('');
-  const dragState = useRef(null);
-  const elRef = useRef(null);
+  const dragState = useRef<DragState | null>(null);
+  const elRef = useRef<HTMLDivElement | null>(null);
 
   const display = precision != null ? formatSI(Number(value), precision) : String(value);
 
-  const clamp = useCallback((v) => {
-    if (min != null && v < min) v = min;
-    if (max != null && v > max) v = max;
-    return v;
+  const clamp = useCallback((v: number) => {
+    let clamped = v;
+    if (min != null && clamped < min) clamped = min;
+    if (max != null && clamped > max) clamped = max;
+    return clamped;
   }, [min, max]);
 
-  const onPointerDown = useCallback((e) => {
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (editing) return;
     e.preventDefault();
     dragState.current = { startX: e.clientX, startVal: Number(value) };
     elRef.current?.setPointerCapture(e.pointerId);
   }, [editing, value]);
 
-  const onPointerMove = useCallback((e) => {
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragState.current) return;
     const dx = e.clientX - dragState.current.startX;
     const delta = dx * (step || 0.01);
@@ -336,7 +387,7 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
     onChange(clamp(rounded));
   }, [step, precision, clamp, onChange]);
 
-  const onPointerUp = useCallback((e) => {
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragState.current) return;
     const dx = Math.abs(e.clientX - dragState.current.startX);
     dragState.current = null;
@@ -347,7 +398,7 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
     }
   }, [display]);
 
-  const onWheel = useCallback((e) => {
+  const onWheel = useCallback((e: React.WheelEvent) => {
     if (editing) return;
     e.preventDefault();
 
@@ -396,13 +447,17 @@ function DraggableNumber({ value, step, min, max, precision, onChange }) {
 
 // ── Collapsible section ───────────────────────────────────────────────
 
-function CollapsibleSection({ title, defaultOpen, children }) {
+function CollapsibleSection({ title, defaultOpen, children }: {
+  title: string;
+  defaultOpen: boolean;
+  children?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="collapsible">
       <button
         className="nodrag collapsible-toggle"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen((o: boolean) => !o)}
       >
         <span className="collapsible-arrow">{open ? '▾' : '▸'}</span>
         {title}
@@ -412,13 +467,13 @@ function CollapsibleSection({ title, defaultOpen, children }) {
   );
 }
 
-function LayerGalleryPreview({ overlay }) {
+function LayerGalleryPreview({ overlay }: { overlay: PreviewPayload }) {
   const layers = Array.isArray(overlay?.layers) ? overlay.layers : [];
   const [index, setIndex] = useState(0);
 
   // Reset to 0 only when the layer names change (different file/channels loaded),
   // not on every graph re-run which produces a new overlay object reference.
-  const layerNamesKey = layers.map((l) => l.name ?? '').join('\0');
+  const layerNamesKey = layers.map((l: { name?: string; image: string }) => l.name ?? '').join('\0');
   const prevLayerNamesKeyRef = useRef(layerNamesKey);
   useEffect(() => {
     if (layerNamesKey !== prevLayerNamesKeyRef.current) {
@@ -470,8 +525,8 @@ function LayerGalleryPreview({ overlay }) {
   );
 }
 
-function getMeasurementChoices(rows) {
-  const names = [];
+function getMeasurementChoices(rows: Array<Record<string, unknown>>) {
+  const names: string[] = [];
   for (const row of rows || []) {
     const quantity = row?.quantity;
     if (typeof quantity === 'string' && quantity && !names.includes(quantity)) {
@@ -481,7 +536,7 @@ function getMeasurementChoices(rows) {
   return names;
 }
 
-function formatScalarValue(value) {
+function formatScalarValue(value: unknown) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return String(numeric);
@@ -491,27 +546,28 @@ function formatScalarValue(value) {
   return numeric.toFixed(abs >= 100 ? 2 : 4).replace(/\.?0+$/, '');
 }
 
-function getScalarPayload(scalarValue) {
+function getScalarPayload(scalarValue: unknown): { value: number; unit: string } | { valueText: string; unitText: string } | null {
   if (typeof scalarValue === 'number') {
     return Number.isFinite(scalarValue) ? { value: scalarValue, unit: '' } : null;
   }
   if (!scalarValue || typeof scalarValue !== 'object') return null;
-  const raw = scalarValue.value;
+  const sv = scalarValue as Record<string, unknown>;
+  const raw = sv.value;
   if (typeof raw === 'string') {
-    return { valueText: raw, unitText: typeof scalarValue.unit === 'string' ? scalarValue.unit : '' };
+    return { valueText: raw, unitText: typeof sv.unit === 'string' ? sv.unit : '' };
   }
   const numeric = Number(raw);
   if (!Number.isFinite(numeric)) return null;
   return {
     value: numeric,
-    unit: typeof scalarValue.unit === 'string' ? scalarValue.unit : '',
+    unit: typeof sv.unit === 'string' ? sv.unit : '',
   };
 }
 
-function formatScalarDisplay(scalarValue) {
+function formatScalarDisplay(scalarValue: unknown): { valueText: string; unitText: string } | null {
   const payload = getScalarPayload(scalarValue);
   if (!payload) return null;
-  if ('valueText' in payload) return payload;
+  if ('valueText' in payload) return payload as { valueText: string; unitText: string };
 
   if (payload.unit) {
     const prefixed = applySIPrefix(payload.value, payload.unit);
@@ -533,7 +589,7 @@ function formatScalarDisplay(scalarValue) {
   };
 }
 
-function formatProcessingTime(value) {
+function formatProcessingTime(value: unknown) {
   const ms = Number(value);
   if (!Number.isFinite(ms) || ms < 0) return null;
   if (ms < 1) return `${ms.toFixed(2)} ms`;
@@ -543,9 +599,9 @@ function formatProcessingTime(value) {
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
-function getSourceTypeForInput(store, nodeId, inputName) {
+function getSourceTypeForInput(store: any, nodeId: string, inputName: string) {
   const targetHandle = `input::${inputName}::`;
-  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  const edge = store.edges?.find((e: any) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
   const proxy = parseProxyHandle(edge.sourceHandle);
   if (proxy) return proxy.type || null;
@@ -553,21 +609,21 @@ function getSourceTypeForInput(store, nodeId, inputName) {
   return parts[2] || null;
 }
 
-function getSourceNodeForInput(store, nodeId, inputName) {
+function getSourceNodeForInput(store: any, nodeId: string, inputName: string) {
   const targetHandle = `input::${inputName}::`;
-  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  const edge = store.edges?.find((e: any) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge) return null;
-  return store.nodeLookup?.get(edge.source) || store.nodes?.find((n) => n.id === edge.source) || null;
+  return store.nodeLookup?.get(edge.source) || store.nodes?.find((n: any) => n.id === edge.source) || null;
 }
 
-function getConnectedOutputInfo(store, nodeId, inputName) {
+function getConnectedOutputInfo(store: any, nodeId: string, inputName: string) {
   const targetHandle = `input::${inputName}::`;
-  const edge = store.edges?.find((e) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
+  const edge = store.edges?.find((e: any) => e.target === nodeId && e.targetHandle?.startsWith(targetHandle));
   if (!edge?.sourceHandle) return null;
   const proxy = parseProxyHandle(edge.sourceHandle);
   const sourceNodeId = proxy?.nodeId || edge.source;
   const sourceHandle = proxy?.realHandle || edge.sourceHandle;
-  const sourceNode = store.nodeLookup?.get(sourceNodeId) || store.nodes?.find((n) => n.id === sourceNodeId) || null;
+  const sourceNode = store.nodeLookup?.get(sourceNodeId) || store.nodes?.find((n: any) => n.id === sourceNodeId) || null;
   const slot = Number.parseInt(sourceHandle.split('::')[1], 10);
   if (!sourceNode || !Number.isInteger(slot)) return null;
   return {
@@ -584,16 +640,16 @@ function getConnectedOutputInfo(store, nodeId, inputName) {
  * Uses store.nodes (the reactive array) rather than nodeLookup so that
  * upstream widgetValues changes trigger re-renders.
  */
-function resolveLiveCoordPair(store, nodeId, coordPairInputName) {
+function resolveLiveCoordPair(store: any, nodeId: string, coordPairInputName: string) {
   const nodes = store.nodes;
   const edges = store.edges;
   if (!nodes || !edges) return null;
 
-  const findNode = (nid) => nodes.find((n) => n.id === nid);
+  const findNode = (nid: string) => nodes.find((n: any) => n.id === nid);
 
   // 1. Find the edge feeding this node's COORDPAIR input
   const cpEdge = edges.find(
-    (e) => e.target === nodeId && e.targetHandle?.startsWith(`input::${coordPairInputName}::`)
+    (e: any) => e.target === nodeId && e.targetHandle?.startsWith(`input::${coordPairInputName}::`)
   );
   if (!cpEdge) return null;
 
@@ -602,9 +658,9 @@ function resolveLiveCoordPair(store, nodeId, coordPairInputName) {
 
   // If the source node is a CoordinatePair, walk one more level to Coordinate nodes
   if (cpNode.data?.className === 'CoordinatePair') {
-    const resolveCoord = (inputName) => {
+    const resolveCoord = (inputName: string) => {
       const edge = edges.find(
-        (e) => e.target === cpNode.id && e.targetHandle?.startsWith(`input::${inputName}::`)
+        (e: any) => e.target === cpNode.id && e.targetHandle?.startsWith(`input::${inputName}::`)
       );
       if (!edge) return null;
       const srcNode = findNode(edge.source);
@@ -628,7 +684,7 @@ function resolveLiveCoordPair(store, nodeId, coordPairInputName) {
   return null;
 }
 
-function getBasename(value) {
+function getBasename(value: unknown) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   if (!trimmed) return '';
@@ -637,23 +693,23 @@ function getBasename(value) {
   return parts[parts.length - 1] || '';
 }
 
-function getWidgetSourceInputName(opts) {
+function getWidgetSourceInputName(opts: InputOptions | undefined) {
   return opts?.source_type_input
     || opts?.choices_from_table_input
     || opts?.choices_from_measure_input
     || Object.keys(opts?.show_when_source_type || {})[0];
 }
 
-function widgetVisibleForSourceType(widget, sourceType) {
+function widgetVisibleForSourceType(widget: WidgetEntry, sourceType: string | null) {
   const rules = widget?.opts?.show_when_source_type;
   if (!rules || typeof rules !== 'object') return true;
   const inputName = Object.keys(rules)[0];
   const allowed = Array.isArray(rules[inputName]) ? rules[inputName] : [];
   if (allowed.length === 0) return true;
-  return allowed.includes(sourceType);
+  return sourceType != null && allowed.includes(sourceType);
 }
 
-function widgetVisibleForWidgetValues(widget, widgetValues) {
+function widgetVisibleForWidgetValues(widget: WidgetEntry, widgetValues: Record<string, unknown>) {
   const rules = widget?.opts?.show_when_widget_value;
   if (!rules || typeof rules !== 'object') return true;
 
@@ -668,21 +724,21 @@ function widgetVisibleForWidgetValues(widget, widgetValues) {
   return true;
 }
 
-function widgetHiddenByConnectedInput(widget, connectedInputs) {
+function widgetHiddenByConnectedInput(widget: WidgetEntry, connectedInputs: Set<string> | null) {
   const raw = widget?.opts?.hide_when_input_connected;
   if (!raw || !connectedInputs) return false;
   const inputs = Array.isArray(raw) ? raw : [raw];
   return inputs.some((inputName) => connectedInputs.has(String(inputName)));
 }
 
-function widgetVisibleForInputVisibility(widget, visibleInputs) {
+function widgetVisibleForInputVisibility(widget: WidgetEntry, visibleInputs: Set<string> | null) {
   const raw = widget?.opts?.show_when_input_visible;
   if (!raw) return true;
   const inputs = Array.isArray(raw) ? raw : [raw];
   return inputs.some((inputName) => visibleInputs?.has(String(inputName)));
 }
 
-function getWidgetInlineInputName(widget) {
+function getWidgetInlineInputName(widget: WidgetEntry) {
   const raw = widget?.opts?.inline_with_input;
   if (!raw) return null;
   return String(Array.isArray(raw) ? raw[0] : raw);
@@ -693,7 +749,7 @@ const DEFAULT_COLORMAP_STOPS = [
   { position: 1, color: '#fde725' },
 ];
 
-function normalizeHexColor(color, fallback = '#000000') {
+function normalizeHexColor(color: unknown, fallback = '#000000') {
   if (typeof color !== 'string') return fallback;
   let text = color.trim();
   if (text.startsWith('#') && text.length === 4) {
@@ -705,8 +761,8 @@ function normalizeHexColor(color, fallback = '#000000') {
   return fallback;
 }
 
-function parseColorMapStops(raw) {
-  let parsed = raw;
+function parseColorMapStops(raw: unknown): ColorMapStop[] {
+  let parsed: unknown = raw;
   if (typeof raw === 'string') {
     try {
       parsed = JSON.parse(raw);
@@ -719,15 +775,15 @@ function parseColorMapStops(raw) {
     parsed = DEFAULT_COLORMAP_STOPS;
   }
 
-  const stops = parsed
-    .map((stop) => {
+  const stops: ColorMapStop[] = (parsed as unknown[])
+    .map((stop: any) => {
       const position = Number(stop?.position);
       return {
         position: Number.isFinite(position) ? Math.max(0, Math.min(1, position)) : 0,
         color: normalizeHexColor(stop?.color, '#000000'),
       };
     })
-    .sort((a, b) => a.position - b.position);
+    .sort((a: ColorMapStop, b: ColorMapStop) => a.position - b.position);
 
   if (stops.length < 2) {
     return DEFAULT_COLORMAP_STOPS.map((stop) => ({ ...stop }));
@@ -738,30 +794,35 @@ function parseColorMapStops(raw) {
   return stops;
 }
 
-function serializeColorMapStops(stops) {
-  return JSON.stringify(stops.map((stop, index) => ({
+function serializeColorMapStops(stops: ColorMapStop[]) {
+  return JSON.stringify(stops.map((stop: ColorMapStop, index: number) => ({
     position: index === 0 ? 0 : index === stops.length - 1 ? 1 : Number(stop.position.toFixed(4)),
     color: normalizeHexColor(stop.color, '#000000'),
   })));
 }
 
-function colorMapGradient(stops) {
-  return `linear-gradient(90deg, ${stops.map((stop) => `${stop.color} ${Math.round(stop.position * 1000) / 10}%`).join(', ')})`;
+function colorMapGradient(stops: ColorMapStop[]) {
+  return `linear-gradient(90deg, ${stops.map((stop: ColorMapStop) => `${stop.color} ${Math.round(stop.position * 1000) / 10}%`).join(', ')})`;
 }
 
-function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
+function ColorMapStopsEditor({ nodeId, name, value, onChange }: {
+  nodeId: string;
+  name: string;
+  value: unknown;
+  onChange: (nodeId: string, name: string, value: unknown) => void;
+}) {
   const stops = parseColorMapStops(value);
 
-  const commitStops = useCallback((nextStops) => {
-    const ordered = [...nextStops].sort((a, b) => a.position - b.position);
+  const commitStops = useCallback((nextStops: ColorMapStop[]) => {
+    const ordered = [...nextStops].sort((a: ColorMapStop, b: ColorMapStop) => a.position - b.position);
     if (ordered.length < 2) return;
     ordered[0] = { ...ordered[0], position: 0 };
     ordered[ordered.length - 1] = { ...ordered[ordered.length - 1], position: 1 };
     onChange(nodeId, name, serializeColorMapStops(ordered));
   }, [name, nodeId, onChange]);
 
-  const updateStop = useCallback((index, patch) => {
-    const next = stops.map((stop, stopIndex) => (stopIndex === index ? { ...stop, ...patch } : { ...stop }));
+  const updateStop = useCallback((index: number, patch: Partial<ColorMapStop>) => {
+    const next = stops.map((stop: ColorMapStop, stopIndex: number) => (stopIndex === index ? { ...stop, ...patch } : { ...stop }));
     if (index > 0 && index < next.length - 1) {
       const prev = next[index - 1].position + 0.001;
       const after = next[index + 1].position - 0.001;
@@ -770,9 +831,9 @@ function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
     commitStops(next);
   }, [commitStops, stops]);
 
-  const removeStop = useCallback((index) => {
+  const removeStop = useCallback((index: number) => {
     if (stops.length <= 2) return;
-    commitStops(stops.filter((_, stopIndex) => stopIndex !== index));
+    commitStops(stops.filter((_: ColorMapStop, stopIndex: number) => stopIndex !== index));
   }, [commitStops, stops]);
 
   const addStop = useCallback(() => {
@@ -801,7 +862,7 @@ function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
     <div className="colormap-editor">
       <div className="colormap-preview" style={{ backgroundImage: colorMapGradient(stops) }} />
       <div className="colormap-stop-list">
-        {stops.map((stop, index) => {
+        {stops.map((stop: ColorMapStop, index: number) => {
           const isEndpoint = index === 0 || index === stops.length - 1;
           return (
             <div className="colormap-stop-row" key={`${index}-${stop.position}-${stop.color}`}>
@@ -844,9 +905,9 @@ function ColorMapStopsEditor({ nodeId, name, value, onChange }) {
   );
 }
 
-function NodeTable({ rows }) {
+function NodeTable({ rows }: { rows: Array<Record<string, unknown>> }) {
   const [query, setQuery] = useState('');
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const isInsideRef = useRef(false);
   const pointerEnteredAtRef = useRef(0);
   const lastWheelAtRef = useRef(0);
@@ -863,7 +924,7 @@ function NodeTable({ rows }) {
     const onLeave = () => {
       isInsideRef.current = false;
     };
-    const onWheel = (e) => {
+    const onWheel = (e: WheelEvent) => {
       const now = Date.now();
       const msSinceLastWheel = now - lastWheelAtRef.current;
       const msSinceEnter = now - pointerEnteredAtRef.current;
@@ -899,7 +960,7 @@ function NodeTable({ rows }) {
     && lowerColumns[2] === 'unit'
   );
 
-  const getColumnClass = (column) => {
+  const getColumnClass = (column: string) => {
     const lower = String(column).toLowerCase();
     if (lower === 'value') return 'node-table-col-value';
     if (lower === 'unit') return 'node-table-col-unit';
@@ -908,8 +969,8 @@ function NodeTable({ rows }) {
   };
 
   const filteredRows = query.trim()
-    ? rows.filter((row) =>
-        columns.some((col) => {
+    ? rows.filter((row: Record<string, unknown>) =>
+        columns.some((col: string) => {
           const cell = formatTableRowCell(row, col);
           return String(cell).toLowerCase().includes(query.toLowerCase());
         })
@@ -949,8 +1010,8 @@ function NodeTable({ rows }) {
             </tr>
           </thead>
           <tbody>
-            {filteredRows.map((row, rowIndex) => (
-              <tr key={row.id ?? row.quantity ?? rowIndex}>
+            {filteredRows.map((row: Record<string, unknown>, rowIndex: number) => (
+              <tr key={(row.id as string) ?? (row.quantity as string) ?? rowIndex}>
                 {columns.map((column) => {
                   const value = row?.[column];
                   const displayValue = formatTableRowCell(row, column);
@@ -978,13 +1039,13 @@ function NodeTable({ rows }) {
 
 // ── CustomNode component ──────────────────────────────────────────────
 
-function CustomNode({ id, data }) {
+function CustomNode({ id, data }: { id: string; data: NodeData }) {
   const ctx = useContext(NodeContext);
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
   const connectedPathInfo = useStore(
-    useCallback((s) => getConnectedOutputInfo(s, id, 'path'), [id]),
+    useCallback((s: any) => getConnectedOutputInfo(s, id, 'path'), [id]),
   );
 
   // Find the COORDPAIR input name (if any) so we can resolve live upstream positions
@@ -1001,10 +1062,10 @@ function CustomNode({ id, data }) {
   // Returns [x1, y1, x2, y2] or null — flat array for cheap equality check
   const liveCoordPair = useStore(
     useCallback(
-      (s) => coordPairInputName ? resolveLiveCoordPair(s, id, coordPairInputName) : null,
+      (s: any) => coordPairInputName ? resolveLiveCoordPair(s, id, coordPairInputName) : null,
       [id, coordPairInputName],
     ),
-    (a, b) => {
+    (a: any, b: any) => {
       if (a === b) return true;
       if (!a || !b) return false;
       return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
@@ -1015,15 +1076,15 @@ function CustomNode({ id, data }) {
   const required = def?.input?.required || {};
   const optional = def?.input?.optional || {};
 
-  const dataInputs = [];
-  const widgets = [];
-  const visibleInputNames = new Set();
+  const dataInputs: DataInput[] = [];
+  const widgets: WidgetEntry[] = [];
+  const visibleInputNames = new Set<string>();
 
-  const hiddenWidgets = new Set();
+  const hiddenWidgets = new Set<string>();
 
   for (const [name, spec] of Object.entries(required)) {
-    const [type, opts] = getSpecTypeAndOptions(spec);
-    if (isDataSocketSpec(spec)) {
+    const [type, opts] = getSpecTypeAndOptions(spec as InputSpec);
+    if (isDataSocketSpec(spec as InputSpec)) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else if (opts?.hidden) {
@@ -1032,7 +1093,7 @@ function CustomNode({ id, data }) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else {
-      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
+      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type as string) ? type as string : undefined });
     }
   }
 
@@ -1041,8 +1102,8 @@ function CustomNode({ id, data }) {
   const isProgressive = def?.manual_trigger;
   const connectedInputs = useStore(
     useCallback(
-      (s) => {
-        const set = new Set();
+      (s: any) => {
+        const set = new Set<string>();
         for (const e of s.edges) {
           if (e.target === id) {
             const parts = e.targetHandle?.split('::');
@@ -1057,8 +1118,8 @@ function CustomNode({ id, data }) {
 
   const connectedSourceTypes = useStore(
     useCallback(
-      (s) => {
-        const sourceTypes = {};
+      (s: any) => {
+        const sourceTypes: Record<string, string | null> = {};
         const allInputs = { ...required, ...optional };
         for (const name of Object.keys(allInputs)) {
           sourceTypes[name] = getSourceTypeForInput(s, id, name);
@@ -1077,8 +1138,8 @@ function CustomNode({ id, data }) {
   }
 
   for (const [name, spec] of Object.entries(optional)) {
-    const [type, opts] = getSpecTypeAndOptions(spec);
-    if (isProgressive && isDataSocketSpec(spec)) {
+    const [type, opts] = getSpecTypeAndOptions(spec as InputSpec);
+    if (isProgressive && isDataSocketSpec(spec as InputSpec)) {
       // Progressive: show this slot only if it's the first or the previous is connected
       const match = name.match(/^field_(\d+)$/);
       if (match) {
@@ -1092,11 +1153,11 @@ function CustomNode({ id, data }) {
     }
     if (opts?.hidden) {
       hiddenWidgets.add(name);
-    } else if (isDataSocketSpec(spec) || opts?.socket_only) {
+    } else if (isDataSocketSpec(spec as InputSpec) || opts?.socket_only) {
       dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
       visibleInputNames.add(name);
     } else {
-      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type) ? type : null });
+      widgets.push({ name, type, opts: opts || {}, socketType: SOCKET_WIDGET_TYPES.has(type as string) ? type as string : undefined });
     }
   }
 
@@ -1122,9 +1183,9 @@ function CustomNode({ id, data }) {
   // Computed directly from React props so it updates reliably when tableRows changes.
   const nodeTableMeasurementChoices = getMeasurementChoices(data.tableRows || []);
 
-  const inlineWidgetsByInput = new Map();
-  const topWidgets = [];
-  const standaloneWidgets = [];
+  const inlineWidgetsByInput = new Map<string, WidgetEntry>();
+  const topWidgets: WidgetEntry[] = [];
+  const standaloneWidgets: WidgetEntry[] = [];
   for (const widget of visibleWidgets) {
     const inlineInputName = getWidgetInlineInputName(widget);
     if (inlineInputName) {
@@ -1136,13 +1197,13 @@ function CustomNode({ id, data }) {
     }
   }
 
-  const outputs = def.output.map((type, i) => ({
-    name: formatUiLabel(def.output_name[i] || type),
+  const outputs = (def!.output).map((type: string, i: number) => ({
+    name: formatUiLabel(def!.output_name[i] || type),
     type,
     slot: i,
   }));
 
-  const catColor = CAT_COLORS[def.category] || 'var(--fallback-cat)';
+  const catColor = CAT_COLORS[def!.category] || 'var(--fallback-cat)';
   const maxIORows = Math.max(renderedDataInputs.length, outputs.length);
   const hasInteractiveLineOverlay = data.overlay?.kind === 'line_plot' && hiddenWidgets.has('x1');
   const hasInteractiveOverlay = !!data.overlay && (
@@ -1208,7 +1269,7 @@ function CustomNode({ id, data }) {
                       position={Position.Left}
                       id={`input::${socketName}::${socketType}`}
                       className="typed-handle"
-                      style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
+                      style={{ background: TYPE_COLORS[socketType as string] || 'var(--fallback-type)' }}
                     />
                   )}
                   {(
@@ -1222,8 +1283,8 @@ function CustomNode({ id, data }) {
                       nodeId={id}
                       value={data.widgetValues[w.name]}
                       widgetValues={data.widgetValues}
-                      onChange={ctx.onWidgetChange}
-                      openFileBrowser={ctx.openFileBrowser}
+                      onChange={ctx!.onWidgetChange}
+                      openFileBrowser={ctx!.openFileBrowser}
                       measurementChoices={nodeTableMeasurementChoices}
                     />
                   )}
@@ -1247,19 +1308,20 @@ function CustomNode({ id, data }) {
                       position={Position.Left}
                       id={`input::${inp.name}::${inp.type}`}
                       className="typed-handle"
-                      style={{ background: TYPE_COLORS[inp.type] || 'var(--fallback-type)' }}
+                      style={{ background: TYPE_COLORS[inp.type as string] || 'var(--fallback-type)' }}
                     />
                     <span className="io-label">{inp.label || inp.name}</span>
                     {inlineWidgetsByInput.has(inp.name) && (
                       <div className="io-inline-widget">
                         <WidgetControl
-                          widget={inlineWidgetsByInput.get(inp.name)}
+                          widget={inlineWidgetsByInput.get(inp.name)!}
                           nodeId={id}
-                          value={data.widgetValues[inlineWidgetsByInput.get(inp.name).name]}
+                          value={data.widgetValues[inlineWidgetsByInput.get(inp.name)!.name]}
                           widgetValues={data.widgetValues}
-                          onChange={ctx.onWidgetChange}
-                          openFileBrowser={ctx.openFileBrowser}
+                          onChange={ctx!.onWidgetChange}
+                          openFileBrowser={ctx!.openFileBrowser}
                           hideLabel={true}
+                          measurementChoices={nodeTableMeasurementChoices}
                         />
                       </div>
                     )}
@@ -1294,7 +1356,7 @@ function CustomNode({ id, data }) {
           <div className="node-error-message">{data.error}</div>
         )}
 
-        {scalarDisplay && !standaloneWidgets.some((w) => w.opts?.text_input) && (
+        {scalarDisplay != null && !standaloneWidgets.some((w) => w.opts?.text_input) ? (
           <div className="node-value-display">
             <div className="node-value-box">
               <span className="node-value-box-number">{scalarDisplay.valueText}</span>
@@ -1303,7 +1365,7 @@ function CustomNode({ id, data }) {
               )}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Widget rows */}
         {standaloneWidgets.map((w) => {
@@ -1319,7 +1381,7 @@ function CustomNode({ id, data }) {
                   position={Position.Left}
                   id={`input::${socketName}::${socketType}`}
                   className="typed-handle"
-                  style={{ background: TYPE_COLORS[socketType] || 'var(--fallback-type)' }}
+                  style={{ background: TYPE_COLORS[socketType as string] || 'var(--fallback-type)' }}
                 />
               )}
               {(w.socketType && connectedInputs?.has(w.name))
@@ -1331,8 +1393,8 @@ function CustomNode({ id, data }) {
                   nodeId={id}
                   value={data.widgetValues[w.name]}
                   widgetValues={data.widgetValues}
-                  onChange={ctx.onWidgetChange}
-                  openFileBrowser={ctx.openFileBrowser}
+                  onChange={ctx!.onWidgetChange}
+                  openFileBrowser={ctx!.openFileBrowser}
                   measurementChoices={nodeTableMeasurementChoices}
                 />
               )}
@@ -1341,12 +1403,12 @@ function CustomNode({ id, data }) {
         })}
 
         {/* Manual trigger button (Save) */}
-        {def.manual_trigger && (
+        {def!.manual_trigger && (
           <div className="widget-row">
             <button
               className="nodrag btn btn-primary"
               style={{ flex: 1 }}
-              onClick={() => ctx.onManualTrigger?.(id)}
+              onClick={() => ctx?.onManualTrigger?.(id)}
             >
               Save to Disk
             </button>
@@ -1354,15 +1416,15 @@ function CustomNode({ id, data }) {
         )}
 
         {/* Interactive 3D surface view */}
-        {data.meshData && (
+        {!!data.meshData && (
           <CollapsibleSection title="3D View" defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading 3D...</div>}>
               <SurfaceView
-                meshData={data.meshData}
+                meshData={data.meshData as any}
                 nodeId={id}
                 widgetValues={data.widgetValues}
                 runtimeValues={data.runtimeValues}
-                onRuntimeValuesChange={ctx.onRuntimeValuesChange}
+                onRuntimeValuesChange={ctx?.onRuntimeValuesChange}
               />
             </Suspense>
           </CollapsibleSection>
@@ -1374,10 +1436,10 @@ function CustomNode({ id, data }) {
             <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading...</div>}>
               <ThresholdHistogram
                 overlay={data.overlay}
-                threshold={data.widgetValues.threshold}
-                thresholdConnected={connectedInputs?.has('threshold')}
+                threshold={data.widgetValues.threshold as number}
+                thresholdConnected={!!connectedInputs?.has('threshold')}
                 nodeId={id}
-                onWidgetChange={ctx.onWidgetChange}
+                onWidgetChange={ctx!.onWidgetChange}
               />
             </Suspense>
           </CollapsibleSection>
@@ -1386,14 +1448,14 @@ function CustomNode({ id, data }) {
         {/* Collapsible preview image */}
         {data.previewImage && !hidePreviewForInteractiveMask && (
           typeof data.previewImage === 'object' && data.previewImage.kind === 'panels'
-            ? data.previewImage.panels.map((panel, pi) => (
+            ? (data.previewImage as PreviewPayload).panels!.map((panel: any, pi: number) => (
               <CollapsibleSection key={pi} title={panel.title || 'Preview'} defaultOpen={true}>
                 <PreviewBoundary
                   resetKey={JSON.stringify({ kind: panel.kind, title: panel.title, len: panel.line?.length })}
                   fallbackImage={panel.fallback_image ?? null}
                 >
                   {panel.kind === 'line_plot' ? (
-                    <LinePlotOverlay overlay={panel} interactive={false} />
+                    <LinePlotOverlay overlay={panel} interactive={false} x1={0} x2={0} aLocked={false} bLocked={false} nodeId={id} onWidgetChange={ctx!.onWidgetChange} />
                   ) : panel.kind === 'image' ? (
                     <div className="node-preview">
                       <img src={panel.image} alt={panel.title || 'preview'} draggable={false} />
@@ -1418,8 +1480,8 @@ function CustomNode({ id, data }) {
                     </div>
                   ) : data.previewImage.kind === 'layer_gallery' ? (
                     <LayerGalleryPreview overlay={data.previewImage} />
-                  ) : data.previewImage.kind === 'line_plot' ? (
-                    <LinePlotOverlay overlay={data.previewImage} interactive={false} />
+                  ) : (data.previewImage as PreviewPayload).kind === 'line_plot' ? (
+                    <LinePlotOverlay overlay={data.previewImage} interactive={false} x1={0} x2={0} aLocked={false} bLocked={false} nodeId={id} onWidgetChange={ctx!.onWidgetChange} />
                   ) : null}
                 </PreviewBoundary>
               </CollapsibleSection>
@@ -1430,98 +1492,99 @@ function CustomNode({ id, data }) {
         {hasInteractiveOverlay && data.overlay?.kind !== 'threshold_histogram' && (
           <CollapsibleSection title={overlayTitle} defaultOpen={true}>
             <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading...</div>}>
-              {data.overlay.kind === 'line_plot' ? (
+              {data.overlay!.kind === 'line_plot' ? (
                 <LinePlotOverlay
-                  overlay={data.overlay}
-                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  aLocked={data.overlay.a_locked}
-                  bLocked={data.overlay.b_locked}
+                  overlay={data.overlay!}
+                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
+                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
+                  aLocked={!!data.overlay!.a_locked}
+                  bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
-              ) : data.overlay.kind === 'crop_box' ? (
+              ) : data.overlay!.kind === 'crop_box' ? (
                 <CropBoxOverlay
-                  image={data.overlay.image}
-                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  y1={data.overlay.a_locked ? (liveCoordPair?.[1] ?? data.overlay.y1) : (data.widgetValues.y1 ?? data.overlay.y1)}
-                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  y2={data.overlay.b_locked ? (liveCoordPair?.[3] ?? data.overlay.y2) : (data.widgetValues.y2 ?? data.overlay.y2)}
-                  aLocked={data.overlay.a_locked}
-                  bLocked={data.overlay.b_locked}
+                  image={data.overlay!.image ?? ''}
+                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
+                  y1={(data.overlay!.a_locked ? (liveCoordPair?.[1] ?? data.overlay!.y1) : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
+                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
+                  y2={(data.overlay!.b_locked ? (liveCoordPair?.[3] ?? data.overlay!.y2) : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  aLocked={!!data.overlay!.a_locked}
+                  bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
-              ) : data.overlay.kind === 'cursor_points' ? (
+              ) : data.overlay!.kind === 'cursor_points' ? (
                 <CrossSectionOverlay
-                  image={data.overlay.image}
-                  x1={data.overlay.a_locked ? (liveCoordPair?.[0] ?? data.overlay.x1) : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  y1={data.overlay.a_locked ? (liveCoordPair?.[1] ?? data.overlay.y1) : (data.widgetValues.y1 ?? data.overlay.y1)}
-                  x2={data.overlay.b_locked ? (liveCoordPair?.[2] ?? data.overlay.x2) : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  y2={data.overlay.b_locked ? (liveCoordPair?.[3] ?? data.overlay.y2) : (data.widgetValues.y2 ?? data.overlay.y2)}
-                  aLocked={data.overlay.a_locked}
-                  bLocked={data.overlay.b_locked}
+                  image={data.overlay!.image ?? ''}
+                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
+                  y1={(data.overlay!.a_locked ? (liveCoordPair?.[1] ?? data.overlay!.y1) : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
+                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
+                  y2={(data.overlay!.b_locked ? (liveCoordPair?.[3] ?? data.overlay!.y2) : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  aLocked={!!data.overlay!.a_locked}
+                  bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                   showLine={false}
                 />
-              ) : data.overlay.kind === 'mask_paint' ? (
+              ) : data.overlay!.kind === 'mask_paint' ? (
                 <MaskPaintOverlay
-                  image={data.overlay.image}
-                  imageWidth={data.overlay.image_width}
-                  imageHeight={data.overlay.image_height}
-                  penSize={data.widgetValues.pen_size}
-                  maskPaths={data.widgetValues.mask_paths}
+                  image={data.overlay!.image ?? ''}
+                  imageWidth={data.overlay!.image_width ?? 0}
+                  imageHeight={data.overlay!.image_height ?? 0}
+                  penSize={data.widgetValues.pen_size as number}
+                  maskPaths={data.widgetValues.mask_paths as any}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
-              ) : data.overlay.kind === 'markup' ? (
+              ) : data.overlay!.kind === 'markup' ? (
                 <MarkupOverlay
-                  image={data.overlay.image}
-                  shape={data.widgetValues.shape ?? data.overlay.shape}
-                  strokeColor={data.widgetValues.stroke_color ?? data.overlay.stroke_color}
-                  strokeWidth={data.widgetValues.stroke_width ?? data.overlay.stroke_width}
-                  markupShapes={data.widgetValues.markup_shapes}
+                  image={data.overlay!.image ?? ''}
+                  shape={(data.widgetValues.shape ?? data.overlay!.shape ?? '') as string}
+                  strokeColor={(data.widgetValues.stroke_color ?? data.overlay!.stroke_color ?? '') as string}
+                  strokeWidth={(data.widgetValues.stroke_width ?? data.overlay!.stroke_width ?? 1) as number}
+                  markupShapes={data.widgetValues.markup_shapes as any}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
-              ) : data.overlay.kind === 'threshold_histogram' ? (
+              ) : data.overlay!.kind === 'threshold_histogram' ? (
                 <ThresholdHistogram
-                  overlay={data.overlay}
-                  threshold={data.widgetValues.threshold}
+                  overlay={data.overlay!}
+                  threshold={data.widgetValues.threshold as number}
+                  thresholdConnected={!!connectedInputs?.has('threshold')}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
-              ) : data.overlay.kind === 'angle_measure' ? (
+              ) : data.overlay!.kind === 'angle_measure' ? (
                 <AngleMeasureOverlay
-                  image={data.overlay.image}
-                  x1={data.widgetValues.x1 ?? data.overlay.x1}
-                  y1={data.widgetValues.y1 ?? data.overlay.y1}
-                  xm={data.widgetValues.xm ?? data.overlay.xm}
-                  ym={data.widgetValues.ym ?? data.overlay.ym}
-                  x2={data.widgetValues.x2 ?? data.overlay.x2}
-                  y2={data.widgetValues.y2 ?? data.overlay.y2}
-                  labelDx={data.widgetValues.label_dx ?? data.overlay.label_dx ?? 0}
-                  labelDy={data.widgetValues.label_dy ?? data.overlay.label_dy ?? 0}
-                  angleDeg={data.overlay.angle_deg}
-                  color={data.widgetValues.color ?? data.overlay.color ?? '#ff9800'}
-                  strokeWidth={connectedInputs?.has('stroke_width')
-                    ? (data.overlay.stroke_width ?? data.overlay.line_thickness ?? data.widgetValues.stroke_width ?? 1.35)
-                    : (data.widgetValues.stroke_width ?? data.overlay.stroke_width ?? data.overlay.line_thickness ?? 1.35)}
+                  image={data.overlay!.image ?? ''}
+                  x1={(data.widgetValues.x1 ?? data.overlay!.x1 ?? 0) as number}
+                  y1={(data.widgetValues.y1 ?? data.overlay!.y1 ?? 0) as number}
+                  xm={(data.widgetValues.xm ?? data.overlay!.xm ?? 0) as number}
+                  ym={(data.widgetValues.ym ?? data.overlay!.ym ?? 0) as number}
+                  x2={(data.widgetValues.x2 ?? data.overlay!.x2 ?? 0) as number}
+                  y2={(data.widgetValues.y2 ?? data.overlay!.y2 ?? 0) as number}
+                  labelDx={(data.widgetValues.label_dx ?? data.overlay!.label_dx ?? 0) as number}
+                  labelDy={(data.widgetValues.label_dy ?? data.overlay!.label_dy ?? 0) as number}
+                  angleDeg={data.overlay!.angle_deg as number}
+                  color={(data.widgetValues.color ?? data.overlay!.color ?? '#ff9800') as string}
+                  strokeWidth={(connectedInputs?.has('stroke_width')
+                    ? (data.overlay!.stroke_width ?? data.overlay!.line_thickness ?? data.widgetValues.stroke_width ?? 1.35)
+                    : (data.widgetValues.stroke_width ?? data.overlay!.stroke_width ?? data.overlay!.line_thickness ?? 1.35)) as number}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
               ) : (
                 <CrossSectionOverlay
-                  image={data.overlay.image}
-                  x1={data.overlay.a_locked ? data.overlay.x1 : (data.widgetValues.x1 ?? data.overlay.x1)}
-                  y1={data.overlay.a_locked ? data.overlay.y1 : (data.widgetValues.y1 ?? data.overlay.y1)}
-                  x2={data.overlay.b_locked ? data.overlay.x2 : (data.widgetValues.x2 ?? data.overlay.x2)}
-                  y2={data.overlay.b_locked ? data.overlay.y2 : (data.widgetValues.y2 ?? data.overlay.y2)}
-                  aLocked={data.overlay.a_locked}
-                  bLocked={data.overlay.b_locked}
+                  image={data.overlay!.image ?? ''}
+                  x1={(data.overlay!.a_locked ? data.overlay!.x1 : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
+                  y1={(data.overlay!.a_locked ? data.overlay!.y1 : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
+                  x2={(data.overlay!.b_locked ? data.overlay!.x2 : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
+                  y2={(data.overlay!.b_locked ? data.overlay!.y2 : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  aLocked={!!data.overlay!.a_locked}
+                  bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
-                  onWidgetChange={ctx.onWidgetChange}
+                  onWidgetChange={ctx!.onWidgetChange}
                 />
               )}
             </Suspense>
@@ -1547,7 +1610,15 @@ function CustomNode({ id, data }) {
 
 // ── Editable value-box for text_input FLOAT widgets ──────────────────
 
-function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, onChange }) {
+function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, onChange }: {
+  val: unknown;
+  placeholder: string;
+  nodeId: string;
+  name: string;
+  label: string;
+  hideLabel: boolean;
+  onChange: (nodeId: string, name: string, value: unknown) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const parsed = parseNumberWithUnit(val);
   const display = parsed ? formatScalarDisplay({ value: parsed.numeric, unit: parsed.unit }) : null;
@@ -1565,7 +1636,7 @@ function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, o
             autoFocus
             className="nodrag"
             type="text"
-            value={val}
+            value={val as string}
             placeholder={placeholder}
             onChange={(e) => onChange(nodeId, name, e.target.value)}
             onBlur={() => setEditing(false)}
@@ -1595,14 +1666,23 @@ function TextInputValueBox({ val, placeholder, nodeId, name, label, hideLabel, o
 
 // ── Widget renderer ───────────────────────────────────────────────────
 
-function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false, measurementChoices }) {
+function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFileBrowser, hideLabel = false, measurementChoices }: {
+  widget: WidgetEntry;
+  nodeId: string;
+  value: unknown;
+  widgetValues: Record<string, unknown>;
+  onChange: (nodeId: string, name: string, value: unknown) => void;
+  openFileBrowser: (callback: (files: any) => void, options?: unknown) => void;
+  hideLabel?: boolean;
+  measurementChoices: string[];
+}) {
   const { name, type, opts } = widget;
   const label = formatUiLabel(opts?.label || name);
   const val = value ?? opts?.default ?? '';
   const placeholder = opts?.placeholder || '';
   const dynamicSourceType = useStore(
     useCallback(
-      (s) => {
+      (s: any) => {
         const inputName = getWidgetSourceInputName(opts);
         if (!inputName) return null;
         return getSourceTypeForInput(s, nodeId, inputName);
@@ -1612,7 +1692,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   );
   const dynamicTableColumns = useStore(
     useCallback(
-      (s) => {
+      (s: any) => {
         const tableInputName = opts?.choices_from_table_input;
         if (!tableInputName) return [];
         const sourceType = getSourceTypeForInput(s, nodeId, tableInputName);
@@ -1626,9 +1706,9 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
   );
   const dynamicMeasurementChoices = useStore(
     useCallback(
-      (s) => {
+      (s: any) => {
         if (!opts?.choices_from_measure_input) return [];
-        const node = s.nodeLookup?.get(nodeId) || s.nodes?.find((n) => n.id === nodeId);
+        const node = s.nodeLookup?.get(nodeId) || s.nodes?.find((n: any) => n.id === nodeId);
         const rows = node?.data?.tableRows;
         return Array.isArray(rows) ? getMeasurementChoices(rows) : [];
       },
@@ -1641,7 +1721,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     if (dynamicSourceType) {
       return Array.isArray(byType[dynamicSourceType]) ? byType[dynamicSourceType] : [];
     }
-    const merged = [];
+    const merged: string[] = [];
     for (const choices of Object.values(byType)) {
       if (!Array.isArray(choices)) continue;
       for (const choice of choices) {
@@ -1694,7 +1774,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         {!hideLabel && <label>{label}</label>}
         <select
           className="nodrag"
-          value={val || type[0]}
+          value={(val || type[0]) as string}
           onChange={(e) => onChange(nodeId, name, e.target.value)}
         >
           {type.map((opt) => (
@@ -1768,14 +1848,14 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
           <input
             className="nodrag"
             type="text"
-            value={val}
+            value={val as string}
             onChange={(e) => onChange(nodeId, name, e.target.value)}
             placeholder={placeholder || (isFolderPicker ? 'Select folder…' : 'Select file…')}
           />
           <button
             className="nodrag browse-btn"
             onClick={() => openFileBrowser(
-              (path) => onChange(nodeId, name, path),
+              (path: any) => onChange(nodeId, name, path),
               { selectionMode: isFolderPicker ? 'folder' : 'file' },
             )}
           >
@@ -1831,7 +1911,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
         nodeId={nodeId}
         name={name}
         label={label}
-        hideLabel={hideLabel || !!opts.hide_label}
+        hideLabel={hideLabel || !!(opts as any).hide_label}
         onChange={onChange}
       />
     );
@@ -1880,7 +1960,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
           min={opts?.min}
           max={opts?.max}
           precision={4}
-          onChange={(v) => onChange(nodeId, name, v)}
+          onChange={(v: number) => onChange(nodeId, name, v)}
         />
       </>
     );
@@ -1896,7 +1976,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
           min={opts?.min}
           max={opts?.max}
           precision={0}
-          onChange={(v) => onChange(nodeId, name, v)}
+          onChange={(v: number) => onChange(nodeId, name, v)}
         />
       </>
     );
@@ -1923,7 +2003,7 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
       <input
         className="nodrag"
         type="text"
-        value={val}
+        value={val as string}
         placeholder={placeholder}
         onChange={(e) => onChange(nodeId, name, e.target.value)}
       />

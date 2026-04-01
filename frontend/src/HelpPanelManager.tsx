@@ -2,18 +2,31 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { marked } from 'marked';
 
+interface Heading {
+  level: number;
+  text: string;
+  id: string;
+  children: Heading[];
+}
+
+interface HelpTab {
+  label: string;
+  type: string;
+  content: string;
+}
+
 // ── Parse headings from markdown source ──────────────────────────────
 
-function parseHeadings(md) {
+function parseHeadings(md: string): Heading[] {
   if (!md) return [];
-  const headings = [];
+  const headings: Heading[] = [];
   const lines = md.split('\n');
   for (const line of lines) {
     const m = line.match(/^(#{1,6})\s+(.+)/);
     if (m) {
       const text = m[2].replace(/[*_`~[\]]/g, '').trim();
       const id = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
-      headings.push({ level: m[1].length, text, id });
+      headings.push({ level: m[1].length, text, id, children: [] });
     }
   }
   return headings;
@@ -21,9 +34,9 @@ function parseHeadings(md) {
 
 // ── Inject id attributes into rendered HTML headings ─────────────────
 
-function injectHeadingIds(html, headings) {
+function injectHeadingIds(html: string, headings: Heading[]) {
   let idx = 0;
-  return html.replace(/<(h[1-6])>/gi, (match, tag) => {
+  return html.replace(/<(h[1-6])>/gi, (match: string, tag: string) => {
     if (idx < headings.length) {
       return `<${tag} id="${headings[idx++].id}">`;
     }
@@ -33,9 +46,9 @@ function injectHeadingIds(html, headings) {
 
 // ── Build a tree from flat heading list ──────────────────────────────
 
-function buildTocTree(headings) {
-  const root = { children: [] };
-  const stack = [{ node: root, level: 0 }];
+function buildTocTree(headings: Heading[]): Heading[] {
+  const root: { children: Heading[] } = { children: [] };
+  const stack: { node: { children: Heading[] }; level: number }[] = [{ node: root, level: 0 }];
   for (const h of headings) {
     const item = { ...h, children: [] };
     while (stack.length > 1 && stack[stack.length - 1].level >= h.level) stack.pop();
@@ -47,7 +60,14 @@ function buildTocTree(headings) {
 
 // ── TOC sidebar component ────────────────────────────────────────────
 
-function TocItem({ item, collapsed, onToggle, onNavigate }) {
+interface TocItemProps {
+  item: Heading;
+  collapsed: Record<string, boolean>;
+  onToggle: (id: string) => void;
+  onNavigate: (id: string) => void;
+}
+
+function TocItem({ item, collapsed, onToggle, onNavigate }: TocItemProps) {
   const hasChildren = item.children.length > 0;
   const isCollapsed = collapsed[item.id];
   return (
@@ -82,13 +102,18 @@ function TocItem({ item, collapsed, onToggle, onNavigate }) {
   );
 }
 
-function Toc({ headings, contentRef }) {
-  const [collapsed, setCollapsed] = useState({});
+interface TocProps {
+  headings: Heading[];
+  contentRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function Toc({ headings, contentRef }: TocProps) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const tree = useMemo(() => buildTocTree(headings), [headings]);
 
-  const onToggle = (id) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+  const onToggle = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const onNavigate = (id) => {
+  const onNavigate = (id: string) => {
     const el = contentRef.current?.querySelector(`#${CSS.escape(id)}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -108,14 +133,14 @@ function Toc({ headings, contentRef }) {
 
 // ── Click handler for .md links ──────────────────────────────────────
 
-function useMdLinkHandler(onOpenDoc) {
-  return (e) => {
-    const a = e.target.closest('a[href]');
+function useMdLinkHandler(onOpenDoc: (filename: string) => void) {
+  return (e: React.MouseEvent<HTMLElement>) => {
+    const a = (e.target as HTMLElement).closest('a[href]');
     if (!a) return;
     const href = a.getAttribute('href');
     if (href && /\.md$/i.test(href) && !href.startsWith('http')) {
       e.preventDefault();
-      const filename = href.split('/').pop();
+      const filename = href.split('/').pop() ?? href;
       onOpenDoc(filename);
     }
   };
@@ -123,14 +148,19 @@ function useMdLinkHandler(onOpenDoc) {
 
 // ── Content pane with TOC ────────────────────────────────────────────
 
-function HelpContent({ content, onOpenDoc }) {
-  const contentRef = useRef(null);
+interface HelpContentProps {
+  content: string;
+  onOpenDoc: (filename: string) => void;
+}
+
+function HelpContent({ content, onOpenDoc }: HelpContentProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const handleClick = useMdLinkHandler(onOpenDoc);
   const md = content || '*Loading…*';
   const headings = useMemo(() => parseHeadings(md), [md]);
   const html = useMemo(() => {
-    let rendered;
-    try { rendered = marked.parse(md); } catch { rendered = md; }
+    let rendered: string;
+    try { rendered = marked.parse(md) as string; } catch { rendered = md; }
     return injectHeadingIds(rendered, headings);
   }, [md, headings]);
 
@@ -150,16 +180,22 @@ function HelpContent({ content, onOpenDoc }) {
 
 // ── Journal tab ──────────────────────────────────────────────────────
 
-function JournalTab({ content, onChange, onOpenDoc }) {
+interface JournalTabProps {
+  content: string;
+  onChange: (value: string) => void;
+  onOpenDoc: (filename: string) => void;
+}
+
+function JournalTab({ content, onChange, onOpenDoc }: JournalTabProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const contentRef = useRef(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const handleClick = useMdLinkHandler(onOpenDoc);
 
   let renderedHtml = '';
-  let headings = [];
+  let headings: Heading[] = [];
   if (!isEditing && content?.trim()) {
     headings = parseHeadings(content);
-    try { renderedHtml = injectHeadingIds(marked.parse(content), headings); } catch { renderedHtml = content; }
+    try { renderedHtml = injectHeadingIds(marked.parse(content) as string, headings); } catch { renderedHtml = content; }
   }
 
   return (
@@ -215,11 +251,21 @@ function JournalTab({ content, onChange, onOpenDoc }) {
 
 // ── Main panel manager ───────────────────────────────────────────────
 
-function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange, onOpenJournal, onOpenDoc }) {
+interface HelpPanelManagerProps {
+  tabs: HelpTab[];
+  activeTab: string;
+  onTabSelect: (label: string) => void;
+  onTabClose: (label: string) => void;
+  onTabContentChange: (label: string, value: string) => void;
+  onOpenJournal: () => void;
+  onOpenDoc: (filename: string) => void;
+}
+
+function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange, onOpenJournal, onOpenDoc }: HelpPanelManagerProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && activeTab) onTabClose(activeTab);
     };
     document.addEventListener('keydown', handler);

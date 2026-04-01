@@ -1,6 +1,7 @@
 import { getSpecTypeAndOptions, isDataSocketSpec } from './constants.ts';
+import type { InputSpec, NodeDefinition } from './types';
 
-export function getDefaultWidgetValue(spec) {
+export function getDefaultWidgetValue(spec: InputSpec) {
   const [type, opts] = getSpecTypeAndOptions(spec);
   if (isDataSocketSpec(spec)) return undefined;
   if (type === 'BUTTON') return undefined;
@@ -13,8 +14,8 @@ export function getDefaultWidgetValue(spec) {
   return opts?.default ?? '';
 }
 
-export function buildDefaultWidgetValues(definition) {
-  const widgetValues = {};
+export function buildDefaultWidgetValues(definition: NodeDefinition | null | undefined) {
+  const widgetValues: Record<string, unknown> = {};
   const required = definition?.input?.required || {};
   for (const [name, spec] of Object.entries(required)) {
     const value = getDefaultWidgetValue(spec);

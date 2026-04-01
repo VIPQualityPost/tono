@@ -1,11 +1,20 @@
 import { extractWorkflow } from './pngMetadata.ts';
+import type { SerializedWorkflow } from './types';
 
-const DEFAULT_WORKFLOW_CANDIDATES = [
+interface WorkflowCandidate {
+  path: string;
+  type: string;
+}
+
+const DEFAULT_WORKFLOW_CANDIDATES: WorkflowCandidate[] = [
   { path: '/default-workflow.json', type: 'json' },
   { path: '/default-workflow.png', type: 'png' },
 ];
 
-async function loadCandidate(candidate, fetchImpl, extractWorkflowFn) {
+type FetchImpl = typeof fetch;
+type ExtractWorkflowFn = (blob: Blob) => Promise<SerializedWorkflow | null>;
+
+async function loadCandidate(candidate: WorkflowCandidate, fetchImpl: FetchImpl, extractWorkflowFn: ExtractWorkflowFn): Promise<SerializedWorkflow | null> {
   let response;
   try {
     response = await fetchImpl(candidate.path, { cache: 'no-store' });
@@ -39,9 +48,9 @@ async function loadCandidate(candidate, fetchImpl, extractWorkflowFn) {
 }
 
 export async function loadDefaultWorkflowAsset({
-  fetchImpl = fetch,
-  extractWorkflowFn = extractWorkflow,
-} = {}) {
+  fetchImpl = fetch as FetchImpl,
+  extractWorkflowFn = extractWorkflow as ExtractWorkflowFn,
+}: { fetchImpl?: FetchImpl; extractWorkflowFn?: ExtractWorkflowFn } = {}) {
   for (const candidate of DEFAULT_WORKFLOW_CANDIDATES) {
     const workflow = await loadCandidate(candidate, fetchImpl, extractWorkflowFn);
     if (workflow) {

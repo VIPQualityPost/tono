@@ -13,11 +13,11 @@ const MARKER_STROKE = '#ffffff';
 const MARKER_LOCKED_COLOR = '#e91e63';
 const MARKER_LABEL_FILL = '#0f172a';
 
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function round4(v) { return parseFloat(v.toFixed(4)); }
-function trimZeros(t) { return t.replace(/(?:\.0+|(\.\d+?)0+)$/, '$1'); }
+function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+function round4(v: number) { return parseFloat(v.toFixed(4)); }
+function trimZeros(t: string) { return t.replace(/(?:\.0+|(\.\d+?)0+)$/, '$1'); }
 
-function formatTick(value) {
+function formatTick(value: number) {
   const abs = Math.abs(value);
   if (abs === 0) return '0';
   if (abs >= 1e4 || abs < 1e-3) return value.toExponential(1).replace('e+', 'e');
@@ -27,20 +27,28 @@ function formatTick(value) {
   return trimZeros(value.toFixed(3));
 }
 
-function makeTicks(min, max, count = 5) {
+function makeTicks(min: number, max: number, count = 5) {
   if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [min];
-  return Array.from({ length: count }, (_, i) => min + (max - min) * i / (count - 1));
+  return Array.from({ length: count }, (_: unknown, i: number) => min + (max - min) * i / (count - 1));
 }
 
-function getExtent(values, fallbackMin = 0, fallbackMax = 1) {
+function getExtent(values: number[], fallbackMin = 0, fallbackMax = 1) {
   if (!Array.isArray(values) || !values.length) return [fallbackMin, fallbackMax];
   let min = Infinity, max = -Infinity;
   for (const v of values) { if (Number.isFinite(v)) { if (v < min) min = v; if (v > max) max = v; } }
   return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [fallbackMin, fallbackMax];
 }
 
-export default function ThresholdHistogram({ overlay, threshold, thresholdConnected, nodeId, onWidgetChange }) {
-  const containerRef = useRef(null);
+interface ThresholdHistogramProps {
+  overlay: any;
+  threshold: number;
+  thresholdConnected: boolean;
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+}
+
+export default function ThresholdHistogram({ overlay, threshold, thresholdConnected, nodeId, onWidgetChange }: ThresholdHistogramProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [size, setSize] = useState({ width: 0 });
 
@@ -63,9 +71,9 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const xValues = Array.isArray(overlay?.x_axis) && overlay.x_axis.length === overlay.line?.length
-    ? overlay.x_axis : overlay?.line?.map((_, i) => i) || [];
-  const yValues = Array.isArray(overlay?.line) ? overlay.line : [];
+  const xValues: number[] = Array.isArray(overlay?.x_axis) && overlay.x_axis.length === overlay.line?.length
+    ? overlay.x_axis : overlay?.line?.map((_: unknown, i: number) => i) || [];
+  const yValues: number[] = Array.isArray(overlay?.line) ? overlay.line : [];
   const method = overlay?.method ?? 'absolute';
   const locked = (overlay?.locked ?? false) || !!thresholdConnected;
   const xMin = overlay?.x_min ?? 0;
@@ -84,12 +92,12 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
   const yMin = yMinRaw - yPad;
   const yMax = yMaxRaw + yPad;
 
-  const scaleX = useCallback((v) => {
+  const scaleX = useCallback((v: number) => {
     if (xExtMax === xExtMin) return plotLeft + plotWidth / 2;
     return plotLeft + (v - xExtMin) / (xExtMax - xExtMin) * plotWidth;
   }, [plotLeft, plotWidth, xExtMin, xExtMax]);
 
-  const scaleY = useCallback((v) => {
+  const scaleY = useCallback((v: number) => {
     if (yMax === yMin) return plotTop + plotHeight / 2;
     return plotTop + (1 - (v - yMin) / (yMax - yMin)) * plotHeight;
   }, [plotTop, plotHeight, yMin, yMax]);
@@ -116,7 +124,7 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
     return scaleY(yValues[best]);
   })();
 
-  const handleDrag = useCallback((e) => {
+  const handleDrag = useCallback((e: React.PointerEvent<Element>) => {
     if (!onWidgetChange || !nodeId || locked || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const frac = clamp((e.clientX - rect.left - plotLeft) / plotWidth, 0, 1);
@@ -128,7 +136,7 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
     onWidgetChange(nodeId, 'threshold', newThreshold);
   }, [onWidgetChange, nodeId, locked, plotLeft, plotWidth, method, xMin, xMax]);
 
-  const onPointerDown = useCallback((e) => {
+  const onPointerDown = useCallback((e: React.PointerEvent<Element>) => {
     if (locked) return;
     e.preventDefault();
     e.stopPropagation();
@@ -136,13 +144,13 @@ export default function ThresholdHistogram({ overlay, threshold, thresholdConnec
     setDragging(true);
   }, [locked]);
 
-  const onPointerMove = useCallback((e) => {
+  const onPointerMove = useCallback((e: React.PointerEvent<Element>) => {
     if (dragging) handleDrag(e);
   }, [dragging, handleDrag]);
 
   const onPointerUp = useCallback(() => setDragging(false), []);
 
-  const path = yValues.map((y, i) => `${i === 0 ? 'M' : 'L'} ${scaleX(xValues[i])} ${scaleY(y)}`).join(' ');
+  const path = yValues.map((y: number, i: number) => `${i === 0 ? 'M' : 'L'} ${scaleX(xValues[i])} ${scaleY(y)}`).join(' ');
   const xTickCount = Math.max(2, Math.min(5, Math.floor(plotWidth / 70)));
   const yTickCount = Math.max(2, Math.min(5, Math.floor(plotHeight / 40)));
   const xTicks = makeTicks(xExtMin, xExtMax, xTickCount);

@@ -11,13 +11,29 @@ import {
   sanitizeMarkupShape,
 } from './markupShapeGeometry';
 
-function clampFraction(value) {
+function clampFraction(value: number) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));
 }
 
-function ShapeElement({ shape, imageWidth, imageHeight }) {
+interface MarkupShape {
+  kind: string;
+  color: string;
+  width: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+interface ShapeElementProps {
+  shape: MarkupShape;
+  imageWidth: number;
+  imageHeight: number;
+}
+
+function ShapeElement({ shape, imageWidth, imageHeight }: ShapeElementProps) {
   const x1 = shape.x1 * imageWidth;
   const y1 = shape.y1 * imageHeight;
   const x2 = shape.x2 * imageWidth;
@@ -29,11 +45,11 @@ function ShapeElement({ shape, imageWidth, imageHeight }) {
   const strokeWidth = getMarkupPreviewStrokeWidth(shape.width, imageWidth, imageHeight);
   const renderShape = { ...shape, width: strokeWidth };
   const common = {
-    fill: 'none',
+    fill: 'none' as const,
     stroke: shape.color,
     strokeWidth,
-    strokeLinecap: shape.kind === 'arrow' ? 'square' : 'round',
-    strokeLinejoin: 'round',
+    strokeLinecap: (shape.kind === 'arrow' ? 'square' : 'round') as 'square' | 'round',
+    strokeLinejoin: 'round' as const,
   };
 
   if (shape.kind === 'line') {
@@ -68,6 +84,16 @@ function ShapeElement({ shape, imageWidth, imageHeight }) {
   );
 }
 
+interface MarkupOverlayProps {
+  image: string;
+  shape: string;
+  strokeColor: string;
+  strokeWidth: number;
+  markupShapes: string | MarkupShape[];
+  nodeId: string;
+  onWidgetChange: (nodeId: string, name: string, value: unknown) => void;
+}
+
 export default function MarkupOverlay({
   image,
   shape,
@@ -76,11 +102,11 @@ export default function MarkupOverlay({
   markupShapes,
   nodeId,
   onWidgetChange,
-}) {
-  const containerRef = useRef(null);
-  const imageRef = useRef(null);
-  const shapesRef = useRef([]);
-  const [draftShape, setDraftShape] = useState(null);
+}: MarkupOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const shapesRef = useRef<MarkupShape[]>([]);
+  const [draftShape, setDraftShape] = useState<MarkupShape | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [imageSize, setImageSize] = useState({ width: 1, height: 1 });
 
@@ -123,7 +149,7 @@ export default function MarkupOverlay({
     return undefined;
   }, [image]);
 
-  const getPoint = useCallback((event) => {
+  const getPoint = useCallback((event: React.PointerEvent<Element>) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return null;
     return {
@@ -132,13 +158,13 @@ export default function MarkupOverlay({
     };
   }, []);
 
-  const commitShapes = useCallback((nextShapes) => {
+  const commitShapes = useCallback((nextShapes: MarkupShape[]) => {
     if (!nodeId || !onWidgetChange) return;
     onWidgetChange(nodeId, 'markup_shapes', JSON.stringify(nextShapes));
   }, [nodeId, onWidgetChange]);
 
-  const handlePointerDown = useCallback((event) => {
-    if (!onWidgetChange || event.target.closest('button')) return;
+  const handlePointerDown = useCallback((event: React.PointerEvent<Element>) => {
+    if (!onWidgetChange || (event.target as HTMLElement).closest('button')) return;
     const point = getPoint(event);
     if (!point) return;
     event.preventDefault();
@@ -156,7 +182,7 @@ export default function MarkupOverlay({
     });
   }, [getPoint, normalizedColor, normalizedShape, normalizedWidth, onWidgetChange]);
 
-  const handlePointerMove = useCallback((event) => {
+  const handlePointerMove = useCallback((event: React.PointerEvent<Element>) => {
     if (!drawing) return;
     const point = getPoint(event);
     if (!point) return;

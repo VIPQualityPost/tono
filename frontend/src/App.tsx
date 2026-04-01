@@ -62,6 +62,31 @@ import {
   CANVAS_COLORS,
 } from './constants';
 
+import type {
+  NodeData,
+  NodeDefinition,
+  NodeDefsRegistry,
+  InputSpec,
+  TonoNode,
+  TonoEdge,
+  SerializedWorkflow,
+  WsMessage,
+} from './types';
+import type { Node, Edge, NodeChange, EdgeChange, Connection, ReactFlowInstance } from '@xyflow/react';
+
+declare global {
+  interface Window {
+    pywebview?: {
+      api?: {
+        open_folder_dialog?: () => Promise<string | null>;
+        open_file_dialog?: () => Promise<string | null>;
+        choose_save_workflow_png_path?: (filename: string) => Promise<string | null>;
+      };
+    };
+    showSaveFilePicker?: (options?: any) => Promise<any>;
+  }
+}
+
 const NODE_TYPES = { custom: CustomNode };
 
 const GROUP_PADDING_X = 24;
@@ -75,12 +100,12 @@ const CANVAS_MAX_ZOOM = 4;
 const CANVAS_RIGHT_DRAG_ZOOM_SENSITIVITY = 0.0065;
 const CANVAS_RIGHT_DRAG_ZOOM_THRESHOLD = 5;
 
-function getNodeDimension(node, axis) {
+function getNodeDimension(node: any, axis: string): number {
   if (axis === 'width') return node.measured?.width || node.style?.width || node.width || 200;
   return node.measured?.height || node.style?.height || node.height || 120;
 }
 
-function applyNodeSize(node, width, height) {
+function applyNodeSize(node: any, width: any, height: any) {
   const nextWidth = Math.round(Number(width) || 0);
   const nextHeight = Math.round(Number(height) || 0);
   return {
@@ -91,7 +116,7 @@ function applyNodeSize(node, width, height) {
   };
 }
 
-function getNodeAbsolutePosition(node, nodeMap) {
+function getNodeAbsolutePosition(node: any, nodeMap: Map<string, any>): { x: number; y: number } {
   if (node?.positionAbsolute) {
     return {
       x: Number(node.positionAbsolute.x) || 0,
@@ -109,9 +134,9 @@ function getNodeAbsolutePosition(node, nodeMap) {
   return { x: parentPos.x + local.x, y: parentPos.y + local.y };
 }
 
-function collectGroupDescendantIds(nodes, groupId) {
+function collectGroupDescendantIds(nodes: any[], groupId: any) {
   const allNodes = Array.isArray(nodes) ? nodes : [];
-  const result = new Set();
+  const result = new Set<string>();
   let changed = true;
   while (changed) {
     changed = false;
@@ -128,13 +153,13 @@ function collectGroupDescendantIds(nodes, groupId) {
   return result;
 }
 
-function getGroupMembers(nodes, groupId) {
+function getGroupMembers(nodes: any[], groupId: any) {
   const descendants = collectGroupDescendantIds(nodes, groupId);
   return Array.from(descendants);
 }
 
-function getGroupDisplayBounds(nodes, selectedIds) {
-  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+function getGroupDisplayBounds(nodes: any[], selectedIds: any[]) {
+  const nodeMap = new Map<string, any>((nodes || []).map((node: any) => [String(node.id), node]));
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -159,7 +184,7 @@ function getGroupDisplayBounds(nodes, selectedIds) {
   return { minX, minY, maxX, maxY };
 }
 
-function getGroupWorkspaceBounds(groupNode, nodeMap) {
+function getGroupWorkspaceBounds(groupNode: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(groupNode, nodeMap);
   const width = Number(getNodeDimension(groupNode, 'width')) || 200;
   const height = Number(getNodeDimension(groupNode, 'height')) || 120;
@@ -171,7 +196,7 @@ function getGroupWorkspaceBounds(groupNode, nodeMap) {
   };
 }
 
-function getNodeCenter(node, nodeMap) {
+function getNodeCenter(node: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(node, nodeMap);
   const width = Number(getNodeDimension(node, 'width')) || 200;
   const height = Number(getNodeDimension(node, 'height')) || 120;
@@ -181,7 +206,7 @@ function getNodeCenter(node, nodeMap) {
   };
 }
 
-function getNodeRect(node, nodeMap) {
+function getNodeRect(node: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(node, nodeMap);
   const width = Number(getNodeDimension(node, 'width')) || 200;
   const height = Number(getNodeDimension(node, 'height')) || 120;
@@ -193,7 +218,7 @@ function getNodeRect(node, nodeMap) {
   };
 }
 
-function getAbsoluteRectForNodePosition(node, absolutePosition) {
+function getAbsoluteRectForNodePosition(node: any, absolutePosition: { x: number; y: number }) {
   const width = Number(getNodeDimension(node, 'width')) || 200;
   const height = Number(getNodeDimension(node, 'height')) || 120;
   return {
@@ -204,21 +229,21 @@ function getAbsoluteRectForNodePosition(node, absolutePosition) {
   };
 }
 
-function rectContainsPoint(rect, point) {
+function rectContainsPoint(rect: { left: number; right: number; top: number; bottom: number }, point: { x: number; y: number }) {
   return point.x >= rect.left
     && point.x <= rect.right
     && point.y >= rect.top
     && point.y <= rect.bottom;
 }
 
-function rectContainsRect(outerRect, innerRect) {
+function rectContainsRect(outerRect: { left: number; right: number; top: number; bottom: number }, innerRect: { left: number; right: number; top: number; bottom: number }) {
   return innerRect.left >= outerRect.left
     && innerRect.top >= outerRect.top
     && innerRect.right <= outerRect.right
     && innerRect.bottom <= outerRect.bottom;
 }
 
-function getEventClientPosition(event) {
+function getEventClientPosition(event: any) {
   if (!event) return null;
   const point = 'changedTouches' in event && event.changedTouches?.[0]
     ? event.changedTouches[0]
@@ -227,13 +252,13 @@ function getEventClientPosition(event) {
   return { x: point.clientX, y: point.clientY };
 }
 
-function getEventFlowPosition(event, reactFlow) {
+function getEventFlowPosition(event: any, reactFlow: any) {
   const clientPosition = getEventClientPosition(event);
   if (!clientPosition || typeof reactFlow?.screenToFlowPosition !== 'function') return null;
   return reactFlow.screenToFlowPosition(clientPosition);
 }
 
-function getDragIntent(event, reactFlow, dragState) {
+function getDragIntent(event: any, reactFlow: any, dragState: any) {
   if (!dragState?.pointerOffset || !dragState?.anchorStartAbsolute) return null;
   const pointerFlowPos = getEventFlowPosition(event, reactFlow);
   if (!pointerFlowPos) return null;
@@ -247,7 +272,7 @@ function getDragIntent(event, reactFlow, dragState) {
     y: anchorAbsolute.y - (Number(dragState.anchorStartAbsolute.y) || 0),
   };
   const absolutePositions = new Map(
-    Object.entries(dragState.absolutePositions || {}).map(([id, pos]) => [
+    Object.entries(dragState.absolutePositions || {}).map(([id, pos]: [string, any]) => [
       id,
       {
         x: (Number(pos?.x) || 0) + delta.x,
@@ -263,23 +288,23 @@ function getDragIntent(event, reactFlow, dragState) {
   };
 }
 
-function findExpandedGroupDropTarget(nodes, draggedNodeIds, anchorNodeId, anchorPoint = null) {
-  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+function findExpandedGroupDropTarget(nodes: any[], draggedNodeIds: any[], anchorNodeId: any, anchorPoint: { x: number; y: number } | null = null) {
+  const nodeMap = new Map<string, any>((nodes || []).map((node: any) => [String(node.id), node]));
   const anchorNode = nodeMap.get(String(anchorNodeId));
   if (!anchorNode) return null;
 
-  const draggedIdSet = new Set((draggedNodeIds || []).map((id) => String(id)));
+  const draggedIdSet = new Set((draggedNodeIds || []).map((id: any) => String(id)));
   const anchorCenter = anchorPoint && Number.isFinite(anchorPoint.x) && Number.isFinite(anchorPoint.y)
     ? anchorPoint
     : getNodeCenter(anchorNode, nodeMap);
 
   return (nodes || [])
-    .filter((node) => (
+    .filter((node: any) => (
       node?.data?.className === 'Group'
       && !node?.data?.collapsed
       && !draggedIdSet.has(String(node.id))
     ))
-    .map((node) => {
+    .map((node: any) => {
       const rect = getGroupWorkspaceBounds(node, nodeMap);
       return {
         node,
@@ -287,11 +312,11 @@ function findExpandedGroupDropTarget(nodes, draggedNodeIds, anchorNodeId, anchor
         area: Math.max(1, rect.right - rect.left) * Math.max(1, rect.bottom - rect.top),
       };
     })
-    .filter(({ rect }) => rectContainsPoint(rect, anchorCenter))
-    .sort((a, b) => a.area - b.area)[0]?.node || null;
+    .filter(({ rect }: { rect: any }) => rectContainsPoint(rect, anchorCenter))
+    .sort((a: any, b: any) => a.area - b.area)[0]?.node || null;
 }
 
-function getInputLabelForNode(node, inputName) {
+function getInputLabelForNode(node: any, inputName: string) {
   const inputs = {
     ...(node?.data?.definition?.input?.required || {}),
     ...(node?.data?.definition?.input?.optional || {}),
@@ -302,7 +327,7 @@ function getInputLabelForNode(node, inputName) {
   return opts?.label || inputName;
 }
 
-function getOutputLabelForNode(node, slot, handleId) {
+function getOutputLabelForNode(node: any, slot: number, handleId: string): string {
   const outputNames = node?.data?.definition?.output_name || [];
   const outputTypes = node?.data?.definition?.output || [];
   if (Number.isInteger(slot) && outputNames[slot]) return outputNames[slot];
@@ -310,16 +335,16 @@ function getOutputLabelForNode(node, slot, handleId) {
   return proxy?.realHandle ? getOutputLabelForNode(node, getOutputSlot(proxy.realHandle), proxy.realHandle) : outputTypes[slot] || 'output';
 }
 
-function buildGroupProxyData(groupId, nodes, edges) {
-  const nodeMap = new Map((nodes || []).map((node) => [String(node.id), node]));
+function buildGroupProxyData(groupId: string, nodes: any[], edges: any[]) {
+  const nodeMap = new Map<string, any>((nodes || []).map((node: any) => [String(node.id), node]));
   const memberIds = new Set(getGroupMembers(nodes, groupId));
-  const proxyInputs = [];
-  const proxyOutputs = [];
+  const proxyInputs: { key: string; type: string; label: string; handleId: string }[] = [];
+  const proxyOutputs: { key: string; type: string; label: string; handleId: string }[] = [];
   const seenInputs = new Set();
   const seenOutputs = new Set();
 
   for (const edge of edges || []) {
-    const original = edge?.data?.groupProxyOriginal || {};
+    const original = (edge?.data?.groupProxyOriginal || {}) as Record<string, any>;
     const sourceId = String(original.source || edge.source);
     const targetId = String(original.target || edge.target);
     const sourceHandle = original.sourceHandle || edge.sourceHandle;
@@ -355,23 +380,23 @@ function buildGroupProxyData(groupId, nodes, edges) {
   return { proxyInputs, proxyOutputs, childCount: memberIds.size };
 }
 
-function sameStringArray(a = [], b = []) {
+function sameStringArray(a: any[] = [], b: any[] = []) {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
   return a.every((item, index) => item === b[index]);
 }
 
-function isEditableTarget(target) {
+function isEditableTarget(target: any) {
   if (!target || !(target instanceof Element)) return false;
   if (target.closest('input, textarea, select')) return true;
   return target.closest('[contenteditable="true"]') !== null;
 }
 
-function clampNumber(value, min, max) {
+function clampNumber(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function canStartCanvasRightDragZoom(target) {
+function canStartCanvasRightDragZoom(target: any) {
   if (!target || !(target instanceof Element)) return false;
   if (isEditableTarget(target)) return false;
   if (target.closest('.context-menu, .react-flow__node, .react-flow__edge, .react-flow__controls, .react-flow__minimap, .surface-view-container')) {
@@ -380,7 +405,7 @@ function canStartCanvasRightDragZoom(target) {
   return target.closest('.react-flow__pane, .react-flow__background') !== null;
 }
 
-function compareMenuNodes(a, b) {
+function compareMenuNodes(a: any, b: any) {
   const orderA = Number.isFinite(a?.menu_order)
     ? a.menu_order
     : Number.isFinite(a?.def?.menu_order)
@@ -398,14 +423,14 @@ function compareMenuNodes(a, b) {
   return nameA.localeCompare(nameB);
 }
 
-function compareMenuCategories(a, b) {
+function compareMenuCategories(a: any, b: any) {
   const orderA = Number.isFinite(a?.order) ? a.order : Number.MAX_SAFE_INTEGER;
   const orderB = Number.isFinite(b?.order) ? b.order : Number.MAX_SAFE_INTEGER;
   if (orderA !== orderB) return orderA - orderB;
   return String(a?.name || '').localeCompare(String(b?.name || ''));
 }
 
-function getRenderedNodeBounds(nodes) {
+function getRenderedNodeBounds(nodes: any[]) {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -416,7 +441,7 @@ function getRenderedNodeBounds(nodes) {
     const selectorId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
       ? CSS.escape(String(node.id))
       : String(node.id);
-    const el = document.querySelector(`.react-flow__node[data-id="${selectorId}"]`);
+    const el = document.querySelector(`.react-flow__node[data-id="${selectorId}"]`) as HTMLElement | null;
     const width = el?.offsetWidth || node.measured?.width || node.width || 0;
     const height = el?.offsetHeight || node.measured?.height || node.height || 0;
     const x = node.positionAbsolute?.x ?? node.position?.x ?? 0;
@@ -445,7 +470,7 @@ function getRenderedNodeBounds(nodes) {
   };
 }
 
-async function waitForImageElement(img) {
+async function waitForImageElement(img: HTMLImageElement) {
   if (img.complete && img.naturalWidth > 0) return;
   if (typeof img.decode === 'function') {
     try {
@@ -455,7 +480,7 @@ async function waitForImageElement(img) {
       // Fall back to load/error listeners below.
     }
   }
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const done = () => {
       img.removeEventListener('load', done);
       img.removeEventListener('error', done);
@@ -466,7 +491,7 @@ async function waitForImageElement(img) {
   });
 }
 
-async function getCaptureImageDataUrl(img) {
+async function getCaptureImageDataUrl(img: HTMLImageElement) {
   const src = img.currentSrc || img.src;
   if (!src) return null;
   if (!src.startsWith('data:')) return src;
@@ -491,7 +516,7 @@ async function getCaptureImageDataUrl(img) {
   }
 }
 
-function createCapturePlaceholder(el, dataUrl) {
+function createCapturePlaceholder(el: HTMLElement, dataUrl: string) {
   const rect = el.getBoundingClientRect();
   const style = window.getComputedStyle(el);
   const placeholder = document.createElement('div');
@@ -513,9 +538,9 @@ function createCapturePlaceholder(el, dataUrl) {
   return placeholder;
 }
 
-async function captureViewportBlob(viewportEl, options) {
-  const restorers = [];
-  const images = Array.from(viewportEl.querySelectorAll('img'));
+async function captureViewportBlob(viewportEl: HTMLElement, options: any) {
+  const restorers: (() => void)[] = [];
+  const images = Array.from(viewportEl.querySelectorAll('img')) as HTMLImageElement[];
   await Promise.all(images.map(waitForImageElement));
 
   for (const img of images) {
@@ -531,7 +556,7 @@ async function captureViewportBlob(viewportEl, options) {
     });
   }
 
-  const canvases = Array.from(viewportEl.querySelectorAll('canvas'));
+  const canvases = Array.from(viewportEl.querySelectorAll('canvas')) as HTMLCanvasElement[];
   for (const canvas of canvases) {
     if (!canvas.parentNode) continue;
     let dataUrl = 'data:,';
@@ -551,8 +576,8 @@ async function captureViewportBlob(viewportEl, options) {
     });
   }
 
-  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
   try {
     return await toBlob(viewportEl, options);
@@ -574,32 +599,43 @@ function ContextMenu({
   filterDirection,
   selectedNodeCount = 0,
   onCreateGroup = null,
+}: {
+  x: number;
+  y: number;
+  nodeDefs: Record<string, any>;
+  onAdd: (className: string, def: any) => void;
+  onClose: () => void;
+  filterType?: string | null;
+  filterSpec?: any;
+  filterDirection?: string | null;
+  selectedNodeCount?: number;
+  onCreateGroup?: (() => void) | null;
 }) {
-  const [openCat, setOpenCat] = useState(null);
+  const [openCat, setOpenCat] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const menuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuPos, setMenuPos] = useState({ x, y });
-  const subMenuRef = useRef(null);
+  const subMenuRef = useRef<HTMLDivElement | null>(null);
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
-  const catRowRefs = useRef({});
-  const selectedItemRef = useRef(null);
+  const catRowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
   // Group by category, optionally filtering to compatible nodes
   const categories = useMemo(() => {
-    const cats = {};
-    for (const [className, def] of Object.entries(nodeDefs)) {
+    const cats: Record<string, any> = {};
+    for (const [className, def] of Object.entries(nodeDefs) as [string, any][]) {
       if (filterType && filterDirection) {
         if (filterDirection === 'source') {
           const req = def.input.required || {};
           const opt = def.input.optional || {};
           const allInputs = { ...req, ...opt };
-          const hasMatch = Object.values(allInputs).some((spec) => {
+          const hasMatch = Object.values(allInputs).some((spec: any) => {
             return socketSpecAcceptsType(filterType, spec);
           });
           if (!hasMatch) continue;
         } else {
-          const hasMatch = def.output.some((type, idx) =>
+          const hasMatch = def.output.some((type: string, idx: number) =>
             outputTypeCanConnectToTarget(type, filterSpec || filterType, def.output_accepted_types?.[idx] || [])
           );
           if (!hasMatch) continue;
@@ -638,7 +674,7 @@ function ContextMenu({
       }
     }
     return Object.values(cats)
-      .map((category) => ({
+      .map((category: any) => ({
         ...category,
         items: [...category.items].sort(compareMenuNodes),
       }))
@@ -649,7 +685,7 @@ function ContextMenu({
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
     const q = search.toLowerCase();
-    const results = [];
+    const results: { className: string; def: any }[] = [];
     const seen = new Set();
     for (const category of categories) {
       for (const { className, def } of category.items) {
@@ -674,7 +710,7 @@ function ContextMenu({
     selectedItemRef.current?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
-  const handleSearchKeyDown = useCallback((e) => {
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!searchResults || searchResults.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -712,7 +748,7 @@ function ContextMenu({
     if (!rowEl || !subEl) return;
 
     const rowRect = rowEl.getBoundingClientRect();
-    const menuRect = menuRef.current.getBoundingClientRect();
+    const menuRect = menuRef.current!.getBoundingClientRect();
     const subRect = subEl.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -734,7 +770,7 @@ function ContextMenu({
     setSubPos({ x: sx, y: sy });
   }, [openCat]);
 
-  const handleCatEnter = useCallback((cat) => {
+  const handleCatEnter = useCallback((cat: string) => {
     setOpenCat(cat);
   }, []);
 
@@ -759,7 +795,7 @@ function ContextMenu({
         onMouseLeave={(e) => {
           // Close submenu only if mouse didn't move into the submenu
           const related = e.relatedTarget;
-          if (subMenuRef.current && subMenuRef.current.contains(related)) return;
+          if (subMenuRef.current && subMenuRef.current.contains(related as globalThis.Node | null)) return;
           setOpenCat(null);
         }}
       >
@@ -829,11 +865,11 @@ function ContextMenu({
           onClick={(e) => e.stopPropagation()}
           onMouseLeave={(e) => {
             const related = e.relatedTarget;
-            if (menuRef.current && menuRef.current.contains(related)) return;
+            if (menuRef.current && menuRef.current.contains(related as globalThis.Node | null)) return;
             setOpenCat(null);
           }}
         >
-          {categoryMap[openCat].map(({ className, def }) => (
+          {categoryMap[openCat].map(({ className, def }: { className: string; def: any }) => (
             <div
               key={className}
               className="context-item"
@@ -853,51 +889,51 @@ const DEBUG = false; // set to true for verbose logging
 // ── Main flow component (needs ReactFlowProvider ancestor) ────────────
 
 function Flow() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<TonoNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<TonoEdge>([]);
   const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
-  const [contextMenu, setContextMenu] = useState(null);
+  const [contextMenu, setContextMenu] = useState<any>(null);
   const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
-  const [executingNodeId, setExecutingNodeId] = useState(null);
-  const [helpTabs, setHelpTabs] = useState([]);
-  const [activeHelpTab, setActiveHelpTab] = useState(null);
+  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
+  const [helpTabs, setHelpTabs] = useState<{ label: string; type?: string; content: string | null }[]>([]);
+  const [activeHelpTab, setActiveHelpTab] = useState<string | null>(null);
 
-  const flowContainerRef = useRef(null);
-  const panTimerRef = useRef(null);
-  const nodeDefsRef = useRef({});
+  const flowContainerRef = useRef<HTMLDivElement | null>(null);
+  const panTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nodeDefsRef = useRef<Record<string, any>>({});
   const nextIdRef = useRef(1);
-  const autoRunTimer = useRef(null);
-  const autoRunRef = useRef(null);
+  const autoRunTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoRunRef = useRef<(() => void) | null>(null);
   const defaultWorkflowLoadAttemptedRef = useRef(false);
   const lastPastedClipboardTextRef = useRef('');
   const pasteRepeatCountRef = useRef(0);
-  const duplicateDragRef = useRef(null);
-  const dragStateRef = useRef(null);
-  const activeDragNodeIdRef = useRef(null);
-  const canvasRightZoomRef = useRef(null);
+  const duplicateDragRef = useRef<any>(null);
+  const dragStateRef = useRef<any>(null);
+  const activeDragNodeIdRef = useRef<string | null>(null);
+  const canvasRightZoomRef = useRef<any>(null);
   const suppressPaneContextMenuUntilRef = useRef(0);
-  const loadNodeOutputRequestVersionsRef = useRef(new Map());
+  const loadNodeOutputRequestVersionsRef = useRef(new Map<string, number>());
   const journalContentRef = useRef('');
-  const pendingUndoSnapshotRef = useRef(null);
-  const reactFlow = useReactFlow();
+  const pendingUndoSnapshotRef = useRef<{ nodes: TonoNode[]; edges: TonoEdge[]; nextId: number } | null>(null);
+  const reactFlow = useReactFlow<TonoNode, TonoEdge>() as ReturnType<typeof useReactFlow<TonoNode, TonoEdge>> & { updateNodeInternals: (id: string) => void };
   const undoRedo = useUndoRedo();
 
   const scheduleAutoRun = useCallback(() => {
-    clearTimeout(autoRunTimer.current);
+    if (autoRunTimer.current) clearTimeout(autoRunTimer.current);
     autoRunTimer.current = setTimeout(() => autoRunRef.current?.(), 300);
   }, []);
 
   // ── WebSocket ───────────────────────────────────────────────────────
 
-  const updateNodeData = useCallback((nodeId, patch) => {
+  const updateNodeData = useCallback((nodeId: string, patch: Record<string, unknown>) => {
     setNodes((ns) => ns.map((n) =>
       n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } }
     ));
   }, [setNodes]);
 
-  const refreshGroupNode = useCallback((groupId, explicitNodes = null, explicitEdges = null) => {
-    const currentNodes = explicitNodes || reactFlow.getNodes();
-    const currentEdges = explicitEdges || reactFlow.getEdges();
+  const refreshGroupNode = useCallback((groupId: string, explicitNodes: any[] | null = null, explicitEdges: any[] | null = null) => {
+    const currentNodes = explicitNodes || (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = explicitEdges || (reactFlow.getEdges() as TonoEdge[]);
     const groupNode = currentNodes.find((node) => node.id === groupId && node.data?.className === 'Group');
     if (!groupNode) return;
 
@@ -914,14 +950,14 @@ function Flow() {
             proxyOutputs,
             childCount,
           },
-        }
+        } as unknown as TonoNode
     )));
     reactFlow.updateNodeInternals(groupId);
   }, [reactFlow, setNodes]);
 
-  const toggleGroupCollapse = useCallback((groupId) => {
-    const currentNodes = reactFlow.getNodes();
-    const currentEdges = reactFlow.getEdges();
+  const toggleGroupCollapse = useCallback((groupId: string) => {
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     const groupNode = currentNodes.find((node) => node.id === groupId && node.data?.className === 'Group');
     if (!groupNode) return;
 
@@ -958,7 +994,7 @@ function Flow() {
 
     const nextEdges = currentEdges.map((edge) => {
       if (collapsed) {
-        if (edge.data?.groupProxyOwner === groupId || edge.data?.groupInternalHiddenBy === groupId) {
+        if (edge.data?.groupProxyOwner === groupId || (edge.data as any)?.groupInternalHiddenBy === groupId) {
           return edge;
         }
         const sourceInside = memberIds.has(String(edge.source));
@@ -974,7 +1010,7 @@ function Flow() {
           return {
             ...edge,
             target: groupId,
-            targetHandle: `group-proxy::in::${edge.target}::${getHandleType(edge.targetHandle)}::${encodeProxyHandleRef(edge.targetHandle)}`,
+            targetHandle: `group-proxy::in::${edge.target}::${getHandleType(edge.targetHandle || '')}::${encodeProxyHandleRef(edge.targetHandle || '')}`,
             data: {
               ...(edge.data || {}),
               groupProxyOwner: groupId,
@@ -989,7 +1025,7 @@ function Flow() {
           return {
             ...edge,
             source: groupId,
-            sourceHandle: `group-proxy::out::${edge.source}::${getHandleType(edge.sourceHandle)}::${encodeProxyHandleRef(edge.sourceHandle)}`,
+            sourceHandle: `group-proxy::out::${edge.source}::${getHandleType(edge.sourceHandle || '')}::${encodeProxyHandleRef(edge.sourceHandle || '')}`,
             data: {
               ...(edge.data || {}),
               groupProxyOwner: groupId,
@@ -1003,8 +1039,8 @@ function Flow() {
         return edge;
       }
 
-      if (edge.data?.groupInternalHiddenBy === groupId) {
-        const nextData = { ...(edge.data || {}) };
+      if ((edge.data as any)?.groupInternalHiddenBy === groupId) {
+        const nextData: any = { ...(edge.data || {}) };
         delete nextData.groupInternalHiddenBy;
         return {
           ...edge,
@@ -1013,8 +1049,8 @@ function Flow() {
         };
       }
       if (edge.data?.groupProxyOwner === groupId) {
-        const nextData = { ...(edge.data || {}) };
-        const original = nextData.groupProxyOriginal || {};
+        const nextData: any = { ...(edge.data || {}) };
+        const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
         delete nextData.groupProxyOwner;
         delete nextData.groupProxyOriginal;
         return {
@@ -1029,14 +1065,14 @@ function Flow() {
       return edge;
     });
 
-    setNodes(nextNodes);
-    setEdges(nextEdges);
+    setNodes(nextNodes as TonoNode[]);
+    setEdges(nextEdges as TonoEdge[]);
     setTimeout(() => refreshGroupNode(groupId, nextNodes, nextEdges), 0);
   }, [reactFlow, refreshGroupNode, setEdges, setNodes]);
 
-  const ungroupGroup = useCallback((groupId) => {
-    const currentNodes = reactFlow.getNodes();
-    const currentEdges = reactFlow.getEdges();
+  const ungroupGroup = useCallback((groupId: string) => {
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     const nodeMap = new Map(currentNodes.map((node) => [String(node.id), node]));
     const groupNode = nodeMap.get(String(groupId));
     if (!groupNode || groupNode.data?.className !== 'Group') return;
@@ -1061,8 +1097,8 @@ function Flow() {
 
     const nextEdges = currentEdges
       .map((edge) => {
-        if (edge.data?.groupInternalHiddenBy === groupId) {
-          const nextData = { ...(edge.data || {}) };
+        if ((edge.data as any)?.groupInternalHiddenBy === groupId) {
+          const nextData: any = { ...(edge.data || {}) };
           delete nextData.groupInternalHiddenBy;
           return {
             ...edge,
@@ -1071,8 +1107,8 @@ function Flow() {
           };
         }
         if (edge.data?.groupProxyOwner === groupId) {
-          const nextData = { ...(edge.data || {}) };
-          const original = nextData.groupProxyOriginal || {};
+          const nextData: any = { ...(edge.data || {}) };
+          const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
           delete nextData.groupProxyOwner;
           delete nextData.groupProxyOriginal;
           return {
@@ -1092,14 +1128,14 @@ function Flow() {
     setNodes(nextNodes);
     setEdges(nextEdges);
     setTimeout(() => {
-      reactFlow.getNodes()
+      (reactFlow.getNodes() as TonoNode[])
         .filter((node) => node.data?.className === 'Group')
         .forEach((node) => refreshGroupNode(node.id, nextNodes, nextEdges));
     }, 0);
   }, [reactFlow, refreshGroupNode, setEdges, setNodes]);
 
   const createGroupFromSelection = useCallback(() => {
-    const currentNodes = reactFlow.getNodes();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const selectedNodes = currentNodes.filter((node) => node.selected && node.data?.className !== 'Group');
     if (selectedNodes.length < 2) return;
 
@@ -1174,16 +1210,16 @@ function Flow() {
       groupNode,
     ];
 
-    const orderedNodes = sortNodesForParentOrder(nextNodes);
-    setNodes(orderedNodes);
-    setTimeout(() => refreshGroupNode(groupId, orderedNodes, reactFlow.getEdges()), 0);
+    const orderedNodes = sortNodesForParentOrder(nextNodes as any[]);
+    setNodes(orderedNodes as TonoNode[]);
+    setTimeout(() => refreshGroupNode(groupId, orderedNodes, (reactFlow.getEdges() as TonoEdge[])), 0);
   }, [reactFlow, refreshGroupNode, setNodes]);
 
-  const setNodeOutputs = useCallback((nodeId, output, outputName, extraDefinitionPatch = {}) => {
+  const setNodeOutputs = useCallback((nodeId: string, output: string[], outputName: string[], extraDefinitionPatch: Record<string, any> = {}) => {
     setNodes((prev) => prev.map((node) => {
       if (node.id !== nodeId) return node;
-      const currentDefinition = node.data.definition || {};
-      const nextDefinition = {
+      const currentDefinition: any = node.data.definition || {};
+      const nextDefinition: any = {
         ...currentDefinition,
         ...extraDefinitionPatch,
         output,
@@ -1206,24 +1242,24 @@ function Flow() {
     reactFlow.updateNodeInternals(nodeId);
   }, [reactFlow, setNodes]);
 
-  const getResolvedPathInput = useCallback((nodeId) => {
-    const edge = reactFlow.getEdges().find(
-      (e) => e.target === nodeId && getInputName(e.targetHandle) === 'path'
+  const getResolvedPathInput = useCallback((nodeId: string) => {
+    const edge = (reactFlow.getEdges() as TonoEdge[]).find(
+      (e) => e.target === nodeId && getInputName(e.targetHandle || '') === 'path'
     );
     if (!edge) return null;
-    const original = edge.data?.groupProxyOriginal || {};
+    const original = (edge.data?.groupProxyOriginal || {}) as Record<string, any>;
     const sourceId = original.source || edge.source;
     const sourceHandle = original.sourceHandle || edge.sourceHandle;
     const sourceNode = reactFlow.getNode(sourceId);
     const outputPaths = sourceNode?.data?.definition?.output_paths;
-    const outputSlot = getOutputSlot(sourceHandle);
+    const outputSlot = getOutputSlot(sourceHandle || '');
     if (Array.isArray(outputPaths) && typeof outputPaths[outputSlot] === 'string') {
       return outputPaths[outputSlot];
     }
     return null;
   }, [reactFlow]);
 
-  const refreshLoadNodeOutputs = useCallback(async (nodeId, explicitPath = null) => {
+  const refreshLoadNodeOutputs = useCallback(async (nodeId: string, explicitPath: any = null) => {
     const node = reactFlow.getNode(nodeId);
     const resolvedPath = resolveLoadNodeChannelPath({
       explicitPath,
@@ -1247,47 +1283,48 @@ function Flow() {
     }
     setNodeOutputs(
       nodeId,
-      ['FILE_PATH', ...channels.map((channel) => channel.type)],
-      ['path', ...channels.map((channel) => channel.name)],
+      ['FILE_PATH', ...channels.map((channel: any) => channel.type)],
+      ['path', ...channels.map((channel: any) => channel.name)],
       { output_paths: [] },
     );
   }, [getResolvedPathInput, reactFlow, setNodeOutputs]);
 
-  const refreshFolderNodeOutputs = useCallback(async (nodeId, folderPath) => {
+  const refreshFolderNodeOutputs = useCallback(async (nodeId: string, folderPath: any) => {
     const entries = folderPath ? await api.getFolderFiles(folderPath) : [];
     setNodeOutputs(
       nodeId,
-      entries.map((entry) => entry.type),
-      entries.map((entry) => entry.name),
-      { output_paths: entries.map((entry) => entry.path) },
+      entries.map((entry: any) => entry.type),
+      entries.map((entry: any) => entry.name),
+      { output_paths: entries.map((entry: any) => entry.path) },
     );
 
-    const downstreamPathEdges = reactFlow.getEdges().filter(
-      (edge) => edge.source === nodeId && getInputName(edge.targetHandle) === 'path'
+    const downstreamPathEdges = (reactFlow.getEdges() as TonoEdge[]).filter(
+      (edge) => edge.source === nodeId && getInputName(edge.targetHandle || '') === 'path'
     );
     for (const edge of downstreamPathEdges) {
-      const outputSlot = getOutputSlot(edge.sourceHandle);
+      const outputSlot = getOutputSlot(edge.sourceHandle || '');
       const resolvedPath = entries[outputSlot]?.path || null;
       await refreshLoadNodeOutputs(edge.target, resolvedPath);
     }
   }, [reactFlow, refreshLoadNodeOutputs, setNodeOutputs]);
 
-  const refreshAnnotationNodeOutputs = useCallback((nodeId) => {
+  const refreshAnnotationNodeOutputs = useCallback((nodeId: string) => {
     const node = reactFlow.getNode(nodeId);
     if (!node) return;
 
-    const inputEdge = reactFlow.getEdges().find(
-      (edge) => edge.target === nodeId && getInputName(edge.targetHandle) === 'input'
+    const inputEdge = (reactFlow.getEdges() as TonoEdge[]).find(
+      (edge) => edge.target === nodeId && getInputName(edge.targetHandle || '') === 'input'
     );
-    const outputType = inputEdge ? getHandleType(inputEdge.sourceHandle) : 'ANNOTATION_SOURCE';
+    const outputType = inputEdge ? getHandleType(inputEdge.sourceHandle || '') : 'ANNOTATION_SOURCE';
     setNodeOutputs(nodeId, [outputType], ['Output']);
 
     if (!inputEdge || outputType === 'ANNOTATION_SOURCE') return;
 
     setEdges((prev) => prev.filter((edge) => {
       if (edge.source !== nodeId) return true;
-      const resolvedTarget = getResolvedHandleRef(edge.target, edge.targetHandle);
-      const targetNode = reactFlow.getNode(resolvedTarget.nodeId);
+      const resolvedTarget = getResolvedHandleRef(edge.target, edge.targetHandle || '');
+      const targetNode = reactFlow.getNode(resolvedTarget.nodeId) as TonoNode | undefined;
+      if (!targetNode) return true;
       const targetSpec = getNodeInputSpecForHandle(targetNode, resolvedTarget.handleId) || resolvedTarget.type;
       return socketSpecAcceptsType(outputType, targetSpec);
     }));
@@ -1369,21 +1406,21 @@ function Flow() {
   // ── Connection handling ─────────────────────────────────────────────
 
   const isValidConnection = useCallback(
-    (connection) => checkConnectionValid(connection, (id) => reactFlow.getNode(id)),
+    (connection: any) => checkConnectionValid(connection, (id: string) => reactFlow.getNode(id)),
     [reactFlow],
   );
 
-  const onConnect = useCallback((params) => {
+  const onConnect = useCallback((params: any) => {
     const sourceProxy = parseGroupProxyHandle(params.sourceHandle);
     const targetProxy = parseGroupProxyHandle(params.targetHandle);
     const type = getConnectionHandleType(params.sourceHandle);
     const color = TYPE_COLORS[type] || 'var(--fallback-type)';
 
-    const edgePayload = {
+    const edgePayload: any = {
       ...params,
       style: { stroke: color, strokeWidth: 2 },
     };
-    const proxyOriginal = {};
+    const proxyOriginal: Record<string, any> = {};
     if (sourceProxy) {
       proxyOriginal.source = sourceProxy.nodeId;
       proxyOriginal.sourceHandle = sourceProxy.realHandle;
@@ -1400,7 +1437,7 @@ function Flow() {
       };
     }
 
-    undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
+    undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     setEdges((eds) => {
       // Enforce single connection per input handle
       const filtered = eds.filter(
@@ -1430,23 +1467,23 @@ function Flow() {
     scheduleAutoRun();
   }, [reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
 
-  const handleEdgesChange = useCallback((changes) => {
-    if (changes.some((c) => c.type === 'remove')) {
-      undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
+  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
+    if (changes.some((c: any) => c.type === 'remove')) {
+      undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     }
-    const currentEdges = reactFlow.getEdges();
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     onEdgesChange(changes);
 
-    const affectedPathTargets = new Set();
-    const affectedAnnotationTargets = new Set();
+    const affectedPathTargets = new Set<string>();
+    const affectedAnnotationTargets = new Set<string>();
     for (const change of changes) {
       if (change.type !== 'remove') continue;
       const removedEdge = currentEdges.find((edge) => edge.id === change.id);
       if (!removedEdge) continue;
-      if (getInputName(removedEdge.targetHandle) === 'path') {
+      if (getInputName(removedEdge.targetHandle || '') === 'path') {
         affectedPathTargets.add(removedEdge.target);
       }
-      if (getInputName(removedEdge.targetHandle) === 'input') {
+      if (getInputName(removedEdge.targetHandle || '') === 'input') {
         const targetNode = reactFlow.getNode(removedEdge.target);
         if (targetNode && (targetNode.data.className === 'Annotations' || targetNode.data.className === 'Markup')) {
           affectedAnnotationTargets.add(removedEdge.target);
@@ -1469,25 +1506,25 @@ function Flow() {
       }, 0);
     }
     setTimeout(() => {
-      reactFlow.getNodes()
+      (reactFlow.getNodes() as TonoNode[])
         .filter((node) => node.data?.className === 'Group')
         .forEach((node) => refreshGroupNode(node.id));
     }, 0);
   }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs]);
 
-  const handleNodesChange = useCallback((changes) => {
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
     // Stash undo snapshot when a drag begins
-    const isDragStart = changes.some((c) => c.type === 'position' && c.dragging);
+    const isDragStart = changes.some((c: any) => c.type === 'position' && c.dragging);
     if (isDragStart && !pendingUndoSnapshotRef.current) {
       if (DEBUG) console.log('[undo] drag started, stashing snapshot');
       pendingUndoSnapshotRef.current = {
-        nodes: structuredClone(reactFlow.getNodes()),
-        edges: structuredClone(reactFlow.getEdges()),
+        nodes: structuredClone((reactFlow.getNodes() as TonoNode[])),
+        edges: structuredClone((reactFlow.getEdges() as TonoEdge[])),
         nextId: nextIdRef.current,
       };
     }
     // Commit stashed snapshot when drag ends
-    const isDragEnd = changes.some((c) => c.type === 'position' && c.dragging === false);
+    const isDragEnd = changes.some((c: any) => c.type === 'position' && c.dragging === false);
     if (isDragEnd && pendingUndoSnapshotRef.current) {
       if (DEBUG) console.log('[undo] drag ended, pushing snapshot');
       const s = pendingUndoSnapshotRef.current;
@@ -1495,24 +1532,24 @@ function Flow() {
       pendingUndoSnapshotRef.current = null;
     }
 
-    const currentNodes = reactFlow.getNodes();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const selectedGroupIds = new Set(
-      changes
-        .filter((change) => change.type === 'select' && change.selected)
-        .map((change) => String(change.id))
-        .filter((id) => currentNodes.some((node) => String(node.id) === id && node.data?.className === 'Group')),
+      (changes as any[])
+        .filter((change: any) => change.type === 'select' && change.selected)
+        .map((change: any) => String(change.id))
+        .filter((id: string) => currentNodes.some((node) => String(node.id) === id && node.data?.className === 'Group')),
     );
     const removedIds = new Set(
-      changes
-        .filter((change) => change.type === 'remove')
-        .map((change) => String(change.id)),
+      (changes as any[])
+        .filter((change: any) => change.type === 'remove')
+        .map((change: any) => String(change.id)),
     );
 
     if (removedIds.size > 0) {
-      undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
+      undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     }
 
-    onNodesChange(changes);
+    onNodesChange(changes as any);
 
     if (selectedGroupIds.size > 0) {
       const deselectedDescendantIds = new Set();
@@ -1548,7 +1585,7 @@ function Flow() {
     }
 
     setTimeout(() => {
-      reactFlow.getNodes()
+      (reactFlow.getNodes() as TonoNode[])
         .filter((node) => node.data?.className === 'Group')
         .forEach((node) => refreshGroupNode(node.id));
     }, 0);
@@ -1556,7 +1593,7 @@ function Flow() {
 
   // ── Drop-on-blank: open filtered context menu ──────────────────────
 
-  const onConnectEnd = useCallback((event, connectionState) => {
+  const onConnectEnd = useCallback((event: any, connectionState: any) => {
     // If the connection was completed (dropped on a valid handle), do nothing
     if (connectionState.isValid) return;
 
@@ -1566,9 +1603,9 @@ function Flow() {
     const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
     const handleType = getConnectionHandleType(fromHandle.id);
     const resolvedFromHandle = getResolvedHandleRef(fromHandle.nodeId, fromHandle.id);
-    const fromNode = reactFlow.getNode(resolvedFromHandle.nodeId);
+    const fromNode = reactFlow.getNode(resolvedFromHandle.nodeId) as TonoNode | undefined;
     const filterSpec = fromHandle.type === 'target'
-      ? (getNodeInputSpecForHandle(fromNode, resolvedFromHandle.handleId) || handleType)
+      ? (getNodeInputSpecForHandle(fromNode!, resolvedFromHandle.handleId) || handleType)
       : handleType;
 
     setContextMenu({
@@ -1585,7 +1622,7 @@ function Flow() {
 
   // ── Widget change callback ──────────────────────────────────────────
 
-  const onWidgetChange = useCallback((nodeId, name, value) => {
+  const onWidgetChange = useCallback((nodeId: string, name: string, value: unknown) => {
     setNodes((ns) => ns.map((n) => {
       if (n.id !== nodeId) return n;
       return {
@@ -1613,7 +1650,7 @@ function Flow() {
 
   // ── File browser ────────────────────────────────────────────────────
 
-  const uploadBrowserSelection = useCallback(async (selection, selectionMode) => {
+  const uploadBrowserSelection = useCallback(async (selection: any, selectionMode: string) => {
     if (!selection) return null;
 
     if (selectionMode === 'folder') {
@@ -1646,7 +1683,7 @@ function Flow() {
     return uploaded.path;
   }, []);
 
-  const openFileBrowser = useCallback(async (callback, { selectionMode = 'file' } = {}) => {
+  const openFileBrowser = useCallback(async (callback: (path: string) => void, { selectionMode = 'file' } = {}) => {
     if (selectionMode === 'folder' && window.pywebview?.api?.open_folder_dialog) {
       window.pywebview.api.open_folder_dialog().then((path) => {
         if (path) callback(path);
@@ -1668,7 +1705,7 @@ function Flow() {
 
       const uploadedPath = await uploadBrowserSelection(selection, selectionMode);
       if (uploadedPath) callback(uploadedPath);
-    } catch (error) {
+    } catch (error: any) {
       setStatus({
         text: `Browse failed: ${error.message || String(error)}`,
         level: 'error',
@@ -1678,9 +1715,9 @@ function Flow() {
 
   // ── Node context value (stable) ─────────────────────────────────────
 
-  const onManualTrigger = useCallback((nodeId) => {
-    const currentNodes = reactFlow.getNodes();
-    const currentEdges = reactFlow.getEdges();
+  const onManualTrigger = useCallback((nodeId: string) => {
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     // Include ALL nodes (no excludeManualTrigger) so the save node is in the prompt
     const prompt = serializeExecutionGraph(currentNodes, currentEdges);
     if (!prompt || Object.keys(prompt).length === 0) return;
@@ -1700,7 +1737,7 @@ function Flow() {
 
   // ── Add node from context menu ──────────────────────────────────────
 
-  const addNode = useCallback((className, def) => {
+  const addNode = useCallback((className: string, def: any) => {
     if (!contextMenu) return;
     if (className === 'TextNote') {
       openJournalTab();
@@ -1737,7 +1774,7 @@ function Flow() {
       },
     };
 
-    setNodes((ns) => [...ns, newNode]);
+    setNodes((ns) => [...ns, newNode as TonoNode]);
 
     // Initialize dynamic outputs for nodes that depend on the selected path/folder.
     setTimeout(() => {
@@ -1764,7 +1801,7 @@ function Flow() {
       if (contextMenu.pendingHandleType === 'source') {
         // Dragged from an output → connect to the first matching input on the new node
         const allInputs = { ...(def.input.required || {}), ...(def.input.optional || {}) };
-        const inputName = Object.entries(allInputs).find(([, spec]) => {
+        const inputName = Object.entries(allInputs).find(([, spec]: [string, any]) => {
           return socketSpecAcceptsType(filterType, spec);
         })?.[0];
         if (inputName) {
@@ -1781,11 +1818,11 @@ function Flow() {
             target: newNodeId,
             targetHandle,
             style: { stroke: color, strokeWidth: 2 },
-          }, eds));
+          } as any, eds));
         }
       } else {
         // Dragged from an input → connect from the first matching output on the new node
-        const outputIdx = def.output.findIndex((type, idx) =>
+        const outputIdx = def.output.findIndex((type: string, idx: number) =>
           outputTypeCanConnectToTarget(type, filterSpec, def.output_accepted_types?.[idx] || [])
         );
         if (outputIdx !== -1) {
@@ -1798,7 +1835,7 @@ function Flow() {
             target: contextMenu.pendingNodeId,
             targetHandle: contextMenu.pendingHandleId,
             style: { stroke: color, strokeWidth: 2 },
-          }, eds));
+          } as any, eds));
         }
       }
     }
@@ -1811,8 +1848,8 @@ function Flow() {
 
   const runWorkflow = useCallback(async () => {
     // Read current state via functional ref to avoid stale closure
-    const currentNodes = reactFlow.getNodes();
-    const currentEdges = reactFlow.getEdges();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     const prompt = serializeExecutionGraph(currentNodes, currentEdges);
 
     if (!prompt || Object.keys(prompt).length === 0) {
@@ -1822,15 +1859,15 @@ function Flow() {
     setStatus({ text: 'Running…', level: 'info' });
     try {
       await api.runPrompt(prompt);
-    } catch (err) {
+    } catch (err: any) {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     }
   }, [reactFlow]);
 
   // Debounced auto-run via ref to avoid dependency chains
   autoRunRef.current = () => {
-    const currentNodes = reactFlow.getNodes();
-    const currentEdges = reactFlow.getEdges();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+    const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     const runnableNodes = getAutoRunnableNodes(currentNodes, currentEdges);
 
     // Don't run if any non-manual node has unconnected required data inputs
@@ -1847,7 +1884,7 @@ function Flow() {
     });
   };
 
-  const onRuntimeValuesChange = useCallback((nodeId, patch, { scheduleRun = false } = {}) => {
+  const onRuntimeValuesChange = useCallback((nodeId: string, patch: any, { scheduleRun = false } = {}) => {
     if (!patch || typeof patch !== 'object') return;
 
     setNodes((ns) => ns.map((n) => {
@@ -1866,30 +1903,30 @@ function Flow() {
     }
   }, [setNodes, scheduleAutoRun]);
 
-  const initializeDynamicNodes = useCallback((nodesToInitialize) => {
+  const initializeDynamicNodes = useCallback((nodesToInitialize: any[]) => {
     setTimeout(() => {
-      nodesToInitialize.forEach((node) => {
+      nodesToInitialize.forEach((node: any) => {
         if (node.data.className === 'Folder' && node.data.widgetValues?.folder) {
           refreshFolderNodeOutputs(node.id, node.data.widgetValues.folder);
         }
       });
-      nodesToInitialize.forEach((node) => {
+      nodesToInitialize.forEach((node: any) => {
         if (node.data.className === 'Image' || node.data.className === 'ImageDemo') {
           refreshLoadNodeOutputs(node.id);
         }
       });
-      nodesToInitialize.forEach((node) => {
+      nodesToInitialize.forEach((node: any) => {
         if (node.data.className === 'Annotations' || node.data.className === 'Markup') {
           refreshAnnotationNodeOutputs(node.id);
         }
       });
-      nodesToInitialize.forEach((node) => {
+      nodesToInitialize.forEach((node: any) => {
         reactFlow.updateNodeInternals(node.id);
       });
     }, 0);
   }, [reactFlow, refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs]);
 
-  const pasteClipboardSelection = useCallback((clipboardText) => {
+  const pasteClipboardSelection = useCallback((clipboardText: string) => {
     const payload = parseNodeClipboardPayload(clipboardText);
     if (!payload) return false;
 
@@ -1913,13 +1950,13 @@ function Flow() {
     nextIdRef.current = pasted.nextNodeId;
 
     setNodes((existing) => sortNodesForParentOrder([
-      ...existing.map((node) => ({ ...node, selected: false })),
+      ...existing.map((node) => ({ ...node, selected: false } as TonoNode)),
       ...pasted.nodes,
-    ]));
+    ] as TonoNode[]));
     setEdges((existing) => [
-      ...existing.map((edge) => ({ ...edge, selected: false })),
+      ...existing.map((edge) => ({ ...edge, selected: false } as TonoEdge)),
       ...pasted.edges,
-    ]);
+    ] as TonoEdge[]);
 
     initializeDynamicNodes(pasted.nodes);
 
@@ -1937,7 +1974,7 @@ function Flow() {
     setNodes,
   ]);
 
-  const resizeGroup = useCallback((groupId, size) => {
+  const resizeGroup = useCallback((groupId: string, size: any) => {
     const nextWidth = Math.round(Number(size?.width) || 0);
     const nextHeight = Math.round(Number(size?.height) || 0);
     if (!nextWidth || !nextHeight) return;
@@ -1961,7 +1998,7 @@ function Flow() {
     setTimeout(() => reactFlow.updateNodeInternals(String(groupId)), 0);
   }, [reactFlow, setNodes]);
 
-  const renameGroup = useCallback((groupId, label) => {
+  const renameGroup = useCallback((groupId: string, label: string) => {
     const nextLabel = String(label || '').trim() || 'group';
     setNodes((existing) => existing.map((node) => {
       if (String(node.id) !== String(groupId) || node.data?.className !== 'Group') return node;
@@ -1976,7 +2013,7 @@ function Flow() {
     }));
   }, [setNodes]);
 
-  const openHelp = useCallback(async (label) => {
+  const openHelp = useCallback(async (label: string) => {
     setHelpTabs((prev) => {
       if (prev.find((t) => t.label === label)) return prev;
       return [...prev, { label, content: null }];
@@ -1992,7 +2029,7 @@ function Flow() {
     );
   }, []);
 
-  const closeHelpTab = useCallback((label) => {
+  const closeHelpTab = useCallback((label: string) => {
     setHelpTabs((prev) => {
       const next = prev.filter((t) => t.label !== label);
       setActiveHelpTab((cur) => {
@@ -2003,13 +2040,13 @@ function Flow() {
     });
   }, []);
 
-  const updateTabContent = useCallback((label, content) => {
+  const updateTabContent = useCallback((label: string, content: string) => {
     if (label === 'Journal') journalContentRef.current = content;
     setHelpTabs((prev) => prev.map((t) => t.label === label ? { ...t, content } : t));
   }, []);
 
-  const openDocByFilename = useCallback(async (filename) => {
-    const title = filename.replace(/\.md$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const openDocByFilename = useCallback(async (filename: string) => {
+    const title = filename.replace(/\.md$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
     // If already open, just switch to it
     setHelpTabs((prev) => {
       if (prev.find((t) => t.label === title)) return prev;
@@ -2037,6 +2074,8 @@ function Flow() {
     onUngroup: ungroupGroup,
     executingNodeId,
     openHelp,
+    getTableColumns: (_nodeId: string, _inputName: string): string[] => [],
+    getMeasurementChoices: (_nodeId: string, _inputName: string): string[] => [],
   }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup, executingNodeId, openHelp]);
 
   const clearGraph = useCallback(() => {
@@ -2046,10 +2085,10 @@ function Flow() {
     setStatus({ text: 'Graph cleared.', level: 'info' });
   }, [setNodes, setEdges]);
 
-  const applyWorkflowData = useCallback((data, { preservedPaths } = {}) => {
+  const applyWorkflowData = useCallback((data: any, { preservedPaths }: { preservedPaths?: Set<unknown> } = {}) => {
     const hydrated = hydrateWorkflowState(data, nodeDefsRef.current, { preservedPaths });
-    setNodes(sortNodesForParentOrder(hydrated.nodes));
-    setEdges(hydrated.edges);
+    setNodes(sortNodesForParentOrder(hydrated.nodes) as TonoNode[]);
+    setEdges(hydrated.edges as TonoEdge[]);
     nextIdRef.current = hydrated.nextNodeId;
     journalContentRef.current = data.journalContent || '';
     if (journalContentRef.current) {
@@ -2067,7 +2106,7 @@ function Flow() {
     initializeDynamicNodes(hydrated.nodes);
   }, [initializeDynamicNodes, setNodes, setEdges]);
 
-  const applyMaybePackedWorkflow = useCallback(async (data) => {
+  const applyMaybePackedWorkflow = useCallback(async (data: any) => {
     if (data.packed && data.packedFiles) {
       setStatus({ text: 'Unpacking files…', level: 'info' });
       const { workflow, restoredPaths } = await unpackWorkflow(data);
@@ -2082,8 +2121,8 @@ function Flow() {
     defaultWorkflowLoadAttemptedRef.current = true;
 
     const graphHasContent = () => {
-      const currentNodes = reactFlow.getNodes();
-      const currentEdges = reactFlow.getEdges();
+      const currentNodes = (reactFlow.getNodes() as TonoNode[]);
+      const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
       return currentNodes.length > 0 || currentEdges.length > 0;
     };
 
@@ -2098,7 +2137,7 @@ function Flow() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => scheduleAutoRun());
       });
-    } catch (err) {
+    } catch (err: any) {
       setStatus({ text: 'Default workflow failed to load: ' + err.message, level: 'error' });
     }
   }, [applyMaybePackedWorkflow, reactFlow, scheduleAutoRun]);
@@ -2117,11 +2156,11 @@ function Flow() {
     // Load any .md files from frontend/public/ as help tabs
     fetch('/help-docs')
       .then((r) => r.ok ? r.json() : [])
-      .then((docs) => {
+      .then((docs: any[]) => {
         if (!docs.length) return;
         setHelpTabs((prev) => {
           const existing = new Set(prev.map((t) => t.label));
-          const newTabs = docs.filter((d) => !existing.has(d.title)).map((d) => ({ label: d.title, content: d.content }));
+          const newTabs = docs.filter((d: any) => !existing.has(d.title)).map((d: any) => ({ label: d.title, content: d.content }));
           return newTabs.length ? [...prev, ...newTabs] : prev;
         });
         setActiveHelpTab((cur) => cur || docs[0].title);
@@ -2129,8 +2168,8 @@ function Flow() {
       .catch(() => {});
   }, [loadDefaultWorkflow]);
 
-  const stampLogoOnBlob = useCallback(async (blob) => {
-    const [img, logo] = await Promise.all([blob, tonoIconUrl].map((src) => new Promise((resolve, reject) => {
+  const stampLogoOnBlob = useCallback(async (blob: Blob) => {
+    const [img, logo] = await Promise.all([blob, tonoIconUrl].map((src) => new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = reject;
@@ -2140,7 +2179,7 @@ function Flow() {
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d')!;
     ctx.drawImage(img, 0, 0);
 
     const margin = 16;
@@ -2157,14 +2196,14 @@ function Flow() {
       ctx.drawImage(logo, logoX, logoY, size, size);
     }
 
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, []);
 
   const getWorkflowBlob = useCallback(async () => {
-    const viewportEl = document.querySelector('.react-flow__viewport');
+    const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
     if (!viewportEl) throw new Error('Flow element not found');
 
-    const allNodes = reactFlow.getNodes();
+    const allNodes = (reactFlow.getNodes() as TonoNode[]);
     if (allNodes.length === 0) throw new Error('No nodes to capture');
 
     const bounds = getRenderedNodeBounds(allNodes);
@@ -2189,9 +2228,9 @@ function Flow() {
     if (!blob) throw new Error('Capture returned empty');
 
     const stampedBlob = await stampLogoOnBlob(blob);
-    const workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
+    const workflow = serializeWorkflowState(allNodes, (reactFlow.getEdges() as TonoEdge[])) as any;
     if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
-    return embedWorkflow(stampedBlob, workflow);
+    return embedWorkflow(stampedBlob as Blob, workflow);
   }, [reactFlow]);
 
   const saveWorkflow = useCallback(async () => {
@@ -2226,7 +2265,7 @@ function Flow() {
 
       if ('showSaveFilePicker' in window) {
         try {
-          const handle = await window.showSaveFilePicker({
+          const handle = await window.showSaveFilePicker!({
             suggestedName: 'workflow.png',
             types: [
               {
@@ -2240,7 +2279,7 @@ function Flow() {
           await writable.close();
           setStatus({ text: 'Workflow saved as workflow.png.', level: 'info' });
           return;
-        } catch (err) {
+        } catch (err: any) {
           if (err?.name === 'AbortError') {
             setStatus({ text: 'Save cancelled.', level: 'info' });
             return;
@@ -2267,7 +2306,7 @@ function Flow() {
         text: 'Workflow downloaded as workflow.png to your browser default downloads folder.',
         level: 'info',
       });
-    } catch (err) {
+    } catch (err: any) {
       setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
     }
   }, [getWorkflowBlob]);
@@ -2275,10 +2314,10 @@ function Flow() {
   const savePackedWorkflow = useCallback(async () => {
     setStatus({ text: 'Packing files…', level: 'info' });
     try {
-      const viewportEl = document.querySelector('.react-flow__viewport');
+      const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
       if (!viewportEl) throw new Error('Flow element not found');
 
-      const allNodes = reactFlow.getNodes();
+      const allNodes = (reactFlow.getNodes() as TonoNode[]);
       if (allNodes.length === 0) throw new Error('No nodes to capture');
 
       const bounds = getRenderedNodeBounds(allNodes);
@@ -2303,15 +2342,15 @@ function Flow() {
 
       if (DEBUG) console.log('[pack] stamping logo…');
       const stampedBlob = await stampLogoOnBlob(blob);
-      let workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
+      let workflow: any = serializeWorkflowState(allNodes, (reactFlow.getEdges() as TonoEdge[]));
       if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
 
       if (DEBUG) console.log('[pack] packing files…');
-      workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed, total) => {
+      workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed: number, total: number) => {
         setStatus({ text: `Packing files… (${packed}/${total})`, level: 'info' });
       });
       if (DEBUG) console.log('[pack] packed, embedding into PNG…', workflow.packed ? 'has packed files' : 'no packed files');
-      const finalBlob = await embedWorkflow(stampedBlob, workflow);
+      const finalBlob = await embedWorkflow(stampedBlob as Blob, workflow);
       if (DEBUG) console.log('[pack] embed complete, blob size:', finalBlob.size);
       const defaultName = 'workflow-packed.png';
 
@@ -2330,7 +2369,7 @@ function Flow() {
 
       if ('showSaveFilePicker' in window) {
         try {
-          const handle = await window.showSaveFilePicker({
+          const handle = await window.showSaveFilePicker!({
             suggestedName: defaultName,
             types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }],
           });
@@ -2339,7 +2378,7 @@ function Flow() {
           await writable.close();
           setStatus({ text: 'Packed workflow saved.', level: 'info' });
           return;
-        } catch (err) {
+        } catch (err: any) {
           if (err?.name === 'AbortError') { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
           throw err;
         }
@@ -2353,7 +2392,7 @@ function Flow() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       setStatus({ text: `Packed workflow downloaded as ${defaultName}.`, level: 'info' });
-    } catch (err) {
+    } catch (err: any) {
       setStatus({ text: 'Pack failed: ' + err.message, level: 'error' });
     }
   }, [reactFlow]);
@@ -2377,8 +2416,8 @@ function Flow() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,.png';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement)?.files?.[0];
       if (!file) return;
       try {
         let data;
@@ -2405,14 +2444,14 @@ function Flow() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.py';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement)?.files?.[0];
       if (!file) return;
       setStatus({ text: 'Uploading plugin…', level: 'info' });
       try {
         await api.uploadPlugin(file);
         // Node list refresh is handled by the nodes_updated WebSocket message.
-      } catch (err) {
+      } catch (err: any) {
         setStatus({ text: err.message, level: 'error' });
       }
     };
@@ -2421,7 +2460,7 @@ function Flow() {
 
   // ── Drag-and-drop workflow image loading ───────────────────────────
 
-  const onDropFile = useCallback(async (event) => {
+  const onDropFile = useCallback(async (event: React.DragEvent) => {
     const files = event.dataTransfer?.files;
     if (!files || files.length === 0) return;
     event.preventDefault();
@@ -2438,24 +2477,24 @@ function Flow() {
       }
       await applyMaybePackedWorkflow(data);
       setStatus({ text: 'Workflow loaded from image.', level: 'info' });
-    } catch (err) {
+    } catch (err: any) {
       setStatus({ text: 'Failed to load: ' + err.message, level: 'error' });
     }
   }, [applyMaybePackedWorkflow]);
 
-  const onDragOver = useCallback((event) => {
+  const onDragOver = useCallback((event: React.DragEvent) => {
     if (event.dataTransfer?.types?.includes('Files')) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'copy';
     }
   }, []);
 
-  const onNodeDragStart = useCallback((event, node) => {
+  const onNodeDragStart = useCallback((event: any, node: any) => {
     activeDragNodeIdRef.current = String(node.id);
     dragStateRef.current = null;
     if (!(event.ctrlKey || event.metaKey)) {
       duplicateDragRef.current = null;
-      const currentNodes = reactFlow.getNodes();
+      const currentNodes = (reactFlow.getNodes() as TonoNode[]);
       const draggedNodes = node.data?.className === 'Group'
         ? []
         : (
@@ -2498,7 +2537,7 @@ function Flow() {
       return;
     }
 
-    const currentNodes = reactFlow.getNodes();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const draggedNodes = node.selected
       ? currentNodes.filter((candidate) => candidate.selected)
       : currentNodes.filter((candidate) => candidate.id === node.id);
@@ -2507,7 +2546,7 @@ function Flow() {
     const draggedIds = draggedNodes.map((candidate) => String(candidate.id));
     const payload = buildNodeClipboardPayloadForIds(
       currentNodes,
-      reactFlow.getEdges(),
+      (reactFlow.getEdges() as TonoEdge[]),
       draggedIds,
       { includeIncomingExternalEdges: true },
     );
@@ -2545,18 +2584,18 @@ function Flow() {
     };
 
     setNodes((existing) => sortNodesForParentOrder([
-      ...existing.map((candidate) => ({ ...candidate, selected: false })),
+      ...existing.map((candidate) => ({ ...candidate, selected: false } as TonoNode)),
       ...duplicated.nodes,
-    ]));
+    ] as TonoNode[]));
     setEdges((existing) => [
-      ...existing.map((edge) => ({ ...edge, selected: false })),
+      ...existing.map((edge) => ({ ...edge, selected: false } as TonoEdge)),
       ...duplicated.edges,
-    ]);
+    ] as TonoEdge[]);
 
     initializeDynamicNodes(duplicated.nodes);
   }, [initializeDynamicNodes, reactFlow, setEdges, setNodes]);
 
-  const onNodeDrag = useCallback((event, node) => {
+  const onNodeDrag = useCallback((event: any, node: any) => {
     if (String(node.id) !== activeDragNodeIdRef.current) return;
 
     const duplicateState = duplicateDragRef.current;
@@ -2604,7 +2643,7 @@ function Flow() {
     const dragState = dragStateRef.current;
     if (!dragState || node.data?.className === 'Group') return;
 
-    const currentNodes = reactFlow.getNodes();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const draggedNodes = node.selected
       ? currentNodes.filter((candidate) => candidate.selected && candidate.data?.className !== 'Group')
       : currentNodes.filter((candidate) => candidate.id === node.id);
@@ -2691,14 +2730,14 @@ function Flow() {
 
     if (structureChanged) {
       setTimeout(() => {
-        touchedGroupIds.forEach((groupId) => {
-          if (groupId) refreshGroupNode(groupId, nextNodes, reactFlow.getEdges());
+        touchedGroupIds.forEach((groupId: any) => {
+          if (groupId) refreshGroupNode(groupId as string, nextNodes, (reactFlow.getEdges() as TonoEdge[]));
         });
       }, 0);
     }
   }, [reactFlow, refreshGroupNode, setNodes]);
 
-  const onNodeDragStop = useCallback((event, node) => {
+  const onNodeDragStop = useCallback((event: any, node: any) => {
     if (String(node.id) !== activeDragNodeIdRef.current) return;
     activeDragNodeIdRef.current = null;
 
@@ -2756,7 +2795,7 @@ function Flow() {
       return;
     }
 
-    const currentNodes = reactFlow.getNodes();
+    const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const dragIntent = getDragIntent(event, reactFlow, dragState);
     const touchedGroupIds = dragState?.touchedGroupIds instanceof Set
       ? new Set(dragState.touchedGroupIds)
@@ -2894,8 +2933,8 @@ function Flow() {
 
     setNodes(sortNodesForParentOrder(nextNodes));
     setTimeout(() => {
-      touchedGroupIds.forEach((groupId) => {
-        if (groupId) refreshGroupNode(groupId, nextNodes, reactFlow.getEdges());
+      touchedGroupIds.forEach((groupId: any) => {
+        if (groupId) refreshGroupNode(groupId as string, nextNodes, (reactFlow.getEdges() as TonoEdge[]));
       });
     }, 0);
   }, [reactFlow, refreshGroupNode, scheduleAutoRun, setNodes]);
@@ -2903,7 +2942,7 @@ function Flow() {
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         runWorkflow();
@@ -2914,16 +2953,16 @@ function Flow() {
   }, [runWorkflow]);
 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.key !== 'z') return;
       if (isEditableTarget(e.target)) return;
       e.preventDefault();
       if (e.shiftKey) {
-        if (undoRedo.redo(setNodes, setEdges, nextIdRef, () => reactFlow.getNodes(), () => reactFlow.getEdges())) {
+        if (undoRedo.redo(setNodes as (n: TonoNode[]) => void, setEdges as (e: TonoEdge[]) => void, nextIdRef, () => (reactFlow.getNodes() as TonoNode[]), () => (reactFlow.getEdges() as TonoEdge[]))) {
           setStatus({ text: 'Redo.', level: 'info' });
         }
       } else {
-        if (undoRedo.undo(setNodes, setEdges, nextIdRef, () => reactFlow.getNodes(), () => reactFlow.getEdges())) {
+        if (undoRedo.undo(setNodes as (n: TonoNode[]) => void, setEdges as (e: TonoEdge[]) => void, nextIdRef, () => (reactFlow.getNodes() as TonoNode[]), () => (reactFlow.getEdges() as TonoEdge[]))) {
           setStatus({ text: 'Undo.', level: 'info' });
         }
       }
@@ -2933,10 +2972,10 @@ function Flow() {
   }, [reactFlow, setNodes, setEdges, undoRedo]);
 
   useEffect(() => {
-    const handleCopy = (event) => {
+    const handleCopy = (event: ClipboardEvent) => {
       if (isEditableTarget(event.target)) return;
 
-      const payload = buildNodeClipboardPayload(reactFlow.getNodes(), reactFlow.getEdges());
+      const payload = buildNodeClipboardPayload((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]));
       if (!payload) return;
 
       const serialized = JSON.stringify(payload);
@@ -2949,7 +2988,7 @@ function Flow() {
       });
     };
 
-    const handlePaste = (event) => {
+    const handlePaste = (event: ClipboardEvent) => {
       if (isEditableTarget(event.target)) return;
 
       const clipboardText = event.clipboardData?.getData(NODE_CLIPBOARD_MIME)
@@ -2973,7 +3012,7 @@ function Flow() {
 
   // ── Context menu ────────────────────────────────────────────────────
 
-  const onPaneContextMenu = useCallback((event) => {
+  const onPaneContextMenu = useCallback((event: any) => {
     event.preventDefault();
     if (performance.now() < suppressPaneContextMenuUntilRef.current) {
       suppressPaneContextMenuUntilRef.current = 0;
@@ -2982,7 +3021,7 @@ function Flow() {
     setContextMenu({ x: event.clientX, y: event.clientY });
   }, []);
 
-  const onFlowContainerPointerDown = useCallback((event) => {
+  const onFlowContainerPointerDown = useCallback((event: React.PointerEvent) => {
     if (event.button !== 2) return;
     if (!canStartCanvasRightDragZoom(event.target)) return;
 
@@ -3006,7 +3045,7 @@ function Flow() {
     }
   }, [reactFlow]);
 
-  const onFlowContainerContextMenuCapture = useCallback((event) => {
+  const onFlowContainerContextMenuCapture = useCallback((event: React.SyntheticEvent) => {
     if (canvasRightZoomRef.current?.moved || performance.now() < suppressPaneContextMenuUntilRef.current) {
       event.preventDefault();
       event.stopPropagation();
@@ -3017,14 +3056,14 @@ function Flow() {
     const container = flowContainerRef.current;
     if (!container) return;
     container.classList.add('is-panning');
-    clearTimeout(panTimerRef.current);
+    if (panTimerRef.current) clearTimeout(panTimerRef.current);
     panTimerRef.current = setTimeout(() => {
       container.classList.remove('is-panning');
     }, 150);
   }, []);
 
   useEffect(() => {
-    const handlePointerMove = (event) => {
+    const handlePointerMove = (event: PointerEvent) => {
       const zoomState = canvasRightZoomRef.current;
       if (!zoomState || event.pointerId !== zoomState.pointerId) return;
 
@@ -3055,7 +3094,7 @@ function Flow() {
       }, { duration: 0 });
     };
 
-    const finishPointerInteraction = (event) => {
+    const finishPointerInteraction = (event: PointerEvent) => {
       const zoomState = canvasRightZoomRef.current;
       if (!zoomState || event.pointerId !== zoomState.pointerId) return;
 
@@ -3088,8 +3127,8 @@ function Flow() {
   useEffect(() => {
     if (!contextMenu) return undefined;
 
-    const handlePointerDown = (event) => {
-      if (event.target.closest('.context-menu')) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if ((event.target as Element)?.closest?.('.context-menu')) return;
       setContextMenu(null);
     };
 
@@ -3102,7 +3141,7 @@ function Flow() {
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
-    <NodeContext.Provider value={contextValue}>
+    <NodeContext.Provider value={contextValue as any}>
       <div className="app-container">
         {/* Toolbar */}
         <div id="toolbar">
@@ -3178,7 +3217,7 @@ function Flow() {
             <Background />
             <Controls />
             <MiniMap
-              nodeColor={(n) => {
+              nodeColor={(n: any) => {
                 const cat = n.data?.definition?.category;
                 return CAT_COLORS[cat] || 'var(--fallback-cat)';
               }}
@@ -3203,8 +3242,8 @@ function Flow() {
 
       </div>
       <HelpPanelManager
-        tabs={helpTabs}
-        activeTab={activeHelpTab}
+        tabs={helpTabs as any}
+        activeTab={activeHelpTab as any}
         onTabSelect={setActiveHelpTab}
         onTabClose={closeHelpTab}
         onTabContentChange={updateTabContent}

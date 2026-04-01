@@ -1,12 +1,21 @@
-function clamp01(value) {
+interface AnglePoints {
+  x1: number;
+  y1: number;
+  xm: number;
+  ym: number;
+  x2: number;
+  y2: number;
+}
+
+function clamp01(value: number): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
-export function round3(value) {
+export function round3(value: number): number {
   return Number.parseFloat(Number(value).toFixed(3));
 }
 
-export function getAngleLabelBasePosition(x1, y1, xm, ym, x2, y2) {
+export function getAngleLabelBasePosition(x1: number, y1: number, xm: number, ym: number, x2: number, y2: number) {
   const va = { x: Number(x1) - Number(xm), y: Number(y1) - Number(ym) };
   const vb = { x: Number(x2) - Number(xm), y: Number(y2) - Number(ym) };
   const lenA = Math.hypot(va.x, va.y);
@@ -31,7 +40,7 @@ export function getAngleLabelBasePosition(x1, y1, xm, ym, x2, y2) {
   };
 }
 
-export function getAngleLabelPosition(points, labelDx = 0, labelDy = 0) {
+export function getAngleLabelPosition(points: AnglePoints, labelDx: number = 0, labelDy: number = 0) {
   const base = getAngleLabelBasePosition(points.x1, points.y1, points.xm, points.ym, points.x2, points.y2);
   return {
     x: clamp01(base.x + (Number(labelDx) || 0)),
@@ -39,7 +48,7 @@ export function getAngleLabelPosition(points, labelDx = 0, labelDy = 0) {
   };
 }
 
-export function moveAngleWidget(points, dx, dy) {
+export function moveAngleWidget(points: AnglePoints, dx: number, dy: number) {
   const nextDx = Number(dx) || 0;
   const nextDy = Number(dy) || 0;
   const xs = [points.x1, points.xm, points.x2];
@@ -61,7 +70,7 @@ export function moveAngleWidget(points, dx, dy) {
   };
 }
 
-export function measureAngleDegrees(x1, y1, xm, ym, x2, y2) {
+export function measureAngleDegrees(x1: number, y1: number, xm: number, ym: number, x2: number, y2: number) {
   const ax = Number(x1) - Number(xm);
   const ay = Number(y1) - Number(ym);
   const bx = Number(x2) - Number(xm);

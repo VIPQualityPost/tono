@@ -1,3 +1,11 @@
+import type { WidgetDescriptor } from './types.ts';
+
+interface DataInputDescriptor {
+  name: string;
+  type: string | string[];
+  label: string;
+}
+
 export function formatUiLabel(text: unknown): string {
   return String(text ?? '')
     .replace(/_/g, ' ')
@@ -13,7 +21,7 @@ function normalizeInputNames(raw: unknown): string[] {
     .filter((value) => value.length > 0);
 }
 
-export function getWidgetCombinedInputName(widget, dataInputByName) {
+export function getWidgetCombinedInputName(widget: WidgetDescriptor | null | undefined, dataInputByName: Map<string, DataInputDescriptor> | null | undefined) {
   const explicitInputName = normalizeInputNames(widget?.opts?.top_socket_input)[0];
   if (explicitInputName && dataInputByName?.has(explicitInputName)) {
     return explicitInputName;
@@ -34,8 +42,8 @@ export function getWidgetCombinedInputName(widget, dataInputByName) {
   return null;
 }
 
-export function buildCombinedInputNameByWidgetName(widgets, dataInputs) {
-  const dataInputByName = new Map((dataInputs || []).map((input) => [input.name, input]));
+export function buildCombinedInputNameByWidgetName(widgets: WidgetDescriptor[], dataInputs: DataInputDescriptor[]) {
+  const dataInputByName = new Map((dataInputs || []).map((input: DataInputDescriptor) => [input.name, input]));
   const combinedInputNameByWidgetName = new Map();
 
   for (const widget of widgets || []) {

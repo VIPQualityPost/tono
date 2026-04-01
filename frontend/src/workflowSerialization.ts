@@ -1,13 +1,14 @@
 import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.ts';
+import type { TonoNode, TonoEdge, SerializedWorkflow } from './types';
 
-export function serializeWorkflowState(nodes, edges) {
-  const compactObject = (value) => {
+export function serializeWorkflowState(nodes: TonoNode[], edges: TonoEdge[]) {
+  const compactObject = (value: Record<string, unknown> | null | undefined) => {
     if (!value || typeof value !== 'object') return null;
     const entries = Object.entries(value);
     return entries.length > 0 ? Object.fromEntries(entries) : null;
   };
-  const getExtraData = (data) => compactObject(Object.fromEntries(
-    Object.entries(data || {}).filter(([key]) => ![
+  const getExtraData = (data: Record<string, unknown>) => compactObject(Object.fromEntries(
+    Object.entries(data || {}).filter(([key]: [string, unknown]) => ![
       'label',
       'className',
       'widgetValues',
@@ -22,11 +23,11 @@ export function serializeWorkflowState(nodes, edges) {
       'warning',
     ].includes(key))
   ));
-  const getRuntimeValues = (node) => compactObject(
+  const getRuntimeValues = (node: TonoNode) => compactObject(
     sanitizeRuntimeValuesForPersistence(node.data?.className, node.data?.runtimeValues),
   );
 
-  const snapDim = (v) => {
+  const snapDim = (v: unknown) => {
     const n = Math.round(Number(v));
     return Number.isFinite(n) && n > 0 ? n : undefined;
   };

@@ -1,4 +1,11 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, type MutableRefObject } from 'react';
+import type { TonoNode, TonoEdge } from './types';
+
+interface Snapshot {
+  nodes: TonoNode[];
+  edges: TonoEdge[];
+  nextId: number;
+}
 
 /**
  * Snapshot-based undo/redo for nodes + edges.
@@ -7,10 +14,10 @@ import { useRef, useCallback } from 'react';
  * Call `undo` / `redo` to restore.
  */
 export default function useUndoRedo({ maxHistory = 50 } = {}) {
-  const pastRef = useRef([]);
-  const futureRef = useRef([]);
+  const pastRef = useRef<Snapshot[]>([]);
+  const futureRef = useRef<Snapshot[]>([]);
 
-  const pushSnapshot = useCallback((nodes, edges, nextId) => {
+  const pushSnapshot = useCallback((nodes: TonoNode[], edges: TonoEdge[], nextId: number) => {
     pastRef.current = [
       ...pastRef.current.slice(-(maxHistory - 1)),
       {
@@ -22,7 +29,7 @@ export default function useUndoRedo({ maxHistory = 50 } = {}) {
     futureRef.current = [];
   }, [maxHistory]);
 
-  const undo = useCallback((setNodes, setEdges, nextIdRef, getNodes, getEdges) => {
+  const undo = useCallback((setNodes: (n: TonoNode[]) => void, setEdges: (e: TonoEdge[]) => void, nextIdRef: MutableRefObject<number>, getNodes: () => TonoNode[], getEdges: () => TonoEdge[]) => {
     if (pastRef.current.length === 0) return false;
     futureRef.current = [
       ...futureRef.current,
@@ -32,14 +39,14 @@ export default function useUndoRedo({ maxHistory = 50 } = {}) {
         nextId: nextIdRef.current,
       },
     ];
-    const snapshot = pastRef.current.pop();
+    const snapshot = pastRef.current.pop()!;
     setNodes(snapshot.nodes);
     setEdges(snapshot.edges);
     nextIdRef.current = snapshot.nextId;
     return true;
   }, []);
 
-  const redo = useCallback((setNodes, setEdges, nextIdRef, getNodes, getEdges) => {
+  const redo = useCallback((setNodes: (n: TonoNode[]) => void, setEdges: (e: TonoEdge[]) => void, nextIdRef: MutableRefObject<number>, getNodes: () => TonoNode[], getEdges: () => TonoEdge[]) => {
     if (futureRef.current.length === 0) return false;
     pastRef.current = [
       ...pastRef.current,
@@ -49,7 +56,7 @@ export default function useUndoRedo({ maxHistory = 50 } = {}) {
         nextId: nextIdRef.current,
       },
     ];
-    const snapshot = futureRef.current.pop();
+    const snapshot = futureRef.current.pop()!;
     setNodes(snapshot.nodes);
     setEdges(snapshot.edges);
     nextIdRef.current = snapshot.nextId;

@@ -6,12 +6,13 @@
  */
 
 import * as api from './api.ts';
+import type { SerializedWorkflow, NodeDefsRegistry, InputSpec } from './types.ts';
 
 const MAX_PACKED_BYTES = 100 * 1024 * 1024; // 100 MB
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function arrayBufferToBase64(buffer) {
+function arrayBufferToBase64(buffer: ArrayBuffer) {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -20,7 +21,7 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-function base64ToUint8Array(b64) {
+function base64ToUint8Array(b64: string) {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -29,21 +30,21 @@ function base64ToUint8Array(b64) {
   return bytes;
 }
 
-function getInputType(spec) {
+function getInputType(spec: InputSpec | null) {
   if (!spec) return null;
   const type = Array.isArray(spec) ? spec[0] : spec;
   return Array.isArray(type) ? type[0] : type;
 }
 
-function filenameFromPath(path) {
-  return String(path).split('/').pop();
+function filenameFromPath(path: string): string {
+  return String(path).split('/').pop() || path;
 }
 
 /**
  * Extract the relative path portion from a session:// URI.
  * e.g. "session://uploads/myfolder/scan.ibw" → "myfolder/scan.ibw"
  */
-function sessionRelativePath(path) {
+function sessionRelativePath(path: string) {
   const prefix = 'session://uploads/';
   if (path.startsWith(prefix)) return path.slice(prefix.length);
   return filenameFromPath(path);
@@ -59,9 +60,9 @@ function sessionRelativePath(path) {
  * @param {function} [onProgress] - Optional (packed, total) callback
  * @returns {object} workflowData with packedFiles added
  */
-export async function packWorkflow(workflowData, nodeDefs, onProgress) {
+export async function packWorkflow(workflowData: SerializedWorkflow, nodeDefs: NodeDefsRegistry, onProgress?: (packed: number, total: number) => void) {
   // 1. Collect FILE_PICKER paths only (skip FOLDER_PICKER)
-  const filePaths = new Set();
+  const filePaths = new Set<string>();
 
   for (const node of workflowData.nodes) {
     const className = node.data?.className;
@@ -87,7 +88,7 @@ export async function packWorkflow(workflowData, nodeDefs, onProgress) {
   }
 
   // 3. Fetch each file and encode
-  const packedFiles = {};
+  const packedFiles: Record<string, { filename: string; data: string }> = {};
   let totalBytes = 0;
   let packed = 0;
   const total = filePaths.size;
@@ -108,7 +109,7 @@ export async function packWorkflow(workflowData, nodeDefs, onProgress) {
         data: arrayBufferToBase64(buffer),
       };
     } catch (err) {
-      if (err.message.includes('limit')) throw err;
+      if ((err as Error).message.includes('limit')) throw err;
       // File may not exist (e.g. cleared path) — skip
     }
     packed++;
@@ -134,14 +135,14 @@ export async function packWorkflow(workflowData, nodeDefs, onProgress) {
  * @param {object} workflowData - Workflow data potentially containing packedFiles
  * @returns {{ workflow: object, restoredPaths: Set<string> }}
  */
-export async function unpackWorkflow(workflowData) {
+export async function unpackWorkflow(workflowData: SerializedWorkflow) {
   const packedFiles = workflowData.packedFiles;
   if (!packedFiles || Object.keys(packedFiles).length === 0) {
     return { workflow: workflowData, restoredPaths: new Set() };
   }
 
-  const pathMap = {};       // oldPath → newSessionPath
-  const restoredPaths = new Set();
+  const pathMap: Record<string, string> = {};       // oldPath → newSessionPath
+  const restoredPaths = new Set<string>();
 
   // 1. Upload each packed file
   for (const [origPath, entry] of Object.entries(packedFiles)) {

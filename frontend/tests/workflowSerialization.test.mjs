@@ -55,6 +55,7 @@ test('serializeWorkflowState keeps only stable workflow fields needed for reload
         id: '1',
         type: 'custom',
         position: { x: 100, y: 200 },
+        width: 320,
         dragHandle: '.node-header',
         data: {
           label: 'Demo Label',

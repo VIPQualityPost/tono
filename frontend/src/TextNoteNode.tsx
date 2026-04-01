@@ -2,10 +2,11 @@ import React, { useContext, useRef, useState, useEffect, useCallback, useMemo } 
 import { NodeResizeControl, useStore } from '@xyflow/react';
 import { marked } from 'marked';
 import { NodeContext } from './CustomNode';
+import type { NodeContextValue } from './types';
 
 marked.use({ breaks: true, gfm: true });
 
-const NOTE_COLORS = {
+const NOTE_COLORS: Record<string, { bg: string; border: string; dot: string }> = {
   default: { bg: '#1e293b', border: '#334155',  dot: '#475569' },
   blue:    { bg: '#0c1f3d', border: '#1d4ed8',  dot: '#3b82f6' },
   green:   { bg: '#062016', border: '#15803d',  dot: '#22c55e' },
@@ -14,16 +15,21 @@ const NOTE_COLORS = {
   purple:  { bg: '#160c2a', border: '#7c3aed',  dot: '#a855f7' },
 };
 
-function TextNoteNode({ id, data }) {
-  const ctx = useContext(NodeContext);
+interface TextNoteNodeProps {
+  id: string;
+  data: { widgetValues?: Record<string, any>; [key: string]: any };
+}
+
+function TextNoteNode({ id, data }: TextNoteNodeProps) {
+  const ctx = useContext(NodeContext) as NodeContextValue | null;
   const [isEditing, setIsEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selected = useStore(
     useCallback(
-      (s) => {
-        const node = s.nodeLookup?.get(id) || s.nodes?.find((n) => n.id === id);
+      (s: any) => {
+        const node = s.nodeLookup?.get(id) || s.nodes?.find((n: any) => n.id === id);
         return !!node?.selected;
       },
       [id],
@@ -35,7 +41,7 @@ function TextNoteNode({ id, data }) {
   const palette = NOTE_COLORS[color] ?? NOTE_COLORS.default;
 
   const setField = useCallback(
-    (name, value) => ctx?.onWidgetChange?.(id, name, value),
+    (name: string, value: unknown) => ctx?.onWidgetChange?.(id, name, value),
     [ctx, id],
   );
 
@@ -45,14 +51,14 @@ function TextNoteNode({ id, data }) {
     }
   }, [isEditing]);
 
-  const onDoubleClick = useCallback((e) => {
+  const onDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
   }, []);
 
   const onBlur = useCallback(() => setIsEditing(false), []);
 
-  const onKeyDown = useCallback((e) => {
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Ctrl/Cmd+Enter or Escape finishes editing
     if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
       e.preventDefault();
@@ -62,6 +68,7 @@ function TextNoteNode({ id, data }) {
     if (e.key === 'Tab') {
       e.preventDefault();
       const ta = textareaRef.current;
+      if (!ta) return;
       const start = ta.selectionStart;
       const end = ta.selectionEnd;
       const next = text.substring(0, start) + '  ' + text.substring(end);

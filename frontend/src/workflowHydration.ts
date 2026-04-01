@@ -1,29 +1,30 @@
 import { sortNodesForParentOrder } from './nodeHierarchy.ts';
 import { sanitizeRuntimeValuesForPersistence } from './runtimeValuePersistence.ts';
+import type { NodeDefsRegistry, NodeDefinition, InputSpec, SerializedWorkflow } from './types';
 
-function mergeDefinition(nodeData, defs) {
+function mergeDefinition(nodeData: Record<string, unknown> | undefined, defs: NodeDefsRegistry): NodeDefinition | null {
   const savedData = nodeData || {};
-  const registryDefinition = savedData.className ? defs[savedData.className] : null;
+  const registryDefinition = savedData.className ? defs[savedData.className as string] : null;
   return registryDefinition || null;
 }
 
-function getSocketType(inputDef) {
+function getSocketType(inputDef: InputSpec | undefined) {
   if (!inputDef) return null;
   const [type] = Array.isArray(inputDef) ? inputDef : [inputDef];
   return Array.isArray(type) ? type[0] : type;
 }
 
-function getInputEntries(definition) {
+function getInputEntries(definition: NodeDefinition | null) {
   return [
     ...Object.entries(definition?.input?.required || {}),
     ...Object.entries(definition?.input?.optional || {}),
   ];
 }
 
-function sanitizeWidgetValues(widgetValues, definition, preservedPaths) {
+function sanitizeWidgetValues(widgetValues: Record<string, unknown> | undefined, definition: NodeDefinition | null, preservedPaths: Set<unknown> | undefined) {
   const nextValues = { ...(widgetValues || {}) };
 
-  getInputEntries(definition).forEach(([inputName, inputDef]) => {
+  getInputEntries(definition).forEach(([inputName, inputDef]: [string, InputSpec]) => {
     const type = getSocketType(inputDef);
     if (type === 'FILE_PICKER' || type === 'FOLDER_PICKER') {
       if (preservedPaths && preservedPaths.has(nextValues[inputName])) return;
@@ -34,7 +35,7 @@ function sanitizeWidgetValues(widgetValues, definition, preservedPaths) {
   return nextValues;
 }
 
-export function hydrateWorkflowState(data, defs = {}, { preservedPaths } = {}) {
+export function hydrateWorkflowState(data: SerializedWorkflow | null | undefined, defs: NodeDefsRegistry = {}, { preservedPaths }: { preservedPaths?: Set<unknown> } = {}) {
   const loadedNodes = Array.isArray(data?.nodes) ? data.nodes : [];
   const loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
 

@@ -17,7 +17,7 @@ for (let i = 0; i < 256; i++) {
   crcTable[i] = c;
 }
 
-function crc32(bytes) {
+function crc32(bytes: Uint8Array) {
   let crc = 0xFFFFFFFF;
   for (let i = 0; i < bytes.length; i++) {
     crc = crcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
@@ -29,7 +29,7 @@ function crc32(bytes) {
 
 const PNG_SIG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-function isPng(data) {
+function isPng(data: Uint8Array) {
   if (data.length < 8) return false;
   for (let i = 0; i < 8; i++) {
     if (data[i] !== PNG_SIG[i]) return false;
@@ -37,17 +37,17 @@ function isPng(data) {
   return true;
 }
 
-function chunkType(data, offset) {
+function chunkType(data: Uint8Array, offset: number) {
   return String.fromCharCode(
     data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7],
   );
 }
 
-function readUint32(data, offset) {
+function readUint32(data: Uint8Array, offset: number) {
   return new DataView(data.buffer, data.byteOffset + offset, 4).getUint32(0);
 }
 
-function buildChunk(type, payload) {
+function buildChunk(type: string, payload: Uint8Array) {
   const encoder = new TextEncoder();
   const typeBytes = encoder.encode(type);
   const forCrc = new Uint8Array(4 + payload.length);
@@ -63,7 +63,7 @@ function buildChunk(type, payload) {
   return chunk;
 }
 
-function parseTextChunk(type, chunkData) {
+function parseTextChunk(type: string, chunkData: Uint8Array) {
   const decoder = new TextDecoder();
   const keywordEnd = chunkData.indexOf(0);
   if (keywordEnd === -1) return null;
@@ -99,7 +99,7 @@ function parseTextChunk(type, chunkData) {
  * Embed a workflow object into a PNG blob as an iTXt chunk.
  * Returns a new Blob with the metadata inserted before IEND.
  */
-export async function embedWorkflow(pngBlob, workflow) {
+export async function embedWorkflow(pngBlob: Blob, workflow: Record<string, unknown>) {
   const data = new Uint8Array(await pngBlob.arrayBuffer());
   if (!isPng(data)) throw new Error('Not a valid PNG file');
 
@@ -138,7 +138,7 @@ export async function embedWorkflow(pngBlob, workflow) {
  * Extract the workflow object from a PNG blob's iTXt chunks.
  * Returns the parsed object, or null if no "workflow" key is found.
  */
-export async function extractWorkflow(pngBlob) {
+export async function extractWorkflow(pngBlob: Blob) {
   const data = new Uint8Array(await pngBlob.arrayBuffer());
   if (!isPng(data)) return null;
 
