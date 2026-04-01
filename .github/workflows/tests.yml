@@ -31,5 +31,11 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Run tests
+      - name: Run backend tests
         run: python -m pytest -q
+
+      - name: Run frontend lint
+        run: npm run lint
+
+      - name: Run frontend tests
+        run: npm run test
