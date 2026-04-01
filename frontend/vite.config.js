@@ -19,6 +19,7 @@ export default defineConfig({
       '/upload-folder': 'http://127.0.0.1:8188',
       '/upload': 'http://127.0.0.1:8188',
       '/download': 'http://127.0.0.1:8188',
+      '/help-docs': { target: 'http://127.0.0.1:8188', changeOrigin: true },
       '/prompt': 'http://127.0.0.1:8188',
       '/ws': {
         target: 'http://127.0.0.1:8188',

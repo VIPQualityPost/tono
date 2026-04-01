@@ -265,6 +265,28 @@ def create_app(
             content_type="text/plain",
         )
 
+    async def get_help_docs(request: web.Request) -> web.Response:
+        public_dir = FRONTEND_DIR / "public"
+        if not public_dir.is_dir():
+            return web.json_response([])
+        files = sorted(p.name for p in public_dir.iterdir() if p.suffix.lower() == ".md" and p.is_file())
+        result = []
+        for fname in files:
+            text = (public_dir / fname).read_text(encoding="utf-8", errors="replace")
+            title = fname.rsplit(".", 1)[0].replace("-", " ").replace("_", " ").title()
+            result.append({"title": title, "content": text})
+        return web.json_response(result)
+
+    async def get_help_doc_file(request: web.Request) -> web.Response:
+        filename = request.match_info["filename"]
+        public_dir = FRONTEND_DIR / "public"
+        path = (public_dir / filename).resolve()
+        if not str(path).startswith(str(public_dir.resolve())) or not path.is_file():
+            return web.Response(status=404, text="Not found")
+        text = path.read_text(encoding="utf-8", errors="replace")
+        title = filename.rsplit(".", 1)[0].replace("-", " ").replace("_", " ").title()
+        return web.json_response({"title": title, "content": text})
+
     async def get_nodes(request: web.Request) -> web.Response:
         return web.Response(
             text=_dumps(get_all_node_info()),
@@ -545,6 +567,8 @@ def create_app(
     app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)
     app.router.add_get("/docs", get_node_doc)
+    app.router.add_get("/help-docs", get_help_docs)
+    app.router.add_get("/help-docs/{filename}", get_help_doc_file)
     app.router.add_post("/prompt", submit_prompt)
     app.router.add_get("/ws", websocket_handler)
 

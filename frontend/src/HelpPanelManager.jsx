@@ -1,13 +1,165 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { marked } from 'marked';
 
-function JournalTab({ content, onChange }) {
+// ── Parse headings from markdown source ──────────────────────────────
+
+function parseHeadings(md) {
+  if (!md) return [];
+  const headings = [];
+  const lines = md.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^(#{1,6})\s+(.+)/);
+    if (m) {
+      const text = m[2].replace(/[*_`~\[\]]/g, '').trim();
+      const id = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
+      headings.push({ level: m[1].length, text, id });
+    }
+  }
+  return headings;
+}
+
+// ── Inject id attributes into rendered HTML headings ─────────────────
+
+function injectHeadingIds(html, headings) {
+  let idx = 0;
+  return html.replace(/<(h[1-6])>/gi, (match, tag) => {
+    if (idx < headings.length) {
+      return `<${tag} id="${headings[idx++].id}">`;
+    }
+    return match;
+  });
+}
+
+// ── Build a tree from flat heading list ──────────────────────────────
+
+function buildTocTree(headings) {
+  const root = { children: [] };
+  const stack = [{ node: root, level: 0 }];
+  for (const h of headings) {
+    const item = { ...h, children: [] };
+    while (stack.length > 1 && stack[stack.length - 1].level >= h.level) stack.pop();
+    stack[stack.length - 1].node.children.push(item);
+    stack.push({ node: item, level: h.level });
+  }
+  return root.children;
+}
+
+// ── TOC sidebar component ────────────────────────────────────────────
+
+function TocItem({ item, collapsed, onToggle, onNavigate }) {
+  const hasChildren = item.children.length > 0;
+  const isCollapsed = collapsed[item.id];
+  return (
+    <li className="help-toc-item">
+      <div className="help-toc-row">
+        {hasChildren ? (
+          <button
+            className="help-toc-arrow"
+            onClick={(e) => { e.stopPropagation(); onToggle(item.id); }}
+          >
+            {isCollapsed ? '▶' : '▼'}
+          </button>
+        ) : (
+          <span className="help-toc-arrow-spacer" />
+        )}
+        <a
+          className="help-toc-link"
+          href={`#${item.id}`}
+          onClick={(e) => { e.preventDefault(); onNavigate(item.id); }}
+        >
+          {item.text}
+        </a>
+      </div>
+      {hasChildren && !isCollapsed && (
+        <ul className="help-toc-list">
+          {item.children.map((child) => (
+            <TocItem key={child.id} item={child} collapsed={collapsed} onToggle={onToggle} onNavigate={onNavigate} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function Toc({ headings, contentRef }) {
+  const [collapsed, setCollapsed] = useState({});
+  const tree = useMemo(() => buildTocTree(headings), [headings]);
+
+  const onToggle = (id) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const onNavigate = (id) => {
+    const el = contentRef.current?.querySelector(`#${CSS.escape(id)}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  if (tree.length === 0) return null;
+
+  return (
+    <nav className="help-toc nowheel">
+      <ul className="help-toc-list help-toc-root">
+        {tree.map((item) => (
+          <TocItem key={item.id} item={item} collapsed={collapsed} onToggle={onToggle} onNavigate={onNavigate} />
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+// ── Click handler for .md links ──────────────────────────────────────
+
+function useMdLinkHandler(onOpenDoc) {
+  return (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (href && /\.md$/i.test(href) && !href.startsWith('http')) {
+      e.preventDefault();
+      const filename = href.split('/').pop();
+      onOpenDoc(filename);
+    }
+  };
+}
+
+// ── Content pane with TOC ────────────────────────────────────────────
+
+function HelpContent({ content, onOpenDoc }) {
+  const contentRef = useRef(null);
+  const handleClick = useMdLinkHandler(onOpenDoc);
+  const md = content || '*Loading…*';
+  const headings = useMemo(() => parseHeadings(md), [md]);
+  const html = useMemo(() => {
+    let rendered;
+    try { rendered = marked.parse(md); } catch { rendered = md; }
+    return injectHeadingIds(rendered, headings);
+  }, [md, headings]);
+
+  return (
+    <div className="help-content-row">
+      <Toc headings={headings} contentRef={contentRef} />
+      <div
+        ref={contentRef}
+        className="node-help-panel-body nowheel"
+        onClick={handleClick}
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
+  );
+}
+
+// ── Journal tab ──────────────────────────────────────────────────────
+
+function JournalTab({ content, onChange, onOpenDoc }) {
   const [isEditing, setIsEditing] = useState(false);
+  const contentRef = useRef(null);
+  const handleClick = useMdLinkHandler(onOpenDoc);
 
   let renderedHtml = '';
+  let headings = [];
   if (!isEditing && content?.trim()) {
-    try { renderedHtml = marked.parse(content); } catch { /* fallback to raw */ renderedHtml = content; }
+    headings = parseHeadings(content);
+    try { renderedHtml = injectHeadingIds(marked.parse(content), headings); } catch { renderedHtml = content; }
   }
 
   return (
@@ -39,12 +191,17 @@ function JournalTab({ content, onChange }) {
           autoFocus
         />
       ) : renderedHtml ? (
-        <div
-          className="node-help-panel-body node-help-journal-preview nowheel"
-          onDoubleClick={() => setIsEditing(true)}
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
-        />
+        <div className="help-content-row">
+          <Toc headings={headings} contentRef={contentRef} />
+          <div
+            ref={contentRef}
+            className="node-help-panel-body node-help-journal-preview nowheel"
+            onDoubleClick={() => setIsEditing(true)}
+            onClick={handleClick}
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          />
+        </div>
       ) : (
         <div
           className="node-help-panel-body node-help-journal-preview nowheel"
@@ -57,7 +214,9 @@ function JournalTab({ content, onChange }) {
   );
 }
 
-function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange, onOpenJournal }) {
+// ── Main panel manager ───────────────────────────────────────────────
+
+function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabContentChange, onOpenJournal, onOpenDoc }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -116,13 +275,10 @@ function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabConte
           <JournalTab
             content={active.content}
             onChange={(val) => onTabContentChange(active.label, val)}
+            onOpenDoc={onOpenDoc}
           />
         ) : (
-          <div
-            className="node-help-panel-body nowheel"
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: marked.parse(active.content || '*Loading…*') }}
-          />
+          <HelpContent content={active.content} onOpenDoc={onOpenDoc} />
         )
       )}
     </div>,

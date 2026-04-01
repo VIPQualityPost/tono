@@ -1970,6 +1970,24 @@ function Flow() {
     setHelpTabs((prev) => prev.map((t) => t.label === label ? { ...t, content } : t));
   }, []);
 
+  const openDocByFilename = useCallback(async (filename) => {
+    const title = filename.replace(/\.md$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    // If already open, just switch to it
+    setHelpTabs((prev) => {
+      if (prev.find((t) => t.label === title)) return prev;
+      return [...prev, { label: title, content: null }];
+    });
+    setActiveHelpTab(title);
+    try {
+      const r = await fetch(`/help-docs/${encodeURIComponent(filename)}`);
+      if (!r.ok) throw new Error('Not found');
+      const doc = await r.json();
+      setHelpTabs((prev) => prev.map((t) => t.label === title ? { ...t, content: doc.content } : t));
+    } catch {
+      setHelpTabs((prev) => prev.map((t) => t.label === title ? { ...t, content: `*Could not load ${filename}.*` } : t));
+    }
+  }, []);
+
   const contextValue = useMemo(() => ({
     onWidgetChange,
     onRuntimeValuesChange,
@@ -1996,9 +2014,18 @@ function Flow() {
     setEdges(hydrated.edges);
     nextIdRef.current = hydrated.nextNodeId;
     journalContentRef.current = data.journalContent || '';
-    setHelpTabs((prev) => prev.map((t) =>
-      t.label === 'Journal' ? { ...t, content: journalContentRef.current } : t,
-    ));
+    if (journalContentRef.current) {
+      setHelpTabs((prev) => {
+        const existing = prev.find((t) => t.label === 'Journal');
+        if (existing) return prev.map((t) => t.label === 'Journal' ? { ...t, content: journalContentRef.current } : t);
+        return [...prev, { label: 'Journal', type: 'journal', content: journalContentRef.current }];
+      });
+      setActiveHelpTab('Journal');
+    } else {
+      setHelpTabs((prev) => prev.map((t) =>
+        t.label === 'Journal' ? { ...t, content: '' } : t,
+      ));
+    }
     initializeDynamicNodes(hydrated.nodes);
   }, [initializeDynamicNodes, setNodes, setEdges]);
 
@@ -2038,6 +2065,20 @@ function Flow() {
     }).catch((err) => {
       setStatus({ text: 'Failed to load nodes: ' + err.message, level: 'error' });
     });
+
+    // Load any .md files from frontend/public/ as help tabs
+    fetch('/help-docs')
+      .then((r) => r.ok ? r.json() : [])
+      .then((docs) => {
+        if (!docs.length) return;
+        setHelpTabs((prev) => {
+          const existing = new Set(prev.map((t) => t.label));
+          const newTabs = docs.filter((d) => !existing.has(d.title)).map((d) => ({ label: d.title, content: d.content }));
+          return newTabs.length ? [...prev, ...newTabs] : prev;
+        });
+        setActiveHelpTab((cur) => cur || docs[0].title);
+      })
+      .catch(() => {});
   }, [loadDefaultWorkflow]);
 
   const stampLogoOnBlob = useCallback(async (blob) => {
@@ -2055,8 +2096,8 @@ function Flow() {
     ctx.drawImage(img, 0, 0);
 
     const margin = 16;
-    const size = Math.min(128, Math.floor(img.naturalWidth / 6), Math.floor(img.naturalHeight / 6));
-    if (size >= 16) {
+    const size = 64;
+    if (img.naturalWidth >= size + margin * 2 && img.naturalHeight >= size + margin * 2) {
       const logoX = img.naturalWidth - size - margin;
       const logoY = img.naturalHeight - size - margin;
       const fontSize = Math.max(11, Math.round(size * 0.18));
@@ -3011,6 +3052,7 @@ function Flow() {
         onTabClose={closeHelpTab}
         onTabContentChange={updateTabContent}
         onOpenJournal={openJournalTab}
+        onOpenDoc={openDocByFilename}
       />
     </NodeContext.Provider>
   );
