@@ -1182,7 +1182,7 @@ function CustomNode({ id, data }) {
   return (
     <>
       {ctx?.executingNodeId === id && <div className="node-executing-glow" aria-hidden="true" />}
-    <div className="custom-node">
+    <div className={`custom-node${data.error ? ' node-error' : ''}`}>
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
         <div className="node-title-left">
@@ -1287,6 +1287,11 @@ function CustomNode({ id, data }) {
         {/* Warning notification */}
         {data.warning && (
           <div className="node-warning">{data.warning}</div>
+        )}
+
+        {/* Error notification */}
+        {data.error && (
+          <div className="node-error-message">{data.error}</div>
         )}
 
         {scalarDisplay && !standaloneWidgets.some((w) => w.opts?.text_input) && (

@@ -116,7 +116,7 @@ def create_app(
         from backend.plugin_loader import load_plugins
         load_plugins(plugins_dir())
 
-    from backend.execution import ExecutionEngine, new_prompt_id
+    from backend.execution import ExecutionEngine, NodeExecutionError, new_prompt_id
     from backend.node_registry import NODE_CLASS_MAPPINGS, get_all_node_info
 
     ensure_runtime_dirs(with_plugins=_plugins_on)
@@ -522,6 +522,12 @@ def create_app(
                     ),
                 )
                 broadcast(session_id, {"type": "execution_complete", "data": {"prompt_id": prompt_id}})
+            except NodeExecutionError as exc:
+                log.exception("Execution error on node %s", exc.node_id)
+                broadcast(session_id, {
+                    "type": "execution_error",
+                    "data": {"node_id": exc.node_id, "message": str(exc)},
+                })
             except Exception as exc:
                 log.exception("Execution error")
                 broadcast(session_id, {

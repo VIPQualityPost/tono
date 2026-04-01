@@ -1300,7 +1300,7 @@ function Flow() {
         case 'execution_start':
           setNodes((ns) => ns.map((n) => ({
             ...n,
-            data: { ...n.data, processingTimeMs: null },
+            data: { ...n.data, processingTimeMs: null, error: null },
           })));
           setExecutingNodeId(null);
           setStatus({ text: 'Running workflow…', level: 'info' });
@@ -1315,7 +1315,12 @@ function Flow() {
           break;
         case 'execution_error':
           setExecutingNodeId(null);
-          setStatus({ text: 'Error: ' + msg.data.message, level: 'error' });
+          if (msg.data.node_id) {
+            updateNodeData(msg.data.node_id, { error: msg.data.message });
+          }
+          if (!msg.data.node_id) {
+            setStatus({ text: 'Error: ' + msg.data.message, level: 'error' });
+          }
           console.error('[tono] execution error', msg.data);
           break;
         case 'preview':

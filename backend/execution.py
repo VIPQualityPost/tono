@@ -45,6 +45,13 @@ def _is_link(value: Any) -> bool:
     )
 
 
+class NodeExecutionError(Exception):
+    """Wraps an error that occurred while executing a specific node."""
+    def __init__(self, node_id: str, original: Exception):
+        self.node_id = node_id
+        super().__init__(str(original))
+
+
 class ExecutionEngine:
     """Synchronous (blocking) graph executor. Run inside a thread pool from async code."""
 
@@ -99,12 +106,15 @@ class ExecutionEngine:
                 class_name = node_def["class_type"]
 
                 if class_name not in NODE_CLASS_MAPPINGS:
-                    raise ValueError(f"Unknown node type: '{class_name}'")
+                    raise NodeExecutionError(node_id, ValueError(f"Unknown node type: '{class_name}'"))
 
                 cls = NODE_CLASS_MAPPINGS[class_name]
                 raw_inputs = node_def.get("inputs", {})
                 input_types = cls.INPUT_TYPES()
-                inputs = self._resolve_inputs(raw_inputs, node_outputs, input_types)
+                try:
+                    inputs = self._resolve_inputs(raw_inputs, node_outputs, input_types)
+                except Exception as exc:
+                    raise NodeExecutionError(node_id, exc) from exc
                 input_signature = self._build_input_signature(class_name, raw_inputs, node_output_signatures)
 
                 cache_entry = self._get_cached_entry(node_id, class_name, input_signature)
@@ -118,8 +128,13 @@ class ExecutionEngine:
                     instance = cls()
                     func = getattr(instance, cls.FUNCTION)
                     start_time = perf_counter()
-                    with active_node(node_id):
-                        result = func(**inputs)
+                    try:
+                        with active_node(node_id):
+                            result = func(**inputs)
+                    except NodeExecutionError:
+                        raise
+                    except Exception as exc:
+                        raise NodeExecutionError(node_id, exc) from exc
                     elapsed_ms = (perf_counter() - start_time) * 1000.0
 
                 # Nodes must return a tuple; coerce single values just in case

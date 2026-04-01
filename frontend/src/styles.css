@@ -797,6 +797,21 @@ html, body, #root {
   border-bottom: 1px solid var(--warning-border);
 }
 
+.custom-node.node-error {
+  outline: 2px solid #ef4444;
+  outline-offset: -1px;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+}
+
+.node-error-message {
+  padding: 3px 10px;
+  font-size: 10px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border-top: 1px solid rgba(239, 68, 68, 0.3);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .node-value-display {
   padding: 8px 10px 4px;
 }
