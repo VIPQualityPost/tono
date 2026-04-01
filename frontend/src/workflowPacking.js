@@ -82,6 +82,8 @@ export async function packWorkflow(workflowData, nodeDefs, onProgress) {
     }
   }
 
+  console.log('[packWorkflow] FILE_PICKER paths found:', [...filePaths]);
+
   if (filePaths.size === 0) {
     return workflowData;
   }

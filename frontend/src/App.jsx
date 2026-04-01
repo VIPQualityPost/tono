@@ -2251,6 +2251,7 @@ function Flow() {
       const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
       const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
 
+      console.log('[pack] capturing viewport…');
       const blob = await captureWorkflowViewportBlob(viewportEl, {
         backgroundColor: CANVAS_COLORS.bgDeep,
         width: imageWidth,
@@ -2263,15 +2264,19 @@ function Flow() {
       });
       if (!blob) throw new Error('Capture returned empty');
 
+      console.log('[pack] stamping logo…');
       const stampedBlob = await stampLogoOnBlob(blob);
       let workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
       if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
 
+      console.log('[pack] packing files…');
       workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed, total) => {
         setStatus({ text: `Packing files… (${packed}/${total})`, level: 'info' });
       });
+      console.log('[pack] packed, embedding into PNG…', workflow.packed ? 'has packed files' : 'no packed files');
 
       const finalBlob = await embedWorkflow(stampedBlob, workflow);
+      console.log('[pack] embed complete, blob size:', finalBlob.size, 'saving…');
       const defaultName = 'workflow-packed.png';
 
       if (window.pywebview?.api?.choose_save_workflow_png_path) {
@@ -2304,10 +2309,8 @@ function Flow() {
         }
       }
 
-      const resp = await fetch('/download?filename=' + defaultName, { method: 'POST', body: finalBlob });
-      const dlBlob = await resp.blob();
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(dlBlob);
+      a.href = URL.createObjectURL(finalBlob);
       a.download = defaultName;
       document.body.appendChild(a);
       a.click();
