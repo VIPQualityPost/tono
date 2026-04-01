@@ -17,6 +17,7 @@ import { embedWorkflow, extractWorkflow } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import tonoIconUrl from '../../resources/icon_1024.png';
 import { hydrateWorkflowState } from './workflowHydration';
+import useUndoRedo from './useUndoRedo';
 import { packWorkflow, unpackWorkflow } from './workflowPacking';
 import { serializeWorkflowState } from './workflowSerialization';
 import { sortNodesForParentOrder } from './nodeHierarchy.js';
@@ -847,6 +848,8 @@ function ContextMenu({
   );
 }
 
+const DEBUG = false; // set to true for verbose logging
+
 // ── Main flow component (needs ReactFlowProvider ancestor) ────────────
 
 function Flow() {
@@ -875,7 +878,9 @@ function Flow() {
   const suppressPaneContextMenuUntilRef = useRef(0);
   const loadNodeOutputRequestVersionsRef = useRef(new Map());
   const journalContentRef = useRef('');
+  const pendingUndoSnapshotRef = useRef(null);
   const reactFlow = useReactFlow();
+  const undoRedo = useUndoRedo();
 
   const scheduleAutoRun = useCallback(() => {
     clearTimeout(autoRunTimer.current);
@@ -1390,6 +1395,7 @@ function Flow() {
       };
     }
 
+    undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
     setEdges((eds) => {
       // Enforce single connection per input handle
       const filtered = eds.filter(
@@ -1420,6 +1426,9 @@ function Flow() {
   }, [reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs, setEdges]); // scheduleAutoRun is stable (no deps)
 
   const handleEdgesChange = useCallback((changes) => {
+    if (changes.some((c) => c.type === 'remove')) {
+      undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
+    }
     const currentEdges = reactFlow.getEdges();
     onEdgesChange(changes);
 
@@ -1462,6 +1471,25 @@ function Flow() {
   }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs]);
 
   const handleNodesChange = useCallback((changes) => {
+    // Stash undo snapshot when a drag begins
+    const isDragStart = changes.some((c) => c.type === 'position' && c.dragging);
+    if (isDragStart && !pendingUndoSnapshotRef.current) {
+      if (DEBUG) console.log('[undo] drag started, stashing snapshot');
+      pendingUndoSnapshotRef.current = {
+        nodes: structuredClone(reactFlow.getNodes()),
+        edges: structuredClone(reactFlow.getEdges()),
+        nextId: nextIdRef.current,
+      };
+    }
+    // Commit stashed snapshot when drag ends
+    const isDragEnd = changes.some((c) => c.type === 'position' && c.dragging === false);
+    if (isDragEnd && pendingUndoSnapshotRef.current) {
+      if (DEBUG) console.log('[undo] drag ended, pushing snapshot');
+      const s = pendingUndoSnapshotRef.current;
+      undoRedo.pushSnapshot(s.nodes, s.edges, s.nextId);
+      pendingUndoSnapshotRef.current = null;
+    }
+
     const currentNodes = reactFlow.getNodes();
     const selectedGroupIds = new Set(
       changes
@@ -1474,6 +1502,10 @@ function Flow() {
         .filter((change) => change.type === 'remove')
         .map((change) => String(change.id)),
     );
+
+    if (removedIds.size > 0) {
+      undoRedo.pushSnapshot(reactFlow.getNodes(), reactFlow.getEdges(), nextIdRef.current);
+    }
 
     onNodesChange(changes);
 
@@ -2251,7 +2283,7 @@ function Flow() {
       const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
       const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
 
-      console.log('[pack] capturing viewport…');
+      if (DEBUG) console.log('[pack] capturing viewport…');
       const blob = await captureWorkflowViewportBlob(viewportEl, {
         backgroundColor: CANVAS_COLORS.bgDeep,
         width: imageWidth,
@@ -2264,19 +2296,18 @@ function Flow() {
       });
       if (!blob) throw new Error('Capture returned empty');
 
-      console.log('[pack] stamping logo…');
+      if (DEBUG) console.log('[pack] stamping logo…');
       const stampedBlob = await stampLogoOnBlob(blob);
       let workflow = serializeWorkflowState(allNodes, reactFlow.getEdges());
       if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
 
-      console.log('[pack] packing files…');
+      if (DEBUG) console.log('[pack] packing files…');
       workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed, total) => {
         setStatus({ text: `Packing files… (${packed}/${total})`, level: 'info' });
       });
-      console.log('[pack] packed, embedding into PNG…', workflow.packed ? 'has packed files' : 'no packed files');
-
+      if (DEBUG) console.log('[pack] packed, embedding into PNG…', workflow.packed ? 'has packed files' : 'no packed files');
       const finalBlob = await embedWorkflow(stampedBlob, workflow);
-      console.log('[pack] embed complete, blob size:', finalBlob.size, 'saving…');
+      if (DEBUG) console.log('[pack] embed complete, blob size:', finalBlob.size);
       const defaultName = 'workflow-packed.png';
 
       if (window.pywebview?.api?.choose_save_workflow_png_path) {
@@ -2417,7 +2448,6 @@ function Flow() {
   const onNodeDragStart = useCallback((event, node) => {
     activeDragNodeIdRef.current = String(node.id);
     dragStateRef.current = null;
-
     if (!(event.ctrlKey || event.metaKey)) {
       duplicateDragRef.current = null;
       const currentNodes = reactFlow.getNodes();
@@ -2877,6 +2907,25 @@ function Flow() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [runWorkflow]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'z') return;
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        if (undoRedo.redo(setNodes, setEdges, nextIdRef, () => reactFlow.getNodes(), () => reactFlow.getEdges())) {
+          setStatus({ text: 'Redo.', level: 'info' });
+        }
+      } else {
+        if (undoRedo.undo(setNodes, setEdges, nextIdRef, () => reactFlow.getNodes(), () => reactFlow.getEdges())) {
+          setStatus({ text: 'Undo.', level: 'info' });
+        }
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [reactFlow, setNodes, setEdges, undoRedo]);
 
   useEffect(() => {
     const handleCopy = (event) => {
