@@ -3130,9 +3130,11 @@ function Flow() {
             <button className="btn" onClick={copySnapshot} title="Copy workflow screenshot to clipboard">
               ⎘ Snapshot
             </button>
-            <button className="btn" onClick={uploadPlugin} title="Upload a plugin (.py)">
-              ⊕ Plugin
-            </button>
+            {window.pywebview && (
+              <button className="btn" onClick={uploadPlugin} title="Upload a plugin (.py)">
+                ⊕ Plugin
+              </button>
+            )}
           </div>
 
           <div className={`status-bar ${status.level}`}>{status.text}</div>
