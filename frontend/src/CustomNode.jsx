@@ -165,7 +165,7 @@ function GroupNode({ id, data }) {
         </div>
       </div>
 
-      <div className="node-body">
+      <div className="node-body drag-handle">
         {collapsed ? (
           <>
             {Array.from({ length: maxRows }, (_, index) => {
@@ -1192,7 +1192,7 @@ function CustomNode({ id, data }) {
         {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
       </div>
 
-      <div className="node-body">
+      <div className="node-body drag-handle">
         {topWidgets.length > 0 && (
           <div className="top-widget-section">
             {topWidgets.map((w) => {
