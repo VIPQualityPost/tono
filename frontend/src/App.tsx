@@ -2123,8 +2123,16 @@ function Flow() {
   const applyMaybePackedWorkflow = useCallback(async (data: any) => {
     if (data.packed && data.packedFiles) {
       setStatus({ text: 'Unpacking files…', level: 'info' });
-      const { workflow, restoredPaths } = await unpackWorkflow(data);
-      applyWorkflowData(workflow, { preservedPaths: restoredPaths });
+      try {
+        const { workflow, restoredPaths } = await unpackWorkflow(data);
+        applyWorkflowData(workflow, { preservedPaths: restoredPaths });
+      } catch {
+        // Unpack failed (e.g. stale session) — load the workflow without file restoration
+        const { packedFiles: _, packed: __, ...cleanWorkflow } = data;
+        applyWorkflowData(cleanWorkflow);
+        setStatus({ text: 'Workflow loaded but packed files could not be restored. Re-browse your input files.', level: 'error' });
+        return;
+      }
     } else {
       applyWorkflowData(data);
     }
@@ -2447,8 +2455,8 @@ function Flow() {
         }
         await applyMaybePackedWorkflow(data);
         setStatus({ text: 'Workflow loaded.', level: 'info' });
-      } catch {
-        setStatus({ text: 'Invalid workflow file.', level: 'error' });
+      } catch (err: any) {
+        setStatus({ text: 'Failed to load workflow: ' + (err?.message || 'unknown error'), level: 'error' });
       }
     };
     input.click();
