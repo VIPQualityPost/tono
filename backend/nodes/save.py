@@ -10,7 +10,10 @@ import tempfile
 
 from backend.node_registry import register_node
 from backend.execution_context import emit_warning, emit_file_download
-from backend.data_types import DataField, LineData, MeshModel, datafield_to_uint8, image_to_uint8
+from backend.data_types import (
+    DataField, LineData, MeshModel, datafield_to_uint8, image_to_uint8,
+    _SI_PREFIXES, _PREFIXABLE_UNITS,
+)
 
 DOWNLOAD_DIR = Path(tempfile.gettempdir()) / "tono-downloads"
 
@@ -223,8 +226,35 @@ class Save:
         pw = w - margin["left"] - margin["right"]
         ph = h - margin["top"] - margin["bottom"]
 
+        def _si_scale(unit: str, vmin: float, vmax: float) -> tuple[float, str]:
+            """Pick the best SI prefix for an axis range. Returns (divisor, prefixed_unit)."""
+            unit = (unit or "").strip()
+            if not unit or unit not in _PREFIXABLE_UNITS:
+                return 1.0, unit if unit else ""
+            peak = max(abs(vmin), abs(vmax))
+            if peak == 0:
+                return 1.0, unit
+            for scale, prefix in _SI_PREFIXES:
+                if peak / scale >= 1.0:
+                    return scale, f"{prefix}{unit}"
+            return _SI_PREFIXES[-1][0], f"{_SI_PREFIXES[-1][1]}{unit}"
+
         xmin, xmax = float(np.nanmin(x)), float(np.nanmax(x))
         ymin, ymax = float(np.nanmin(y)), float(np.nanmax(y))
+
+        x_scale, x_label = _si_scale(x_unit, xmin, xmax)
+        y_scale, y_label = _si_scale(y_unit, ymin, ymax)
+        if not x_label:
+            x_label = "x"
+        if not y_label:
+            y_label = "y"
+
+        # Scale data into prefixed units
+        x = x / x_scale
+        y = y / y_scale
+        xmin, xmax = xmin / x_scale, xmax / x_scale
+        ymin, ymax = ymin / y_scale, ymax / y_scale
+
         if ymax == ymin:
             ymin, ymax = ymin - 1, ymax + 1
         if xmax == xmin:
@@ -266,10 +296,6 @@ class Save:
             [margin["left"], margin["top"], margin["left"] + pw, margin["top"] + ph],
             outline=(100, 100, 100), width=1,
         )
-
-        # Axis labels
-        x_label = x_unit if x_unit else "x"
-        y_label = y_unit if y_unit else "y"
         draw.text((margin["left"] + pw // 2, h - 10), x_label, fill=text_color, font=font, anchor="mb")
         # Vertical y label — draw rotated
         y_label_img = Image.new("RGBA", (200, 20), (0, 0, 0, 0))
