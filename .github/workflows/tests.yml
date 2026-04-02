@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
 
       - name: Install Python dependencies
@@ -35,7 +35,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Run frontend lint
-        run: npm run lint
+        run: cd frontend && npm run lint
 
       - name: Run frontend tests
         run: npm run test
