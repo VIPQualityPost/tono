@@ -897,6 +897,7 @@ function Flow() {
   const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
   const [helpTabs, setHelpTabs] = useState<{ label: string; type?: string; content: string | null }[]>([]);
   const [activeHelpTab, setActiveHelpTab] = useState<string | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ latest: string; url: string } | null>(null);
 
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const panTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -917,6 +918,19 @@ function Flow() {
   const pendingUndoSnapshotRef = useRef<{ nodes: TonoNode[]; edges: TonoEdge[]; nextId: number } | null>(null);
   const reactFlow = useReactFlow<TonoNode, TonoEdge>() as ReturnType<typeof useReactFlow<TonoNode, TonoEdge>> & { updateNodeInternals: (id: string) => void };
   const undoRedo = useUndoRedo();
+
+  // ── Update check (native builds only) ──────────────────────────────
+  useEffect(() => {
+    if (!(window as any).pywebview) return;
+    fetch('/check-update')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.update_available && data.latest) {
+          setUpdateInfo({ latest: data.latest, url: data.url });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const scheduleAutoRun = useCallback(() => {
     if (autoRunTimer.current) clearTimeout(autoRunTimer.current);
@@ -3178,6 +3192,15 @@ function Flow() {
 
           <div className={`status-bar ${status.level}`}>{status.text}</div>
         </div>
+
+        {updateInfo && (
+          <div className="update-banner">
+            tono {updateInfo.latest} is available.
+            {' '}
+            <a href={updateInfo.url} target="_blank" rel="noopener noreferrer">Download</a>
+            <button className="update-banner-dismiss" onClick={() => setUpdateInfo(null)} title="Dismiss">✕</button>
+          </div>
+        )}
 
         {/* React Flow canvas */}
         <div

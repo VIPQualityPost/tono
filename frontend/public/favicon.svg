@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
-   sodipodi:docname="argonode.svg"
+   sodipodi:docname="favicon.svg"
    inkscape:export-filename="tono.png"
    inkscape:export-xdpi="130.05"
    inkscape:export-ydpi="130.05"
@@ -49,28 +49,17 @@
        height="194.43169"
        x="2.5203834"
        y="2.9819231"
-       rx="52.916668"
-       ry="52.916668" />
+       rx="97.484589"
+       ry="97.215843" />
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:8.251;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 80.438549,119.47945 85.556771,-87.012984 4.46561,16.665896 -16.7032,-4.47561"
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:9.87521;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="M 62.915486,149.85992 165.31436,45.718188 l 5.34467,19.946625 -19.99127,-5.356646"
        id="path6"
        sodipodi:nodetypes="cccc" />
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:3.95096;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 133.7656,68.457841 H 103.74962 L 50.836303,122.45621 80.512342,121.94367"
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:4.72872;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="M 126.74012,88.794566 H 90.815406 l -63.329451,64.628104 35.51785,-0.61344"
        id="path7"
        sodipodi:nodetypes="cccc" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:80px;line-height:0;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:2.75827;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       x="18.009901"
-       y="172.8485"
-       id="text8"><tspan
-         sodipodi:role="line"
-         id="tspan8"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:80px;font-family:Futura;-inkscape-font-specification:'Futura, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:2.75827;stroke-dasharray:none"
-         x="18.009901"
-         y="172.8485">tono</tspan></text>
   </g>
 </svg>

@@ -212,6 +212,34 @@ html, body, #root {
 .status-bar.info  { color: var(--accent-light); }
 .status-bar.error { color: var(--error-text); background: var(--error-bg); }
 
+.update-banner {
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  padding: 4px 12px;
+  font-size: 12px;
+  position: relative;
+}
+.update-banner a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.update-banner-dismiss {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  opacity: 0.7;
+}
+.update-banner-dismiss:hover { opacity: 1; }
+
 /* ── React Flow container ──────────────────────────────────────────── */
 .flow-container {
   flex: 1;
