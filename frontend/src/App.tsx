@@ -2126,6 +2126,8 @@ function Flow() {
       try {
         const { workflow, restoredPaths } = await unpackWorkflow(data);
         applyWorkflowData(workflow, { preservedPaths: restoredPaths });
+        // Auto-run after packed workflow loads so all previews populate
+        requestAnimationFrame(() => requestAnimationFrame(() => scheduleAutoRun()));
       } catch {
         // Unpack failed (e.g. stale session) — load the workflow without file restoration
         const { packedFiles: _, packed: __, ...cleanWorkflow } = data;
@@ -2136,7 +2138,7 @@ function Flow() {
     } else {
       applyWorkflowData(data);
     }
-  }, [applyWorkflowData]);
+  }, [applyWorkflowData, scheduleAutoRun]);
 
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
