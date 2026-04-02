@@ -18,6 +18,7 @@ export default defineConfig({
       '/channels': 'http://127.0.0.1:8188',
       '/upload-folder': 'http://127.0.0.1:8188',
       '/upload': 'http://127.0.0.1:8188',
+      '/download-save': 'http://127.0.0.1:8188',
       '/download': 'http://127.0.0.1:8188',
       '/file-content': 'http://127.0.0.1:8188',
       '/help-docs': { target: 'http://127.0.0.1:8188', changeOrigin: true },

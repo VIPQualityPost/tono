@@ -32,6 +32,7 @@ import asyncio
 import json
 import logging
 import math
+import secrets
 import sys
 from collections import defaultdict
 from copy import deepcopy
@@ -139,6 +140,7 @@ def create_app(
 
     session_engines: dict[str, ExecutionEngine] = {}
     session_websockets: dict[str, set[web.WebSocketResponse]] = defaultdict(set)
+    pending_downloads: dict[str, Path] = {}
 
     def _is_link(value) -> bool:
         return (
@@ -253,6 +255,12 @@ def create_app(
 
     def on_warning(session_id: str, node_id: str, message: str) -> None:
         broadcast(session_id, {"type": "node_warning", "data": {"node_id": node_id, "message": message}})
+
+    def on_file_download(session_id: str, node_id: str, file_path: str) -> None:
+        token = secrets.token_urlsafe(16)
+        path = Path(file_path)
+        pending_downloads[token] = path
+        broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name}})
 
     async def index(request: web.Request) -> web.Response:
         if not getattr(sys, "frozen", False):
@@ -470,6 +478,16 @@ def create_app(
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
+    async def download_saved_file(request: web.Request) -> web.Response:
+        token = request.match_info["token"]
+        path = pending_downloads.pop(token, None)
+        if path is None or not path.is_file():
+            raise web.HTTPNotFound(reason="File not found")
+        return web.FileResponse(
+            path,
+            headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
+        )
+
     async def save_workflow_png(request: web.Request) -> web.Response:
         body = await request.read()
         target_path = request.query.get("path", "")
@@ -535,6 +553,7 @@ def create_app(
                         on_overlay=lambda node_id, overlay_data: on_overlay(session_id, node_id, overlay_data),
                         on_value=lambda node_id, payload: on_value(session_id, node_id, payload),
                         on_warning=lambda node_id, message: on_warning(session_id, node_id, message),
+                        on_file_download=lambda node_id, file_path: on_file_download(session_id, node_id, file_path),
                     ),
                 )
                 broadcast(session_id, {"type": "execution_complete", "data": {"prompt_id": prompt_id}})
@@ -627,6 +646,7 @@ def create_app(
     app.router.add_get("/help-docs", get_help_docs)
     app.router.add_get("/help-docs/{filename}", get_help_doc_file)
     app.router.add_post("/prompt", submit_prompt)
+    app.router.add_get("/download-save/{token}", download_saved_file)
     app.router.add_get("/check-update", check_update)
     app.router.add_get("/ws", websocket_handler)
 

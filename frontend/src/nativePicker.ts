@@ -1,9 +1,18 @@
-const FILE_ACCEPT = [
+const SUPPORTED_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp',
   '.npy', '.npz',
   '.gwy', '.sxm', '.ibw',
+  '.h5', '.hdf5',
   '.ttf', '.otf', '.woff', '.woff2',
-].join(',');
+]);
+
+const FILE_ACCEPT = [...SUPPORTED_EXTENSIONS].join(',');
+
+function hasSupportedExtension(name: string): boolean {
+  const dot = name.lastIndexOf('.');
+  if (dot < 0) return false;
+  return SUPPORTED_EXTENSIONS.has(name.slice(dot).toLowerCase());
+}
 
 function normalizeRelativePath(path: string) {
   return String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
@@ -48,6 +57,7 @@ async function collectDirectoryEntries(handle: FileSystemDirectoryHandle, prefix
   for await (const [name, child] of (handle as any).entries()) {
     const relativePath = prefix ? `${prefix}/${name}` : name;
     if (child.kind === 'file') {
+      if (!hasSupportedExtension(name)) continue;
       const file = await child.getFile();
       entries.push({ file, relativePath: normalizeRelativePath(relativePath) });
       continue;
@@ -108,7 +118,9 @@ export async function pickNativeDirectorySelection() {
     return null;
   }
 
-  const files = await pickWithInput({ directory: true });
+  const allFiles = await pickWithInput({ directory: true });
+  if (allFiles.length === 0) return null;
+  const files = allFiles.filter((f) => hasSupportedExtension(f.name));
   if (files.length === 0) return null;
   const entries = files.map((file: File) => ({
     file,

@@ -6,9 +6,13 @@ from pathlib import Path
 
 import numpy as np
 
+import tempfile
+
 from backend.node_registry import register_node
-from backend.execution_context import emit_warning
+from backend.execution_context import emit_warning, emit_file_download
 from backend.data_types import DataField, LineData, MeshModel, datafield_to_uint8, image_to_uint8
+
+DOWNLOAD_DIR = Path(tempfile.gettempdir()) / "tono-downloads"
 
 @register_node(display_name="Save")
 class Save:
@@ -20,13 +24,6 @@ class Save:
                     "default": "",
                     "placeholder": "filename",
                     "placement": "top",
-                }),
-                "directory_path": ("FOLDER_PICKER", {
-                    "default": "",
-                    "label": "directory",
-                    "placement": "top",
-                    "hide_when_input_connected": "directory",
-                    "top_socket_input": "directory",
                 }),
                 "value": ("DATA_FIELD", {
                     "label": "value",
@@ -56,11 +53,11 @@ class Save:
                 }),
             },
             "optional": {
-                "directory": ("DIRECTORY", {"label": "directory"}),
                 "plot_title": ("STRING", {
                     "default": "",
                     "placeholder": "plot title (optional)",
                     "label": "title",
+                    "show_when_source_type": {"value": ["LINE"]},
                 }),
             },
         }
@@ -80,13 +77,11 @@ class Save:
     def save(
         self,
         filename: str,
-        directory_path: str,
         format: str,
         value,
-        directory: str | None = None,
         plot_title: str = "",
     ):
-        path = self._resolve_save_path(filename, format, directory, directory_path)
+        path = self._resolve_save_path(filename, format)
 
         if isinstance(value, MeshModel):
             self._save_mesh(path, value, format)
@@ -107,15 +102,10 @@ class Save:
             raise ValueError(f"Save does not support input type: {type(value).__name__}")
 
         self._send_warning(f"Saved to {path.name}")
+        emit_file_download(str(path))
         return ()
 
-    def _resolve_save_path(
-        self,
-        filename: str,
-        format_name: str,
-        directory: str | None,
-        directory_path: str = "",
-    ) -> Path:
+    def _resolve_save_path(self, filename: str, format_name: str) -> Path:
         ext_map = {
             "PNG": ".png",
             "TIFF": ".tiff",
@@ -129,25 +119,16 @@ class Save:
         ext = ext_map[format_name]
 
         raw_filename = str(filename).strip() if filename is not None else ""
-        raw_directory = str(directory).strip() if directory is not None else ""
-        if not raw_directory:
-            raw_directory = str(directory_path).strip() if directory_path is not None else ""
-
         if not raw_filename:
             raise ValueError("No output filename selected — enter a file name.")
 
-        if raw_directory:
-            dir_path = Path(raw_directory).expanduser()
-            if dir_path.exists() and not dir_path.is_dir():
-                raise ValueError("Directory input expects a folder path, not a file path.")
-            if not dir_path.exists():
-                if dir_path.suffix:
-                    raise ValueError("Directory input expects a folder path, not a file path.")
-                dir_path.mkdir(parents=True, exist_ok=True)
-            path = dir_path / Path(raw_filename).name
+        candidate = Path(raw_filename).expanduser()
+        if candidate.is_absolute():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            path = candidate
         else:
-            path = Path(raw_filename).expanduser()
-            path.parent.mkdir(parents=True, exist_ok=True)
+            DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            path = DOWNLOAD_DIR / candidate.name
 
         if path.suffix.lower() != ext:
             path = path.with_suffix(ext)
@@ -156,7 +137,7 @@ class Save:
     def _save_datafield(self, path: Path, field: DataField, format_name: str):
         if format_name == "TIFF":
             import tifffile
-            tifffile.imwrite(str(path), np.asarray(field.data, dtype=np.float32))
+            tifffile.imwrite(str(path), datafield_to_uint8(field, field.colormap))
             return
         if format_name == "NPZ":
             np.savez(str(path), field=np.asarray(field.data))

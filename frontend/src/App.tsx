@@ -906,6 +906,7 @@ function Flow() {
   const nextIdRef = useRef(1);
   const autoRunTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoRunRef = useRef<(() => void) | null>(null);
+  const pendingBrowserFilesRef = useRef<Map<string, File>>(new Map());
   const defaultWorkflowLoadAttemptedRef = useRef(false);
   const lastPastedClipboardTextRef = useRef('');
   const pasteRepeatCountRef = useRef(0);
@@ -1305,7 +1306,34 @@ function Flow() {
   }, [getResolvedPathInput, reactFlow, setNodeOutputs]);
 
   const refreshFolderNodeOutputs = useCallback(async (nodeId: string, folderPath: any) => {
-    const entries = folderPath ? await api.getFolderFiles(folderPath) : [];
+    let entries: any[] = [];
+
+    if (folderPath) {
+      // Check for pending browser files first (folder was picked but files not yet uploaded)
+      const prefix = String(folderPath).endsWith('/') ? String(folderPath) : String(folderPath) + '/';
+      const pendingEntries: any[] = [];
+      for (const uri of pendingBrowserFilesRef.current.keys()) {
+        if (uri.startsWith(prefix)) {
+          const name = uri.slice(prefix.length);
+          // Skip files in subdirectories for the top-level listing
+          if (!name.includes('/')) {
+            pendingEntries.push({ name, type: 'FILE_PATH', path: uri });
+          }
+        }
+      }
+
+      if (pendingEntries.length > 0) {
+        // Build listing locally from pending files
+        entries = [
+          { name: 'directory', type: 'DIRECTORY', path: folderPath },
+          ...pendingEntries.sort((a: any, b: any) => a.name.localeCompare(b.name)),
+        ];
+      } else {
+        // Fall back to server (native builds, or files already uploaded)
+        entries = await api.getFolderFiles(folderPath);
+      }
+    }
+
     setNodeOutputs(
       nodeId,
       entries.map((entry: any) => entry.type),
@@ -1407,6 +1435,24 @@ function Flow() {
         case 'node_warning':
           updateNodeData(msg.data.node_id, { warning: msg.data.message });
           break;
+        case 'file_download': {
+          const dlToken = msg.data.token;
+          const dlFilename = msg.data.filename || 'download';
+          fetch(`/download-save/${encodeURIComponent(dlToken)}`)
+            .then((r) => r.ok ? r.blob() : Promise.reject(new Error(`Download failed: ${r.status}`)))
+            .then((blob) => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = dlFilename;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            })
+            .catch((err) => setStatus({ text: String(err.message), level: 'error' }));
+          break;
+        }
         case 'nodes_updated':
           api.getNodes().then((defs) => {
             nodeDefsRef.current = defs;
@@ -1675,16 +1721,21 @@ function Flow() {
         throw new Error('Selected folder is empty or could not be read.');
       }
 
+      const folder = await api.createUploadFolder(rootName);
+      const folderUri = folder.path; // e.g. "session://uploads/myfolder"
+
+      // Store File objects for lazy upload — only uploaded when actually used
+      for (const entry of selection.entries || []) {
+        const fileUri = `session://uploads/${entry.relativePath}`;
+        pendingBrowserFilesRef.current.set(fileUri, entry.file);
+      }
+
       setStatus({
-        text: `Importing folder "${rootName}" into this session…`,
+        text: `Folder "${rootName}" loaded (${(selection.entries || []).length} files).`,
         level: 'info',
       });
 
-      const folder = await api.createUploadFolder(rootName);
-      for (const entry of selection.entries || []) {
-        await api.uploadFile(entry.file, { relativePath: entry.relativePath });
-      }
-      return folder.path;
+      return folderUri;
     }
 
     const [entry] = selection.entries || [];
@@ -1729,19 +1780,63 @@ function Flow() {
     }
   }, [uploadBrowserSelection]);
 
+  // ── Lazy upload of pending browser files ─────────────────────────────
+
+  const uploadPendingFiles = useCallback(async (prompt: Record<string, any>) => {
+    const pending = pendingBrowserFilesRef.current;
+    if (pending.size === 0) return;
+
+    // Collect all string values from the prompt (folder paths and file paths)
+    const promptValues = new Set<string>();
+    for (const nodeData of Object.values(prompt)) {
+      const inputs = (nodeData as any)?.inputs;
+      if (!inputs || typeof inputs !== 'object') continue;
+      for (const val of Object.values(inputs)) {
+        if (typeof val === 'string') promptValues.add(val);
+      }
+    }
+
+    // Upload files that are directly referenced OR inside a referenced folder
+    const toUpload = new Set<string>();
+    for (const uri of pending.keys()) {
+      if (promptValues.has(uri)) {
+        toUpload.add(uri);
+        continue;
+      }
+      // Check if any prompt value is a folder prefix of this file
+      for (const pv of promptValues) {
+        const prefix = pv.endsWith('/') ? pv : pv + '/';
+        if (uri.startsWith(prefix)) {
+          toUpload.add(uri);
+          break;
+        }
+      }
+    }
+
+    for (const uri of toUpload) {
+      const file = pending.get(uri)!;
+      const relativePath = uri.replace(/^session:\/\/uploads\//, '');
+      await api.uploadFile(file, { relativePath });
+      pending.delete(uri);
+    }
+  }, []);
+
   // ── Node context value (stable) ─────────────────────────────────────
 
-  const onManualTrigger = useCallback((nodeId: string) => {
+  const onManualTrigger = useCallback(async (nodeId: string) => {
     const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
     // Include ALL nodes (no excludeManualTrigger) so the save node is in the prompt
     const prompt = serializeExecutionGraph(currentNodes, currentEdges);
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Saving…', level: 'info' });
-    api.runPrompt(prompt).catch((err) => {
+    try {
+      await uploadPendingFiles(prompt);
+      await api.runPrompt(prompt);
+    } catch (err: any) {
       setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
-    });
-  }, [reactFlow]);
+    }
+  }, [reactFlow, uploadPendingFiles]);
 
   const openJournalTab = useCallback(() => {
     setHelpTabs((prev) => {
@@ -1874,11 +1969,12 @@ function Flow() {
     }
     setStatus({ text: 'Running…', level: 'info' });
     try {
+      await uploadPendingFiles(prompt);
       await api.runPrompt(prompt);
     } catch (err: any) {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     }
-  }, [reactFlow]);
+  }, [reactFlow, uploadPendingFiles]);
 
   // Debounced auto-run via ref to avoid dependency chains
   autoRunRef.current = () => {
@@ -1895,7 +1991,7 @@ function Flow() {
     const prompt = serializeExecutionGraph(currentNodes, currentEdges, { excludeManualTrigger: true });
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Running…', level: 'info' });
-    api.runPrompt(prompt).catch((err) => {
+    uploadPendingFiles(prompt).then(() => api.runPrompt(prompt)).catch((err) => {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     });
   };

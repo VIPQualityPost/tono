@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 
 from backend.node_registry import register_node
-from backend.execution_context import emit_warning
+from backend.execution_context import emit_warning, emit_file_download
 from backend.data_types import DataField, image_to_uint8
 from backend.nodes.helpers import _MAX_SAVE_FIELDS
 
@@ -35,9 +35,10 @@ class SaveImage:
                     "placeholder": "filename",
                     "placement": "top",
                 }),
-                "directory_path": ("FOLDER_PICKER", {
+                "directory_path": ("STRING", {
                     "default": "",
                     "label": "directory",
+                    "placeholder": "directory (optional, desktop only)",
                     "placement": "top",
                     "hide_when_input_connected": "directory",
                     "top_socket_input": "directory",
@@ -92,6 +93,7 @@ class SaveImage:
             self._save_npz(path, layers, layer_names)
 
         self._send_warning(f"Saved {len(layers)} layer(s) to {path.name}")
+        emit_file_download(str(path))
         return ()
 
     def _save_tiff(self, path: Path, layers: list[DataField | np.ndarray], layer_names: list[str]):
@@ -140,9 +142,15 @@ class SaveImage:
             path = dir_path / filename_part
         else:
             if not raw_filename:
-                raise ValueError("No output path selected — use Browse to pick a location.")
-            path = Path(raw_filename).expanduser()
-            path.parent.mkdir(parents=True, exist_ok=True)
+                raise ValueError("No output filename selected — enter a file name.")
+            candidate = Path(raw_filename).expanduser()
+            if candidate.is_absolute():
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                path = candidate
+            else:
+                from backend.nodes.save import DOWNLOAD_DIR
+                DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                path = DOWNLOAD_DIR / candidate.name
 
         if path.suffix.lower() != ext:
             path = path.with_suffix(ext)

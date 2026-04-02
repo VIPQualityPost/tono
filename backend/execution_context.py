@@ -20,6 +20,7 @@ _LEGACY_CALLBACK_ATTRS = {
     "overlay": "_broadcast_overlay_fn",
     "value": "_broadcast_value_fn",
     "warning": "_broadcast_warning_fn",
+    "file_download": "_broadcast_file_download_fn",
 }
 
 
@@ -32,6 +33,7 @@ def execution_callbacks(
     overlay: Callback | None = None,
     value: Callback | None = None,
     warning: Callback | None = None,
+    file_download: Callback | None = None,
 ):
     token = _callbacks_var.set({
         "preview": preview,
@@ -40,6 +42,7 @@ def execution_callbacks(
         "overlay": overlay,
         "value": value,
         "warning": warning,
+        "file_download": file_download,
     })
     try:
         yield
@@ -120,3 +123,7 @@ def emit_value(payload: Any) -> None:
 
 def emit_warning(message: str) -> None:
     _emit("warning", message)
+
+
+def emit_file_download(path: str) -> None:
+    _emit("file_download", path)

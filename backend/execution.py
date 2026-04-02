@@ -70,6 +70,7 @@ class ExecutionEngine:
         on_overlay: Callable[[str, str], None] | None = None,
         on_value: Callable[[str, Any], None] | None = None,
         on_warning: Callable[[str, str], None] | None = None,
+        on_file_download: Callable[[str, str], None] | None = None,
     ) -> dict[str, tuple]:
         """
         Execute the workflow described by `prompt`.
@@ -100,6 +101,7 @@ class ExecutionEngine:
             overlay=on_overlay,
             value=on_value,
             warning=on_warning,
+            file_download=on_file_download,
         ):
             for node_id in order:
                 node_def = prompt[node_id]
