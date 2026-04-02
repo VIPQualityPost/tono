@@ -218,22 +218,91 @@ class Save:
         title: str,
         format_name: str,
     ):
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+        from PIL import Image, ImageDraw, ImageFont
 
-        fig, ax = plt.subplots(figsize=(8, 5), dpi=150)
-        ax.plot(x, y, linewidth=1.2, color="#4f8ef7")
-        ax.set_xlabel(x_unit if x_unit else "x")
-        ax.set_ylabel(y_unit if y_unit else "y")
+        w, h = 1200, 750
+        bg = (255, 255, 255)
+        line_color = (79, 142, 247)  # #4f8ef7
+        grid_color = (200, 200, 200)
+        text_color = (60, 60, 60)
+        margin = {"left": 80, "right": 30, "top": 50, "bottom": 60}
+
+        img = Image.new("RGB", (w, h), bg)
+        draw = ImageDraw.Draw(img)
+
+        try:
+            font = ImageFont.truetype("DejaVuSans.ttf", 14)
+            font_small = ImageFont.truetype("DejaVuSans.ttf", 11)
+            font_title = ImageFont.truetype("DejaVuSans.ttf", 16)
+        except (OSError, IOError):
+            font = ImageFont.load_default()
+            font_small = font
+            font_title = font
+
+        pw = w - margin["left"] - margin["right"]
+        ph = h - margin["top"] - margin["bottom"]
+
+        xmin, xmax = float(np.nanmin(x)), float(np.nanmax(x))
+        ymin, ymax = float(np.nanmin(y)), float(np.nanmax(y))
+        if ymax == ymin:
+            ymin, ymax = ymin - 1, ymax + 1
+        if xmax == xmin:
+            xmax = xmin + 1
+        # Add 5% padding to y range
+        ypad = (ymax - ymin) * 0.05
+        ymin -= ypad
+        ymax += ypad
+
+        def to_px(xv: float, yv: float) -> tuple[float, float]:
+            px = margin["left"] + (xv - xmin) / (xmax - xmin) * pw
+            py = margin["top"] + (1.0 - (yv - ymin) / (ymax - ymin)) * ph
+            return px, py
+
+        # Grid lines (5 horizontal, 5 vertical)
+        for i in range(6):
+            gy = ymin + (ymax - ymin) * i / 5
+            _, py = to_px(xmin, gy)
+            draw.line([(margin["left"], py), (margin["left"] + pw, py)], fill=grid_color, width=1)
+            label = f"{gy:.4g}"
+            draw.text((margin["left"] - 8, py - 6), label, fill=text_color, font=font_small, anchor="rm")
+
+            gx = xmin + (xmax - xmin) * i / 5
+            px, _ = to_px(gx, ymin)
+            draw.line([(px, margin["top"]), (px, margin["top"] + ph)], fill=grid_color, width=1)
+            label = f"{gx:.4g}"
+            draw.text((px, margin["top"] + ph + 6), label, fill=text_color, font=font_small, anchor="mt")
+
+        # Plot line
+        n = len(y)
+        step = max(1, n // pw)
+        xs, ys = x[::step], y[::step]
+        pts = [to_px(float(xs[i]), float(ys[i])) for i in range(len(xs))]
+        if len(pts) > 1:
+            draw.line(pts, fill=line_color, width=2)
+
+        # Border
+        draw.rectangle(
+            [margin["left"], margin["top"], margin["left"] + pw, margin["top"] + ph],
+            outline=(100, 100, 100), width=1,
+        )
+
+        # Axis labels
+        x_label = x_unit if x_unit else "x"
+        y_label = y_unit if y_unit else "y"
+        draw.text((margin["left"] + pw // 2, h - 10), x_label, fill=text_color, font=font, anchor="mb")
+        # Vertical y label — draw rotated
+        y_label_img = Image.new("RGBA", (200, 20), (0, 0, 0, 0))
+        y_draw = ImageDraw.Draw(y_label_img)
+        y_draw.text((100, 10), y_label, fill=text_color, font=font, anchor="mm")
+        y_label_img = y_label_img.rotate(90, expand=True)
+        img.paste(y_label_img, (2, margin["top"] + ph // 2 - y_label_img.height // 2), y_label_img)
+
+        # Title
         if title and title.strip():
-            ax.set_title(title.strip())
-        ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
-        fig.tight_layout()
+            draw.text((w // 2, 10), title.strip(), fill=text_color, font=font_title, anchor="mt")
 
         ext = ".png" if format_name == "PNG" else ".tiff"
-        fig.savefig(str(path.with_suffix(ext)), format=format_name.lower(), dpi=150)
-        plt.close(fig)
+        img.save(str(path.with_suffix(ext)))
 
     def _save_table(self, path: Path, rows: list, format_name: str):
         if format_name == "JSON":

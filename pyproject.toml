@@ -13,7 +13,6 @@ dependencies = [
     "gwyfile>=0.2",
     "h5py>=3.10,<4",
     "igor>=0.3",
-    "matplotlib>=3.8,<4",
     "nanonispy>=1.1",
     "numpy>=1.26,<3",
     "pillow>=10,<12",

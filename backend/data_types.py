@@ -240,9 +240,7 @@ def colormap_to_uint8(normalized: np.ndarray, colormap: Any = "gray") -> np.ndar
         return rgb.reshape(normalized.shape + (3,))
 
     cmap_name = spec["preset"] if isinstance(spec, dict) else spec
-    cmap = _get_colormap(cmap_name)
-    rgba = cmap(normalized)
-    return (rgba[:, :, :3] * 255).astype(np.uint8)
+    return _apply_named_colormap(normalized, cmap_name)
 
 @dataclass
 class DataField:
@@ -359,7 +357,7 @@ def normalize_for_colormap(
 
 def datafield_to_uint8(df: DataField, colormap: Any = "gray") -> np.ndarray:
     """
-    Normalize a DataField to a uint8 (H, W, 3) RGB array using matplotlib colormap.
+    Normalize a DataField to a uint8 (H, W, 3) RGB array using a colormap.
     Returns shape (H, W, 3) uint8.
     """
     normalized = normalize_for_colormap(
@@ -1117,7 +1115,9 @@ def encode_preview(arr: np.ndarray) -> str:
     return f"data:image/png;base64,{b64}"
 
 
-@lru_cache(maxsize=len(COLORMAPS))
-def _get_colormap(colormap: str):
-    from matplotlib import colormaps
-    return colormaps[colormap]
+def _apply_named_colormap(normalized: np.ndarray, name: str) -> np.ndarray:
+    """Map a [0, 1] float array to (H, W, 3) uint8 via a baked 256-entry LUT."""
+    from backend.baked_colormaps import get_colormap_lut
+    lut = get_colormap_lut(name)  # (256, 3) uint8
+    indices = np.rint(np.clip(normalized, 0.0, 1.0) * 255.0).astype(np.uint8)
+    return lut[indices.ravel()].reshape(normalized.shape + (3,))

@@ -575,9 +575,7 @@ class ExecutionEngine:
         try:
             import base64
             import io as _io
-            import matplotlib
-            matplotlib.use("Agg")
-            import matplotlib.pyplot as plt
+            from PIL import Image, ImageDraw
 
             y_meta = y if isinstance(y, LineData) else None
             y = np.asarray(y, dtype=np.float64).ravel()
@@ -588,19 +586,32 @@ class ExecutionEngine:
             else:
                 x = np.asarray(x, dtype=np.float64).ravel()[:len(y)]
 
-            fig, ax = plt.subplots(figsize=(3.2, 1.8), dpi=100)
-            fig.patch.set_facecolor("#1e293b")
-            ax.set_facecolor("#0f172a")
-            ax.plot(x, y, color="#ff9800", linewidth=1.2)
-            ax.tick_params(colors="#94a3b8", labelsize=7)
-            for spine in ax.spines.values():
-                spine.set_color("#334155")
-            ax.grid(True, color="#334155", linewidth=0.3, alpha=0.5)
-            fig.tight_layout(pad=0.4)
-
+            # Render a small fallback thumbnail with Pillow
+            w, h = 320, 180
+            pad = 12
+            img = Image.new("RGB", (w, h), (15, 23, 42))  # #0f172a
+            draw = ImageDraw.Draw(img)
+            n = len(y)
+            if n > 1:
+                ymin, ymax = float(np.nanmin(y)), float(np.nanmax(y))
+                xmin, xmax = float(np.nanmin(x)), float(np.nanmax(x))
+                if ymax == ymin:
+                    ymin, ymax = ymin - 1, ymax + 1
+                if xmax == xmin:
+                    xmax = xmin + 1
+                pw, ph = w - 2 * pad, h - 2 * pad
+                # Downsample if more points than pixels
+                step = max(1, n // pw)
+                xs = x[::step]
+                ys = y[::step]
+                pts = [
+                    (pad + (float(xs[i]) - xmin) / (xmax - xmin) * pw,
+                     pad + (1.0 - (float(ys[i]) - ymin) / (ymax - ymin)) * ph)
+                    for i in range(len(xs))
+                ]
+                draw.line(pts, fill=(255, 152, 0), width=2)  # #ff9800
             buf = _io.BytesIO()
-            fig.savefig(buf, format="png", facecolor=fig.get_facecolor())
-            plt.close(fig)
+            img.save(buf, format="PNG")
             fallback_image = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
 
             result_dict = {
