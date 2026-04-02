@@ -42,22 +42,20 @@ def test_rotate_field():
 def test_rotate_field_overlay_warning():
     from backend.nodes.rotate import RotateField
 
+    from backend.execution_context import execution_callbacks, active_node
     node = RotateField()
     warnings = []
-    RotateField._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
-    RotateField._current_node_id = "test"
 
     field = DataField(
         data=np.arange(16, dtype=np.float64).reshape(4, 4),
         overlays=[{"kind": "markup", "shapes": [{"kind": "line", "x1": 0.1, "y1": 0.1, "x2": 0.9, "y2": 0.9, "width": 2, "color": "#ffffff"}]}],
     )
 
-    rotated, = node.process(field, angle=30.0, interpolation="bilinear", expand_canvas=True)
-    assert rotated.overlays == []
-    assert len(warnings) == 1
-    assert "clears annotation/markup overlays" in warnings[0]
-
-    RotateField._broadcast_warning_fn = None
+    with execution_callbacks(warning=lambda nid, msg: warnings.append(msg)), active_node("test"):
+        rotated, = node.process(field, angle=30.0, interpolation="bilinear", expand_canvas=True)
+        assert rotated.overlays == []
+        assert len(warnings) == 1
+        assert "clears annotation/markup overlays" in warnings[0]
 
 
 def test_rotate_unknown_interpolation():

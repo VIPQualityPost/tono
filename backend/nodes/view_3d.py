@@ -148,9 +148,6 @@ class View3D:
         "Drag to rotate, middle-drag to pan, and right-drag or scroll to zoom. z_scale exaggerates height."
     )
 
-    _broadcast_mesh_fn = None
-    _current_node_id: str = ""
-
     def render(
         self, field: DataField,
         colormap: str, z_scale: float, resolution: int, make_solid: bool = False,

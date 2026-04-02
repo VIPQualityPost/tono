@@ -74,9 +74,6 @@ class Save:
         "Save a single graph value to disk. Supports fields, images, lines, tables, scalars, and 3D meshes."
     )
 
-    _broadcast_warning_fn = None
-    _current_node_id = None
-
     def save(
         self,
         filename: str,

@@ -30,9 +30,6 @@ class FFT1D:
         "Returns the FFT spectrum of the line, and identifies peaks."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(
             self, profile,
     ) -> tuple:

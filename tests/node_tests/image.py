@@ -126,12 +126,13 @@ def test_load_file_unsupported():
 
 def test_load_file_warning():
     from backend.nodes.image import Image as ImageNode
+    from backend.execution_context import execution_callbacks, active_node
     node = ImageNode()
     warnings = []
-    ImageNode._broadcast_warning_fn = lambda nid, msg: warnings.append(msg)
-    ImageNode._current_node_id = "test"
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir, \
+         execution_callbacks(warning=lambda nid, msg: warnings.append(msg)), \
+         active_node("test"):
         arr = np.random.default_rng(10).integers(0, 256, (16, 16), dtype=np.uint8)
         img = PILImage.fromarray(arr)
         path = os.path.join(tmpdir, "test.png")
@@ -141,8 +142,6 @@ def test_load_file_warning():
         assert len(result) == 2
         assert len(warnings) == 1
         assert "Uncalibrated" in warnings[0]
-
-    ImageNode._broadcast_warning_fn = None
 
 
 def test_load_file_ibw():

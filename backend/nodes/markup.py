@@ -43,9 +43,6 @@ class Markup:
         "or rasterize markup directly onto an IMAGE."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(
         self,
         input,

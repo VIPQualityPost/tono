@@ -11,23 +11,20 @@ def test_value_display():
     assert value_spec[0] == "FLOAT"
     assert value_spec[1]["accepted_types"] == ["RECORD_TABLE"]
 
+    from backend.execution_context import execution_callbacks, active_node
     captured = []
-    ValueIO._broadcast_value_fn = lambda node_id, payload: captured.append((node_id, payload))
-    ValueIO._current_node_id = "test"
+    with execution_callbacks(value=lambda nid, payload: captured.append((nid, payload))), active_node("test"):
+        result = node.display_value(value=3.25)
+        assert result == (3.25,)
+        assert captured == [("test", {"value": 3.25})]
 
-    result = node.display_value(value=3.25)
-    assert result == (3.25,)
-    assert captured == [("test", {"value": 3.25})]
-
-    measurements = RecordTable([
-        {"quantity": "delta X", "value": 1.7e-7, "unit": "m"},
-        {"quantity": "delta Y", "value": 463, "unit": "count"},
-    ])
-    result = node.display_value(value=measurements, measurement="delta X")
-    assert result == (1.7e-7,)
-    assert captured[-1] == ("test", {"value": 1.7e-7, "unit": "m"})
-
-    ValueIO._broadcast_value_fn = None
+        measurements = RecordTable([
+            {"quantity": "delta X", "value": 1.7e-7, "unit": "m"},
+            {"quantity": "delta Y", "value": 463, "unit": "count"},
+        ])
+        result = node.display_value(value=measurements, measurement="delta X")
+        assert result == (1.7e-7,)
+        assert captured[-1] == ("test", {"value": 1.7e-7, "unit": "m"})
 
 
 def test_value_display_string_input():

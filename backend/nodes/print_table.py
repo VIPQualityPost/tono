@@ -21,9 +21,6 @@ class PrintTable:
     OUTPUT_NODE = True
     DESCRIPTION = "Send a measurement or record table to the browser as a WebSocket message for display."
 
-    _broadcast_table_fn = None
-    _current_node_id: str = ""
-
     def print_table(self, table: list) -> tuple:
         emit_table(table)
         return ()

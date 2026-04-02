@@ -63,9 +63,6 @@ class SaveImage:
         "Click Save to write (does not auto-run)."
     )
 
-    _broadcast_warning_fn = None
-    _current_node_id = None
-
     def save(
         self,
         filename: str,
@@ -187,5 +184,3 @@ class SaveImage:
 
     def _send_warning(self, message: str):
         emit_warning(message)
-
-        return ()

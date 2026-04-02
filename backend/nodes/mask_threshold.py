@@ -33,9 +33,6 @@ class ThresholdMask:
         "Equivalent to Gwyddion's threshold and otsu_threshold modules."
     )
 
-    _broadcast_fn = None
-    _current_node_id: str = ""
-
     def process(self, field: DataField, method: str, threshold: float, direction: str) -> tuple:
         data = field.data
 

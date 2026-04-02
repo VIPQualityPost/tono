@@ -36,9 +36,6 @@ class Image:
         "Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields."
     )
 
-    _broadcast_warning_fn = None
-    _current_node_id = None
-
     def load(self, filename: str = "", colormap: str = "viridis", colormap_map=None, path: str | None = None):
         selected_path = str(path).strip() if path is not None else str(filename).strip()
         if not selected_path:

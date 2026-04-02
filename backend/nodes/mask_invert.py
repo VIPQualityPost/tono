@@ -28,9 +28,6 @@ class MaskInvert:
 
     DESCRIPTION = "Invert a binary mask — swap masked and unmasked regions."
 
-    _broadcast_fn = None
-    _current_node_id: str = ""
-
     def process(self, mask: np.ndarray, field: DataField | None = None) -> tuple:
         out = np.where(mask > 127, np.uint8(0), np.uint8(255))
 

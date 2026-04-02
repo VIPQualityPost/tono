@@ -37,9 +37,6 @@ class CropResizeField:
         "resizing preserves the cropped physical size."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(
         self,
         field: DataField,

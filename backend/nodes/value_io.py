@@ -41,9 +41,6 @@ class ValueIO:
 
     DESCRIPTION = "Display a FLOAT, or a selected numeric row from a measurement table, and pass the value through unchanged."
 
-    _broadcast_value_fn = None
-    _current_node_id: str = ""
-
     def display_value(self, number_input: str = "0", value=None, measurement: str = "") -> tuple:
         unit = ""
         if isinstance(value, RecordTable):

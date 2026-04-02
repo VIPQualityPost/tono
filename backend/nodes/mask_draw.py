@@ -33,9 +33,6 @@ class DrawMask:
         "and invert flips the final binary output."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(self, field: DataField, pen_size: int, invert: bool, mask_paths: str) -> tuple:
         strokes = _parse_mask_strokes(mask_paths)
         mask = _rasterize_mask(field.xres, field.yres, strokes, pen_size)

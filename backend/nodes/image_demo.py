@@ -26,9 +26,6 @@ class ImageDemo:
 
     DESCRIPTION = "Load a bundled demo file so you can try the app without providing your own data."
 
-    _broadcast_warning_fn = None
-    _current_node_id = None
-
     def load(self, name: str = "", colormap: str = "viridis", colormap_map=None):
         from backend.nodes.image import Image
         loader = Image()

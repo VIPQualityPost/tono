@@ -42,11 +42,10 @@ def test_cross_section():
     assert rows["dx"]["unit"] == field.si_unit_xy
     assert rows["dy"]["unit"] == field.si_unit_z
 
+    from backend.execution_context import execution_callbacks, active_node
     captured = []
-    Stats._broadcast_value_fn = lambda nid, payload: captured.append(payload)
-    Stats._current_node_id = "test"
-    stats = Stats()
-    mean_value, = stats.process(profile, operation="mean", column="value")
-    assert mean_value > 0
-    assert captured[-1]["unit"] == field.si_unit_z
-    Stats._broadcast_value_fn = None
+    with execution_callbacks(value=lambda nid, payload: captured.append(payload)), active_node("test"):
+        stats = Stats()
+        mean_value, = stats.process(profile, operation="mean", column="value")
+        assert mean_value > 0
+        assert captured[-1]["unit"] == field.si_unit_z

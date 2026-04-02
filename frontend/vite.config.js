@@ -5,10 +5,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    allowedHosts: ["bronchial-lorita-gorgeously.ngrok-free.dev"],
-    hmr:{
-      clientPort: 80,
-    },
     port: 5173,
     proxy: {
       '/nodes': 'http://127.0.0.1:8188',

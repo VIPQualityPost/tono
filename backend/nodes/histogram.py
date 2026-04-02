@@ -34,9 +34,6 @@ class Histogram:
         "Equivalent to gwy_data_field_dh."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(
         self,
         field: DataField,

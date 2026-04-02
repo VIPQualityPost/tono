@@ -41,9 +41,6 @@ class MaskMorphology:
         "Equivalent to Gwyddion mask_morph."
     )
 
-    _broadcast_fn = None
-    _current_node_id: str = ""
-
     def process(self, mask: np.ndarray, operation: str, radius: int, shape: str,
                 field: DataField | None = None) -> tuple:
         from scipy.ndimage import binary_closing, binary_dilation, binary_erosion, binary_opening

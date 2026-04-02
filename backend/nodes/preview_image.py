@@ -36,9 +36,6 @@ class PreviewImage:
     OUTPUT_NODE = True
     DESCRIPTION = "Display an IMAGE or DATA_FIELD as a coloured thumbnail."
 
-    _broadcast_fn = None
-    _current_node_id: str = ""
-
     def preview(
         self,
         colormap: str,

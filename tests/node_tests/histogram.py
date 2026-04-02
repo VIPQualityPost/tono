@@ -9,32 +9,29 @@ def test_height_histogram():
     data = np.linspace(0, 1, 1000).reshape(25, 40)
     field = make_field(data=data)
 
+    from backend.execution_context import execution_callbacks, active_node
     overlays = []
-    Histogram._broadcast_overlay_fn = lambda nid, data: overlays.append(data)
-    Histogram._current_node_id = "test"
-
-    table, coord_pair = node.process(field, n_bins=10, y_scale="linear", x1=0.2, y1=0.5, x2=0.8, y2=0.5)
-    assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
-    measurements = {row["quantity"]: row for row in table}
-    assert "A position" in measurements
-    assert "A count" in measurements
-    assert "B position" in measurements
-    assert "B count" in measurements
-    assert "delta X" in measurements
-    assert "delta Y" in measurements
-    assert measurements["A count"]["unit"] == "count"
-    assert measurements["B count"]["unit"] == "count"
-    assert measurements["B position"]["value"] > measurements["A position"]["value"]
-    assert len(overlays) == 1
-    assert overlays[0]["kind"] == "line_plot"
-    assert overlays[0]["section_title"] == "Histogram"
-    assert len(overlays[0]["line"]) == 10
-    assert len(overlays[0]["x_axis"]) == 10
-    assert np.isclose(overlays[0]["x1"], 0.2)
-    assert np.isclose(overlays[0]["x2"], 0.8)
-    assert np.isclose(
-        measurements["delta Y"]["value"],
-        measurements["B count"]["value"] - measurements["A count"]["value"],
-    )
-
-    Histogram._broadcast_overlay_fn = None
+    with execution_callbacks(overlay=lambda nid, data: overlays.append(data)), active_node("test"):
+        table, coord_pair = node.process(field, n_bins=10, y_scale="linear", x1=0.2, y1=0.5, x2=0.8, y2=0.5)
+        assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
+        measurements = {row["quantity"]: row for row in table}
+        assert "A position" in measurements
+        assert "A count" in measurements
+        assert "B position" in measurements
+        assert "B count" in measurements
+        assert "delta X" in measurements
+        assert "delta Y" in measurements
+        assert measurements["A count"]["unit"] == "count"
+        assert measurements["B count"]["unit"] == "count"
+        assert measurements["B position"]["value"] > measurements["A position"]["value"]
+        assert len(overlays) == 1
+        assert overlays[0]["kind"] == "line_plot"
+        assert overlays[0]["section_title"] == "Histogram"
+        assert len(overlays[0]["line"]) == 10
+        assert len(overlays[0]["x_axis"]) == 10
+        assert np.isclose(overlays[0]["x1"], 0.2)
+        assert np.isclose(overlays[0]["x2"], 0.8)
+        assert np.isclose(
+            measurements["delta Y"]["value"],
+            measurements["B count"]["value"] - measurements["A count"]["value"],
+        )

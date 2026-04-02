@@ -16,9 +16,6 @@ from backend.data_types import (
 
 @register_node(display_name="Annotations")
 class Annotations:
-    _broadcast_warning_fn = None
-    _current_node_id: str = ""
-
     @classmethod
     def INPUT_TYPES(cls):
         return {

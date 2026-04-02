@@ -19,9 +19,6 @@ from backend.nodes.helpers import (
 class Stats:
     """Polymorphic scalar stats node for LINE, DATA_TABLE, DATA_FIELD, or IMAGE inputs."""
 
-    _broadcast_value_fn = None
-    _current_node_id: str = ""
-
     @classmethod
     def INPUT_TYPES(cls):
         return {

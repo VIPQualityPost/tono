@@ -109,7 +109,7 @@ def test_measurement_value_errors():
 
 
 def test_format_with_unit():
-    from backend.nodes.helpers import _format_with_unit, _format_numeric
+    from backend.data_types import _format_with_unit, _format_numeric
 
     assert _format_numeric(0.0) == "0"
     assert not np.isfinite(float('inf')) or _format_numeric(float('inf')) is not None
@@ -182,7 +182,7 @@ def test_square_unit_and_apply():
 
 
 def test_nice_length():
-    from backend.nodes.helpers import _nice_length
+    from backend.data_types import _nice_length
 
     assert _nice_length(0.0) == 0.0
     assert _nice_length(float('inf')) == 0.0

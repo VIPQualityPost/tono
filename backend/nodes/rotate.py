@@ -28,9 +28,6 @@ class RotateField:
         "Optionally expand the canvas to keep the full rotated field while preserving the field center."
     )
 
-    _broadcast_warning_fn = None
-    _current_node_id: str = ""
-
     def process(
         self,
         field: DataField,

@@ -39,9 +39,6 @@ class CrossSection:
         "Equivalent to gwy_data_field_get_profile."
     )
 
-    _broadcast_overlay_fn = None
-    _current_node_id: str = ""
-
     def process(
         self, field: DataField,
         x1: float, y1: float, x2: float, y2: float,
