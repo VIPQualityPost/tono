@@ -898,6 +898,7 @@ function Flow() {
   const [helpTabs, setHelpTabs] = useState<{ label: string; type?: string; content: string | null }[]>([]);
   const [activeHelpTab, setActiveHelpTab] = useState<string | null>(null);
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; url: string } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const panTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2145,6 +2146,9 @@ function Flow() {
     if (defaultWorkflowLoadAttemptedRef.current) return;
     defaultWorkflowLoadAttemptedRef.current = true;
 
+    // Only auto-load the example workflow on first visit
+    if (localStorage.getItem('tono_visited')) return;
+
     const graphHasContent = () => {
       const currentNodes = (reactFlow.getNodes() as TonoNode[]);
       const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
@@ -2166,6 +2170,20 @@ function Flow() {
       setStatus({ text: 'Default workflow failed to load: ' + err.message, level: 'error' });
     }
   }, [applyMaybePackedWorkflow, reactFlow, scheduleAutoRun]);
+
+  const loadExampleWorkflow = useCallback(async () => {
+    try {
+      const loaded = await loadDefaultWorkflowAsset();
+      if (!loaded) {
+        setStatus({ text: 'No example workflow found.', level: 'error' });
+        return;
+      }
+      await applyMaybePackedWorkflow(loaded.workflow);
+      setStatus({ text: 'Loaded example workflow.', level: 'info' });
+    } catch (err: any) {
+      setStatus({ text: 'Failed to load example workflow: ' + err.message, level: 'error' });
+    }
+  }, [applyMaybePackedWorkflow]);
 
   // ── Load node definitions ───────────────────────────────────────────
 
@@ -2970,6 +2988,19 @@ function Flow() {
 
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
+  // Close floating menu on outside click
+  const floatingMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (floatingMenuRef.current && !floatingMenuRef.current.contains(e.target as HTMLElement)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [menuOpen]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -3172,58 +3203,62 @@ function Flow() {
   return (
     <NodeContext.Provider value={contextValue as any}>
       <div className="app-container">
-        {/* Toolbar */}
-        <div id="toolbar">
-          <span id="app-title">tono</span>
-
-          <div className="toolbar-group">
-            <button className="btn btn-primary" onClick={runWorkflow} title="Run workflow (Ctrl+Enter)">
-              ▶ Run
-            </button>
-            <button className="btn" onClick={clearGraph} title="Clear graph">
-              ✕ Clear
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button className="btn" onClick={saveWorkflow} title="Save workflow as PNG">
-              ⤓ Save
-            </button>
-            <button className="btn" onClick={savePackedWorkflow} title="Save packed workflow (with files)">
-              ⊞ Pack
-            </button>
-            <button className="btn" onClick={loadWorkflow} title="Load workflow (JSON or PNG)">
-              ⤒ Load
-            </button>
-            <button className="btn" onClick={copySnapshot} title="Copy workflow screenshot to clipboard">
-              ⎘ Snapshot
-            </button>
-            {window.pywebview && (
-              <button className="btn" onClick={uploadPlugin} title="Upload a plugin (.py)">
-                ⊕ Plugin
+        {/* Floating menu */}
+        <div className="floating-menu" ref={floatingMenuRef}>
+          <button className="floating-menu-toggle" onClick={() => setMenuOpen((o) => !o)} title="Menu">
+            <img src="/favicon.svg" alt="tono" className="floating-menu-logo" />
+          </button>
+          {menuOpen && (
+            <div className="floating-menu-dropdown">
+              <button className="btn btn-primary" onClick={() => { runWorkflow(); setMenuOpen(false); }} title="Run workflow (Ctrl+Enter)">
+                ▶ Run
               </button>
-            )}
-          </div>
-
-          <div className="toolbar-group">
-            <button className="btn" onClick={openJournalTab} title="Open journal">
-              ✎ Journal
-            </button>
-            <button className="btn" onClick={() => openDocByFilename('getting-started.md')} title="Getting started guide">
-              ? Help
-            </button>
-          </div>
-
-          <div className={`status-bar ${status.level}`}>{status.text}</div>
+              <button className="btn" onClick={() => { clearGraph(); setMenuOpen(false); }} title="Clear graph">
+                ✕ Clear
+              </button>
+              <hr className="floating-menu-divider" />
+              <button className="btn" onClick={() => { saveWorkflow(); setMenuOpen(false); }} title="Save workflow as PNG">
+                ⤓ Save
+              </button>
+              <button className="btn" onClick={() => { savePackedWorkflow(); setMenuOpen(false); }} title="Save packed workflow (with files)">
+                ⊞ Pack
+              </button>
+              <button className="btn" onClick={() => { loadWorkflow(); setMenuOpen(false); }} title="Load workflow (JSON or PNG)">
+                ⤒ Load
+              </button>
+              <button className="btn" onClick={() => { copySnapshot(); setMenuOpen(false); }} title="Copy workflow screenshot to clipboard">
+                ⎘ Snapshot
+              </button>
+              {window.pywebview && (
+                <button className="btn" onClick={() => { uploadPlugin(); setMenuOpen(false); }} title="Upload a plugin (.py)">
+                  ⊕ Plugin
+                </button>
+              )}
+              <hr className="floating-menu-divider" />
+              <button className="btn" onClick={() => { loadExampleWorkflow(); setMenuOpen(false); }} title="Load example workflow">
+                ◈ Example
+              </button>
+              <button className="btn" onClick={() => { openJournalTab(); setMenuOpen(false); }} title="Open journal">
+                ✎ Journal
+              </button>
+              <button className="btn" onClick={() => { openDocByFilename('getting-started.md'); setMenuOpen(false); }} title="Getting started guide">
+                ? Help
+              </button>
+              {updateInfo && (
+                <>
+                  <hr className="floating-menu-divider" />
+                  <a className="btn floating-menu-update" href={updateInfo.url} target="_blank" rel="noopener noreferrer">
+                    ↑ Update to {updateInfo.latest}
+                  </a>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {updateInfo && (
-          <div className="update-banner">
-            tono {updateInfo.latest} is available.
-            {' '}
-            <a href={updateInfo.url} target="_blank" rel="noopener noreferrer">Download</a>
-            <button className="update-banner-dismiss" onClick={() => setUpdateInfo(null)} title="Dismiss">✕</button>
-          </div>
+        {/* Status toast */}
+        {status.text && (
+          <div className={`status-toast ${status.level}`}>{status.text}</div>
         )}
 
         {/* React Flow canvas */}

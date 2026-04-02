@@ -6,6 +6,8 @@ Welcome to tono, a node-based SPM image analysis tool. This guide covers the bas
 
 The main area is an infinite canvas where you build workflows by placing and connecting nodes. You can pan by holding middle click and dragging (two-finger drag on a trackpad), and zoom by holding right click and dragging (pinching on a trackpad). You can make a box selection by left clicking and dragging.
 
+You can open a menu by clicking the blue cantilever bubble in the top left.
+
 ### Adding Nodes
 
 Right-click anywhere on the canvas to open the **Add Node** menu. Nodes are organized into categories — hover a category to see the available nodes, then click one to place it. The same nodes can be found in different categories, if they share similar features.
@@ -101,3 +103,10 @@ Use **Ctrl+Z** / **Cmd+Z** to undo and **Ctrl+Shift+Z** / **Cmd+Shift+Z** to red
 | Ctrl+V | Paste nodes |
 | Right-click canvas | Add node menu |
 | Escape | Close help panel |
+
+## Plugins
+
+It's possible to write your own nodes and load them as plugins in tono. Please refer to the documentation in the [GitHub](https://github.com/vipqualitypost/tono) for how to do this. 
+
+Plugins are disabled by default on webapp for security reasons. You can install and run the native app if you want to develop and use your own node plugins.
+
