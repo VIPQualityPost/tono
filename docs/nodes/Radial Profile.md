@@ -22,7 +22,7 @@ Compute the azimuthally averaged radial profile from a centre point. The output 
 | cy | FLOAT | 0.5 | Centre y position as a fraction of field height (0 = top, 1 = bottom) |
 | n_bins | INT | 128 | Number of radial bins (4–4096) |
 
-## Limitations
+## Notes
 
 - Pixels are assigned to radial bins by Euclidean distance; bins near the centre contain fewer pixels and may be noisier.
 - Physical x-axis units come from the field's si_unit_xy; uncalibrated fields produce pixel-unit radii.

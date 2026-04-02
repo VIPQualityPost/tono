@@ -18,6 +18,6 @@ None.
 |------|------|---------|-------------|
 | value | FLOAT | 0.0 | The numeric value to output |
 
-## Limitations
+## Notes
 
 - None.

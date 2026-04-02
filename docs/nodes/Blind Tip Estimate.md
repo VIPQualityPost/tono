@@ -24,7 +24,7 @@ Blind tip estimation from a measured SPM image using the Villarrubia algorithm. 
 | method | dropdown | partial | partial: uses local maxima only (faster, needs sharp isolated features); full: uses all points above morphological opening (slower, more robust) |
 | use_edges | BOOLEAN | False | When enabled, also uses image edge pixels as refinement candidates |
 
-## Limitations
+## Notes
 
 - Requires sharp, isolated features on the surface for reliable results.
 - Output tip has the same pixel size as the input field; tip deconvolution requires matching pixel sizes.

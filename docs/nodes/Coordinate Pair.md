@@ -19,6 +19,6 @@ Combine two COORD values into a single COORDPAIR for use with nodes that accept 
 
 None.
 
-## Limitations
+## Notes
 
 - Coordinates are expected to be in the [0, 1] fractional range; values outside this range may produce unexpected results in downstream nodes.

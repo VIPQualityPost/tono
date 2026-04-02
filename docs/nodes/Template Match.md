@@ -22,7 +22,7 @@ Find a template pattern within a larger data field using normalised cross-correl
 |------|------|---------|-------------|
 | threshold | FLOAT | 0.8 | Minimum correlation score to mark as a detection (0.0–1.0) |
 
-## Limitations
+## Notes
 
 - The template must be smaller than the image; equal or larger sizes are not supported.
 - Normalized cross-correlation assumes uniform background; strong global gradients reduce detection accuracy.

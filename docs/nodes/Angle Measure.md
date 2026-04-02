@@ -22,7 +22,7 @@ Measure the included angle between two draggable line segments over a DATA_FIELD
 | color | STRING (color picker) | #ff9800 | Overlay color for the angle arms and arc |
 | stroke_width | FLOAT | 1.35 | Line thickness in display pixels (0.35–6.0) |
 
-## Limitations
+## Notes
 
 - Coordinates are stored as fractions of the image dimensions; physical units depend on the input field's calibration.
 - Angle measurement is the included angle at the vertex, always in [0°, 180°].

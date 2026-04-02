@@ -23,7 +23,7 @@ class ThresholdMask:
 
     OUTPUTS = (
         ('IMAGE', 'mask'),
-        ('RECORD_TABLE', 'threshold'),
+        ('FLOAT', 'threshold'),
     )
     FUNCTION = "process"
 

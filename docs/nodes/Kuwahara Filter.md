@@ -20,7 +20,7 @@ Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method. Unl
 |------|------|---------|-------------|
 | iterations | INT | 1 | Number of times the 5×5 Kuwahara pass is applied (1–20) |
 
-## Limitations
+## Notes
 
 - The kernel is fixed at 5×5 pixels; coarser smoothing requires more iterations.
 - Multiple iterations increase processing time proportionally; 20 iterations on a large field may be slow.

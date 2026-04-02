@@ -23,6 +23,6 @@ Apply morphological operations to a binary mask. Dilate expands regions, erode s
 | radius | INT | 1 | Structuring element radius in pixels (1–50) |
 | shape | dropdown | disk | Structuring element shape: disk or square |
 
-## Limitations
+## Notes
 
 - Large radius values (> ~20 pixels) may be slow on large masks.

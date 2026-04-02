@@ -20,6 +20,6 @@ Shift data so that the minimum, mean, or median value becomes zero. Equivalent t
 |------|------|---------|-------------|
 | method | dropdown | min | Reference value to set to zero: min (lowest pixel), mean (average), or median |
 
-## Limitations
+## Notes
 
 - None.

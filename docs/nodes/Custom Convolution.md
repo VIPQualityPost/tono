@@ -22,7 +22,7 @@ Apply a user-defined convolution kernel to a DATA_FIELD. Enter rows of space-sep
 | normalize | BOOLEAN | True | Divide the result by the sum of absolute kernel values to preserve amplitude |
 | boundary | dropdown | reflect | Boundary handling: reflect, nearest, or wrap |
 
-## Limitations
+## Notes
 
 - Kernel must be a rectangle: all rows must have the same number of values.
 - Maximum kernel size is 51×51; larger kernels are rejected.

@@ -25,6 +25,6 @@ Attach optional publication-style annotations (scale bar, color-map legend) to a
 | show_color_map | BOOLEAN | True | Render a color-map legend with min/mid/max values |
 | text_size | FLOAT | 14.0 | Font size in points for annotation labels (6–96) |
 
-## Limitations
+## Notes
 
 - Scale bar and color-map legend require the input to carry physical dimension and unit metadata; plain images without metadata will emit a warning and the feature will be skipped.

@@ -21,7 +21,7 @@ Compute the one-dimensional autocorrelation function of a line profile. Only pos
 |------|------|---------|-------------|
 | level | dropdown | mean | Pre-processing: subtract mean before correlation, or none |
 
-## Limitations
+## Notes
 
 - Only one-sided (positive lag) ACF is returned.
 - Peak period detection finds only the first local maximum; multi-periodic signals report only the shortest detected period.

@@ -22,7 +22,7 @@ Rotate a DATA_FIELD counterclockwise by an angle in degrees. Optionally expand t
 | interpolation | dropdown | bilinear | Interpolation method for resampling: bilinear, nearest, or bicubic |
 | expand_canvas | BOOLEAN | True | When True, canvas is expanded to contain the full rotated image; when False, canvas is clipped to original size |
 
-## Limitations
+## Notes
 
 - Rotation by angles other than multiples of 90° introduces interpolation artefacts.
 - expand_canvas may produce fields with non-square pixel sizes for arbitrary angles.

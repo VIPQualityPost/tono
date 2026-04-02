@@ -25,7 +25,7 @@ Detect and remove horizontal scan scars using Gwyddion-derived scar marking thre
 | min_length | INT | 16 | Minimum horizontal run length in pixels to classify as a scar (1–4096) |
 | max_width | INT | 4 | Maximum vertical width in pixels for a scar candidate (1–32) |
 
-## Limitations
+## Notes
 
 - Designed for horizontal (fast-scan) scars only; vertical scars are not detected.
 - Aggressive thresholds may remove legitimate surface features that resemble scars.

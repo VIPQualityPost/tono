@@ -27,7 +27,7 @@ Segment a height field into grains using the two-stage Gwyddion watershed workfl
 | watershed_drop_size | FLOAT | 0.1 | Relative drop size for watershed growth stage (0.0001–1.0) |
 | combine_mode | dropdown | replace | How to combine with an existing mask: replace (ignore existing), union (OR), or intersection (AND) |
 
-## Limitations
+## Notes
 
 - Parameter tuning is required; the default settings work best for isolated round features.
 - Very large locate_threshold values may reject all seeds and produce an empty mask.

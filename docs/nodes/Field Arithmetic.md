@@ -21,7 +21,7 @@ Apply a point-wise arithmetic operation to two DATA_FIELDs of the same resolutio
 |------|------|---------|-------------|
 | operation | dropdown | add | Element-wise operation: add, subtract, multiply, divide, min, max, or hypot (√(a²+b²)) |
 
-## Limitations
+## Notes
 
 - Both fields must have exactly the same pixel dimensions; mismatched sizes raise an error.
 - divide may produce NaN or Inf pixels where field_b is zero.

@@ -26,7 +26,7 @@ Interactive 3D surface view of a DATA_FIELD. Use the mesh input for geometry and
 | resolution | INT | 128 | Downsampling resolution for mesh generation (32–512) |
 | make_solid | BOOLEAN | False | When enabled adds a flat base and side walls to close the mesh |
 
-## Limitations
+## Notes
 
 - Resolution is applied by uniform subsampling; fine features smaller than one mesh step may be lost.
 - Non-square pixels emit a warning and the 3D surface represents physical scan area, not pixel grid.

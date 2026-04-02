@@ -22,7 +22,7 @@ None.
 | format | STRING (context-dependent) | TIFF | Output format; available choices depend on the connected input type |
 | plot_title | STRING | "" | Optional title for line plots saved as PNG or TIFF |
 
-## Limitations
+## Notes
 
 - Available formats per input type: DATA_FIELD → TIFF, PNG, NPZ; IMAGE → PNG, TIFF, NPZ; LINE → PNG, TIFF, CSV, NPZ, JSON; RECORD_TABLE/DATA_TABLE → CSV, JSON; FLOAT → TXT, JSON; MESH_MODEL → OBJ, STL.
 - divide-by-zero or NaN values in fields are preserved in TIFF/NPZ but may not render correctly in PNG.

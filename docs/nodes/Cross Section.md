@@ -23,7 +23,7 @@ Extract a cross-section height profile along a line between two draggable points
 | extend | dropdown | none | none: profile between the two markers; to_edges: extend line to image borders |
 | n_samples | INT | 0 | Number of sample points along the profile (0 = auto, one per pixel diagonal) |
 
-## Limitations
+## Notes
 
 - Profile is sampled using cubic spline interpolation (order 3); sharp step edges may show ringing.
 - Physical x-axis of the output profile is the Euclidean distance in field xy units.

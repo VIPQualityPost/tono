@@ -22,7 +22,7 @@ None.
 | format | dropdown | TIFF | Output format: TIFF (multi-page, float32 for fields) or NPZ (named arrays) |
 | layer_name_0 … layer_name_N | STRING | "" | Optional name for each layer; used as TIFF page descriptions or NPZ array keys |
 
-## Limitations
+## Notes
 
 - At least one layer must be connected; an error is raised otherwise.
 - TIFF writes DATA_FIELD layers as float32; IMAGE layers are written as uint8.

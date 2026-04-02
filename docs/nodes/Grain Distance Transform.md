@@ -23,7 +23,7 @@ Compute the mask distance transform using Gwyddion-style interior, exterior, or 
 | output_type | dropdown | interior | Output mode: interior (distances inside grains), exterior (distances outside), or signed (positive inside, negative outside) |
 | from_border | BOOLEAN | True | When enabled, image borders are treated as mask boundaries |
 
-## Limitations
+## Notes
 
 - Output distances are in physical xy units derived from the field calibration.
 - The mask must have the same pixel dimensions as the field.

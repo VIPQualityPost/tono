@@ -20,7 +20,7 @@ None.
 | preset | dropdown | viridis | Built-in colormap preset name; visible when mode is preset |
 | stops | STRING (colormap editor) | default gradient | JSON array of color stops for the custom gradient; visible when mode is custom |
 
-## Limitations
+## Notes
 
 - Custom colormaps must include at least a minimum and maximum color stop.
 - Stops must be valid JSON; invalid JSON will raise an error.

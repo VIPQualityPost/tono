@@ -18,7 +18,7 @@ None.
 |------|------|---------|-------------|
 | folder | FOLDER_PICKER | "" | Path to the folder to list |
 
-## Limitations
+## Notes
 
 - Only files with supported extensions are listed; subdirectories and unsupported file types are ignored.
 - The number of file output sockets is determined at load time by the folder contents.

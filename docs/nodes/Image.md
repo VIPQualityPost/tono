@@ -22,7 +22,7 @@ Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) pr
 | filename | FILE_PICKER | "" | Path to the file to load; hidden when path input is connected |
 | colormap | dropdown | viridis | Colormap applied to the loaded field; hidden when colormap_map is connected |
 
-## Limitations
+## Notes
 
 - Uncalibrated formats (images, arrays) emit a warning and produce fields without physical dimensions.
 - Multi-channel files (e.g. .gwy with multiple data channels) produce one DATA_FIELD output socket per channel; the socket count is determined at load time.

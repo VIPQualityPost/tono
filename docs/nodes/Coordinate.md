@@ -19,6 +19,6 @@ None.
 | x | FLOAT | 0.5 | Horizontal position as a fraction of image width (0 = left, 1 = right) |
 | y | FLOAT | 0.5 | Vertical position as a fraction of image height (0 = top, 1 = bottom) |
 
-## Limitations
+## Notes
 
 - Values are clamped to [0, 1] by downstream nodes; this node does not enforce clamping itself.

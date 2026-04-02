@@ -19,7 +19,7 @@ None.
 |------|------|---------|-------------|
 | colormap | dropdown | auto | Colormap used when rendering a DATA_FIELD or grayscale IMAGE; hidden when colormap_map is connected |
 
-## Limitations
+## Notes
 
 - When no input is connected, an error is raised at execution time.
 - Connecting a FILE_PATH socket (instead of DATA_FIELD) raises a type error; ensure the correct socket is connected.

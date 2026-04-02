@@ -60,6 +60,22 @@ FRONTEND_DIR = frontend_dir()
 DIST_DIR = frontend_dist_dir()
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
+GITHUB_REPO = "vipqualitypost/tono"
+_APP_VERSION: str | None = None
+
+
+def _get_app_version() -> str:
+    global _APP_VERSION
+    if _APP_VERSION is not None:
+        return _APP_VERSION
+    try:
+        import tomllib
+        with open(project_root() / "pyproject.toml", "rb") as f:
+            _APP_VERSION = tomllib.load(f)["project"]["version"]
+    except Exception:
+        _APP_VERSION = "0.0.0"
+    return _APP_VERSION
+
 
 class _SafeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -568,6 +584,30 @@ def create_app(
             )
         return ws
 
+    async def check_update(_request: web.Request) -> web.Response:
+        import aiohttp as _aiohttp
+
+        current = _get_app_version()
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        try:
+            async with _aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=_aiohttp.ClientTimeout(total=5),
+                                       headers={"Accept": "application/vnd.github.v3+json"}) as resp:
+                    if resp.status != 200:
+                        return web.json_response({"current": current, "latest": None, "update_available": False})
+                    data = await resp.json()
+            latest = str(data.get("tag_name", "")).lstrip("vV")
+            html_url = str(data.get("html_url", ""))
+            update_available = latest != "" and latest != current
+            return web.json_response({
+                "current": current,
+                "latest": latest,
+                "update_available": update_available,
+                "url": html_url,
+            })
+        except Exception:
+            return web.json_response({"current": current, "latest": None, "update_available": False})
+
     app = web.Application()
     app["allow_local_filesystem"] = allow_local_filesystem
 
@@ -587,6 +627,7 @@ def create_app(
     app.router.add_get("/help-docs", get_help_docs)
     app.router.add_get("/help-docs/{filename}", get_help_doc_file)
     app.router.add_post("/prompt", submit_prompt)
+    app.router.add_get("/check-update", check_update)
     app.router.add_get("/ws", websocket_handler)
 
     if (DIST_DIR / "assets").exists():

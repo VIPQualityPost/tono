@@ -21,7 +21,7 @@ Detect edges using Sobel, Prewitt, Laplacian, or Laplacian-of-Gaussian (LoG) ope
 | method | dropdown | sobel | Edge detection operator: sobel, prewitt, laplacian, or log (Laplacian of Gaussian) |
 | sigma | FLOAT | 1.0 | Gaussian smoothing sigma used only for the LoG operator (0.1–10.0) |
 
-## Limitations
+## Notes
 
 - sigma is ignored for sobel, prewitt, and laplacian methods.
 - Sobel and Prewitt return gradient magnitude; Laplacian and LoG return signed second-derivative values.

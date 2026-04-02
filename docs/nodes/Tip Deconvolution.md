@@ -19,7 +19,7 @@ Reconstruct the true surface from a tip-broadened measured AFM image. Uses morph
 
 None.
 
-## Limitations
+## Notes
 
 - The tip pixel size must match the image pixel size exactly; mismatched calibrations will produce incorrect results.
 - Deconvolution can only reduce tip broadening; it cannot recover information lost below the noise floor.

@@ -20,6 +20,6 @@ Reflect a DATA_FIELD across the X axis (top/bottom) or Y axis (left/right). Phys
 |------|------|---------|-------------|
 | axis | dropdown | x | Flip axis: x flips top/bottom (vertical mirror), y flips left/right (horizontal mirror) |
 
-## Limitations
+## Notes
 
 - None.

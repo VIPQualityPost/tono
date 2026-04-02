@@ -2,6 +2,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { marked } from 'marked';
 
+// Open external links in new tabs
+const renderer = new marked.Renderer();
+const defaultLinkRenderer = renderer.link.bind(renderer);
+renderer.link = function (token) {
+  const html = defaultLinkRenderer(token);
+  if (token.href && /^https?:\/\//.test(token.href)) {
+    return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
+  }
+  return html;
+};
+marked.use({ renderer });
+
 interface Heading {
   level: number;
   text: string;

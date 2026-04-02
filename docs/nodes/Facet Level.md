@@ -21,7 +21,7 @@ Level a field by iteratively finding the dominant local facet orientation and su
 |------|------|---------|-------------|
 | masking | dropdown | exclude | How to use the mask: exclude (ignore masked facets), include (use only masked facets), or ignore (use all facets) |
 
-## Limitations
+## Notes
 
 - Requires compatible XY and Z physical units for correct facet gradient estimation.
 - Needs at least four valid facet cells; fields smaller than 2×2 pixels are not processed.

@@ -22,7 +22,7 @@ Fit and subtract a polynomial background of given degree in x and y. Equivalent 
 | degree_x | INT | 2 | Polynomial degree in the x direction (0–5) |
 | degree_y | INT | 2 | Polynomial degree in the y direction (0–5) |
 
-## Limitations
+## Notes
 
 - High polynomial degrees (> 4) may overfit and introduce artificial long-range modulation.
 - No masking support; all pixels contribute equally to the fit.

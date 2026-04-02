@@ -20,7 +20,7 @@ Apply a Gaussian blur to a DATA_FIELD. Equivalent to gwy_data_field_filter_gauss
 |------|------|---------|-------------|
 | sigma | FLOAT | 1.0 | Standard deviation of the Gaussian kernel in pixels (0.01–50.0) |
 
-## Limitations
+## Notes
 
 - sigma is specified in pixels, not physical units; the effective physical blur depends on pixel size.
 - Large sigma values (> ~20 pixels) are slow due to the large kernel.

@@ -23,7 +23,7 @@ Draw simple vector shapes (lines, rectangles, circles, arrows) over a DATA_FIELD
 | stroke_width | INT | 3 | Line thickness in display pixels for newly drawn shapes (1–64) |
 | clear_shapes | BUTTON | — | Remove all drawn shapes |
 
-## Limitations
+## Notes
 
 - Shapes are stored as fractional coordinates; physical positions depend on field calibration.
 - Individual shape properties (color, width) cannot be changed after drawing; use Clear Shapes to start over.

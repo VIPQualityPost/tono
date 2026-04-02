@@ -21,7 +21,7 @@ Reconstruct a spatial-domain image from a 2D frequency spectrum. For exact recon
 |------|------|---------|-------------|
 | representation | dropdown | magnitude | How to interpret the spectrum input: magnitude, log_magnitude, or psdf |
 
-## Limitations
+## Notes
 
 - The spectrum input must be a frequency-domain DATA_FIELD; connecting a spatial-domain field raises an error.
 - If phase is connected, it must also be a frequency-domain field with the same shape as the spectrum.

@@ -22,7 +22,7 @@ Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The 
 | method | dropdown | laplace | Inpainting method: laplace (smooth Laplace equation solution), mean (local mean), or zero |
 | max_iter | INT | 100 | Maximum number of iterations for the Laplace solver (1–2000) |
 
-## Limitations
+## Notes
 
 - Large masked regions may not converge fully within max_iter iterations using the Laplace method.
 - The mean method uses a simple neighbourhood average and may leave visible discontinuities at large defect clusters.

@@ -27,7 +27,7 @@ Correct scan-line mismatches using Gwyddion-derived row alignment methods. Suppo
 | trim_fraction | FLOAT | 0.05 | Fraction of extreme values to trim; visible only for trimmed_mean and trimmed_diff methods (0–0.5) |
 | polynomial_degree | INT | 1 | Polynomial degree for the polynomial method (0–5); visible only for polynomial method |
 
-## Limitations
+## Notes
 
 - The step method is designed for step-like scan artifacts and may over-correct smooth surfaces.
 - Mask shape must match the field shape if a mask is connected.

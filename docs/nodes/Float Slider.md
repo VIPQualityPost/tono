@@ -20,6 +20,6 @@ None.
 | max_value | FLOAT | 1.0 | Upper bound of the slider range |
 | value | FLOAT (slider) | 0.5 | Current value within [min_value, max_value] |
 
-## Limitations
+## Notes
 
 - None.

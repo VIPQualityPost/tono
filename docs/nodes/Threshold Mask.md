@@ -23,7 +23,7 @@ Create a binary mask by thresholding data. Otsu automatically finds the optimal 
 | threshold | FLOAT | 0.0 | Threshold value; for absolute: raw z value; for relative: fraction 0–1; ignored for otsu (socket-only input) |
 | direction | dropdown | above | Which pixels to select: above or below the threshold |
 
-## Limitations
+## Notes
 
 - For the relative method, the threshold fraction is applied to the full data range [min, max].
 - Otsu thresholding may not give meaningful results on non-bimodal height distributions.

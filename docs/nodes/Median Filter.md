@@ -20,7 +20,7 @@ Apply a median filter to a DATA_FIELD. Equivalent to gwy_data_field_filter_media
 |------|------|---------|-------------|
 | size | INT | 3 | Kernel size (side length) in pixels; odd values only (1–21) |
 
-## Limitations
+## Notes
 
 - The median filter is applied with a square kernel; non-square (e.g. rectangular) kernels are not supported.
 - Large kernel sizes are significantly slower than the Gaussian filter for the same smoothing extent.

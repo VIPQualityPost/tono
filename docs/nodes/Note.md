@@ -20,7 +20,7 @@ Read the Note metadata from an .ibw (Igor binary wave) file and display all entr
 |------|------|---------|-------------|
 | filename | FILE_PICKER | "" | Path to the .ibw file; hidden when path input is connected |
 
-## Limitations
+## Notes
 
 - Only .ibw files are supported; other formats raise an error.
 - If the .ibw note section is empty or missing, an error is raised.

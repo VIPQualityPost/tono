@@ -21,6 +21,6 @@ Fit and subtract a least-squares plane from the data. Supports include/exclude m
 |------|------|---------|-------------|
 | masking | dropdown | ignore | How to use the mask: ignore (use all pixels), include (fit plane to masked pixels only), or exclude (exclude masked pixels from fit) |
 
-## Limitations
+## Notes
 
 - When masking is include or exclude, the unmasked/masked region must contain at least three non-collinear pixels to fit a plane.

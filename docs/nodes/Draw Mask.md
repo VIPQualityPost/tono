@@ -22,7 +22,7 @@ Paint a binary mask directly over an image preview. Pen size controls newly draw
 | invert | BOOLEAN | False | When enabled, swaps painted and unpainted regions |
 | clear_mask | BUTTON | — | Clears all painted strokes |
 
-## Limitations
+## Notes
 
 - Strokes are stored as path data; very long painting sessions with many strokes may accumulate large state.
 - The mask resolution matches the input field resolution and cannot be changed independently.

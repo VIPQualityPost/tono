@@ -16,6 +16,6 @@ None.
 
 None.
 
-## Limitations
+## Notes
 
 - None.

@@ -19,7 +19,7 @@ None.
 | family | dropdown | System default | Font family name; includes discovered system fonts plus "Custom file" option |
 | font_file | FILE_PICKER | "" | Path to a custom font file; visible only when family is set to "Custom file" |
 
-## Limitations
+## Notes
 
 - Custom font files must be in a format supported by the underlying font rendering library (e.g. TTF, OTF).
 - System fonts are enumerated at startup; newly installed fonts require restarting the application.

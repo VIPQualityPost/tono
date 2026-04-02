@@ -23,7 +23,7 @@ Frequency-domain filtering of a line profile or 2D data field using a Butterwort
 | cutoff_high | FLOAT | 0.4 | Upper cutoff for bandpass/notch modes (0.001–1.0) |
 | order | INT | 2 | Butterworth filter order; higher values give steeper roll-off (1–10) |
 
-## Limitations
+## Notes
 
 - cutoff_high is only used for bandpass and notch modes.
 - The filter is applied in the frequency domain via FFT; very short lines may show wrap-around artefacts.

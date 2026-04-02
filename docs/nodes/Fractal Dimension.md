@@ -21,7 +21,7 @@ Calculate the surface fractal dimension using Gwyddion's partitioning, cube coun
 | method | dropdown | partitioning | Algorithm: partitioning, cube_counting, triangulation, psdf (power spectrum), or hhcf (structure function) |
 | interpolation | dropdown | linear | Interpolation used when resampling the field to a square grid: linear, nearest, or cubic |
 
-## Limitations
+## Notes
 
 - The field is resampled to a square grid internally; highly anisotropic scan sizes may introduce interpolation artefacts.
 - Fit range can be adjusted interactively on the log-log plot; the default range covers the full data.

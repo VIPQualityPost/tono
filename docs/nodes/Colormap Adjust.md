@@ -22,7 +22,7 @@ Adjust how a DATA_FIELD maps into its colormap without changing the underlying d
 | scale | FLOAT | 1.0 | Zoom the colormap range (0.05–4.0); values below 1 stretch contrast |
 | auto | BUTTON | — | Reset offset to 0 and scale to 1 (full data range) |
 
-## Limitations
+## Notes
 
 - Only the display mapping metadata is changed; raw data values are unaffected.
 - Scale must be positive and finite; zero or negative values raise an error.

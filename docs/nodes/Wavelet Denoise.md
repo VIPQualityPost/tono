@@ -23,7 +23,7 @@ Denoise a DATA_FIELD using wavelet coefficient thresholding. BayesShrink adapts 
 | sigma | FLOAT | 0.0 | Noise level estimate in data units; 0 = automatic estimation (0–1.0) |
 | mode | dropdown | soft | Thresholding mode: soft (smooth shrinkage) or hard (zero below threshold) |
 
-## Limitations
+## Notes
 
 - The field size should ideally be a power of two for best wavelet decomposition; other sizes are handled by padding.
 - sigma = 0 triggers automatic noise estimation from the finest-scale wavelet coefficients; this may be inaccurate on strongly structured surfaces.

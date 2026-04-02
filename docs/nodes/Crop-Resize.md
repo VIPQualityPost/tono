@@ -24,7 +24,7 @@ Crop a DATA_FIELD with a draggable rectangle defined by two corners, then option
 | target_height | INT | 0 | Output pixel height after resampling (0 = keep cropped height) |
 | interpolation | dropdown | bilinear | Resampling interpolation: bilinear, nearest, or bicubic |
 
-## Limitations
+## Notes
 
 - The crop region must have non-zero width and height; an error is raised otherwise.
 - If only one of target_width or target_height is set, the other dimension is computed to preserve aspect ratio.

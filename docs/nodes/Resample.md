@@ -22,7 +22,7 @@ Resample a DATA_FIELD to a new pixel resolution while preserving physical dimens
 | height | INT | 256 | Output pixel height (2–16384) |
 | interpolation | dropdown | linear | Interpolation method: linear, cubic, or nearest |
 
-## Limitations
+## Notes
 
 - Physical dimensions are preserved; upsampling does not add new information.
 - Very large output sizes (e.g. 16384×16384) require substantial memory.

@@ -19,7 +19,7 @@ Compute the FFT amplitude spectrum of a line profile and identify the dominant p
 
 None.
 
-## Limitations
+## Notes
 
 - The DC component is excluded from the output.
 - Spectrum is one-sided (real FFT); the x-axis shows period, not frequency.

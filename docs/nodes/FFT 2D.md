@@ -24,7 +24,7 @@ Compute the 2D FFT with optional windowing and mean/plane subtraction. Outputs l
 | windowing | dropdown | hann | Window function applied before FFT: hann, hamming, blackman, or none |
 | level | dropdown | mean | Pre-processing: subtract mean, subtract plane, or none |
 
-## Limitations
+## Notes
 
 - Output fields are in the frequency domain; physical units on axes are spatial frequency (1/m).
 - Phase output uses the raw FFT phase and is sensitive to field origin; it is most useful when paired with the Inverse 2D FFT node.

@@ -154,7 +154,7 @@ html, body, #root {
 .floating-menu-toggle {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 20px;
   border: 1px solid var(--border-toolbar);
   background: var(--bg-toolbar);
   cursor: pointer;
@@ -170,8 +170,8 @@ html, body, #root {
 }
 
 .floating-menu-logo {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border-radius: 6px;
 }
 
@@ -743,6 +743,9 @@ html, body, #root {
 .node-help-panel-body em { color: #94a3b8; }
 
 .node-help-panel-body strong { color: #e2e8f0; }
+
+.node-help-panel-body a { color: #ff9800; }
+.node-help-panel-body a:hover { color: #ffb74d; }
 
 /* ── Help panel TOC + content layout ──────────────────────────────── */
 

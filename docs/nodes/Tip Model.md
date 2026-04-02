@@ -23,7 +23,7 @@ Generate a synthetic AFM tip model DATA_FIELD. The input field sets the pixel si
 | half_angle | FLOAT | 20.0 | Half-cone angle from the tip axis in degrees for the cone shape (1–89°) |
 | n_pixels | INT | 65 | Side length of the square tip grid in pixels (odd values only, 3–511) |
 
-## Limitations
+## Notes
 
 - half_angle is only used for the cone shape.
 - The tip grid must be smaller than or equal to the image size for Tip Deconvolution to work correctly.

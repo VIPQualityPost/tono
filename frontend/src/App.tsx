@@ -3001,6 +3001,13 @@ function Flow() {
     return () => document.removeEventListener('pointerdown', handler);
   }, [menuOpen]);
 
+  // Auto-dismiss status toast after 5 seconds
+  useEffect(() => {
+    if (!status.text) return;
+    const timer = setTimeout(() => setStatus({ text: '', level: 'info' }), 5000);
+    return () => clearTimeout(timer);
+  }, [status]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {

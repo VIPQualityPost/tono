@@ -21,6 +21,6 @@ Apply boolean logic to two binary masks. Supports AND, OR, XOR, NAND, NOR, XNOR,
 |------|------|---------|-------------|
 | operation | dropdown | and | Boolean operation: and, or, xor, xnor, nand, nor, a_minus_b, b_minus_a, a, b, not_a, not_b, a_implies_b, b_implies_a, false, true |
 
-## Limitations
+## Notes
 
 - Both masks must have the same pixel dimensions.

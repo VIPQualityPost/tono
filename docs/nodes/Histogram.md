@@ -22,7 +22,7 @@ Compute the height distribution histogram (DH). Use log scale to reveal small pe
 | n_bins | INT | 256 | Number of histogram bins (10–1000) |
 | y_scale | dropdown | linear | Y-axis scale: linear or log |
 
-## Limitations
+## Notes
 
 - Cursor positions are stored as fractions of the histogram range and are set interactively.
 - Log scale displays bins as log(count); bins with zero count appear as the minimum log value.

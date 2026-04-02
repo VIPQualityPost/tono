@@ -22,7 +22,7 @@ Remove grains from a binary mask based on size and border contact. Equivalent to
 | max_area | INT | 0 | Discard grains with more pixels than this value (0 = no upper limit) |
 | remove_border | BOOLEAN | False | Discard any grain that touches the image edge |
 
-## Limitations
+## Notes
 
 - Grain detection uses 4-connected or 8-connected labeling; the exact connectivity is determined by the implementation.
 - min_area and max_area are in pixels, not physical units.

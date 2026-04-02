@@ -18,6 +18,6 @@ Compute basic surface statistics: min, max, mean, RMS roughness, median, and ske
 
 None.
 
-## Limitations
+## Notes
 
 - None.

@@ -20,7 +20,7 @@ Place two draggable cursors on a line plot or 2D field to measure positions and 
 
 None (cursor positions are set by dragging in the preview panel).
 
-## Limitations
+## Notes
 
 - When a COORDPAIR is connected, the cursor positions are locked and cannot be dragged interactively.
 - On 2D fields, z values are sampled with bilinear (order 1) interpolation.

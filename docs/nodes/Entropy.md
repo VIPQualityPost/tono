@@ -22,7 +22,7 @@ Compute the Shannon entropy of the height or slope distribution. H = −Σ p·ln
 | mode | dropdown | height values | Compute entropy of height values or slope magnitude |
 | n_bins | INT | 256 | Number of histogram bins for probability estimation (16–1024) |
 
-## Limitations
+## Notes
 
 - Entropy is sensitive to n_bins; very few bins underestimate entropy while very many bins overestimate it for small fields.
 - Non-finite pixel values are removed before binning.

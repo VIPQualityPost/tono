@@ -21,7 +21,7 @@ Expand the local dynamic range at each pixel to reveal fine surface features tha
 | kernel_size | INT | 10 | Size of the local neighbourhood window in pixels (2–100) |
 | weight | FLOAT | 0.5 | Blend weight between original and full-contrast output (0 = original, 1 = full local contrast; 0–1) |
 
-## Limitations
+## Notes
 
 - Large kernel sizes are slow; values above ~50 pixels may be noticeably slow on large fields.
 - The enhancement is purely a display-contrast operation; it changes the underlying data values.

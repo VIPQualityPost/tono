@@ -21,7 +21,7 @@ Label connected grain regions in a binary mask and compute per-grain statistics:
 |------|------|---------|-------------|
 | min_size | INT | 10 | Minimum grain area in pixels; smaller connected regions are ignored (1–100000) |
 
-## Limitations
+## Notes
 
 - Grain detection uses 2D connected-component labeling on the binary mask; the field and mask must have the same pixel dimensions.
 - Physical area and diameter values require the field to carry valid physical calibration (xreal, yreal, si_unit_xy).

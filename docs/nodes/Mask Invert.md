@@ -19,6 +19,6 @@ Invert a binary mask — swap masked and unmasked regions.
 
 None.
 
-## Limitations
+## Notes
 
 - None.
