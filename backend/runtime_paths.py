@@ -54,14 +54,6 @@ def demo_dir() -> Path:
     return project_root() / "demo"
 
 
-def input_dir() -> Path:
-    return app_data_dir() / "input"
-
-
-def output_dir() -> Path:
-    return app_data_dir() / "output"
-
-
 def plugins_dir() -> Path:
     return app_data_dir() / "plugins"
 
@@ -84,7 +76,5 @@ def plugins_enabled(*, native: bool) -> bool:
 
 
 def ensure_runtime_dirs(*, with_plugins: bool = False) -> None:
-    input_dir().mkdir(parents=True, exist_ok=True)
-    output_dir().mkdir(parents=True, exist_ok=True)
     if with_plugins:
         plugins_dir().mkdir(parents=True, exist_ok=True)

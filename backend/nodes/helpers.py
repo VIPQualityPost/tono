@@ -11,7 +11,7 @@ from typing import Callable
 
 import numpy as np
 
-from backend.runtime_paths import demo_dir, input_dir, output_dir
+from backend.runtime_paths import demo_dir
 
 # ---------------------------------------------------------------------------
 # Scalar payload helpers  (from display.py)
@@ -522,8 +522,6 @@ def _rasterize_mask(width, height, strokes, default_pen_size):
 # ---------------------------------------------------------------------------
 
 DEMO_DIR = demo_dir()
-INPUT_DIR = input_dir()
-OUTPUT_DIR = output_dir()
 
 _MAX_SAVE_FIELDS = 8
 
@@ -532,21 +530,8 @@ from backend.importers import all_extensions, get_importer
 _PATH_COMPATIBLE_EXTENSIONS = all_extensions()
 
 
-def _resolve_path(filepath: str):
-    path = Path(filepath)
-    if path.is_absolute():
-        return path
-    candidate = INPUT_DIR / filepath
-    if candidate.exists():
-        return candidate
-    candidate = DEMO_DIR / filepath
-    if candidate.exists():
-        return candidate
-    return INPUT_DIR / filepath
-
-
 def list_channels(filepath: str) -> list[dict]:
-    path = _resolve_path(filepath)
+    path = Path(filepath)
     if not path.exists():
         return [{"name": "field", "type": "DATA_FIELD"}]
 
@@ -564,7 +549,7 @@ def list_channels(filepath: str) -> list[dict]:
 
 
 def list_folder_paths(folderpath: str) -> list[dict]:
-    path = _resolve_path(folderpath)
+    path = Path(folderpath)
     if not path.exists() or not path.is_dir():
         return []
 

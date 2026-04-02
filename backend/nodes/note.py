@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 
+from pathlib import Path
+
 from backend.node_registry import register_node
 from backend.data_types import DataTable
-from backend.nodes.helpers import _resolve_path, _import_ibw_loader
+from backend.nodes.helpers import _import_ibw_loader
 
 
 def _parse_ibw_note(note_bytes: bytes) -> list[dict]:
@@ -57,7 +59,7 @@ class Note:
         selected = str(path).strip() if path is not None else str(filename).strip()
         if not selected:
             raise ValueError("No file selected.")
-        path_obj = _resolve_path(selected)
+        path_obj = Path(selected)
         if not path_obj.exists():
             raise FileNotFoundError(f"File not found: {path_obj}")
         if path_obj.suffix.lower() != ".ibw":

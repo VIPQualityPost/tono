@@ -5,7 +5,6 @@ from pathlib import Path
 from backend.node_registry import register_node
 from backend.execution_context import emit_warning
 from backend.data_types import COLORMAPS, DataField, resolve_colormap_input
-from backend.nodes.helpers import _resolve_path
 from backend.importers import get_importer, calibrated_extensions
 
 
@@ -44,7 +43,7 @@ class Image:
         selected_path = str(path).strip() if path is not None else str(filename).strip()
         if not selected_path:
             raise ValueError("No file selected — use Browse to pick a file.")
-        path_obj = _resolve_path(selected_path)
+        path_obj = Path(selected_path)
         if not path_obj.exists():
             raise FileNotFoundError(f"File not found: {path_obj}")
         if path_obj.is_dir():
