@@ -1358,6 +1358,7 @@ function Flow() {
           break;
         case 'executing':
           setExecutingNodeId(String(msg.data.node));
+          updateNodeData(String(msg.data.node), { warning: null, error: null });
           setStatus({ text: `Executing node ${msg.data.node}…`, level: 'info' });
           break;
         case 'execution_complete':
@@ -2178,16 +2179,20 @@ function Flow() {
     });
 
     // Load any .md files from frontend/public/ as help tabs
+    const isFirstVisit = !localStorage.getItem('tono_visited');
     fetch('/help-docs')
       .then((r) => r.ok ? r.json() : [])
       .then((docs: any[]) => {
         if (!docs.length) return;
+        const filtered = isFirstVisit ? docs : docs.filter((d: any) => d.title !== 'Getting Started');
+        if (!filtered.length) return;
         setHelpTabs((prev) => {
           const existing = new Set(prev.map((t) => t.label));
-          const newTabs = docs.filter((d: any) => !existing.has(d.title)).map((d: any) => ({ label: d.title, content: d.content }));
+          const newTabs = filtered.filter((d: any) => !existing.has(d.title)).map((d: any) => ({ label: d.title, content: d.content }));
           return newTabs.length ? [...prev, ...newTabs] : prev;
         });
-        setActiveHelpTab((cur) => cur || docs[0].title);
+        setActiveHelpTab((cur) => cur || filtered[0].title);
+        localStorage.setItem('tono_visited', '1');
       })
       .catch(() => {});
   }, [loadDefaultWorkflow]);
@@ -3198,6 +3203,15 @@ function Flow() {
                 ⊕ Plugin
               </button>
             )}
+          </div>
+
+          <div className="toolbar-group">
+            <button className="btn" onClick={openJournalTab} title="Open journal">
+              ✎ Journal
+            </button>
+            <button className="btn" onClick={() => openDocByFilename('getting-started.md')} title="Getting started guide">
+              ? Help
+            </button>
           </div>
 
           <div className={`status-bar ${status.level}`}>{status.text}</div>

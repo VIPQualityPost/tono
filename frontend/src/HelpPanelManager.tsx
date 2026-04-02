@@ -208,7 +208,7 @@ function JournalTab({ content, onChange, onOpenDoc }: JournalTabProps) {
           {isEditing ? 'Preview' : 'Edit'}
         </button>
         {isEditing && (
-          <span className="node-help-journal-hint">Ctrl+Enter to preview</span>
+          <span className="node-help-journal-hint">Esc or Ctrl+Enter to preview</span>
         )}
       </div>
       {isEditing ? (
@@ -218,6 +218,10 @@ function JournalTab({ content, onChange, onOpenDoc }: JournalTabProps) {
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              setIsEditing(false);
+            }
+            if (e.key === 'Escape') {
               e.preventDefault();
               setIsEditing(false);
             }
@@ -266,7 +270,10 @@ function HelpPanelManager({ tabs, activeTab, onTabSelect, onTabClose, onTabConte
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activeTab) onTabClose(activeTab);
+      if (e.key === 'Escape' && activeTab) {
+        if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+        onTabClose(activeTab);
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
