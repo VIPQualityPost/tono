@@ -2495,6 +2495,9 @@ function Flow() {
               <a className="btn" href="https://github.com/VIPQualityPost/tono/issues" target="_blank" rel="noopener noreferrer" onClick={closeMenu} title="Report a bug or request a feature">
                 ↗ Feedback
               </a>
+              <a className="btn" href="https://github.com/VIPQualityPost/tono" target="_blank" rel="noopener noreferrer" onClick={closeMenu} title="View the project on GitHub">
+                ↗ Open Source
+              </a>
               {updateInfo && (
                 <>
                   <hr className="floating-menu-divider" />
