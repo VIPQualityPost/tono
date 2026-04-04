@@ -222,3 +222,42 @@ export function formatTableRowCell(row: Record<string, unknown>, column: string)
   }
   return formatNumericCell(row?.[column]);
 }
+
+// ── Bare SI prefix formatting (no unit awareness) ────────────────────
+
+const _BARE_SI_PREFIXES = [
+  { prefix: 'T', factor: 1e12 },
+  { prefix: 'G', factor: 1e9 },
+  { prefix: 'M', factor: 1e6 },
+  { prefix: 'k', factor: 1e3 },
+  { prefix: '',  factor: 1 },
+  { prefix: 'm', factor: 1e-3 },
+  { prefix: 'μ', factor: 1e-6 },
+  { prefix: 'n', factor: 1e-9 },
+  { prefix: 'p', factor: 1e-12 },
+  { prefix: 'f', factor: 1e-15 },
+];
+
+export function formatSI(v: number, prec: number | null | undefined) {
+  if (!Number.isFinite(v)) return String(v);
+  if (v === 0) return prec != null ? `0.${'0'.repeat(prec)}` : '0';
+  const abs = Math.abs(v);
+  let chosen = _BARE_SI_PREFIXES[_BARE_SI_PREFIXES.length - 1];
+  for (const p of _BARE_SI_PREFIXES) {
+    if (abs >= p.factor * (1 - 1e-10)) { chosen = p; break; }
+  }
+  const scaled = v / chosen.factor;
+  return (prec != null ? scaled.toFixed(prec) : String(scaled)) + chosen.prefix;
+}
+
+export function parseSI(text: string) {
+  const t = (text || '').trim();
+  if (!t) return NaN;
+  const lastChar = t.slice(-1);
+  const factor = SI_PREFIX_MULTIPLIERS[lastChar];
+  if (factor != null) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num)) return num * factor;
+  }
+  return parseFloat(t);
+}

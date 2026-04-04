@@ -86,7 +86,7 @@ class Annotations:
 
         context = _annotation_context_from_image(input)
         if context is None:
-            self._send_warning(
+            emit_warning(
                 "Annotations image input has no scale metadata, so scale bar and color-map legend cannot be added."
             )
             return (ImageData(image_to_uint8(input)),)
@@ -111,7 +111,7 @@ class Annotations:
             if not (has_legend_values and str(context.get("legend_unit", "")).strip()):
                 missing_features.append("color-map legend")
         if missing_features:
-            self._send_warning(
+            emit_warning(
                 f"Annotations image input is missing metadata for: {', '.join(missing_features)}."
             )
         annotated = _apply_annotation_overlay_from_context(
@@ -120,6 +120,3 @@ class Annotations:
             annotation_spec,
         )
         return (ImageData(annotated, metadata={"annotation_context": context}),)
-
-    def _send_warning(self, message: str):
-        emit_warning(message)

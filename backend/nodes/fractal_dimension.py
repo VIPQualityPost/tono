@@ -8,6 +8,7 @@ from scipy.ndimage import map_coordinates
 from backend.data_types import LineData, RecordTable
 from backend.execution_context import emit_overlay, emit_table, emit_warning
 from backend.node_registry import register_node
+from backend.nodes.spectral_common import _window_vector
 
 
 _LOG_TINY = float(np.finfo(np.float64).tiny)
@@ -77,13 +78,6 @@ def _row_level2(row: np.ndarray) -> np.ndarray:
     A = np.column_stack((np.ones_like(x), x))
     coeffs, _, _, _ = np.linalg.lstsq(A, values, rcond=None)
     return values - (coeffs[0] + coeffs[1] * x)
-
-
-def _hann_window(size: int) -> np.ndarray:
-    if size <= 0:
-        return np.ones(0, dtype=np.float64)
-    t = (np.arange(size, dtype=np.float64) + 0.5) / float(size)
-    return 0.5 - 0.5 * np.cos(2.0 * np.pi * t)
 
 
 def _window_with_rms_compensation(values: np.ndarray, window: np.ndarray) -> np.ndarray:
@@ -207,7 +201,7 @@ def _fractal_psdf(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if width < 2 or rows < 1:
         return np.zeros(0, dtype=np.float64), np.zeros(0, dtype=np.float64)
 
-    window = _hann_window(width)
+    window = _window_vector(width, "hann")
     accum = np.zeros(width // 2 + 1, dtype=np.float64)
     for row in np.asarray(data, dtype=np.float64):
         leveled = _row_level2(row)

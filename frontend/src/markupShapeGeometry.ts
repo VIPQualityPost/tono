@@ -1,3 +1,5 @@
+import { clampFraction, sanitizeHexColor } from './overlayUtils.ts';
+
 export const MARKUP_DEFAULT_SHAPE = 'arrow';
 export const MARKUP_DEFAULT_COLOR = '#ff0000';
 export const MARKUP_PREVIEW_REFERENCE_DIM = 512;
@@ -12,16 +14,8 @@ export interface MarkupShape {
   color: string;
 }
 
-function clampFraction(value: unknown): number {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(1, numeric));
-}
-
 export function sanitizeMarkupColor(color: unknown, fallback: string = MARKUP_DEFAULT_COLOR): string {
-  if (typeof color !== 'string') return fallback;
-  const value = color.trim();
-  return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : fallback;
+  return sanitizeHexColor(color, fallback);
 }
 
 export function sanitizeMarkupShape(

@@ -36,7 +36,7 @@ class RotateField:
         expand_canvas: bool,
     ) -> tuple:
         if field.overlays:
-            self._send_warning("Rotate clears annotation/markup overlays!")
+            emit_warning("Rotate clears annotation/markup overlays!")
 
         angle = float(angle)
         order_map = {
@@ -81,9 +81,6 @@ class RotateField:
             overlays=[],
         )
         return (result,)
-
-    def _send_warning(self, message: str):
-        emit_warning(message)
 
     @staticmethod
     def _rotated_extents(field: DataField, angle: float, expand_canvas: bool) -> tuple[float, float]:

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
+import { pointerToFraction } from './overlayUtils';
 
 export const CAPTURE_SELECTOR = '.cs-overlay';
 
@@ -34,11 +35,7 @@ export default function CrossSectionOverlay({
   const [dragging, setDragging] = useState<string | null>(null); // 'p1' or 'p2'
 
   const getCoords = useCallback((e: React.PointerEvent<Element>) => {
-    const rect = containerRef.current!.getBoundingClientRect();
-    return {
-      fx: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
-      fy: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
-    };
+    return pointerToFraction(e, containerRef.current!);
   }, []);
 
   const onPointerDown = useCallback((point: string) => (e: React.PointerEvent<Element>) => {

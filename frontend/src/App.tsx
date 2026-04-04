@@ -68,7 +68,7 @@ import {
   GROUP_HEADER_HEIGHT,
   GROUP_MIN_WIDTH,
   GROUP_MIN_HEIGHT,
-  getNodeDimension,
+  getNodeSize,
   applyNodeSize,
   getNodeAbsolutePosition,
   collectGroupDescendantIds,
@@ -126,6 +126,36 @@ const CANVAS_RIGHT_DRAG_ZOOM_SENSITIVITY = 0.0065;
 const CANVAS_RIGHT_DRAG_ZOOM_THRESHOLD = 5;
 
 const DEBUG = false; // set to true for verbose logging
+
+function restoreGroupEdges(edges: any[], groupId: string) {
+  return edges.map((edge: any) => {
+    if ((edge.data as any)?.groupInternalHiddenBy === groupId) {
+      const nextData: any = { ...(edge.data || {}) };
+      delete nextData.groupInternalHiddenBy;
+      return {
+        ...edge,
+        hidden: false,
+        data: Object.keys(nextData).length > 0 ? nextData : undefined,
+      };
+    }
+    if (edge.data?.groupProxyOwner === groupId) {
+      const nextData: any = { ...(edge.data || {}) };
+      const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
+      delete nextData.groupProxyOwner;
+      delete nextData.groupProxyOriginal;
+      return {
+        ...edge,
+        source: original.source || edge.source,
+        sourceHandle: original.sourceHandle || edge.sourceHandle,
+        target: original.target || edge.target,
+        targetHandle: original.targetHandle || edge.targetHandle,
+        hidden: false,
+        data: Object.keys(nextData).length > 0 ? nextData : undefined,
+      };
+    }
+    return edge;
+  });
+}
 
 // ── Main flow component (needs ReactFlowProvider ancestor) ────────────
 
@@ -212,6 +242,14 @@ function Flow() {
     reactFlow.updateNodeInternals(groupId);
   }, [reactFlow, setNodes]);
 
+  const refreshAllGroups = useCallback((explicitNodes: any[] | null = null, explicitEdges: any[] | null = null) => {
+    setTimeout(() => {
+      (reactFlow.getNodes() as TonoNode[])
+        .filter((node) => node.data?.className === 'Group')
+        .forEach((node) => refreshGroupNode(node.id, explicitNodes, explicitEdges));
+    }, 0);
+  }, [reactFlow, refreshGroupNode]);
+
   const toggleGroupCollapse = useCallback((groupId: string) => {
     const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
@@ -296,30 +334,7 @@ function Flow() {
         return edge;
       }
 
-      if ((edge.data as any)?.groupInternalHiddenBy === groupId) {
-        const nextData: any = { ...(edge.data || {}) };
-        delete nextData.groupInternalHiddenBy;
-        return {
-          ...edge,
-          hidden: false,
-          data: Object.keys(nextData).length > 0 ? nextData : undefined,
-        };
-      }
-      if (edge.data?.groupProxyOwner === groupId) {
-        const nextData: any = { ...(edge.data || {}) };
-        const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
-        delete nextData.groupProxyOwner;
-        delete nextData.groupProxyOriginal;
-        return {
-          ...edge,
-          source: original.source || edge.source,
-          sourceHandle: original.sourceHandle || edge.sourceHandle,
-          target: original.target || edge.target,
-          targetHandle: original.targetHandle || edge.targetHandle,
-          data: Object.keys(nextData).length > 0 ? nextData : undefined,
-        };
-      }
-      return edge;
+      return restoreGroupEdges([edge], groupId)[0];
     });
 
     setNodes(nextNodes as TonoNode[]);
@@ -352,44 +367,13 @@ function Flow() {
         };
       });
 
-    const nextEdges = currentEdges
-      .map((edge) => {
-        if ((edge.data as any)?.groupInternalHiddenBy === groupId) {
-          const nextData: any = { ...(edge.data || {}) };
-          delete nextData.groupInternalHiddenBy;
-          return {
-            ...edge,
-            hidden: false,
-            data: Object.keys(nextData).length > 0 ? nextData : undefined,
-          };
-        }
-        if (edge.data?.groupProxyOwner === groupId) {
-          const nextData: any = { ...(edge.data || {}) };
-          const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
-          delete nextData.groupProxyOwner;
-          delete nextData.groupProxyOriginal;
-          return {
-            ...edge,
-            source: original.source || edge.source,
-            sourceHandle: original.sourceHandle || edge.sourceHandle,
-            target: original.target || edge.target,
-            targetHandle: original.targetHandle || edge.targetHandle,
-            hidden: false,
-            data: Object.keys(nextData).length > 0 ? nextData : undefined,
-          };
-        }
-        return edge;
-      })
-      .filter((edge) => String(edge.source) !== String(groupId) && String(edge.target) !== String(groupId));
+    const nextEdges = restoreGroupEdges(currentEdges, groupId)
+      .filter((edge: any) => String(edge.source) !== String(groupId) && String(edge.target) !== String(groupId));
 
     setNodes(nextNodes);
     setEdges(nextEdges);
-    setTimeout(() => {
-      (reactFlow.getNodes() as TonoNode[])
-        .filter((node) => node.data?.className === 'Group')
-        .forEach((node) => refreshGroupNode(node.id, nextNodes, nextEdges));
-    }, 0);
-  }, [reactFlow, refreshGroupNode, setEdges, setNodes]);
+    refreshAllGroups(nextNodes, nextEdges);
+  }, [reactFlow, refreshAllGroups, setEdges, setNodes]);
 
   const createGroupFromSelection = useCallback(() => {
     const currentNodes = (reactFlow.getNodes() as TonoNode[]);
@@ -808,12 +792,8 @@ function Flow() {
         });
       }, 0);
     }
-    setTimeout(() => {
-      (reactFlow.getNodes() as TonoNode[])
-        .filter((node) => node.data?.className === 'Group')
-        .forEach((node) => refreshGroupNode(node.id));
-    }, 0);
-  }, [onEdgesChange, reactFlow, refreshAnnotationNodeOutputs, refreshGroupNode, refreshLoadNodeOutputs]);
+    refreshAllGroups();
+  }, [onEdgesChange, reactFlow, refreshAllGroups, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs]);
 
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
     // Stash undo snapshot when a drag begins
@@ -887,12 +867,8 @@ function Flow() {
       )));
     }
 
-    setTimeout(() => {
-      (reactFlow.getNodes() as TonoNode[])
-        .filter((node) => node.data?.className === 'Group')
-        .forEach((node) => refreshGroupNode(node.id));
-    }, 0);
-  }, [onNodesChange, reactFlow, refreshGroupNode, setEdges, setNodes]);
+    refreshAllGroups();
+  }, [onNodesChange, reactFlow, refreshAllGroups, setEdges, setNodes]);
 
   // ── Drop-on-blank: open filtered context menu ──────────────────────
 
@@ -1583,7 +1559,7 @@ function Flow() {
     return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, []);
 
-  const getWorkflowBlob = useCallback(async () => {
+  const captureWorkflowImage = useCallback(async () => {
     const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
     if (!viewportEl) throw new Error('Flow element not found');
 
@@ -1591,10 +1567,8 @@ function Flow() {
     if (allNodes.length === 0) throw new Error('No nodes to capture');
 
     const bounds = getRenderedNodeBounds(allNodes);
-    if (!bounds) {
-      throw new Error('Could not determine rendered node bounds');
-    }
-    const pad = 0.1; // 10% margin on each side
+    if (!bounds) throw new Error('Could not determine rendered node bounds');
+    const pad = 0.1;
     const imageWidth = Math.ceil(bounds.width * (1 + pad * 2));
     const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
     const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
@@ -1610,176 +1584,97 @@ function Flow() {
       },
     });
     if (!blob) throw new Error('Capture returned empty');
-
-    const stampedBlob = await stampLogoOnBlob(blob);
-    const workflow = serializeWorkflowState(allNodes, (reactFlow.getEdges() as TonoEdge[])) as any;
-    if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
-    return embedWorkflow(stampedBlob as Blob, workflow);
+    return await stampLogoOnBlob(blob) as Blob;
   }, [reactFlow]);
+
+  const getWorkflowBlob = useCallback(async () => {
+    const imageBlob = await captureWorkflowImage();
+    const workflow = serializeWorkflowState(
+      (reactFlow.getNodes() as TonoNode[]),
+      (reactFlow.getEdges() as TonoEdge[]),
+    ) as any;
+    if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
+    return embedWorkflow(imageBlob, workflow);
+  }, [reactFlow, captureWorkflowImage]);
+
+  const saveBlobToFile = useCallback(async (blob: Blob, filename: string): Promise<string | null> => {
+    if (window.pywebview?.api?.choose_save_workflow_png_path) {
+      const requestedPath = await window.pywebview.api.choose_save_workflow_png_path(filename);
+      if (!requestedPath) return null;
+      const resp = await fetch(`/save-workflow-png?path=${encodeURIComponent(requestedPath)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/png' },
+        body: blob,
+      });
+      if (!resp.ok) throw new Error(await resp.text() || `Save failed (${resp.status})`);
+      const { path: savedPath } = await resp.json();
+      return savedPath || null;
+    }
+
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker!({
+          suggestedName: filename,
+          types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return filename;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return null;
+        throw err;
+      }
+    }
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return filename;
+  }, []);
 
   const saveWorkflow = useCallback(async () => {
     setStatus({ text: 'Saving…', level: 'info' });
     try {
       const finalBlob = await getWorkflowBlob();
-
-      if (window.pywebview?.api?.choose_save_workflow_png_path) {
-        const requestedPath = await window.pywebview.api.choose_save_workflow_png_path('workflow.png');
-        if (!requestedPath) {
-          setStatus({ text: 'Save cancelled.', level: 'info' });
-          return;
-        }
-        const resp = await fetch(`/save-workflow-png?path=${encodeURIComponent(requestedPath)}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'image/png',
-          },
-          body: finalBlob,
-        });
-        if (!resp.ok) {
-          throw new Error(await resp.text() || `Save failed (${resp.status})`);
-        }
-        const { path: savedPath } = await resp.json();
-        if (!savedPath) {
-          setStatus({ text: 'Save cancelled.', level: 'info' });
-          return;
-        }
-        setStatus({ text: `Workflow saved to ${savedPath}.`, level: 'info' });
-        return;
+      const saved = await saveBlobToFile(finalBlob, 'workflow.png');
+      if (!saved) {
+        setStatus({ text: 'Save cancelled.', level: 'info' });
+      } else {
+        setStatus({ text: `Workflow saved to ${saved}.`, level: 'info' });
       }
-
-      if ('showSaveFilePicker' in window) {
-        try {
-          const handle = await window.showSaveFilePicker!({
-            suggestedName: 'workflow.png',
-            types: [
-              {
-                description: 'PNG image',
-                accept: { 'image/png': ['.png'] },
-              },
-            ],
-          });
-          const writable = await handle.createWritable();
-          await writable.write(finalBlob);
-          await writable.close();
-          setStatus({ text: 'Workflow saved as workflow.png.', level: 'info' });
-          return;
-        } catch (err: any) {
-          if (err?.name === 'AbortError') {
-            setStatus({ text: 'Save cancelled.', level: 'info' });
-            return;
-          }
-          throw err;
-        }
-      }
-
-      // Final fallback: trigger a browser download and tell the user where it went.
-      const resp = await fetch('/download?filename=workflow.png', {
-        method: 'POST',
-        body: finalBlob,
-      });
-      const dlBlob = await resp.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(dlBlob);
-      a.download = 'workflow.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-
-      setStatus({
-        text: 'Workflow downloaded as workflow.png to your browser default downloads folder.',
-        level: 'info',
-      });
     } catch (err: any) {
       setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
     }
-  }, [getWorkflowBlob]);
+  }, [getWorkflowBlob, saveBlobToFile]);
 
   const savePackedWorkflow = useCallback(async () => {
     setStatus({ text: 'Packing files…', level: 'info' });
     try {
-      const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
-      if (!viewportEl) throw new Error('Flow element not found');
-
+      const imageBlob = await captureWorkflowImage();
       const allNodes = (reactFlow.getNodes() as TonoNode[]);
-      if (allNodes.length === 0) throw new Error('No nodes to capture');
-
-      const bounds = getRenderedNodeBounds(allNodes);
-      if (!bounds) throw new Error('Could not determine rendered node bounds');
-      const pad = 0.1;
-      const imageWidth = Math.ceil(bounds.width * (1 + pad * 2));
-      const imageHeight = Math.ceil(bounds.height * (1 + pad * 2));
-      const vp = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 1, pad);
-
-      if (DEBUG) console.log('[pack] capturing viewport…');
-      const blob = await captureWorkflowViewportBlob(viewportEl, {
-        backgroundColor: CANVAS_COLORS.bgDeep,
-        width: imageWidth,
-        height: imageHeight,
-        style: {
-          width: `${imageWidth}px`,
-          height: `${imageHeight}px`,
-          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
-        },
-      });
-      if (!blob) throw new Error('Capture returned empty');
-
-      if (DEBUG) console.log('[pack] stamping logo…');
-      const stampedBlob = await stampLogoOnBlob(blob);
-      let workflow: any = serializeWorkflowState(allNodes, (reactFlow.getEdges() as TonoEdge[]));
+      const workflow: any = serializeWorkflowState(allNodes, (reactFlow.getEdges() as TonoEdge[]));
       if (journalContentRef.current) workflow.journalContent = journalContentRef.current;
 
-      if (DEBUG) console.log('[pack] packing files…');
-      workflow = await packWorkflow(workflow, nodeDefsRef.current, (packed: number, total: number) => {
-        setStatus({ text: `Packing files… (${packed}/${total})`, level: 'info' });
+      const packed = await packWorkflow(workflow, nodeDefsRef.current, (done: number, total: number) => {
+        setStatus({ text: `Packing files… (${done}/${total})`, level: 'info' });
       });
-      if (DEBUG) console.log('[pack] packed, embedding into PNG…', workflow.packed ? 'has packed files' : 'no packed files');
-      const finalBlob = await embedWorkflow(stampedBlob as Blob, workflow);
-      if (DEBUG) console.log('[pack] embed complete, blob size:', finalBlob.size);
-      const defaultName = 'workflow-packed.png';
+      const finalBlob = await embedWorkflow(imageBlob, packed as any);
 
-      if (window.pywebview?.api?.choose_save_workflow_png_path) {
-        const requestedPath = await window.pywebview.api.choose_save_workflow_png_path(defaultName);
-        if (!requestedPath) { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
-        const resp = await fetch(`/save-workflow-png?path=${encodeURIComponent(requestedPath)}`, {
-          method: 'POST', headers: { 'Content-Type': 'image/png' }, body: finalBlob,
-        });
-        if (!resp.ok) throw new Error(await resp.text() || `Save failed (${resp.status})`);
-        const { path: savedPath } = await resp.json();
-        if (!savedPath) { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
-        setStatus({ text: `Packed workflow saved to ${savedPath}.`, level: 'info' });
-        return;
+      const saved = await saveBlobToFile(finalBlob, 'workflow-packed.png');
+      if (!saved) {
+        setStatus({ text: 'Save cancelled.', level: 'info' });
+      } else {
+        setStatus({ text: `Packed workflow saved to ${saved}.`, level: 'info' });
       }
-
-      if ('showSaveFilePicker' in window) {
-        try {
-          const handle = await window.showSaveFilePicker!({
-            suggestedName: defaultName,
-            types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }],
-          });
-          const writable = await handle.createWritable();
-          await writable.write(finalBlob);
-          await writable.close();
-          setStatus({ text: 'Packed workflow saved.', level: 'info' });
-          return;
-        } catch (err: any) {
-          if (err?.name === 'AbortError') { setStatus({ text: 'Save cancelled.', level: 'info' }); return; }
-          throw err;
-        }
-      }
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(finalBlob);
-      a.download = defaultName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      setStatus({ text: `Packed workflow downloaded as ${defaultName}.`, level: 'info' });
     } catch (err: any) {
       setStatus({ text: 'Pack failed: ' + err.message, level: 'error' });
     }
-  }, [reactFlow]);
+  }, [reactFlow, captureWorkflowImage, saveBlobToFile]);
 
   const copySnapshot = useCallback(() => {
     setStatus({ text: 'Copying snapshot…', level: 'info' });
@@ -2201,10 +2096,11 @@ function Flow() {
       const anchorNode = nodeMap.get(String(dragState?.anchorId || node.id));
       const intendedAnchorAbsolute = dragIntent?.absolutePositions.get(String(anchorNode?.id || node.id))
         || (anchorNode ? getNodeAbsolutePosition(anchorNode, nodeMap) : null);
-      const intendedAnchorCenter = anchorNode && intendedAnchorAbsolute
+      const anchorSize = anchorNode ? getNodeSize(anchorNode) : null;
+      const intendedAnchorCenter = anchorNode && intendedAnchorAbsolute && anchorSize
         ? {
-          x: intendedAnchorAbsolute.x + (Number(getNodeDimension(anchorNode, 'width')) || 200) / 2,
-          y: intendedAnchorAbsolute.y + (Number(getNodeDimension(anchorNode, 'height')) || 120) / 2,
+          x: intendedAnchorAbsolute.x + anchorSize.width / 2,
+          y: intendedAnchorAbsolute.y + anchorSize.height / 2,
         }
         : null;
       const targetGroup = findExpandedGroupDropTarget(
@@ -2222,8 +2118,7 @@ function Flow() {
           if (!draggedIdSet.has(String(candidate.id))) return candidate;
 
           const intendedAbsolute = dragIntent?.absolutePositions.get(String(candidate.id));
-          const width = Number(getNodeDimension(candidate, 'width')) || 200;
-          const height = Number(getNodeDimension(candidate, 'height')) || 120;
+          const { width, height } = getNodeSize(candidate);
           const center = intendedAbsolute
             ? { x: intendedAbsolute.x + width / 2, y: intendedAbsolute.y + height / 2 }
             : getNodeCenter(candidate, nodeMap);

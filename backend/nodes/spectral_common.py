@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.data_types import DataField
+from backend.nodes.helpers import _square_unit
 
 
 def _level_data(data: np.ndarray, level: str) -> np.ndarray:
@@ -76,15 +77,6 @@ def _inverse_unit(unit: str) -> str:
     if not text:
         return ""
     return f"1/{text}"
-
-
-def _square_unit(unit: str) -> str:
-    text = str(unit or "").strip()
-    if not text:
-        return ""
-    if text.isalnum() or text in {"m", "nm", "um", "pm", "V", "A", "Hz", "px"}:
-        return f"{text}^2"
-    return f"({text})^2"
 
 
 def _product_unit(*units: str) -> str:

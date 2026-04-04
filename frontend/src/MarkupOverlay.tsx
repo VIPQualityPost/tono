@@ -10,12 +10,7 @@ import {
   sanitizeMarkupColor,
   sanitizeMarkupShape,
 } from './markupShapeGeometry';
-
-function clampFraction(value: number) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(1, numeric));
-}
+import { clampFraction, pointerToFraction } from './overlayUtils';
 
 interface MarkupShape {
   kind: string;
@@ -150,11 +145,11 @@ export default function MarkupOverlay({
   }, [image]);
 
   const getPoint = useCallback((event: React.PointerEvent<Element>) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+    if (!containerRef.current) return null;
+    const { fx, fy } = pointerToFraction(event, containerRef.current);
     return {
-      x: Number(clampFraction((event.clientX - rect.left) / rect.width).toFixed(4)),
-      y: Number(clampFraction((event.clientY - rect.top) / rect.height).toFixed(4)),
+      x: Number(fx.toFixed(4)),
+      y: Number(fy.toFixed(4)),
     };
   }, []);
 

@@ -1,9 +1,8 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.execution_context import emit_preview
-from backend.data_types import DataField, encode_preview
-from backend.nodes.helpers import _mask_overlay, _mask_structure
+from backend.data_types import DataField
+from backend.nodes.helpers import _mask_structure, mask_to_bool, bool_to_mask, emit_mask_preview
 
 
 @register_node(display_name="Mask Morphology")
@@ -45,7 +44,7 @@ class MaskMorphology:
                 field: DataField | None = None) -> tuple:
         from scipy.ndimage import binary_closing, binary_dilation, binary_erosion, binary_opening
 
-        binary = mask > 127
+        binary = mask_to_bool(mask)
         struct = _mask_structure(radius, shape)
 
         if operation == "dilate":
@@ -59,10 +58,8 @@ class MaskMorphology:
         else:
             raise ValueError(f"Unknown morphological operation: {operation}")
 
-        out = result.astype(np.uint8) * 255
+        out = bool_to_mask(result)
 
-        if field is not None:
-            overlay = _mask_overlay(field, out)
-            emit_preview(encode_preview(overlay))
+        emit_mask_preview(field, out)
 
         return (out,)

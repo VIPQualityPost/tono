@@ -32,26 +32,20 @@ class SlopeDistribution:
     )
 
     def process(self, field: DataField, distribution: str, n_bins: int) -> tuple:
-        from scipy.ndimage import sobel
+        from backend.nodes.surface_common import physical_sobel_gradient, slope_unit as _slope_unit
 
-        # Physical slopes in z_unit/xy_unit — matches Gwyddion's gwy_data_field_filter_sobel
-        gx = sobel(field.data, axis=1) / (8.0 * field.dx)
-        gy = sobel(field.data, axis=0) / (8.0 * field.dy)
-
+        gx, gy = physical_sobel_gradient(field)
         gx = gx.ravel()
         gy = gy.ravel()
-        n = len(gx)
 
-        z = str(field.si_unit_z or "").strip()
-        xy = str(field.si_unit_xy or "").strip()
-        slope_unit = f"{z}/{xy}" if z and xy else (z or xy)
+        su = _slope_unit(field)
 
         if distribution == "phi":
-            return self._phi(gx, gy, n_bins, slope_unit)
+            return self._phi(gx, gy, n_bins, su)
         elif distribution == "theta":
             return self._theta(gx, gy, n_bins)
         elif distribution == "gradient":
-            return self._gradient(gx, gy, n_bins, slope_unit)
+            return self._gradient(gx, gy, n_bins, su)
         else:
             raise ValueError(f"Unknown distribution type: {distribution!r}. "
                              f"Choose from: theta, phi, gradient")

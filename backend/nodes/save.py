@@ -101,7 +101,7 @@ class Save:
         else:
             raise ValueError(f"Save does not support input type: {type(value).__name__}")
 
-        self._send_warning(f"Saved to {path.name}")
+        emit_warning(f"Saved to {path.name}")
         emit_file_download(str(path))
         return ()
 
@@ -373,6 +373,3 @@ class Save:
             lines.append("  endfacet")
         lines.append("endsolid tono")
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-    def _send_warning(self, message: str):
-        emit_warning(message)

@@ -1,4 +1,5 @@
 import { getNodeCenter, getGroupWorkspaceBounds, rectContainsPoint } from './nodeGeometry';
+import { clamp } from './overlayUtils.ts';
 
 export function getEventClientPosition(event: any) {
   if (!event) return null;
@@ -52,7 +53,7 @@ export function isEditableTarget(target: any) {
 }
 
 export function clampNumber(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+  return clamp(value, min, max);
 }
 
 export function canStartCanvasRightDragZoom(target: any) {

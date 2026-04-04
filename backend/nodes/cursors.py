@@ -3,6 +3,7 @@ import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
 from backend.data_types import DataField, LineData, RecordTable, encode_preview, render_datafield_preview
+from backend.nodes.helpers import frac_to_index
 
 
 @register_node(display_name="Cursors")
@@ -76,16 +77,8 @@ class Cursors:
         xmin = float(np.min(x)) if len(x) else 0.0
         xmax = float(np.max(x)) if len(x) else 1.0
 
-        def x_frac_to_idx(frac):
-            if n <= 1:
-                return 0
-            if xmax == xmin:
-                return 0
-            target_x = xmin + frac * (xmax - xmin)
-            return int(np.argmin(np.abs(x - target_x)))
-
-        idx_a = x_frac_to_idx(x1)
-        idx_b = x_frac_to_idx(x2)
+        idx_a = frac_to_index(x, x1)
+        idx_b = frac_to_index(x, x2)
 
         xa, ya = float(x[idx_a]), float(y[idx_a])
         xb, yb = float(x[idx_b]), float(y[idx_b])

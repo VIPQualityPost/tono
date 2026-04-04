@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
+from backend.nodes.helpers import mask_to_bool, bool_to_mask
 
 
 @register_node(display_name="Grain Filter")
@@ -40,7 +41,7 @@ class GrainFilter:
     ) -> tuple:
         from scipy.ndimage import label
 
-        binary = np.asarray(mask) > 127
+        binary = mask_to_bool(mask)
         labeled, n_grains = label(binary)
 
         # Build per-grain keep table (index 0 = background, always False)
@@ -60,7 +61,7 @@ class GrainFilter:
             keep[gid] = True
 
         result = keep[labeled]
-        return (result.astype(np.uint8) * 255,)
+        return (bool_to_mask(result),)
 
 
 def _touches_border(grain: np.ndarray) -> bool:

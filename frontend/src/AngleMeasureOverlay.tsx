@@ -9,16 +9,7 @@ import {
   moveAngleWidget,
   round3,
 } from './angleMeasureGeometry';
-
-function clamp01(value: number) {
-  return Math.max(0, Math.min(1, Number(value) || 0));
-}
-
-function sanitizeHexColor(value: unknown, fallback = '#ff9800') {
-  if (typeof value !== 'string') return fallback;
-  const text = value.trim();
-  return /^#[0-9a-fA-F]{6}$/.test(text) ? text.toLowerCase() : fallback;
-}
+import { clampFraction as clamp01, sanitizeHexColor, pointerToFraction } from './overlayUtils';
 
 function hexToRgb(value: string) {
   const color = sanitizeHexColor(value);
@@ -112,11 +103,7 @@ export default function AngleMeasureOverlay({
   const resolvedBadgeBorderColor = mixColor(resolvedColor, '#ffffff', 0.32);
 
   const getCoords = useCallback((event: React.PointerEvent<Element>) => {
-    const rect = containerRef.current!.getBoundingClientRect();
-    return {
-      fx: clamp01((event.clientX - rect.left) / rect.width),
-      fy: clamp01((event.clientY - rect.top) / rect.height),
-    };
+    return pointerToFraction(event, containerRef.current!);
   }, []);
 
   const updateWidgets = useCallback((updates: Record<string, unknown>) => {

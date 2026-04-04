@@ -309,10 +309,34 @@ def _render_markup_image(image, shapes):
 # Mask helpers  (from mask.py — used by multiple mask nodes)
 # ---------------------------------------------------------------------------
 
+def mask_to_bool(mask: np.ndarray) -> np.ndarray:
+    """Convert a uint8 mask (0/255) to a boolean array."""
+    return np.asarray(mask) > 127
+
+
+def bool_to_mask(binary: np.ndarray) -> np.ndarray:
+    """Convert a boolean array to a uint8 mask (0/255)."""
+    return np.asarray(binary, dtype=np.uint8) * 255
+
+
+def normalize_mask(
+    mask: np.ndarray | None, shape: tuple[int, int],
+) -> np.ndarray | None:
+    """Validate mask shape and convert from uint8 to boolean."""
+    if mask is None:
+        return None
+    mask_array = np.asarray(mask)
+    if mask_array.shape[:2] != shape:
+        raise ValueError(
+            f"Mask shape {mask_array.shape} does not match field shape {shape}."
+        )
+    return mask_to_bool(mask_array)
+
+
 def _mask_overlay(field, mask):
     from backend.data_types import datafield_to_uint8
     grey = datafield_to_uint8(field, "gray")
-    mask_bool = mask > 127
+    mask_bool = mask_to_bool(mask)
     if not np.any(mask_bool):
         return grey
 
@@ -726,6 +750,62 @@ def _square_unit(unit: str) -> str:
     if any(token in unit for token in ("^", "(", ")", "/", "*", " ")):
         return f"({unit})^2"
     return f"{unit}^2"
+
+
+def apply_masking(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np.ndarray:
+    """Return a boolean validity array from a mask and masking mode.
+
+    Returns a bool array the same shape as *data* indicating which pixels
+    should be included in calculations.
+    """
+    if mask is None or masking == "ignore":
+        return np.ones(data.shape, dtype=bool)
+    if masking == "include":
+        return np.asarray(mask, dtype=bool)
+    if masking == "exclude":
+        return ~np.asarray(mask, dtype=bool)
+    raise ValueError(f"Unknown masking mode: {masking}")
+
+
+def masked_values(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np.ndarray:
+    """Return the 1-D subset of *data* selected by the masking mode."""
+    if mask is None or masking == "ignore":
+        return data
+    if masking == "include":
+        return data[mask]
+    if masking == "exclude":
+        return data[~mask]
+    raise ValueError(f"Unknown masking mode: {masking}")
+
+
+def emit_mask_preview(field, mask_uint8: np.ndarray) -> None:
+    """Emit a standard mask-on-field preview if *field* is not None."""
+    if field is None:
+        return
+    from backend.execution_context import emit_preview
+    from backend.data_types import encode_preview
+    emit_preview(encode_preview(_mask_overlay(field, mask_uint8)))
+
+
+def histogram_with_centers(data: np.ndarray, bins: int = 256):
+    """Compute histogram and return (counts_float64, bin_centers)."""
+    raw_counts, bin_edges = np.histogram(data.ravel(), bins=int(bins))
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    counts = raw_counts.astype(np.float64)
+    return counts, bin_centers
+
+
+def frac_to_index(axis: np.ndarray, frac: float) -> int:
+    """Map a fractional position [0, 1] to the nearest index in *axis*."""
+    n = len(axis)
+    if n <= 1:
+        return 0
+    lo = float(axis[0])
+    hi = float(axis[-1])
+    if hi == lo:
+        return 0
+    target = lo + frac * (hi - lo)
+    return int(np.argmin(np.abs(axis - target)))
 
 
 def _apply_scalar_unit(base_unit: str, operation: str) -> str:

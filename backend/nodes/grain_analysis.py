@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import DataField, DataTable
-from backend.nodes.helpers import _square_unit
+from backend.nodes.helpers import _square_unit, mask_to_bool
 
 
 @register_node(display_name="Grain Analysis")
@@ -31,7 +31,7 @@ class GrainAnalysis:
     def process(self, field: DataField, mask: np.ndarray, min_size: int) -> tuple:
         from scipy.ndimage import label
 
-        binary = (mask > 127).astype(np.int32)
+        binary = mask_to_bool(mask).astype(np.int32)
         labeled, n_grains = label(binary)
 
         pixel_area = field.dx * field.dy

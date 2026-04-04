@@ -1,3 +1,5 @@
+import { clampFraction as clamp01 } from './overlayUtils.ts';
+
 interface AnglePoints {
   x1: number;
   y1: number;
@@ -5,10 +7,6 @@ interface AnglePoints {
   ym: number;
   x2: number;
   y2: number;
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
 export function round3(value: number): number {

@@ -7,13 +7,14 @@ from scipy.ndimage import binary_erosion, distance_transform_edt
 
 from backend.data_types import DataField
 from backend.node_registry import register_node
+from backend.nodes.helpers import mask_to_bool
 
 
 def _normalize_mask(mask: np.ndarray) -> np.ndarray:
     data = np.asarray(mask)
     if data.ndim != 2:
         raise ValueError("Grain Distance Transform requires a 2-D mask.")
-    return data > 127
+    return mask_to_bool(data)
 
 
 def _prepare_mask(binary: np.ndarray, from_border: bool) -> tuple[np.ndarray, tuple[slice, slice]]:

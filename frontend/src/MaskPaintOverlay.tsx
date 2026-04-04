@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CANVAS_COLORS } from './constants';
+import { clampFraction, pointerToFraction } from './overlayUtils';
 
 interface StrokePoint {
   x: number;
@@ -14,12 +15,6 @@ interface Stroke {
 interface DrawStrokeStyles {
   strokeStyle?: string;
   fillStyle?: string;
-}
-
-function clampFraction(value: number) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(1, numeric));
 }
 
 function sanitizeStroke(stroke: any, fallbackPenSize: number): Stroke | null {
@@ -219,12 +214,9 @@ export default function MaskPaintOverlay({
   }, [draftStroke, redrawCanvas]);
 
   const getPoint = useCallback((event: React.PointerEvent<Element>): StrokePoint | null => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return null;
-    return {
-      x: clampFraction((event.clientX - rect.left) / rect.width),
-      y: clampFraction((event.clientY - rect.top) / rect.height),
-    };
+    if (!containerRef.current) return null;
+    const { fx, fy } = pointerToFraction(event, containerRef.current);
+    return { x: fx, y: fy };
   }, []);
 
   const getBrushDisplaySize = useCallback(() => {

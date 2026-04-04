@@ -3,6 +3,7 @@ import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
 from backend.data_types import DataField, RecordTable
+from backend.nodes.helpers import frac_to_index, histogram_with_centers
 
 
 @register_node(display_name="Histogram")
@@ -44,9 +45,7 @@ class Histogram:
         x2: float = 0.75,
         y2: float = 0.5,
     ) -> tuple:
-        raw_counts, bin_edges = np.histogram(field.data.ravel(), bins=int(n_bins))
-        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-        counts = raw_counts.astype(np.float64)
+        counts, bin_centers = histogram_with_centers(field.data, n_bins)
         if y_scale == "log":
             counts = np.log10(1.0 + counts)
 
@@ -56,16 +55,8 @@ class Histogram:
         xmin = float(np.min(bin_centers)) if len(bin_centers) else 0.0
         xmax = float(np.max(bin_centers)) if len(bin_centers) else 1.0
 
-        def x_frac_to_idx(frac):
-            if len(bin_centers) <= 1:
-                return 0
-            if xmax == xmin:
-                return 0
-            target_x = xmin + frac * (xmax - xmin)
-            return int(np.argmin(np.abs(bin_centers - target_x)))
-
-        idx_a = x_frac_to_idx(x1)
-        idx_b = x_frac_to_idx(x2)
+        idx_a = frac_to_index(bin_centers, x1)
+        idx_b = frac_to_index(bin_centers, x2)
         xa = float(bin_centers[idx_a]) if len(bin_centers) else 0.0
         xb = float(bin_centers[idx_b]) if len(bin_centers) else 0.0
         ya = float(counts[idx_a]) if len(counts) else 0.0

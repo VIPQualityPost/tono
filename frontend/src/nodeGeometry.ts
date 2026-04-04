@@ -18,6 +18,13 @@ export function getNodeDimension(node: any, axis: string): number {
   return node.measured?.height || node.style?.height || node.height || 120;
 }
 
+export function getNodeSize(node: any): { width: number; height: number } {
+  return {
+    width: Number(getNodeDimension(node, 'width')) || 200,
+    height: Number(getNodeDimension(node, 'height')) || 120,
+  };
+}
+
 export function applyNodeSize(node: any, width: any, height: any) {
   const nextWidth = Math.round(Number(width) || 0);
   const nextHeight = Math.round(Number(height) || 0);
@@ -82,8 +89,7 @@ export function getGroupDisplayBounds(nodes: any[], selectedIds: any[]) {
     const node = nodeMap.get(String(id));
     if (!node) continue;
     const pos = getNodeAbsolutePosition(node, nodeMap);
-    const width = Number(getNodeDimension(node, 'width')) || 200;
-    const height = Number(getNodeDimension(node, 'height')) || 120;
+    const { width, height } = getNodeSize(node);
     minX = Math.min(minX, pos.x);
     minY = Math.min(minY, pos.y);
     maxX = Math.max(maxX, pos.x + width);
@@ -99,8 +105,7 @@ export function getGroupDisplayBounds(nodes: any[], selectedIds: any[]) {
 
 export function getGroupWorkspaceBounds(groupNode: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(groupNode, nodeMap);
-  const width = Number(getNodeDimension(groupNode, 'width')) || 200;
-  const height = Number(getNodeDimension(groupNode, 'height')) || 120;
+  const { width, height } = getNodeSize(groupNode);
   return {
     left: pos.x + GROUP_WORKSPACE_INSET,
     top: pos.y + GROUP_HEADER_HEIGHT + GROUP_WORKSPACE_INSET,
@@ -111,8 +116,7 @@ export function getGroupWorkspaceBounds(groupNode: any, nodeMap: Map<string, any
 
 export function getNodeCenter(node: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(node, nodeMap);
-  const width = Number(getNodeDimension(node, 'width')) || 200;
-  const height = Number(getNodeDimension(node, 'height')) || 120;
+  const { width, height } = getNodeSize(node);
   return {
     x: pos.x + width / 2,
     y: pos.y + height / 2,
@@ -121,8 +125,7 @@ export function getNodeCenter(node: any, nodeMap: Map<string, any>) {
 
 export function getNodeRect(node: any, nodeMap: Map<string, any>) {
   const pos = getNodeAbsolutePosition(node, nodeMap);
-  const width = Number(getNodeDimension(node, 'width')) || 200;
-  const height = Number(getNodeDimension(node, 'height')) || 120;
+  const { width, height } = getNodeSize(node);
   return {
     left: pos.x,
     top: pos.y,
@@ -132,8 +135,7 @@ export function getNodeRect(node: any, nodeMap: Map<string, any>) {
 }
 
 export function getAbsoluteRectForNodePosition(node: any, absolutePosition: { x: number; y: number }) {
-  const width = Number(getNodeDimension(node, 'width')) || 200;
-  const height = Number(getNodeDimension(node, 'height')) || 120;
+  const { width, height } = getNodeSize(node);
   return {
     left: absolutePosition.x,
     top: absolutePosition.y,

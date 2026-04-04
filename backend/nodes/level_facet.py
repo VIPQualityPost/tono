@@ -5,16 +5,7 @@ import numpy as np
 from backend.data_types import DataField
 from backend.node_registry import register_node
 from backend.nodes.surface_common import require_compatible_xy_z_units
-
-
-def _normalize_mask(mask: np.ndarray | None, shape: tuple[int, int]) -> np.ndarray | None:
-    if mask is None:
-        return None
-
-    mask_array = np.asarray(mask)
-    if mask_array.shape[:2] != shape:
-        raise ValueError(f"Mask shape {mask_array.shape} does not match field shape {shape}.")
-    return mask_array > 127
+from backend.nodes.helpers import normalize_mask
 
 
 def _facet_cell_mask(mask: np.ndarray | None, masking: str, shape: tuple[int, int]) -> np.ndarray:
@@ -141,6 +132,6 @@ class FacetLevelField:
         mask: np.ndarray | None = None,
     ) -> tuple:
         require_compatible_xy_z_units(field, "Facet Level")
-        mask_array = _normalize_mask(mask, field.data.shape)
+        mask_array = normalize_mask(mask, field.data.shape)
         leveled = _facet_level_data(field, mask_array, masking, max_iterations=100)
         return (field.replace(data=leveled),)

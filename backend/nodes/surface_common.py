@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from backend.data_types import DataField
 
 
@@ -13,6 +15,21 @@ def unit_dimension_key(unit: str) -> str:
     if text in _LENGTH_UNITS:
         return "length"
     return text
+
+
+def slope_unit(field: DataField) -> str:
+    """Return the physical slope unit string (z_unit/xy_unit)."""
+    z = str(field.si_unit_z or "").strip()
+    xy = str(field.si_unit_xy or "").strip()
+    return f"{z}/{xy}" if z and xy else (z or xy)
+
+
+def physical_sobel_gradient(field: DataField) -> tuple[np.ndarray, np.ndarray]:
+    """Compute physical Sobel gradient (gx, gy) in z_unit/xy_unit."""
+    from scipy.ndimage import sobel
+    gx = sobel(field.data, axis=1) / (8.0 * field.dx)
+    gy = sobel(field.data, axis=0) / (8.0 * field.dy)
+    return gx, gy
 
 
 def require_compatible_xy_z_units(field: DataField, node_name: str) -> None:

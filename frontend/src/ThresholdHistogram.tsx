@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getAxisScale } from './valueFormatting';
+import { clamp, formatTick, makeTicks, getExtent } from './overlayUtils';
 
 export const CAPTURE_SELECTOR = '.lineplot-overlay';
 
@@ -13,31 +14,7 @@ const MARKER_STROKE = '#ffffff';
 const MARKER_LOCKED_COLOR = '#e91e63';
 const MARKER_LABEL_FILL = '#0f172a';
 
-function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 function round4(v: number) { return parseFloat(v.toFixed(4)); }
-function trimZeros(t: string) { return t.replace(/(?:\.0+|(\.\d+?)0+)$/, '$1'); }
-
-function formatTick(value: number) {
-  const abs = Math.abs(value);
-  if (abs === 0) return '0';
-  if (abs >= 1e4 || abs < 1e-3) return value.toExponential(1).replace('e+', 'e');
-  if (abs >= 100) return trimZeros(value.toFixed(0));
-  if (abs >= 10) return trimZeros(value.toFixed(1));
-  if (abs >= 1) return trimZeros(value.toFixed(2));
-  return trimZeros(value.toFixed(3));
-}
-
-function makeTicks(min: number, max: number, count = 5) {
-  if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [min];
-  return Array.from({ length: count }, (_: unknown, i: number) => min + (max - min) * i / (count - 1));
-}
-
-function getExtent(values: number[], fallbackMin = 0, fallbackMax = 1) {
-  if (!Array.isArray(values) || !values.length) return [fallbackMin, fallbackMax];
-  let min = Infinity, max = -Infinity;
-  for (const v of values) { if (Number.isFinite(v)) { if (v < min) min = v; if (v > max) max = v; } }
-  return (Number.isFinite(min) && Number.isFinite(max)) ? [min, max] : [fallbackMin, fallbackMax];
-}
 
 interface ThresholdHistogramProps {
   overlay: any;

@@ -6,6 +6,7 @@ import numpy as np
 
 from backend.data_types import DataField
 from backend.node_registry import register_node
+from backend.nodes.helpers import bool_to_mask
 
 
 def _mark_scars_one_sign(
@@ -218,4 +219,4 @@ class ScarRemoval:
         )
         scar_mask = marks > 0.0
         corrected = _laplace_inpaint(np.asarray(field.data, dtype=np.float64), scar_mask)
-        return (field.replace(data=corrected), scar_mask.astype(np.uint8) * 255)
+        return (field.replace(data=corrected), bool_to_mask(scar_mask))

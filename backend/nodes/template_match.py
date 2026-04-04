@@ -4,6 +4,7 @@ import numpy as np
 
 from backend.data_types import DataField
 from backend.node_registry import register_node
+from backend.nodes.helpers import bool_to_mask
 
 
 @register_node(display_name="Template Match")
@@ -46,7 +47,7 @@ class TemplateMatch:
         # Clip to [0, 1] for display (match_template returns values in [-1, 1])
         score_clipped = np.clip(score, 0.0, 1.0)
 
-        detections = (score_clipped >= float(threshold)).astype(np.uint8) * 255
+        detections = bool_to_mask(score_clipped >= float(threshold))
 
         score_field = image.replace(data=score_clipped)
         return (score_field, detections)

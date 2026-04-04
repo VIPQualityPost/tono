@@ -20,7 +20,7 @@ import {
 } from './constants';
 import { getGroupMinimumSize } from './groupSizing';
 import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout';
-import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit } from './valueFormatting';
+import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit, formatSI, parseSI } from './valueFormatting';
 
 import type { NodeData, NodeContextValue, InputSpec, InputOptions, WidgetDescriptor, PreviewPayload, OverlayData } from './types';
 
@@ -300,51 +300,6 @@ class PreviewBoundary extends React.Component<PreviewBoundaryProps, PreviewBound
       </div>
     );
   }
-}
-
-// ── SI prefix helpers ─────────────────────────────────────────────────
-
-const _SI_PREFIXES = [
-  { prefix: 'T', factor: 1e12 },
-  { prefix: 'G', factor: 1e9 },
-  { prefix: 'M', factor: 1e6 },
-  { prefix: 'k', factor: 1e3 },
-  { prefix: '',  factor: 1 },
-  { prefix: 'm', factor: 1e-3 },
-  { prefix: 'μ', factor: 1e-6 },
-  { prefix: 'n', factor: 1e-9 },
-  { prefix: 'p', factor: 1e-12 },
-  { prefix: 'f', factor: 1e-15 },
-];
-
-// Map of suffix characters → multiplier (accept both 'u' and 'μ' for micro)
-const _SI_PARSE_MAP = { T:1e12, G:1e9, M:1e6, k:1e3, m:1e-3, u:1e-6, μ:1e-6, n:1e-9, p:1e-12, f:1e-15 };
-
-function formatSI(v: number, prec: number | null | undefined) {
-  if (!Number.isFinite(v)) return String(v);
-  if (v === 0) return prec != null ? `0.${'0'.repeat(prec)}` : '0';
-  const abs = Math.abs(v);
-  // Pick the largest SI prefix whose factor is ≤ |v| (gives value in [1, 1000))
-  let chosen = _SI_PREFIXES[_SI_PREFIXES.length - 1];
-  for (const p of _SI_PREFIXES) {
-    if (abs >= p.factor * (1 - 1e-10)) { chosen = p; break; }
-  }
-  const scaled = v / chosen.factor;
-  return (prec != null ? scaled.toFixed(prec) : String(scaled)) + chosen.prefix;
-}
-
-// Parse a string that may carry an SI suffix (e.g. "20n", "1.5μ", "500p")
-// Falls back to standard parseFloat for plain numbers and scientific notation.
-function parseSI(text: string) {
-  const t = (text || '').trim();
-  if (!t) return NaN;
-  const lastChar = t.slice(-1);
-  const factor = _SI_PARSE_MAP[lastChar as keyof typeof _SI_PARSE_MAP];
-  if (factor != null) {
-    const num = parseFloat(t.slice(0, -1));
-    if (!isNaN(num)) return num * factor;
-  }
-  return parseFloat(t);
 }
 
 // ── Draggable number input ────────────────────────────────────────────
@@ -1072,6 +1027,14 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
     },
   );
 
+  const overlayCoord = useCallback(
+    (key: 'x1' | 'y1' | 'x2' | 'y2', liveIdx: number, locked: boolean) => {
+      if (locked) return (liveCoordPair?.[liveIdx] ?? data.overlay?.[key]) as number;
+      return (data.widgetValues[key] ?? data.overlay?.[key]) as number;
+    },
+    [liveCoordPair, data.overlay, data.widgetValues],
+  );
+
   // Parse inputs into data handles and widgets
   const required = def?.input?.required || {};
   const optional = def?.input?.optional || {};
@@ -1495,8 +1458,8 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
               {data.overlay!.kind === 'line_plot' ? (
                 <LinePlotOverlay
                   overlay={data.overlay!}
-                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
-                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
+                  x1={overlayCoord('x1', 0, !!data.overlay!.a_locked)}
+                  x2={overlayCoord('x2', 2, !!data.overlay!.b_locked)}
                   aLocked={!!data.overlay!.a_locked}
                   bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
@@ -1505,10 +1468,10 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
               ) : data.overlay!.kind === 'crop_box' ? (
                 <CropBoxOverlay
                   image={data.overlay!.image ?? ''}
-                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
-                  y1={(data.overlay!.a_locked ? (liveCoordPair?.[1] ?? data.overlay!.y1) : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
-                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
-                  y2={(data.overlay!.b_locked ? (liveCoordPair?.[3] ?? data.overlay!.y2) : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  x1={overlayCoord('x1', 0, !!data.overlay!.a_locked)}
+                  y1={overlayCoord('y1', 1, !!data.overlay!.a_locked)}
+                  x2={overlayCoord('x2', 2, !!data.overlay!.b_locked)}
+                  y2={overlayCoord('y2', 3, !!data.overlay!.b_locked)}
                   aLocked={!!data.overlay!.a_locked}
                   bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
@@ -1517,10 +1480,10 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
               ) : data.overlay!.kind === 'cursor_points' ? (
                 <CrossSectionOverlay
                   image={data.overlay!.image ?? ''}
-                  x1={(data.overlay!.a_locked ? (liveCoordPair?.[0] ?? data.overlay!.x1) : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
-                  y1={(data.overlay!.a_locked ? (liveCoordPair?.[1] ?? data.overlay!.y1) : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
-                  x2={(data.overlay!.b_locked ? (liveCoordPair?.[2] ?? data.overlay!.x2) : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
-                  y2={(data.overlay!.b_locked ? (liveCoordPair?.[3] ?? data.overlay!.y2) : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  x1={overlayCoord('x1', 0, !!data.overlay!.a_locked)}
+                  y1={overlayCoord('y1', 1, !!data.overlay!.a_locked)}
+                  x2={overlayCoord('x2', 2, !!data.overlay!.b_locked)}
+                  y2={overlayCoord('y2', 3, !!data.overlay!.b_locked)}
                   aLocked={!!data.overlay!.a_locked}
                   bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
@@ -1577,10 +1540,10 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
               ) : (
                 <CrossSectionOverlay
                   image={data.overlay!.image ?? ''}
-                  x1={(data.overlay!.a_locked ? data.overlay!.x1 : (data.widgetValues.x1 ?? data.overlay!.x1)) as number}
-                  y1={(data.overlay!.a_locked ? data.overlay!.y1 : (data.widgetValues.y1 ?? data.overlay!.y1)) as number}
-                  x2={(data.overlay!.b_locked ? data.overlay!.x2 : (data.widgetValues.x2 ?? data.overlay!.x2)) as number}
-                  y2={(data.overlay!.b_locked ? data.overlay!.y2 : (data.widgetValues.y2 ?? data.overlay!.y2)) as number}
+                  x1={overlayCoord('x1', 0, !!data.overlay!.a_locked)}
+                  y1={overlayCoord('y1', 1, !!data.overlay!.a_locked)}
+                  x2={overlayCoord('x2', 2, !!data.overlay!.b_locked)}
+                  y2={overlayCoord('y2', 3, !!data.overlay!.b_locked)}
                   aLocked={!!data.overlay!.a_locked}
                   bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
@@ -1767,76 +1730,37 @@ function WidgetControl({ widget, nodeId, value, widgetValues, onChange, openFile
     );
   }
 
+  // ── Select dropdown helper ──────────────────────────────────────────
+  const renderSelect = (options: string[], selected: string) => (
+    <>
+      {!hideLabel && <label>{label}</label>}
+      <select
+        className="nodrag"
+        value={selected}
+        onChange={(e) => onChange(nodeId, name, e.target.value)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </>
+  );
+
   // Combo / enum — type itself is the array of options
   if (Array.isArray(type)) {
-    return (
-      <>
-        {!hideLabel && <label>{label}</label>}
-        <select
-          className="nodrag"
-          value={(val || type[0]) as string}
-          onChange={(e) => onChange(nodeId, name, e.target.value)}
-        >
-          {type.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      </>
-    );
+    return renderSelect(type, (val || type[0]) as string);
   }
 
   if (type === 'STRING' && dynamicTypeChoices.length > 0) {
-    const selected = dynamicTypeChoices.includes(String(val)) ? String(val) : dynamicTypeChoices[0];
-    return (
-      <>
-        {!hideLabel && <label>{label}</label>}
-        <select
-          className="nodrag"
-          value={selected}
-          onChange={(e) => onChange(nodeId, name, e.target.value)}
-        >
-          {dynamicTypeChoices.map((choice) => (
-            <option key={choice} value={choice}>{choice}</option>
-          ))}
-        </select>
-      </>
-    );
+    return renderSelect(dynamicTypeChoices, dynamicTypeChoices.includes(String(val)) ? String(val) : dynamicTypeChoices[0]);
   }
 
   if (type === 'STRING' && opts?.choices_from_table_input && dynamicTableColumns.length > 0) {
-    const selected = dynamicTableColumns.includes(String(val)) ? String(val) : dynamicTableColumns[0];
-    return (
-      <>
-        {!hideLabel && <label>{label}</label>}
-        <select
-          className="nodrag"
-          value={selected}
-          onChange={(e) => onChange(nodeId, name, e.target.value)}
-        >
-          {dynamicTableColumns.map((column) => (
-            <option key={column} value={column}>{column}</option>
-          ))}
-        </select>
-      </>
-    );
+    return renderSelect(dynamicTableColumns, dynamicTableColumns.includes(String(val)) ? String(val) : dynamicTableColumns[0]);
   }
 
   if (type === 'STRING' && opts?.choices_from_measure_input && dynamicMeasurementChoices.length > 0) {
-    const selected = dynamicMeasurementChoices.includes(String(val)) ? String(val) : dynamicMeasurementChoices[0];
-    return (
-      <>
-        {!hideLabel && <label>{label}</label>}
-        <select
-          className="nodrag"
-          value={selected}
-          onChange={(e) => onChange(nodeId, name, e.target.value)}
-        >
-          {dynamicMeasurementChoices.map((choice) => (
-            <option key={choice} value={choice}>{choice}</option>
-          ))}
-        </select>
-      </>
-    );
+    return renderSelect(dynamicMeasurementChoices, dynamicMeasurementChoices.includes(String(val)) ? String(val) : dynamicMeasurementChoices[0]);
   }
 
   if (type === 'FILE_PICKER' || type === 'FOLDER_PICKER') {

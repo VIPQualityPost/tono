@@ -1,9 +1,8 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.execution_context import emit_preview
-from backend.data_types import DataField, encode_preview
-from backend.nodes.helpers import _mask_overlay
+from backend.data_types import DataField
+from backend.nodes.helpers import bool_to_mask, mask_to_bool, emit_mask_preview
 
 
 @register_node(display_name="Mask Invert")
@@ -29,10 +28,8 @@ class MaskInvert:
     DESCRIPTION = "Invert a binary mask — swap masked and unmasked regions."
 
     def process(self, mask: np.ndarray, field: DataField | None = None) -> tuple:
-        out = np.where(mask > 127, np.uint8(0), np.uint8(255))
+        out = bool_to_mask(~mask_to_bool(mask))
 
-        if field is not None:
-            overlay = _mask_overlay(field, out)
-            emit_preview(encode_preview(overlay))
+        emit_mask_preview(field, out)
 
         return (out,)

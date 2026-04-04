@@ -89,7 +89,7 @@ class SaveImage:
         else:
             self._save_npz(path, layers, layer_names)
 
-        self._send_warning(f"Saved {len(layers)} layer(s) to {path.name}")
+        emit_warning(f"Saved {len(layers)} layer(s) to {path.name}")
         emit_file_download(str(path))
         return ()
 
@@ -181,6 +181,3 @@ class SaveImage:
         if isinstance(layer, np.ndarray):
             return np.asarray(layer)
         raise ValueError(f"Unsupported save layer type: {type(layer).__name__}")
-
-    def _send_warning(self, message: str):
-        emit_warning(message)

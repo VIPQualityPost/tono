@@ -16,6 +16,7 @@ from backend.data_types import (
 from backend.execution_context import emit_preview, emit_table, emit_warning
 from backend.node_registry import register_node
 from backend.nodes.surface_common import require_compatible_xy_z_units
+from backend.nodes.helpers import normalize_mask, apply_masking
 
 _CURVATURE_COLOR = "#ff9800"
 _CENTER_COLOR = "#8bd3ff"
@@ -26,16 +27,6 @@ class _Intersection:
     t: float
     x: float
     y: float
-
-
-def _normalize_mask(mask: np.ndarray | None, shape: tuple[int, int]) -> np.ndarray | None:
-    if mask is None:
-        return None
-
-    mask_array = np.asarray(mask)
-    if mask_array.shape[:2] != shape:
-        raise ValueError(f"Mask shape {mask_array.shape} does not match field shape {shape}.")
-    return mask_array > 127
 
 
 def _canonicalize_half_pi(angle: float) -> float:
@@ -52,9 +43,7 @@ def _fit_quadratic_surface(data: np.ndarray, mask: np.ndarray | None, masking: s
     x = 2.0 * xx.astype(np.float64) / max(xres - 1, 1) - 1.0
     y = 2.0 * yy.astype(np.float64) / max(yres - 1, 1) - 1.0
 
-    valid = np.ones(data.shape, dtype=bool)
-    if mask is not None and masking != "ignore":
-        valid = mask if masking == "include" else ~mask
+    valid = apply_masking(data, mask, masking)
 
     if np.count_nonzero(valid) < 6:
         return None
@@ -309,7 +298,7 @@ class Curvature:
         mask: np.ndarray | None = None,
     ) -> tuple:
         require_compatible_xy_z_units(field, "Curvature")
-        mask_array = _normalize_mask(mask, field.data.shape)
+        mask_array = normalize_mask(mask, field.data.shape)
         results = _compute_curvature_results(field, mask_array, masking)
 
         if results is None:

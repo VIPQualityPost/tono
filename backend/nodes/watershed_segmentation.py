@@ -8,7 +8,7 @@ from scipy.ndimage import label
 from backend.execution_context import emit_preview
 from backend.data_types import DataField, encode_preview
 from backend.node_registry import register_node
-from backend.nodes.helpers import _mask_overlay
+from backend.nodes.helpers import _mask_overlay, mask_to_bool, bool_to_mask
 
 
 def _working_height(field: DataField, invert_height: bool) -> np.ndarray:
@@ -184,7 +184,7 @@ def _combine_masks(result_mask: np.ndarray, existing_mask: np.ndarray | None, co
     if existing_mask is None or combine_mode == "replace":
         return result_mask
 
-    existing = np.asarray(existing_mask) > 127
+    existing = mask_to_bool(existing_mask)
     current = np.asarray(result_mask, dtype=bool)
     if existing.shape != current.shape:
         raise ValueError("Existing mask must have the same shape as the watershed output.")
@@ -196,7 +196,7 @@ def _combine_masks(result_mask: np.ndarray, existing_mask: np.ndarray | None, co
     else:
         raise ValueError(f"Unsupported combine mode: {combine_mode}")
 
-    return merged.astype(np.uint8) * 255
+    return bool_to_mask(merged)
 
 
 @register_node(display_name="Watershed Segmentation")
@@ -262,7 +262,7 @@ class WatershedSegmentation:
             _watershed_step(watershed_field, water, labels, seeds, watershed_drop)
 
         labels = _mark_boundaries(labels)
-        result_mask = (labels > 0).astype(np.uint8) * 255
+        result_mask = bool_to_mask(labels > 0)
         result_mask = _combine_masks(result_mask, mask, combine_mode)
 
         emit_preview(encode_preview(_mask_overlay(field, result_mask)))

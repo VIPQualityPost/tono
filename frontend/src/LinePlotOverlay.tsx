@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getAxisScale } from './valueFormatting';
+import { clamp, formatTick, makeTicks, getExtent } from './overlayUtils';
 
 export const CAPTURE_SELECTOR = '.lineplot-overlay';
 
@@ -13,57 +14,8 @@ const MARKER_STROKE = '#ffffff';
 const MARKER_LOCKED_COLOR = '#e91e63';
 const MARKER_LABEL_FILL = '#0f172a';
 
-function clamp(v: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, v));
-}
-
 function round3(v: number) {
   return parseFloat(v.toFixed(3));
-}
-
-function trimZeros(text: string) {
-  return text.replace(/(?:\.0+|(\.\d+?)0+)$/, '$1');
-}
-
-function formatTick(value: number) {
-  const abs = Math.abs(value);
-  if (abs === 0) return '0';
-  if (abs >= 1e4 || abs < 1e-3) {
-    return value.toExponential(1).replace('e+', 'e');
-  }
-  if (abs >= 100) return trimZeros(value.toFixed(0));
-  if (abs >= 10) return trimZeros(value.toFixed(1));
-  if (abs >= 1) return trimZeros(value.toFixed(2));
-  return trimZeros(value.toFixed(3));
-}
-
-function makeTicks(min: number, max: number, count = 5) {
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
-  if (min === max) return [min];
-  const ticks: number[] = [];
-  for (let i = 0; i < count; i += 1) {
-    ticks.push(min + ((max - min) * i) / (count - 1));
-  }
-  return ticks;
-}
-
-function getExtent(values: number[], fallbackMin = 0, fallbackMax = 1) {
-  if (!Array.isArray(values) || values.length === 0) {
-    return [fallbackMin, fallbackMax];
-  }
-
-  let min = Infinity;
-  let max = -Infinity;
-  for (const value of values) {
-    if (!Number.isFinite(value)) continue;
-    if (value < min) min = value;
-    if (value > max) max = value;
-  }
-
-  if (!Number.isFinite(min) || !Number.isFinite(max)) {
-    return [fallbackMin, fallbackMax];
-  }
-  return [min, max];
 }
 
 interface LinePlotOverlayProps {

@@ -31,30 +31,20 @@ class Gradient:
     )
 
     def process(self, field: DataField, component: str) -> tuple:
-        from scipy.ndimage import sobel
+        from backend.nodes.surface_common import physical_sobel_gradient, slope_unit
 
-        data = field.data
-        # Sobel kernel sums to ±8 over 2-pixel span; divide by 8·dx to get z/xy slope.
-        gx = sobel(data, axis=1) / (8.0 * field.dx)
-        gy = sobel(data, axis=0) / (8.0 * field.dy)
+        gx, gy = physical_sobel_gradient(field)
 
         if component == "magnitude":
             result = np.hypot(gx, gy)
-            z = str(field.si_unit_z or "").strip()
-            xy = str(field.si_unit_xy or "").strip()
-            out_unit_z = f"{z}/{xy}" if z and xy else (z or xy)
+            out_unit_z = slope_unit(field)
         elif component == "x":
             result = gx
-            z = str(field.si_unit_z or "").strip()
-            xy = str(field.si_unit_xy or "").strip()
-            out_unit_z = f"{z}/{xy}" if z and xy else (z or xy)
+            out_unit_z = slope_unit(field)
         elif component == "y":
             result = gy
-            z = str(field.si_unit_z or "").strip()
-            xy = str(field.si_unit_xy or "").strip()
-            out_unit_z = f"{z}/{xy}" if z and xy else (z or xy)
+            out_unit_z = slope_unit(field)
         elif component == "azimuth":
-            # Azimuth: local slope direction, radians, matches Gwyddion's filter_azimuth
             result = np.arctan2(gy, gx)
             out_unit_z = "rad"
         else:

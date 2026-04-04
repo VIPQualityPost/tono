@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
+from backend.nodes.helpers import mask_to_bool, bool_to_mask
 
 
 _MASK_BOOLEAN_OPERATIONS = {
@@ -53,14 +54,14 @@ class MaskOperations:
         mask_b: np.ndarray,
         operation: str,
     ) -> tuple:
-        a = mask_a > 127
-        b = mask_b > 127
+        a = mask_to_bool(mask_a)
+        b = mask_to_bool(mask_b)
 
         op = _MASK_BOOLEAN_OPERATIONS.get(operation)
         if op is None:
             raise ValueError(f"Unknown mask operation: {operation}")
         result = op(a, b)
 
-        out = result.astype(np.uint8) * 255
+        out = bool_to_mask(result)
 
         return (out,)
