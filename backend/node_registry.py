@@ -91,6 +91,7 @@ def get_node_info(class_name: str) -> dict[str, Any]:
         "output_node": bool(getattr(cls, "OUTPUT_NODE", False)),
         "manual_trigger": bool(getattr(cls, "MANUAL_TRIGGER", False)),
         "description": getattr(cls, "DESCRIPTION", ""),
+        "keywords": list(getattr(cls, "KEYWORDS", ())),
     }
 
 

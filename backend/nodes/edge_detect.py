@@ -25,6 +25,8 @@ class EdgeDetect:
         "Detect edges using Sobel, Prewitt, Laplacian, or LoG operators. "
     )
 
+    KEYWORDS = ("sobel", "prewitt", "laplacian", "log", "gradient", "edges")
+
     def process(self, field: DataField, method: str, sigma: float) -> tuple:
         from scipy.ndimage import sobel, prewitt, gaussian_laplace, laplace
         data = field.data

@@ -106,7 +106,9 @@ export default function ContextMenu({
       for (const { className, def } of category.items) {
         if (seen.has(className)) continue;
         const name = (def.display_name || className).toLowerCase();
-        if (name.includes(q)) {
+        const keywords: string[] = Array.isArray(def.keywords) ? def.keywords : [];
+        const keywordMatch = keywords.some((kw) => String(kw).toLowerCase().includes(q));
+        if (name.includes(q) || keywordMatch) {
           results.push({ className, def });
           seen.add(className);
         }
