@@ -1,3 +1,6 @@
 [submodule "demo"]
 	path = demo
 	url = https://github.com/vipqualitypost/string-demo-images
+[submodule "tests/fixtures"]
+	path = tests/fixtures
+	url = https://github.com/vipqualitypost/tono-test-data.git
