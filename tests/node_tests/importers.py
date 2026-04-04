@@ -11,7 +11,10 @@ import pytest
 
 from backend.data_types import DataField
 
-FIXTURES = Path(__file__).parent.parent / "output"
+FIXTURES = Path(__file__).parent.parent / "fixtures"
+_SUBMODULE_HINT = (
+    "run `git submodule update --init tests/fixtures` to fetch the tono-test-data submodule"
+)
 
 
 # ── Registry ─────────────────────────────────────────────────────────────────
@@ -122,7 +125,7 @@ class TestArrayImageImporter:
     def test_fixture_npy(self):
         path = FIXTURES / "nanoparticles.npy"
         if not path.exists():
-            pytest.skip("fixture not available")
+            pytest.skip(f"nanoparticles.npy fixture not available — {_SUBMODULE_HINT}")
         fields = self.mod.load(path)
         assert len(fields) == 1
         assert fields[0].data.ndim == 2
@@ -144,7 +147,7 @@ class TestIBWImporter:
 
     def test_load_fixture(self):
         if not self.fixture.exists():
-            pytest.skip("Bacteria.ibw fixture not available")
+            pytest.skip(f"Bacteria.ibw fixture not available — {_SUBMODULE_HINT}")
         fields = self.mod.load(self.fixture)
         assert len(fields) == 4
         for f in fields:
@@ -156,7 +159,7 @@ class TestIBWImporter:
 
     def test_channel_names_fixture(self):
         if not self.fixture.exists():
-            pytest.skip("Bacteria.ibw fixture not available")
+            pytest.skip(f"Bacteria.ibw fixture not available — {_SUBMODULE_HINT}")
         names = self.mod.channel_names(self.fixture)
         assert len(names) == 4
         assert all(isinstance(n, str) for n in names)

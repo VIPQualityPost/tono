@@ -2,11 +2,20 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 from backend.data_types import DataField
 from backend.execution import ExecutionEngine
 import backend.nodes  # noqa: F401
 
-FIXTURES = Path(__file__).parent.parent / "output"
+FIXTURES = Path(__file__).parent.parent / "fixtures"
+
+pytestmark = pytest.mark.skipif(
+    not (FIXTURES / "Bacteria.ibw").exists() or not (FIXTURES / "nanoparticles.npy").exists(),
+    reason=(
+        "tono-test-data fixtures not available — "
+        "run `git submodule update --init tests/fixtures`"
+    ),
+)
 
 
 def test_load_npy():
