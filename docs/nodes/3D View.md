@@ -31,3 +31,4 @@ Interactive 3D surface view of a DATA_FIELD. Use the mesh input for geometry and
 - Resolution is applied by uniform subsampling; fine features smaller than one mesh step may be lost.
 - Non-square pixels emit a warning and the 3D surface represents physical scan area, not pixel grid.
 - Very high resolution values (close to 512) with large fields may be slow to render.
+- Make Solid can be used to generate a mesh that is valid for 3D printing, just save the mesh as an STL and import into your slicer.
