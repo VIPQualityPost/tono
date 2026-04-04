@@ -46,6 +46,7 @@ from aiohttp import web, WSMsgType
 
 from backend.frontend_build import FrontendBuildError, ensure_frontend_dist_ready
 from backend.runtime_paths import ensure_runtime_dirs, frontend_dir, frontend_dist_dir, plugins_dir, plugins_enabled, project_root
+from backend import usage_tracker
 from backend.session_runtime import (
     PATH_INPUT_TYPES,
     SESSION_HEADER,
@@ -577,6 +578,9 @@ def create_app(
                     "type": "node_timing",
                     "data": {"node_id": node_id, "elapsed_ms": elapsed_ms},
                 })
+                class_type = normalized_prompt.get(node_id, {}).get("class_type")
+                if class_type:
+                    usage_tracker.record(class_type, elapsed_ms)
 
             try:
                 await loop.run_in_executor(
@@ -692,10 +696,21 @@ def create_app(
         except Exception:
             return web.json_response({"current": current, "latest": None, "update_available": False})
 
+    usage_tracker.init()
+
+    async def get_usage_stats(_request: web.Request) -> web.Response:
+        stats = usage_tracker.snapshot()
+        sorted_stats = sorted(stats.items(), key=lambda kv: kv[1]["count"], reverse=True)
+        return web.json_response({
+            "nodes": {k: v for k, v in sorted_stats},
+            "total_executions": sum(v["count"] for v in stats.values()),
+        })
+
     app = web.Application(client_max_size=100 * 1024 * 1024)  # 100 MB upload cap
     app["allow_local_filesystem"] = allow_local_filesystem
 
     app.router.add_get("/health", health_check)
+    app.router.add_get("/usage-stats", get_usage_stats)
     app.router.add_get("/", index)
     app.router.add_get("/nodes", get_nodes)
     app.router.add_get("/files", list_files)
@@ -743,4 +758,9 @@ def create_app(
         return middleware
 
     app.middlewares.append(_cors_middleware)
+
+    async def _on_shutdown(_app: web.Application) -> None:
+        usage_tracker.flush()
+
+    app.on_shutdown.append(_on_shutdown)
     return app
