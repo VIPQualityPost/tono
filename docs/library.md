@@ -37,11 +37,7 @@ print(filtered.data.mean())  # height in metres
 Load an SPM data file. Returns one `DataField` per channel.
 
 ```python
-fields = tono.load("scan.gwy")       # Gwyddion
-fields = tono.load("image.sxm")      # Nanonis
-fields = tono.load("data.ibw")       # Igor Binary Wave
-fields = tono.load("scan.hdf5")      # HDF5
-fields = tono.load("photo.png")      # Standard images
+fields = tono.load("scan.hdf5")  
 ```
 
 #### `tono.channel_names(path) -> list[str]`
