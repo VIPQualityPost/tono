@@ -1,6 +1,6 @@
 # Using tono as a Python library
 
-tono's processing nodes can be used as a standalone Python library for scripting, batch processing, and integration into other tools — no web server required.
+tono's processing nodes can be used as a standalone Python library for scripting, batch processing, and integration into other tools — no web server required. It works best as part of a notebook style workflow (Jupyter, IPython).
 
 ## Installation
 
