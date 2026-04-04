@@ -170,6 +170,12 @@ function Flow() {
   const [activeHelpTab, setActiveHelpTab] = useState<string | null>(null);
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; url: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuClosing, setMenuClosing] = useState(false);
+  const closeMenu = useCallback(() => {
+    if (!menuOpen || menuClosing) return;
+    setMenuClosing(true);
+    setTimeout(() => { setMenuOpen(false); setMenuClosing(false); }, 150);
+  }, [menuOpen, menuClosing]);
 
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const panTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2226,18 +2232,21 @@ function Flow() {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
       if (floatingMenuRef.current && !floatingMenuRef.current.contains(e.target as HTMLElement)) {
-        setMenuOpen(false);
+        closeMenu();
       }
     };
     document.addEventListener('pointerdown', handler);
     return () => document.removeEventListener('pointerdown', handler);
   }, [menuOpen]);
 
-  // Auto-dismiss status toast after 5 seconds
+  // Auto-dismiss status toast after 5 seconds with close animation
+  const [toastClosing, setToastClosing] = useState(false);
   useEffect(() => {
     if (!status.text) return;
-    const timer = setTimeout(() => setStatus({ text: '', level: 'info' }), 5000);
-    return () => clearTimeout(timer);
+    setToastClosing(false);
+    const fadeTimer = setTimeout(() => setToastClosing(true), 4700);
+    const removeTimer = setTimeout(() => { setToastClosing(false); setStatus({ text: '', level: 'info' }); }, 5000);
+    return () => { clearTimeout(fadeTimer); clearTimeout(removeTimer); };
   }, [status]);
 
   useEffect(() => {
@@ -2444,43 +2453,43 @@ function Flow() {
       <div className="app-container">
         {/* Floating menu */}
         <div className="floating-menu" ref={floatingMenuRef}>
-          <button className="floating-menu-toggle" onClick={() => setMenuOpen((o) => !o)} title="Menu">
+          <button className="floating-menu-toggle" onClick={() => menuOpen ? closeMenu() : setMenuOpen(true)} title="Menu">
             <img src="/favicon.svg" alt="tono" className="floating-menu-logo" />
           </button>
-          {menuOpen && (
-            <div className="floating-menu-dropdown">
-              <button className="btn btn-primary" onClick={() => { runWorkflow(); setMenuOpen(false); }} title="Run workflow (Ctrl+Enter)">
+          {(menuOpen || menuClosing) && (
+            <div className={`floating-menu-dropdown${menuClosing ? ' closing' : ''}`}>
+              <button className="btn btn-primary" onClick={() => { runWorkflow(); closeMenu(); }} title="Run workflow (Ctrl+Enter)">
                 ▶ Run
               </button>
-              <button className="btn" onClick={() => { clearGraph(); setMenuOpen(false); }} title="Clear graph">
+              <button className="btn" onClick={() => { clearGraph(); closeMenu(); }} title="Clear graph">
                 ✕ Clear
               </button>
               <hr className="floating-menu-divider" />
-              <button className="btn" onClick={() => { saveWorkflow(); setMenuOpen(false); }} title="Save workflow as PNG">
+              <button className="btn" onClick={() => { saveWorkflow(); closeMenu(); }} title="Save workflow as PNG">
                 ⤓ Save
               </button>
-              <button className="btn" onClick={() => { savePackedWorkflow(); setMenuOpen(false); }} title="Save packed workflow (with files)">
+              <button className="btn" onClick={() => { savePackedWorkflow(); closeMenu(); }} title="Save packed workflow (with files)">
                 ⊞ Pack
               </button>
-              <button className="btn" onClick={() => { loadWorkflow(); setMenuOpen(false); }} title="Load workflow (JSON or PNG)">
+              <button className="btn" onClick={() => { loadWorkflow(); closeMenu(); }} title="Load workflow (JSON or PNG)">
                 ⤒ Load
               </button>
-              <button className="btn" onClick={() => { copySnapshot(); setMenuOpen(false); }} title="Copy workflow screenshot to clipboard">
+              <button className="btn" onClick={() => { copySnapshot(); closeMenu(); }} title="Copy workflow screenshot to clipboard">
                 ⎘ Snapshot
               </button>
               {window.pywebview && (
-                <button className="btn" onClick={() => { uploadPlugin(); setMenuOpen(false); }} title="Upload a plugin (.py)">
+                <button className="btn" onClick={() => { uploadPlugin(); closeMenu(); }} title="Upload a plugin (.py)">
                   ⊕ Plugin
                 </button>
               )}
               <hr className="floating-menu-divider" />
-              <button className="btn" onClick={() => { loadExampleWorkflow(); setMenuOpen(false); }} title="Load example workflow">
+              <button className="btn" onClick={() => { loadExampleWorkflow(); closeMenu(); }} title="Load example workflow">
                 ◈ Example
               </button>
-              <button className="btn" onClick={() => { openJournalTab(); setMenuOpen(false); }} title="Open journal">
+              <button className="btn" onClick={() => { openJournalTab(); closeMenu(); }} title="Open journal">
                 ✎ Journal
               </button>
-              <button className="btn" onClick={() => { openDocByFilename('getting-started.md'); setMenuOpen(false); }} title="Getting started guide">
+              <button className="btn" onClick={() => { openDocByFilename('getting-started.md'); closeMenu(); }} title="Getting started guide">
                 ? Help
               </button>
               {updateInfo && (
@@ -2496,8 +2505,8 @@ function Flow() {
         </div>
 
         {/* Status toast */}
-        {status.text && (
-          <div className={`status-toast ${status.level}`}>{status.text}</div>
+        {(status.text || toastClosing) && (
+          <div className={`status-toast ${status.level}${toastClosing ? ' closing' : ''}`}>{status.text}</div>
         )}
 
         {/* React Flow canvas */}

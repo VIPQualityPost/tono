@@ -188,6 +188,34 @@ html, body, #root {
   gap: 3px;
   min-width: 150px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: menu-open 0.15s ease-out;
+  transform-origin: top left;
+}
+
+@keyframes menu-open {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.floating-menu-dropdown.closing {
+  animation: menu-close 0.15s ease-in forwards;
+}
+
+@keyframes menu-close {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
+  }
 }
 
 .floating-menu-dropdown .btn {
@@ -252,9 +280,22 @@ html, body, #root {
   border: 1px solid var(--border-toolbar);
   max-width: 60%;
   text-align: center;
+  animation: toast-in 0.2s ease-out;
+}
+.status-toast.closing {
+  animation: toast-out 0.3s ease-in forwards;
 }
 .status-toast.info  { color: var(--accent-light); }
 .status-toast.error { color: var(--error-text); background: var(--error-bg); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+}
 
 /* ── React Flow container ──────────────────────────────────────────── */
 .flow-container {
