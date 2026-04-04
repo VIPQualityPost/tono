@@ -27,8 +27,6 @@ class FieldArithmetic:
         "Apply a point-wise arithmetic operation to two DATA_FIELDs of the same resolution. "
         "add/subtract/multiply/divide/min/max perform element-wise operations; "
         "hypot computes sqrt(a² + b²) per pixel. "
-        "Equivalent to gwy_data_field_sum_fields / subtract_fields / multiply_fields / "
-        "divide_fields / min_of_fields / max_of_fields / hypot_of_fields in arithmetic.c."
     )
 
     def process(self, field_a: DataField, field_b: DataField, operation: str) -> tuple:

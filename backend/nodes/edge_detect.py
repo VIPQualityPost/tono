@@ -23,7 +23,6 @@ class EdgeDetect:
 
     DESCRIPTION = (
         "Detect edges using Sobel, Prewitt, Laplacian, or LoG operators. "
-        "Equivalent to gwy_data_field_filter_sobel / gwy_data_field_filter_laplacian."
     )
 
     def process(self, field: DataField, method: str, sigma: float) -> tuple:

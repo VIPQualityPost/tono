@@ -22,7 +22,6 @@ class FixZero:
 
     DESCRIPTION = (
         "Shift data so that the minimum (or mean/median) is zero. "
-        "Equivalent to fix_zero in Gwyddion's level.c."
     )
 
     def process(self, field: DataField, method: str) -> tuple:

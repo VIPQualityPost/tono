@@ -79,7 +79,6 @@ class ShapeFitting:
         "surface data. Outputs either the fitted surface or the residual "
         "(original minus fit). Reports fitted parameters including radius "
         "of curvature, centre position, etc. "
-        "Equivalent to Gwyddion's fit-shape.c module."
     )
 
     def process(self, field: DataField, shape: str, output: str) -> tuple:

@@ -58,7 +58,6 @@ class DriftCorrection:
         "Compensate for thermal or piezo drift between scan lines. "
         "Cross-correlates each row (or column) against a reference to estimate "
         "the drift offset, then shifts lines to correct. "
-        "Equivalent to Gwyddion's drift.c module."
     )
 
     def process(self, field: DataField, reference: str, direction: str) -> tuple:

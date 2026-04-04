@@ -65,7 +65,6 @@ class LatticeMeasurement:
         "Detect and measure periodic lattice structures from a surface. "
         "Computes the 2D ACF or FFT power spectrum, finds the strongest peaks, "
         "and reports lattice vectors (spacing and angle). "
-        "Equivalent to Gwyddion's measure_lattice.c module."
     )
 
     def process(self, field: DataField, method: str) -> tuple:

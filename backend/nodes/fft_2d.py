@@ -32,7 +32,6 @@ class FFT2D:
     DESCRIPTION = (
         "Compute the 2D FFT with optional windowing and mean/plane subtraction. "
         "Outputs log magnitude, magnitude, phase, and PSDF as separate channels. "
-        "Equivalent to gwy_data_field_2dfft / gwy_data_field_2dpsdf."
     )
 
     def process(self, field: DataField, windowing: str, level: str) -> tuple:

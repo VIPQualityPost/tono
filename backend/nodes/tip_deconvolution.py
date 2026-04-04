@@ -30,7 +30,6 @@ class TipDeconvolution:
         "  surface[y,x] = min_{dy,dx}[image[y+dy, x+dx] − mytip[dy,dx]] "
         "Connect the tip output from a TipModel node. "
         "The tip pixel size must match the image pixel size. "
-        "Equivalent to gwy_tip_erosion (tip.c)."
     )
 
     def process(self, field: DataField, tip: DataField) -> tuple:

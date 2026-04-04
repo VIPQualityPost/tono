@@ -28,7 +28,6 @@ class RadialProfile:
         "Compute the azimuthally averaged radial profile from a centre point. "
         "cx/cy give the centre as a fraction of the field width/height (0.5 = centre). "
         "Output x-axis is radius in physical xy units. "
-        "Equivalent to gwy_data_field_angular_average used by Gwyddion's Radial Profile tool (rprofile.c)."
     )
 
     def process(self, field: DataField, cx: float, cy: float, n_bins: int) -> tuple:

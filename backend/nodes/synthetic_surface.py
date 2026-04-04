@@ -98,7 +98,6 @@ class SyntheticSurface:
         "algorithm testing. Patterns: fbm (fractional Brownian motion), "
         "white_noise, lattice (periodic grid), steps (terraced), "
         "particles (spherical bumps on flat), flat (zero surface). "
-        "Equivalent to Gwyddion's *_synth.c modules."
     )
 
     def process(

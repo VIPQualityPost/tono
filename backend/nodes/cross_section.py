@@ -36,7 +36,6 @@ class CrossSection:
     DESCRIPTION = (
         "Extract a cross-section profile along a line between two points. "
         "Drag the markers on the image to set the line endpoints. "
-        "Equivalent to gwy_data_field_get_profile."
     )
 
     def process(

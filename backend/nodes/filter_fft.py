@@ -11,7 +11,7 @@ class FFTFilter:
 
     Accepts either a LINE or DATA_FIELD and returns a filtered output of the
     same type.  Uses a Butterworth transfer function with configurable order
-    for a smooth roll-off.  Equivalent to Gwyddion fft_filter_1d / fft_filter_2d.
+    for a smooth roll-off.
     """
 
     @classmethod

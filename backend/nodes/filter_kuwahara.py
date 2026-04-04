@@ -73,9 +73,10 @@ class KuwaharaFilter:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method. "
-        "Unlike Gaussian blur, sharp boundaries are preserved. "
-        "Equivalent to Gwyddion's Kuwahara filter."
+        """
+        Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method.
+        "Unlike Gaussian blur, sharp boundaries are preserved. 
+        """
     )
 
     def process(self, field: DataField, iterations: int) -> tuple:

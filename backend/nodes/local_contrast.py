@@ -26,7 +26,6 @@ class LocalContrast:
     DESCRIPTION = (
         "Expand the local dynamic range at each pixel. "
         "Reveals fine surface features that are hidden by global contrast range. "
-        "Equivalent to Gwyddion local_contrast.c."
     )
 
     def process(self, field: DataField, kernel_size: int, weight: float) -> tuple:

@@ -27,7 +27,7 @@ class Entropy:
 
     DESCRIPTION = (
         "Shannon entropy of the height or slope distribution. "
-        "H = -\u03a3 p\u00b7ln(p). Equivalent to Gwyddion entropy.c."
+        "H = -\u03a3 p\u00b7ln(p)."
     )
 
     def process(self, field: DataField, mode: str, n_bins: int) -> tuple:

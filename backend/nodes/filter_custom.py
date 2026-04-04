@@ -97,7 +97,6 @@ class CustomConvolution:
         "Apply a user-defined convolution kernel. "
         "Enter rows of space-separated numbers. "
         "Example sharpen: '0 -1 0 / -1 5 -1 / 0 -1 0' (use newlines, not slashes). "
-        "Equivalent to Gwyddion convolution_filter.c."
     )
 
     def process(

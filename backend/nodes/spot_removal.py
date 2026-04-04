@@ -29,7 +29,7 @@ class SpotRemoval:
     DESCRIPTION = (
         "Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. "
         "The mask defines defect locations. Laplace method solves the 2D Laplace equation "
-        "for smooth inpainting. Equivalent to Gwyddion spotremove.c."
+        "for smooth inpainting."
     )
 
     def process(

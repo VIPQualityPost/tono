@@ -36,7 +36,6 @@ class TipModel:
         "Shapes: parabola — paraboloid with apex radius R; "
         "cone — sphere-capped cone (radius R, half_angle from tip axis in degrees); "
         "sphere — ball-on-stick (sphere cap only). "
-        "Equivalent to gwy_tip_model_preset_create (tip.c / tip_model.c)."
     )
 
     def process(

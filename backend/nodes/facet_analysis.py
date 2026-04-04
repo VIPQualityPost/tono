@@ -30,7 +30,6 @@ class FacetAnalysis:
         "Outputs a 2D histogram (stereographic projection) where the x-axis "
         "is the azimuthal angle (phi) and y-axis is the inclination (theta). "
         "Intensity represents how much surface area faces each orientation. "
-        "Equivalent to Gwyddion's facet_analysis.c module."
     )
 
     def process(self, field: DataField, n_bins: int, kernel_size: int) -> tuple:

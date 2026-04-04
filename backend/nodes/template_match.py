@@ -31,7 +31,7 @@ class TemplateMatch:
     DESCRIPTION = (
         "Find a template pattern within a larger data field using normalised cross-correlation. "
         "The score output shows match quality (1 = perfect match). Detections mask marks positions "
-        "above the threshold. Equivalent to Gwyddion maskcor.c."
+        "above the threshold."
     )
 
     def process(

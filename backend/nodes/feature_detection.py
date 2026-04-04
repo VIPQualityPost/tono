@@ -38,7 +38,6 @@ class FeatureDetection:
         "Canny: multi-stage edge detector with hysteresis thresholding. "
         "Harris: corner/interest point detector based on structure tensor. "
         "Outputs a feature map and a table of detected feature locations. "
-        "Equivalent to Gwyddion's edge/corner detection in filters.c."
     )
 
     def process(

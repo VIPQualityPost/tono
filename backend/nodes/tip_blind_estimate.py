@@ -492,7 +492,6 @@ class BlindTipEstimate:
         "threshold: noise floor in metres — start at 0 and increase if tip is too sharp. "
         "Output tip has apex=max, edges=0 (same convention as TipModel). "
         "Certainty map marks surface pixels where the tip was in unambiguous single contact. "
-        "Equivalent to gwy_tip_estimate_partial / gwy_tip_estimate_full + gwy_tip_cmap (tip.c)."
     )
 
     def process(

@@ -21,7 +21,7 @@ class Statistics:
 
     DESCRIPTION = (
         "Compute basic surface statistics: min, max, mean, RMS roughness, median, "
-        "and skewness. Equivalent to gwy_data_field_get_min/max/avg/rms."
+        "and skewness."
     )
 
     def process(self, field: DataField) -> tuple:

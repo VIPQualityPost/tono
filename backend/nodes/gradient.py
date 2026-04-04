@@ -27,7 +27,6 @@ class Gradient:
         "'x'/'y' give the physical gradient components (z_unit/xy_unit); "
         "'magnitude' gives sqrt(gx²+gy²); "
         "'azimuth' gives the local slope direction in radians via atan2(gy, gx). "
-        "Equivalent to gwy_data_field_filter_sobel in Gwyddion (gradient.c)."
     )
 
     def process(self, field: DataField, component: str) -> tuple:

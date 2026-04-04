@@ -33,7 +33,6 @@ class AffineCorrection:
         "Apply an affine correction to fix geometric distortions from scanner "
         "nonlinearity. Parameters specify shear, scale, and rotation corrections. "
         "The transform is applied about the centre of the field. "
-        "Equivalent to Gwyddion's correct_affine.c module."
     )
 
     def process(

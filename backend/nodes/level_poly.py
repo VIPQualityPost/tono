@@ -24,7 +24,6 @@ class PolyLevelField:
 
     DESCRIPTION = (
         "Fit and subtract a polynomial background of given degree in x and y. "
-        "Equivalent to gwy_data_field_fit_polynom."
     )
 
     def process(self, field: DataField, degree_x: int, degree_y: int) -> tuple:

@@ -35,7 +35,6 @@ class MFMAnalysis:
         "d²F/dz²; force_gradient_to_field recovers the stray field Hz; "
         "charge_density computes the effective magnetic charge; "
         "magnetisation estimates the z-component of sample magnetisation. "
-        "Equivalent to Gwyddion's mfm_*.c modules."
     )
 
     def process(self, field: DataField, operation: str, lift_height: float) -> tuple:

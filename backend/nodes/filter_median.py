@@ -19,7 +19,7 @@ class MedianFilter:
     )
     FUNCTION = "process"
 
-    DESCRIPTION = "Apply a median filter. Equivalent to gwy_data_field_filter_median."
+    DESCRIPTION = "Apply a median filter."
 
     def process(self, field: DataField, size: int) -> tuple:
         from scipy.ndimage import median_filter

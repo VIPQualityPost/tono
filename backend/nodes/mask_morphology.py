@@ -7,9 +7,8 @@ from backend.nodes.helpers import _mask_structure, mask_to_bool, bool_to_mask, e
 
 @register_node(display_name="Mask Morphology")
 class MaskMorphology:
-    """Morphological operations on binary masks.
-
-    Equivalent to Gwyddion's mask_morph.c (erode, dilate, open, close).
+    """
+    Morphological operations on binary masks.
     """
     _CUSTOM_PREVIEW = True
 
@@ -37,7 +36,6 @@ class MaskMorphology:
         "Dilate expands regions, erode shrinks them, "
         "open (erode then dilate) removes small spots, "
         "close (dilate then erode) fills small holes. "
-        "Equivalent to Gwyddion mask_morph."
     )
 
     def process(self, mask: np.ndarray, operation: str, radius: int, shape: str,

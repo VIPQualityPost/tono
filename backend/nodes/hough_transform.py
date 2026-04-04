@@ -37,7 +37,6 @@ class HoughTransform:
         "Hough parameter space. Reports detected features with their parameters. "
         "For lines: angle and distance from origin. "
         "For circles: centre coordinates and radius. "
-        "Equivalent to Gwyddion's hough.c module."
     )
 
     def process(

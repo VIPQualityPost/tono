@@ -32,7 +32,6 @@ class Deconvolution:
         "blurred by a Gaussian PSF with the given sigma (in pixels). "
         "Wiener filtering is fast and works in one pass. "
         "Richardson-Lucy is iterative and preserves positivity. "
-        "Equivalent to Gwyddion's deconvolve.c module."
     )
 
     def process(

@@ -27,8 +27,6 @@ class Resample:
     DESCRIPTION = (
         "Resample a DATA_FIELD to a new pixel resolution while preserving physical dimensions. "
         "Physical size (xreal, yreal) is unchanged; pixel size dx/dy scales accordingly. "
-        "Equivalent to gwy_data_field_new_resampled with GWY_INTERPOLATION_LINEAR / "
-        "GWY_INTERPOLATION_CUBIC / GWY_INTERPOLATION_ROUND (scale.c)."
     )
 
     _ORDERS = {"nearest": 0, "linear": 1, "cubic": 3}

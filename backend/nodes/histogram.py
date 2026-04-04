@@ -32,7 +32,6 @@ class Histogram:
         "Compute the height distribution histogram (DH). "
         "Use log scale to reveal small peaks next to a dominant background. "
         "Outputs marker measurements while showing the histogram interactively in-node. "
-        "Equivalent to gwy_data_field_dh."
     )
 
     def process(

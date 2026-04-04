@@ -33,8 +33,7 @@ class WaveletDenoise:
 
     DESCRIPTION = (
         "Denoise using wavelet coefficient thresholding. BayesShrink adapts the threshold "
-        "per sub-band; VisuShrink uses a global threshold. Equivalent to applying DWT from "
-        "Gwyddion dwt.c with coefficient thresholding."
+        "per sub-band; VisuShrink uses a global threshold."
     )
 
     def process(

@@ -28,7 +28,6 @@ class SlopeDistribution:
         "'theta' is the inclination angle (0–max°), probability density (1/deg); "
         "'phi' is the azimuthal slope direction (0–360°), weighted by slope² (z/xy)²; "
         "'gradient' is the gradient magnitude distribution, probability density (1/(z/xy)). "
-        "Equivalent to Gwyddion's slope_dist module (slope_dist.c)."
     )
 
     def process(self, field: DataField, distribution: str, n_bins: int) -> tuple:

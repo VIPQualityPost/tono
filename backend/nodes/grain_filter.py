@@ -29,7 +29,6 @@ class GrainFilter:
         "'min_area': discard grains smaller than this many pixels (removes specks). "
         "'max_area': discard grains larger than this many pixels (0 = no limit). "
         "'remove_border': discard any grain that touches the image edge. "
-        "Equivalent to Gwyddion's grain_filter module (grain_filter.c)."
     )
 
     def process(

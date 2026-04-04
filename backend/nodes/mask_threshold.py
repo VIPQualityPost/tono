@@ -30,7 +30,6 @@ class ThresholdMask:
     DESCRIPTION = (
         "Create a binary mask by thresholding data. "
         "Otsu automatically finds the optimal threshold. "
-        "Equivalent to Gwyddion's threshold and otsu_threshold modules."
     )
 
     def process(self, field: DataField, method: str, threshold: float, direction: str) -> tuple:

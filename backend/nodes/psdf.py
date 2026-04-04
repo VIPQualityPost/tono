@@ -24,8 +24,7 @@ class PSDF:
 
     DESCRIPTION = (
         "Compute the two-dimensional power spectral density function with Gwyddion-style "
-        "window RMS compensation and centered zero frequency. Equivalent to psdf2d / "
-        "gwy_data_field_2dpsdf."
+        "window RMS compensation and centered zero frequency."
     )
 
     def process(self, field: DataField, windowing: str, level: str) -> tuple:

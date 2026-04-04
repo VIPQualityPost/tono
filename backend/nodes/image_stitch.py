@@ -53,7 +53,6 @@ class ImageStitch:
         "Uses cross-correlation to align the images and blends the overlap region. "
         "Direction specifies how field_b is positioned relative to field_a. "
         "'auto' uses cross-correlation to determine the best placement. "
-        "Equivalent to Gwyddion's merge.c / stitch.c modules."
     )
 
     def process(self, field_a: DataField, field_b: DataField, direction: str, blend: str) -> tuple:
