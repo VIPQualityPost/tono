@@ -96,14 +96,14 @@ All features from the original gap analysis are implemented:
 
 ### SPM Mode-Specific
 
-| # | Feature | Gwyddion Source | Description |
-|---|---------|---------------|-------------|
-| 71 | PFM Analysis | pfm.c | Piezoresponse Force Microscopy: compute in-plane and 3D polarization vectors from VPFM/LPFM amplitude and phase at multiple rotations. |
-| 72 | Lateral Force Simulation | latsim.c | Simulate topography artifacts in lateral force (friction) channels given friction coefficient, adhesion, and normal load parameters. |
-| 73 | SEM Simulation | semsim.c | Simulate Scanning Electron Microscopy signal from topography data using integration or Monte Carlo methods. |
-| 74 | Scanning Microwave Microscopy | smm.c, smm_apply.c | Fit complex reflection coefficients from SMM impedance measurements to extract capacitance and material properties. |
-| 75 | MFM Current Simulation | mfm_current.c | Simulate current distribution from magnetization for MFM. Extends existing MFMAnalysis node. |
-| 76 | MFM Domain Generation | mfm_parallel.c | Generate parallel magnetic domain patterns for MFM simulation and testing. |
+| # | Feature | Gwyddion Source | tono Node | Status |
+|---|---------|---------------|-----------|--------|
+| 71 | PFM Analysis | pfm.c | PFMAnalysis | **DONE** |
+| 72 | Lateral Force Simulation | latsim.c | LateralForceSim | **DONE** |
+| 73 | SEM Simulation | semsim.c | SEMSimulation | **DONE** |
+| 74 | Scanning Microwave Microscopy | smm.c, smm_apply.c | SMMAnalysis | **DONE** |
+| 75 | MFM Current Simulation | mfm_current.c | MFMCurrentSimulation | **DONE** |
+| 76 | MFM Domain Generation | mfm_parallel.c | MFMDomainGeneration | **DONE** |
 
 ### Lower Priority — Specialized or niche
 
@@ -127,32 +127,32 @@ All features from the original gap analysis are implemented:
 
 ### Synthesis — Additional surface generation patterns
 
-tono's SyntheticSurface node covers fbm, white_noise, lattice, steps, particles, and flat. Gwyddion has 24 separate synthesis modules. These could be added as patterns to the existing SyntheticSurface node:
+All 22 synthesis patterns added to the existing SyntheticSurface node (28 patterns total):
 
-| # | Pattern | Gwyddion Source | Description |
-|---|---------|---------------|-------------|
-| 92 | Columnar | col_synth.c | Columnar/stripe growth patterns. |
-| 93 | Objects | obj_synth.c | Random spheres, pyramids, boxes, cylinders on flat surface. |
-| 94 | Fibres | fibre_synth.c | Randomly oriented fibre/line features. |
-| 95 | Waves | wave_synth.c | Directional wave/ripple patterns. |
-| 96 | Dunes | dune_synth.c | Dune-like rippled surfaces. |
-| 97 | Domains | domain_synth.c | Phase-separated domain/island patterns. |
-| 98 | Ballistic Deposition | bdep_synth.c | Ballistic deposition growth simulation. |
-| 99 | Particle Deposition | deposit_synth.c | Particle deposition simulation. |
-| 100 | Rod Deposition | roddeposit_synth.c | Wire/rod deposition on surfaces. |
-| 101 | Diffusion Aggregation | diff_synth.c | Diffusion-limited aggregation patterns. |
-| 102 | Discs | disc_synth.c | Randomly distributed disc features. |
-| 103 | Plateaus | plateau_synth.c | Flat-topped feature patterns. |
-| 104 | Pileups | pileup_synth.c | Rounded rectangle pileup structures. |
-| 105 | Annealing | anneal_synth.c | Simulated annealing surface relaxation. |
-| 106 | Lattice (Voronoi) | lat_synth.c | Regular lattice with Voronoi-based variations. |
-| 107 | Phase Separation | phase_synth.c | Spinodal decomposition domain patterns. |
-| 108 | PDE Patterns | cpde_synth.c | Coupled partial differential equation patterns. |
-| 109 | Spectral (FFT) | fft_synth.c | Surfaces with customizable power spectrum. |
-| 110 | Residues | residue_synth.c | Irregular particle/residue deposits. |
-| 111 | Noise Distributions | lno_synth.c, noise_synth.c | Gaussian, Poisson, exponential, and other noise types. |
-| 112 | Periodic Patterns | pat_synth.c | Various periodic/modulated tiling patterns. |
-| 113 | WFR Patterns | wfr_synth.c | Wave-front-related surface patterns. |
+| # | Pattern | Gwyddion Source | tono Pattern | Status |
+|---|---------|---------------|-------------|--------|
+| 92 | Columnar | col_synth.c | columnar | **DONE** |
+| 93 | Objects | obj_synth.c | objects | **DONE** |
+| 94 | Fibres | fibre_synth.c | fibres | **DONE** |
+| 95 | Waves | wave_synth.c | waves | **DONE** |
+| 96 | Dunes | dune_synth.c | dunes | **DONE** |
+| 97 | Domains | domain_synth.c | domains | **DONE** |
+| 98 | Ballistic Deposition | bdep_synth.c | ballistic | **DONE** |
+| 99 | Particle Deposition | deposit_synth.c | deposition | **DONE** |
+| 100 | Rod Deposition | roddeposit_synth.c | rods | **DONE** |
+| 101 | Diffusion Aggregation | diff_synth.c | dla | **DONE** |
+| 102 | Discs | disc_synth.c | discs | **DONE** |
+| 103 | Plateaus | plateau_synth.c | plateaus | **DONE** |
+| 104 | Pileups | pileup_synth.c | pileups | **DONE** |
+| 105 | Annealing | anneal_synth.c | annealing | **DONE** |
+| 106 | Lattice (Voronoi) | lat_synth.c | voronoi | **DONE** |
+| 107 | Phase Separation | phase_synth.c | spinodal | **DONE** |
+| 108 | PDE Patterns | cpde_synth.c | pde | **DONE** |
+| 109 | Spectral (FFT) | fft_synth.c | spectral | **DONE** |
+| 110 | Residues | residue_synth.c | residues | **DONE** |
+| 111 | Noise Distributions | lno_synth.c, noise_synth.c | noise | **DONE** |
+| 112 | Periodic Patterns | pat_synth.c | periodic | **DONE** |
+| 113 | WFR Patterns | wfr_synth.c | wfr | **DONE** |
 
 ### File Format Support
 
@@ -180,9 +180,9 @@ Gwyddion supports 155+ file format modules. tono currently handles a smaller set
 | Originally tracked (1–40) | 40 | 39 done, 1 excluded (force curves) |
 | High Value (41–51) | 11 | **All 11 done** |
 | Medium Value (52–70) | 19 | **All 19 done** |
-| SPM Mode-Specific (71–76) | 6 | Pending |
+| SPM Mode-Specific (71–76) | 6 | **All 6 done** |
 | Lower Priority (77–91) | 15 | Pending |
-| Synthesis Patterns (92–113) | 22 | Pending (extend SyntheticSurface) |
+| Synthesis Patterns (92–113) | 22 | **All 22 done** |
 | File Formats | 10+ | Pending |
 
-**69 of 70 tracked features implemented.** 43 remaining gaps identified.
+**97 of 98 tracked features implemented.** 15 remaining gaps identified (lower priority + file formats).

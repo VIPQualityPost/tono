@@ -123,7 +123,13 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "TemplateMatch",
         "FacetAnalysis",
         "MFMAnalysis",
+        "MFMCurrentSimulation",
+        "MFMDomainGeneration",
         "ZeroCrossing",
+        "PFMAnalysis",
+        "LateralForceSim",
+        "SEMSimulation",
+        "SMMAnalysis",
     ],
     "Mask": [
         "DrawMask",
