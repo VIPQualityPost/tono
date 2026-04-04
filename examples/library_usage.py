@@ -12,8 +12,7 @@ import tono
 # ── 1. Generate a synthetic surface ──────────────────────────────────
 
 print("Generating synthetic surface...")
-surface = tono.apply(
-    "SyntheticSurface",
+surface = tono.SyntheticSurface(
     pattern="fbm",
     xres=256,
     yres=256,
@@ -29,27 +28,26 @@ print(f"  Height range: {np.ptp(surface.data)*1e9:.1f} nm")
 # ── 2. Level the surface ─────────────────────────────────────────────
 
 print("\nLeveling...")
-leveled = tono.apply("PlaneLevelField", surface)
+leveled = tono.PlaneLevelField(surface)
 print(f"  Mean after leveling: {leveled.data.mean()*1e9:.4f} nm")
 
 # ── 3. Apply a Gaussian filter ───────────────────────────────────────
 
 print("\nFiltering...")
-filtered = tono.apply("GaussianFilter", leveled, sigma=2.0)
+filtered = tono.GaussianFilter(leveled, sigma=2.0)
 print(f"  Height range after filtering: {np.ptp(filtered.data)*1e9:.1f} nm")
 
 # ── 4. Compute statistics ────────────────────────────────────────────
 
 print("\nStatistics:")
-stats_node = tono.get_node("Statistics")
-(table,) = stats_node.process(field=filtered)
+table = tono.Statistics(filtered)
 for row in table:
     print(f"  {row['quantity']}: {row['value']:.6g} {row.get('unit', '')}")
 
 # ── 5. Edge detection ────────────────────────────────────────────────
 
 print("\nEdge detection...")
-edges = tono.apply("EdgeDetect", filtered, method="sobel", sigma=1.0)
+edges = tono.EdgeDetect(filtered, method="sobel", sigma=1.0)
 print(f"  Edge map range: [{edges.data.min():.2f}, {edges.data.max():.2f}]")
 
 # ── 6. Create a DataField from a numpy array ─────────────────────────
@@ -64,7 +62,7 @@ print(f"  Unit: {custom_field.si_unit_z}")
 # ── 7. FFT analysis ──────────────────────────────────────────────────
 
 print("\nFFT of the filtered surface...")
-fft_log_mag, fft_mag, fft_phase, fft_psdf = tono.apply("FFT2D", filtered, windowing="hann", level="mean")
+fft_log_mag, fft_mag, fft_phase, fft_psdf = tono.FFT2D(filtered, windowing="hann", level="mean")
 print(f"  FFT shape: {fft_mag.data.shape}")
 print(f"  Domain: {fft_mag.domain}")
 

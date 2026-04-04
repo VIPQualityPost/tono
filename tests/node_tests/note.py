@@ -39,8 +39,8 @@ def test_parse_ibw_note():
 
 
 def test_note_load_no_file():
-    from backend.nodes.note import Note
-    node = Note()
+    from backend.nodes.note import IgorNote
+    node = IgorNote()
     try:
         node.load(filename="")
         assert False, "Expected ValueError for empty filename"
@@ -49,8 +49,8 @@ def test_note_load_no_file():
 
 
 def test_note_load_file_not_found():
-    from backend.nodes.note import Note
-    node = Note()
+    from backend.nodes.note import IgorNote
+    node = IgorNote()
     try:
         node.load(filename="/nonexistent/path/file.ibw")
         assert False, "Expected FileNotFoundError"
@@ -59,8 +59,8 @@ def test_note_load_file_not_found():
 
 
 def test_note_load_wrong_extension():
-    from backend.nodes.note import Note
-    node = Note()
+    from backend.nodes.note import IgorNote
+    node = IgorNote()
     with tempfile.TemporaryDirectory() as tmpdir:
         txt_path = os.path.join(tmpdir, "notes.txt")
         Path(txt_path).write_text("Key=Value")
@@ -73,11 +73,11 @@ def test_note_load_wrong_extension():
 
 def test_note_load_empty_note():
     """An .ibw file with no parseable note entries raises ValueError."""
-    from backend.nodes.note import Note
+    from backend.nodes.note import IgorNote
     from unittest.mock import patch
     import numpy as np
 
-    node = Note()
+    node = IgorNote()
     with tempfile.TemporaryDirectory() as tmpdir:
         ibw_path = os.path.join(tmpdir, "empty_note.ibw")
         Path(ibw_path).write_bytes(b"fake_ibw")
@@ -94,7 +94,7 @@ def test_note_load_empty_note():
 
 def test_note_load_ibw():
     """Load from a real .ibw file if available in the demo directory."""
-    from backend.nodes.note import Note
+    from backend.nodes.note import IgorNote
     from backend.data_types import DataTable
 
     demo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "demo"))
@@ -107,7 +107,7 @@ def test_note_load_ibw():
     if ibw_path is None:
         return
 
-    node = Note()
+    node = IgorNote()
     try:
         result, = node.load(filename=ibw_path)
         assert isinstance(result, DataTable)

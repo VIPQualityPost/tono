@@ -98,6 +98,38 @@ def nodes() -> list[str]:
     return sorted(NODE_CLASS_MAPPINGS.keys())
 
 
+def describe(class_name: str) -> dict:
+    """Return a dict describing a node: inputs, outputs, description, keywords, category.
+
+    Thin wrapper around :func:`backend.node_registry.get_node_info`.
+
+    Parameters
+    ----------
+    class_name : str
+        The node class name, e.g. ``"GaussianFilter"``.
+
+    Returns
+    -------
+    dict
+        Keys include ``name``, ``display_name``, ``category``, ``input``,
+        ``input_order``, ``output``, ``output_name``, ``description``,
+        ``keywords``, and more.
+
+    Raises
+    ------
+    KeyError
+        If no node with that name is registered.
+    """
+    from backend.node_registry import NODE_CLASS_MAPPINGS, get_node_info
+    _ensure_registry()
+    if class_name not in NODE_CLASS_MAPPINGS:
+        raise KeyError(
+            f"Unknown node {class_name!r}. "
+            f"Use tono.nodes() to list available nodes."
+        )
+    return get_node_info(class_name)
+
+
 def get_node(class_name: str) -> Any:
     """Return a fresh instance of the named node class.
 
@@ -167,10 +199,12 @@ def apply(class_name: str, *args: Any, **kwargs: Any) -> Any:
     cls = NODE_CLASS_MAPPINGS[class_name]
     instance = cls()
 
+    input_types = cls.INPUT_TYPES()
+    required = input_types.get("required", {})
+    required_names = list(required.keys())
+
     # Map positional args to required input names in declaration order
     if args:
-        input_types = cls.INPUT_TYPES()
-        required_names = list(input_types.get("required", {}).keys())
         for i, arg in enumerate(args):
             if i >= len(required_names):
                 raise TypeError(
@@ -184,6 +218,18 @@ def apply(class_name: str, *args: Any, **kwargs: Any) -> Any:
                     f"argument and keyword argument"
                 )
             kwargs[name] = arg
+
+    # Fill in defaults from INPUT_TYPES metadata for any missing required inputs.
+    # The metadata dict is the single source of truth for default values — the
+    # GUI pre-populates widgets from it, and we mirror that behaviour here so
+    # tono.GaussianFilter(field) works without repeating the default at the call site.
+    for name, spec in required.items():
+        if name in kwargs:
+            continue
+        if isinstance(spec, (list, tuple)) and len(spec) >= 2 and isinstance(spec[1], dict):
+            meta = spec[1]
+            if "default" in meta:
+                kwargs[name] = meta["default"]
 
     func = getattr(instance, cls.FUNCTION)
 

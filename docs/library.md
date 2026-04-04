@@ -19,14 +19,34 @@ import tono
 fields = tono.load("scan.gwy")
 height = fields[0]
 
-# Apply a processing node
-leveled = tono.apply("PlaneLevelField", height)
-filtered = tono.apply("GaussianFilter", leveled, sigma=2.0)
+# Every registered node is available as a top-level callable
+leveled = tono.PlaneLevelField(height)
+filtered = tono.GaussianFilter(leveled, sigma=2.0)
 
 # Access the raw numpy array
 print(filtered.data.shape)   # (256, 256)
 print(filtered.data.mean())  # height in metres
 ```
+
+## Discovering node signatures
+
+Every node carries a real `inspect.Signature` synthesised from its input
+declarations, so `help()`, Jupyter's `?`, and IPython tab-completion all show
+the correct parameters, types, defaults, and enum choices:
+
+```python
+>>> help(tono.EdgeDetect)
+EdgeDetect(
+    field: DataField,
+    method: Literal['sobel', 'prewitt', 'laplacian', 'log'],
+    sigma: float = 1.0,
+) -> DataField
+    Detect edges using Sobel, Prewitt, Laplacian, or LoG operators.
+    ...
+```
+
+`dir(tono)` lists every registered node — useful for tab-completion and
+programmatic discovery.
 
 ## API reference
 
@@ -55,19 +75,48 @@ List all supported file extensions.
 
 ### Processing
 
-#### `tono.apply(node_name, *args, **kwargs)`
+There are two equivalent ways to invoke a node. Both return a single value
+when the node has one output, or a tuple when it has multiple.
 
-Run a processing node. Positional arguments are mapped to required inputs in declaration order. Returns a single output if the node has one output, or a tuple if it has multiple.
+#### `tono.NodeName(*args, **kwargs)` — typed call syntax
+
+Recommended for scripts and notebooks. Each node is exposed as a top-level
+callable with a real `inspect.Signature`, so your editor, `help()`, and Jupyter
+all know the parameters and defaults:
 
 ```python
-# Positional: first required input is `field`
-result = tono.apply("GaussianFilter", my_field, sigma=3.0)
+# Positional arguments map to required inputs in declaration order
+result = tono.GaussianFilter(my_field, sigma=3.0)
 
-# All keyword arguments
-result = tono.apply("GaussianFilter", field=my_field, sigma=3.0)
+# Fully keyword — order-independent
+result = tono.GaussianFilter(field=my_field, sigma=3.0)
 
-# Nodes with multiple outputs return a tuple
-field_out, mask_out = tono.apply("ThresholdMask", my_field, method="otsu")
+# Defaults declared in the node's INPUT_TYPES metadata are auto-filled
+result = tono.GaussianFilter(my_field)  # uses sigma=1.0 from metadata
+
+# Multi-output nodes return a tuple
+log_mag, mag, phase, psdf = tono.FFT2D(my_field, windowing="hann", level="mean")
+```
+
+#### `tono.apply(node_name, *args, **kwargs)` — string-based dispatch
+
+Use this when the node name is only known at runtime (e.g. a user-selected
+pipeline). Same arg conventions, same default-filling behaviour.
+
+```python
+name = choose_node_from_config()
+result = tono.apply(name, my_field, sigma=3.0)
+```
+
+#### `tono.describe(name) -> dict`
+
+Return a dict describing a node's inputs, outputs, description, keywords, and
+category. Thin wrapper around the registry metadata used by the web UI.
+
+```python
+info = tono.describe("EdgeDetect")
+print(info["input"]["required"].keys())  # dict_keys(['field', 'method', 'sigma'])
+print(info["output_name"])               # ['edges']
 ```
 
 #### `tono.get_node(name) -> node_instance`
@@ -144,12 +193,11 @@ for path in input_dir.glob("*.gwy"):
     height = fields[0]
 
     # Standard processing pipeline
-    leveled = tono.apply("PlaneLevelField", height)
-    filtered = tono.apply("GaussianFilter", leveled, sigma=1.5)
+    leveled = tono.PlaneLevelField(height)
+    filtered = tono.GaussianFilter(leveled, sigma=1.5)
 
-    # Extract statistics
-    stats_node = tono.get_node("Statistics")
-    (table,) = stats_node.process(field=filtered)
+    # Scalar measurements
+    table = tono.Statistics(filtered)
     results[path.name] = table
 
     print(f"{path.name}: processed {height.xres}x{height.yres} "
@@ -176,11 +224,11 @@ axes[0].set_title("Raw")
 axes[0].set_xlabel("x (um)")
 axes[0].set_ylabel("y (um)")
 
-leveled = tono.apply("PlaneLevelField", field)
+leveled = tono.PlaneLevelField(field)
 axes[1].imshow(leveled.data * 1e9, extent=extent, cmap="afmhot")
 axes[1].set_title("Leveled")
 
-filtered = tono.apply("GaussianFilter", leveled, sigma=2.0)
+filtered = tono.GaussianFilter(leveled, sigma=2.0)
 axes[2].imshow(filtered.data * 1e9, extent=extent, cmap="afmhot")
 axes[2].set_title("Filtered")
 
