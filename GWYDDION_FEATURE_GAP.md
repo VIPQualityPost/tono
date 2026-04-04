@@ -107,23 +107,23 @@ All features from the original gap analysis are implemented:
 
 ### Lower Priority — Specialized or niche
 
-| # | Feature | Gwyddion Source | Description |
-|---|---------|---------------|-------------|
-| 77 | Mark Disconnected Regions | mark_disconn.c | Mask topologically isolated surface regions using threshold and radius criteria. |
-| 78 | Mask Shift | mask_shift.c | Translate mask by pixel offset in any direction. |
-| 79 | Mask Noisify | mask_noisify.c | Add random perturbation to mask boundaries. Useful for testing mask sensitivity. |
-| 80 | DWT Anisotropy | dwtanisotropy.c | Quantify surface anisotropy using discrete wavelet transform decomposition. |
-| 81 | Displacement Field | displfield.c | Distort images using displacement fields (Gaussian, tear, image-based). Simulates scanning artifacts. |
-| 82 | Pixel Classification | classify.c | Classify pixels into categories using decision trees on height, slope, and curvature criteria. |
-| 83 | Neural Network Classification | neural.c | Train and apply neural networks for pixel-level feature classification. |
-| 84 | Logistic Classification | logistic.c | Classify features using logistic regression on Gaussian derivative features. |
-| 85 | Super-Resolution | superresolution.c | Combine multiple aligned low-resolution scans to produce a higher-resolution image. |
-| 86 | PSF Estimation | psf.c, psf-fit.c | Estimate and fit point spread functions from image features for deconvolution. |
-| 87 | Tip Shape from Features | tipshape.c | Estimate SPM tip shape from known calibration feature convolutions. |
-| 88 | Presentation Ops | presentationops.c | Manage presentation overlays (extract, attach, remove presentation layers). |
-| 89 | Calibration Coefficients | calcoefs_*.c, calibrate.c | Load, create, and apply lateral/height calibration corrections. |
-| 90 | Distribution Coercion | coerce.c | Transform data distribution to match target (uniform, Gaussian, custom). |
-| 91 | Grain Selection Visualization | grain_makesel.c | Visualize grains as discs, circles, or bounding boxes for selection. |
+| # | Feature | Gwyddion Source | tono Node | Status |
+|---|---------|---------------|-----------|--------|
+| 77 | Mark Disconnected Regions | mark_disconn.c | MarkDisconnected | **DONE** |
+| 78 | Mask Shift | mask_shift.c | MaskShift | **DONE** |
+| 79 | Mask Noisify | mask_noisify.c | MaskNoisify | **DONE** |
+| 80 | DWT Anisotropy | dwtanisotropy.c | DWTAnisotropy | **DONE** |
+| 81 | Displacement Field | displfield.c | DisplacementField | **DONE** |
+| 82 | Pixel Classification | classify.c | PixelClassification | **DONE** |
+| 83 | Neural Network Classification | neural.c | NeuralClassification | **DONE** |
+| 84 | Logistic Classification | logistic.c | LogisticClassification | **DONE** |
+| 85 | Super-Resolution | superresolution.c | SuperResolution | **DONE** |
+| 86 | PSF Estimation | psf.c, psf-fit.c | PSFEstimation | **DONE** |
+| 87 | Tip Shape from Features | tipshape.c | TipShapeEstimate | **DONE** |
+| 88 | Presentation Ops | presentationops.c | PresentationOps | **DONE** |
+| 89 | Calibration Coefficients | calcoefs_*.c, calibrate.c | Calibration | **DONE** |
+| 90 | Distribution Coercion | coerce.c | DistributionCoercion | **DONE** |
+| 91 | Grain Selection Visualization | grain_makesel.c | GrainVisualization | **DONE** |
 
 ### Synthesis — Additional surface generation patterns
 
@@ -181,8 +181,8 @@ Gwyddion supports 155+ file format modules. tono currently handles a smaller set
 | High Value (41–51) | 11 | **All 11 done** |
 | Medium Value (52–70) | 19 | **All 19 done** |
 | SPM Mode-Specific (71–76) | 6 | **All 6 done** |
-| Lower Priority (77–91) | 15 | Pending |
+| Lower Priority (77–91) | 15 | **All 15 done** |
 | Synthesis Patterns (92–113) | 22 | **All 22 done** |
 | File Formats | 10+ | Pending |
 
-**97 of 98 tracked features implemented.** 15 remaining gaps identified (lower priority + file formats).
+**112 of 113 tracked features implemented.** Only file format support gaps remain.

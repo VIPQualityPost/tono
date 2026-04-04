@@ -35,6 +35,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "Save",
         "SaveImage",
         "Shade",
+        "PresentationOps",
     ],
     "Overlay": [
         "Markup",
@@ -56,6 +57,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "PixelBinning",
         "ExtendPad",
         "FieldArithmetic",
+        "DisplacementField",
     ],
     "Level & Correct": [
         "FixZero",
@@ -72,6 +74,8 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ScanLineReorder",
         "Tilt",
         "WrapValue",
+        "DistributionCoercion",
+        "Calibration",
     ],
     "Filter": [
         "GaussianFilter",
@@ -98,6 +102,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "LogPolarPSDF",
         "FrequencySplit",
         "CrossCorrelate",
+        "SuperResolution",
     ],
     "Measure": [
         "CrossSection",
@@ -116,6 +121,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MultipleProfiles",
         "StraightenPath",
         "RelateFields",
+        "DWTAnisotropy",
     ],
     "Detect": [
         "FeatureDetection",
@@ -130,6 +136,9 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "LateralForceSim",
         "SEMSimulation",
         "SMMAnalysis",
+        "PixelClassification",
+        "NeuralClassification",
+        "LogisticClassification",
     ],
     "Mask": [
         "DrawMask",
@@ -139,6 +148,9 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MaskMorphology",
         "MaskInvert",
         "MaskOperations",
+        "MarkDisconnected",
+        "MaskShift",
+        "MaskNoisify",
     ],
     "Grains": [
         "GrainDistanceTransform",
@@ -150,11 +162,14 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "LevelGrains",
         "GrainEdge",
         "GrainCross",
+        "GrainVisualization",
     ],
     "Tip": [
         "TipModel",
         "TipDeconvolution",
         "BlindTipEstimate",
+        "TipShapeEstimate",
+        "PSFEstimation",
     ],
 }
 
