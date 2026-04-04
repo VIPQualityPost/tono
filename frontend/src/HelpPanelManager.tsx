@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Open external links in new tabs
 const renderer = new marked.Renderer();
@@ -172,7 +173,7 @@ function HelpContent({ content, onOpenDoc }: HelpContentProps) {
   const headings = useMemo(() => parseHeadings(md), [md]);
   const html = useMemo(() => {
     let rendered: string;
-    try { rendered = marked.parse(md) as string; } catch { rendered = md; }
+    try { rendered = DOMPurify.sanitize(marked.parse(md) as string); } catch { rendered = md; }
     return injectHeadingIds(rendered, headings);
   }, [md, headings]);
 
@@ -207,7 +208,7 @@ function JournalTab({ content, onChange, onOpenDoc }: JournalTabProps) {
   let headings: Heading[] = [];
   if (!isEditing && content?.trim()) {
     headings = parseHeadings(content);
-    try { renderedHtml = injectHeadingIds(marked.parse(content) as string, headings); } catch { renderedHtml = content; }
+    try { renderedHtml = injectHeadingIds(DOMPurify.sanitize(marked.parse(content) as string), headings); } catch { renderedHtml = content; }
   }
 
   return (

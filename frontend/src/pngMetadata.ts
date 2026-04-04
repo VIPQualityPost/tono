@@ -90,7 +90,24 @@ function parseTextChunk(type: string, chunkData: Uint8Array) {
   const translatedEnd = chunkData.indexOf(0, offset);
   if (translatedEnd === -1) return null;
 
-  return JSON.parse(decoder.decode(chunkData.subarray(translatedEnd + 1)));
+  return sanitizeJson(JSON.parse(decoder.decode(chunkData.subarray(translatedEnd + 1))));
+}
+
+// ── JSON sanitisation ────────────────────────────────────────────────
+
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Recursively strip keys that could cause prototype pollution.
+ */
+export function sanitizeJson(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(sanitizeJson);
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (!DANGEROUS_KEYS.has(k)) result[k] = sanitizeJson(v);
+  }
+  return result;
 }
 
 // ── Public API ───────────────────────────────────────────────────────

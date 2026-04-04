@@ -1,6 +1,7 @@
 import React, { useContext, useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { NodeResizeControl, useStore } from '@xyflow/react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { NodeContext } from './CustomNode';
 import type { NodeContextValue } from './types';
 
@@ -81,7 +82,7 @@ function TextNoteNode({ id, data }: TextNoteNodeProps) {
 
   const renderedHtml = useMemo(() => {
     if (!text.trim()) return '';
-    return marked.parse(text);
+    return DOMPurify.sanitize(marked.parse(text) as string);
   }, [text]);
 
   return (

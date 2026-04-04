@@ -13,7 +13,7 @@ import HelpPanelManager from './HelpPanelManager';
 import ContextMenu from './ContextMenu';
 import * as api from './api';
 import { pickNativeDirectorySelection, pickNativeFileSelection } from './nativePicker';
-import { embedWorkflow, extractWorkflow } from './pngMetadata';
+import { embedWorkflow, extractWorkflow, sanitizeJson } from './pngMetadata';
 import { captureViewportBlob as captureWorkflowViewportBlob } from './workflowCapture';
 import tonoIconUrl from '../../resources/icon_1024.png';
 import { hydrateWorkflowState } from './workflowHydration';
@@ -1708,7 +1708,7 @@ function Flow() {
             return;
           }
         } else {
-          data = JSON.parse(await file.text());
+          data = sanitizeJson(JSON.parse(await file.text()));
         }
         await applyMaybePackedWorkflow(data);
         setStatus({ text: 'Workflow loaded.', level: 'info' });

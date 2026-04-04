@@ -32,8 +32,10 @@ import asyncio
 import json
 import logging
 import math
+import re
 import secrets
 import sys
+import time
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
@@ -141,6 +143,9 @@ def create_app(
     session_engines: dict[str, ExecutionEngine] = {}
     session_websockets: dict[str, set[web.WebSocketResponse]] = defaultdict(set)
     pending_downloads: dict[str, Path] = {}
+    _last_download_token: dict[str, str] = {}  # session_id → token (limit one per session)
+    _prompt_last_time: dict[str, float] = {}   # session_id → monotonic timestamp
+    PROMPT_MIN_INTERVAL = 0.5  # seconds between /prompt submissions per session
 
     def _is_link(value) -> bool:
         return (
@@ -259,7 +264,12 @@ def create_app(
     def on_file_download(session_id: str, node_id: str, file_path: str) -> None:
         token = secrets.token_urlsafe(16)
         path = Path(file_path)
+        # Evict the previous pending download for this session (limit one).
+        prev_token = _last_download_token.pop(session_id, None)
+        if prev_token:
+            pending_downloads.pop(prev_token, None)
         pending_downloads[token] = path
+        _last_download_token[session_id] = token
         broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name}})
 
     async def index(request: web.Request) -> web.Response:
@@ -469,9 +479,14 @@ def create_app(
             content_type="application/json",
         )
 
+    def _sanitize_filename(name: str, fallback: str = "download") -> str:
+        """Strip path separators and control characters from a filename."""
+        clean = re.sub(r'[/\\:\x00-\x1f\x7f"*?<>|]', '_', str(name).strip())
+        return clean or fallback
+
     async def download_file(request: web.Request) -> web.Response:
         body = await request.read()
-        filename = request.query.get("filename", "workflow.png")
+        filename = _sanitize_filename(request.query.get("filename", "workflow.png"), "workflow.png")
         return web.Response(
             body=body,
             content_type="application/octet-stream",
@@ -483,9 +498,10 @@ def create_app(
         path = pending_downloads.pop(token, None)
         if path is None or not path.is_file():
             raise web.HTTPNotFound(reason="File not found")
+        filename = _sanitize_filename(path.name, "download")
         return web.FileResponse(
             path,
-            headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
     async def save_workflow_png(request: web.Request) -> web.Response:
@@ -519,6 +535,15 @@ def create_app(
 
     async def submit_prompt(request: web.Request) -> web.Response:
         session_id = require_session_id(request)
+
+        now = time.monotonic()
+        last = _prompt_last_time.get(session_id, 0.0)
+        if now - last < PROMPT_MIN_INTERVAL:
+            raise web.HTTPTooManyRequests(
+                reason="Please wait before submitting another prompt",
+            )
+        _prompt_last_time[session_id] = now
+
         body = await request.json()
         prompt = body.get("prompt")
         if not isinstance(prompt, dict) or not prompt:
@@ -627,7 +652,7 @@ def create_app(
         except Exception:
             return web.json_response({"current": current, "latest": None, "update_available": False})
 
-    app = web.Application()
+    app = web.Application(client_max_size=100 * 1024 * 1024)  # 100 MB upload cap
     app["allow_local_filesystem"] = allow_local_filesystem
 
     app.router.add_get("/", index)
