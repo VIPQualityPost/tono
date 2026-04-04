@@ -24,9 +24,21 @@ npm run backend   # terminal 1 — Python server at http://127.0.0.1:8188
 npm run dev       # terminal 2 — Vite dev server, open the URL it prints
 ```
 
+## Self-hosting
+
+```bash
+git clone https://github.com/VIPQualityPost/tono.git && cd tono
+pip install -e .
+cd frontend && npm ci && npm run build && cd ..
+TONO_HOST=0.0.0.0 tono
+```
+
+See [Self-Hosting](docs/self-hosting.md) for reverse proxy setup, environment variables, and configuration.
+
 ## Docs
 
 - [Building](docs/building.md) — setup, dev mode, web deployment, and native desktop builds for macOS, Linux, and Windows
+- [Self-Hosting](docs/self-hosting.md) — deploying tono on a server
 - [Plugins](docs/plugins.md) — writing and uploading custom node plugins
 - [Testing](docs/testing.md) — running tests and writing new ones
 

@@ -10,6 +10,7 @@ from the tono/ directory.
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -25,8 +26,11 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-HOST = "127.0.0.1"
-PORT = 8188
+HOST = os.getenv("TONO_HOST", "127.0.0.1")
+try:
+    PORT = int(os.getenv("TONO_PORT", "8188"))
+except ValueError:
+    sys.exit("TONO_PORT must be a valid integer")
 
 
 def main() -> None:

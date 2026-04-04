@@ -1,0 +1,33 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          echo "$SSH_KEY" > key && chmod 600 key
+          ssh -o StrictHostKeyChecking=no -i key "${USER}@${HOST}" bash -s <<'REMOTE'
+            set -e
+            cd /opt/tono
+            git pull --ff-only
+            .venv/bin/pip install -e . --quiet
+            cd frontend && npm ci --ignore-scripts && npm run build && cd ..
+            sudo systemctl restart tono
+          REMOTE
+          rm key

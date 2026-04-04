@@ -35,6 +35,9 @@ icons = [
     "reportlab>=4.4.0",
 ]
 
+[project.scripts]
+tono = "backend.main:main"
+
 [tool.setuptools.packages.find]
 include = ["backend*"]
 

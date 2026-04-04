@@ -32,8 +32,10 @@ import asyncio
 import json
 import logging
 import math
+import os
 import re
 import secrets
+import shutil
 import sys
 import time
 from collections import defaultdict
@@ -53,6 +55,7 @@ from backend.session_runtime import (
     resolve_client_path,
     server_path_to_client_path,
     session_input_dir,
+    session_root_dir,
     session_upload_uri,
     validate_session_id,
 )
@@ -145,7 +148,9 @@ def create_app(
     pending_downloads: dict[str, Path] = {}
     _last_download_token: dict[str, str] = {}  # session_id → token (limit one per session)
     _prompt_last_time: dict[str, float] = {}   # session_id → monotonic timestamp
+    _pending_cleanups: dict[str, asyncio.TimerHandle] = {}  # session_id → scheduled cleanup
     PROMPT_MIN_INTERVAL = 0.5  # seconds between /prompt submissions per session
+    SESSION_TTL = int(os.getenv("TONO_SESSION_TTL", "60"))  # seconds after last WS disconnect
 
     def _is_link(value) -> bool:
         return (
@@ -154,6 +159,9 @@ def create_app(
             and isinstance(value[0], str)
             and isinstance(value[1], int)
         )
+
+    async def health_check(_request: web.Request) -> web.Response:
+        return web.json_response({"status": "ok"})
 
     def require_session_id(request: web.Request) -> str:
         raw_session = request.headers.get(SESSION_HEADER) or request.query.get(SESSION_QUERY)
@@ -436,6 +444,11 @@ def create_app(
         This endpoint is intentionally unrestricted because tono is a
         local-first application; do not expose it on a public network.
         """
+        if not _plugins_on:
+            raise web.HTTPForbidden(
+                reason="Plugin upload is disabled. "
+                       "Set TONO_PLUGINS=1 to enable (allows arbitrary code execution).",
+            )
         reader = await request.multipart()
         filename = ""
         file_bytes = None
@@ -601,11 +614,31 @@ def create_app(
             content_type="application/json",
         )
 
+    def _cleanup_session(session_id: str) -> None:
+        """Evict all server-side state for a session after its grace period."""
+        _pending_cleanups.pop(session_id, None)
+        # If the session reconnected during the grace period, abort cleanup
+        if session_websockets.get(session_id):
+            return
+        session_engines.pop(session_id, None)
+        _prompt_last_time.pop(session_id, None)
+        prev_token = _last_download_token.pop(session_id, None)
+        if prev_token:
+            pending_downloads.pop(prev_token, None)
+        session_dir = session_root_dir(session_id)
+        if session_dir.exists():
+            shutil.rmtree(session_dir, ignore_errors=True)
+        log.info("Cleaned up session %s", session_id)
+
     async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
         session_id = require_session_id(request)
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         session_websockets[session_id].add(ws)
+        # Cancel any pending cleanup for this session (user reconnected)
+        handle = _pending_cleanups.pop(session_id, None)
+        if handle is not None:
+            handle.cancel()
         log.info(
             "WebSocket client connected for session %s (%d total in session)",
             session_id,
@@ -621,6 +654,11 @@ def create_app(
             session_websockets[session_id].discard(ws)
             if not session_websockets[session_id]:
                 session_websockets.pop(session_id, None)
+                # Schedule cleanup after grace period
+                if SESSION_TTL > 0:
+                    _pending_cleanups[session_id] = loop.call_later(
+                        SESSION_TTL, _cleanup_session, session_id,
+                    )
             log.info(
                 "WebSocket client disconnected for session %s (%d remaining in session)",
                 session_id,
@@ -632,6 +670,8 @@ def create_app(
         import aiohttp as _aiohttp
 
         current = _get_app_version()
+        if os.getenv("TONO_UPDATE_CHECK", "").strip().lower() in ("off", "0", "false", "no"):
+            return web.json_response({"current": current, "latest": None, "update_available": False})
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
         try:
             async with _aiohttp.ClientSession() as session:
@@ -655,14 +695,14 @@ def create_app(
     app = web.Application(client_max_size=100 * 1024 * 1024)  # 100 MB upload cap
     app["allow_local_filesystem"] = allow_local_filesystem
 
+    app.router.add_get("/health", health_check)
     app.router.add_get("/", index)
     app.router.add_get("/nodes", get_nodes)
     app.router.add_get("/files", list_files)
     app.router.add_get("/folder-files", get_folder_files)
     app.router.add_post("/upload-folder", create_upload_folder)
     app.router.add_post("/upload", upload_file)
-    if _plugins_on:
-        app.router.add_post("/upload-plugin", upload_plugin)
+    app.router.add_post("/upload-plugin", upload_plugin)
     app.router.add_post("/download", download_file)
     app.router.add_post("/save-workflow-png", save_workflow_png)
     app.router.add_get("/channels", get_channels)
