@@ -42,6 +42,10 @@ export function hydrateWorkflowState(data: SerializedWorkflow | null | undefined
   const nodes = sortNodesForParentOrder(loadedNodes.map((node) => {
     const definition = mergeDefinition(node.data, defs);
 
+    const restoredStyle = { ...(node.style || {}) };
+    if (node.width && !restoredStyle.width) restoredStyle.width = node.width;
+    if (node.height && !restoredStyle.height) restoredStyle.height = node.height;
+
     return {
       ...node,
       type: node.type || 'custom',
@@ -49,7 +53,7 @@ export function hydrateWorkflowState(data: SerializedWorkflow | null | undefined
       parentId: node.parentId,
       extent: node.extent,
       hidden: !!node.hidden,
-      style: node.style,
+      style: restoredStyle,
       dragHandle: node.dragHandle || '.drag-handle',
       data: {
         ...node.data,

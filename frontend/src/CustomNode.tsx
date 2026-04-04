@@ -999,6 +999,12 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
   const def = data.definition;
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
+  const nodeWidth = useStore(
+    useCallback((s: any) => {
+      const node = s.nodeLookup.get(id);
+      return node?.width ?? undefined;
+    }, [id]),
+  );
   const connectedPathInfo = useStore(
     useCallback((s: any) => getConnectedOutputInfo(s, id, 'path'), [id]),
   );
@@ -1206,7 +1212,7 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
   return (
     <>
       {ctx?.executingNodeId === id && <div className="node-executing-glow" aria-hidden="true" />}
-    <div className={`custom-node${data.error ? ' node-error' : ''}`}>
+    <div className={`custom-node${data.error ? ' node-error' : ''}`} style={nodeWidth ? { width: nodeWidth } : undefined}>
       {/* Title */}
       <div className="node-title drag-handle" style={{ background: catColor }}>
         <div className="node-title-left">

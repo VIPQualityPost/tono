@@ -2492,6 +2492,9 @@ function Flow() {
               <button className="btn" onClick={() => { openDocByFilename('getting-started.md'); closeMenu(); }} title="Getting started guide">
                 ? Help
               </button>
+              <a className="btn" href="https://github.com/VIPQualityPost/tono/issues" target="_blank" rel="noopener noreferrer" onClick={closeMenu} title="Report a bug or request a feature">
+                ↗ Feedback
+              </a>
               {updateInfo && (
                 <>
                   <hr className="floating-menu-divider" />
