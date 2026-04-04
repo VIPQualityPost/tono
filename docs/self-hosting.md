@@ -14,6 +14,98 @@ TONO_HOST=0.0.0.0 tono
 
 The server will be available at `http://<your-server-ip>:8188`.
 
+## Running as a system service
+
+To keep tono running in the background and auto-restart on reboot, create a systemd service.
+
+### Create a service user
+
+```bash
+sudo useradd --system --create-home --shell /bin/false tono
+sudo mkdir -p /var/lib/tono
+sudo chown tono:tono /var/lib/tono
+```
+
+### Clone and install
+
+```bash
+sudo git clone https://github.com/VIPQualityPost/tono.git /opt/tono
+sudo chown -R tono:tono /opt/tono
+sudo -u tono bash -c 'cd /opt/tono && python3 -m venv .venv && source .venv/bin/activate && pip install -e .'
+sudo -u tono bash -c 'cd /opt/tono/frontend && npm ci && npm run build'
+```
+
+### Create the unit file
+
+Save as `/etc/systemd/system/tono.service`:
+
+```ini
+[Unit]
+Description=tono
+After=network.target
+
+[Service]
+Type=simple
+User=tono
+WorkingDirectory=/opt/tono
+ExecStart=/opt/tono/.venv/bin/tono
+Environment=TONO_HOST=127.0.0.1
+Environment=TONO_PORT=8188
+Environment=TONO_APPDATA=/var/lib/tono
+Environment=TONO_UPDATE_CHECK=off
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Enable and start
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable tono
+sudo systemctl start tono
+sudo systemctl status tono   # verify it's running
+```
+
+### Useful commands
+
+```bash
+sudo journalctl -u tono -f          # follow logs
+sudo systemctl restart tono          # restart after updates
+```
+
+## HTTPS with Certbot
+
+After setting up nginx (see [Reverse proxy](#reverse-proxy) below), use Certbot to get a free TLS certificate from Let's Encrypt.
+
+### Install Certbot
+
+```bash
+# Ubuntu/Debian
+sudo apt install nginx certbot python3-certbot-nginx
+```
+
+### Get a certificate
+
+Point your domain's DNS A record at your server's IP, then:
+
+```bash
+sudo certbot --nginx -d tono.yourdomain.com
+```
+
+Certbot will automatically:
+- Obtain a certificate
+- Configure nginx to use it
+- Set up auto-renewal (certificates renew every 90 days)
+
+You can verify auto-renewal works with:
+
+```bash
+sudo certbot renew --dry-run
+```
+
 ## Environment variables
 
 | Variable | Default | Description |
