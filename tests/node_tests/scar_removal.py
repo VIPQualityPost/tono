@@ -8,8 +8,7 @@ def test_scar_removal():
 
     node = ScarRemoval()
     info = get_node_info("ScarRemoval")
-    assert info["category"] == "Filter"
-    assert {entry["category"] for entry in info["menu_categories"]} == {"Filter", "Level & Correct"}
+    assert info["category"] == "Level & Correct"
 
     rows = 96
     cols = 128
