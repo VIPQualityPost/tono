@@ -64,7 +64,6 @@ class DistributionCoercion:
     DESCRIPTION = (
         "Transform pixel values so their distribution matches a target shape "
         "(uniform, Gaussian, or discrete levels) using rank-based reassignment. "
-        "Equivalent to Gwyddion's coerce.c module."
     )
 
     KEYWORDS = ("coerce", "histogram matching", "equalize", "uniform", "gaussian", "quantize")
