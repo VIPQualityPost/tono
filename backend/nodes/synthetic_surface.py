@@ -471,25 +471,75 @@ class SyntheticSurface:
                 "seed": ("INT", {"default": 42, "min": 0, "max": 999999}),
             },
             "optional": {
-                "hurst_exponent": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.05}),
+                "hurst_exponent": ("FLOAT", {
+                    "default": 0.7, "min": 0.0, "max": 1.0, "step": 0.05,
+                    "show_when_widget_value": {"pattern": ["fbm"]},
+                }),
                 "lattice_spacing": ("FLOAT", {
                     "default": 100e-9, "min": 1e-9, "max": 1e-3, "step": 1e-9,
+                    "show_when_widget_value": {"pattern": ["lattice"]},
                 }),
-                "lattice_angle": ("FLOAT", {"default": 90.0, "min": 0.0, "max": 180.0, "step": 1.0}),
-                "n_steps": ("INT", {"default": 5, "min": 1, "max": 100}),
-                "n_particles": ("INT", {"default": 20, "min": 1, "max": 500}),
-                "particle_radius_px": ("INT", {"default": 10, "min": 2, "max": 100}),
-                "n_iterations": ("INT", {"default": 200, "min": 10, "max": 5000}),
-                "direction_deg": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 360.0, "step": 1.0}),
-                "feature_length_px": ("INT", {"default": 40, "min": 2, "max": 500}),
-                "object_shape": (["sphere", "pyramid", "box", "cylinder", "cone"],
-                                 {"default": "sphere"}),
-                "noise_type": (["gaussian", "poisson", "exponential", "uniform", "salt_pepper"],
-                               {"default": "gaussian"}),
-                "periodic_type": (["checker", "hex", "stripe", "diamond", "staircase", "rings"],
-                                  {"default": "checker"}),
-                "spectral_exponent": ("FLOAT", {"default": 2.0, "min": 0.5, "max": 5.0, "step": 0.1}),
-                "frequency": ("FLOAT", {"default": 5.0, "min": 0.5, "max": 50.0, "step": 0.5}),
+                "lattice_angle": ("FLOAT", {
+                    "default": 90.0, "min": 0.0, "max": 180.0, "step": 1.0,
+                    "show_when_widget_value": {"pattern": ["lattice"]},
+                }),
+                "n_steps": ("INT", {
+                    "default": 5, "min": 1, "max": 100,
+                    "show_when_widget_value": {"pattern": ["steps"]},
+                }),
+                "n_particles": ("INT", {
+                    "default": 20, "min": 1, "max": 500,
+                    "show_when_widget_value": {"pattern": [
+                        "particles", "columnar", "objects", "fibres", "waves",
+                        "deposition", "rods", "discs", "plateaus", "pileups",
+                        "voronoi", "residues", "wfr",
+                    ]},
+                }),
+                "particle_radius_px": ("INT", {
+                    "default": 10, "min": 2, "max": 100,
+                    "show_when_widget_value": {"pattern": [
+                        "particles", "columnar", "objects", "fibres",
+                        "deposition", "rods", "discs", "plateaus", "pileups",
+                        "residues",
+                    ]},
+                }),
+                "n_iterations": ("INT", {
+                    "default": 200, "min": 10, "max": 5000,
+                    "show_when_widget_value": {"pattern": [
+                        "domains", "ballistic", "dla", "annealing",
+                        "spinodal", "pde",
+                    ]},
+                }),
+                "direction_deg": ("FLOAT", {
+                    "default": 0.0, "min": 0.0, "max": 360.0, "step": 1.0,
+                    "show_when_widget_value": {"pattern": ["dunes"]},
+                }),
+                "feature_length_px": ("INT", {
+                    "default": 40, "min": 2, "max": 500,
+                    "show_when_widget_value": {"pattern": ["fibres", "rods"]},
+                }),
+                "object_shape": (["sphere", "pyramid", "box", "cylinder", "cone"], {
+                    "default": "sphere",
+                    "show_when_widget_value": {"pattern": ["objects"]},
+                }),
+                "noise_type": (["gaussian", "poisson", "exponential", "uniform", "salt_pepper"], {
+                    "default": "gaussian",
+                    "show_when_widget_value": {"pattern": ["noise"]},
+                }),
+                "periodic_type": (["checker", "hex", "stripe", "diamond", "staircase", "rings"], {
+                    "default": "checker",
+                    "show_when_widget_value": {"pattern": ["periodic"]},
+                }),
+                "spectral_exponent": ("FLOAT", {
+                    "default": 2.0, "min": 0.5, "max": 5.0, "step": 0.1,
+                    "show_when_widget_value": {"pattern": ["spectral"]},
+                }),
+                "frequency": ("FLOAT", {
+                    "default": 5.0, "min": 0.5, "max": 50.0, "step": 0.5,
+                    "show_when_widget_value": {"pattern": [
+                        "waves", "dunes", "periodic", "wfr",
+                    ]},
+                }),
             }
         }
 
