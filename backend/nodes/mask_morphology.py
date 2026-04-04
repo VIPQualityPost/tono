@@ -38,6 +38,8 @@ class MaskMorphology:
         "close (dilate then erode) fills small holes. "
     )
 
+    KEYWORDS = ("dilate", "erode", "open", "close", "binary")
+
     def process(self, mask: np.ndarray, operation: str, radius: int, shape: str,
                 field: DataField | None = None) -> tuple:
         from scipy.ndimage import binary_closing, binary_dilation, binary_erosion, binary_opening

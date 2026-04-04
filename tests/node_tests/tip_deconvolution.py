@@ -97,7 +97,7 @@ def test_deconv_sharpens_broadened_image():
 
     # Simulate measured image via tip dilation (Gwyddion gwy_tip_dilation):
     #   dilation_tip = tip - max(tip)   (max shifted to 0, values ≤ 0)
-    #   measured[y,x] = max_{ty,tx}[surface[y−ty, x−tx] + dilation_tip[ty,tx]]
+    #   measured[y,x] = max_{ty,tx}[surface[y-ty, x-tx] + dilation_tip[ty,tx]]
     dilation_struct = tip_data - tip_data.max()
     measured_data = grey_dilation(data, structure=dilation_struct)
     measured = make_field(data=measured_data)

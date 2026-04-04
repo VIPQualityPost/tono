@@ -41,6 +41,8 @@ class MarkDisconnected:
         "Equivalent to Gwyddion's mark_disconn module."
     )
 
+    KEYWORDS = ("isolated", "defect", "morphology", "disconn", "outlier")
+
     def process(self, field: DataField, defect_type: str, radius: int, threshold: float) -> tuple:
         data = field.data.astype(np.float64)
 

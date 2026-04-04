@@ -18,7 +18,7 @@ Create a mask marking pixels that deviate more than N standard deviations from t
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| sigma_threshold | FLOAT | 3.0 | Number of standard deviations beyond which a pixel is an outlier (1.0–10.0) |
+| sigma_threshold | FLOAT | 3.0 | Number of standard deviations beyond which a pixel is an outlier (1.0-10.0) |
 | mode | dropdown | both | Which outliers to flag: both (high and low), high only, or low only |
 
 ## Notes

@@ -26,16 +26,18 @@ class TipDeconvolution:
     DESCRIPTION = (
         "Reconstruct the true surface from a tip-broadened measured image. "
         "Uses morphological grey erosion (Villarrubia algorithm): "
-        "  mytip = flip(tip) − max(flip(tip))   [max shifted to 0] "
-        "  surface[y,x] = min_{dy,dx}[image[y+dy, x+dx] − mytip[dy,dx]] "
+        "  mytip = flip(tip) - max(flip(tip))   [max shifted to 0] "
+        "  surface[y,x] = min_{dy,dx}[image[y+dy, x+dx] - mytip[dy,dx]] "
         "Connect the tip output from a TipModel node. "
         "The tip pixel size must match the image pixel size. "
     )
 
+    KEYWORDS = ("erosion", "morphology", "villarrubia", "surface reconstruction", "apex", "deblur")
+
     def process(self, field: DataField, tip: DataField) -> tuple:
         # Gwyddion gwy_tip_erosion:
-        #   mytip = flip(tip) − max(flip(tip))   (values ≤ 0, apex = 0)
-        #   result[y,x] = min_{ty,tx}[surface[y+ty, x+tx] − mytip[ty,tx]]
+        #   mytip = flip(tip) - max(flip(tip))   (values ≤ 0, apex = 0)
+        #   result[y,x] = min_{ty,tx}[surface[y+ty, x+tx] - mytip[ty,tx]]
         tip_flipped = np.flipud(np.fliplr(tip.data))
         mytip = tip_flipped - tip_flipped.max()     # shift so max = 0
 

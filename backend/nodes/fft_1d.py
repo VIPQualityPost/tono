@@ -30,6 +30,8 @@ class FFT1D:
         "Returns the FFT spectrum of the line, and identifies peaks."
     )
 
+    KEYWORDS = ("fourier", "frequency", "spectrum", "period")
+
     def process(
             self, profile,
     ) -> tuple:

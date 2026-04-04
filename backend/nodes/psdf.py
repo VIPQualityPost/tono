@@ -27,6 +27,8 @@ class PSDF:
         "window RMS compensation and centered zero frequency."
     )
 
+    KEYWORDS = ("power spectrum", "fourier", "frequency", "roughness", "spectral density")
+
     def process(self, field: DataField, windowing: str, level: str) -> tuple:
         data = preprocess_spectral_data(field, level=level, windowing=windowing)
         return (psdf_field_from_data(field, data),)

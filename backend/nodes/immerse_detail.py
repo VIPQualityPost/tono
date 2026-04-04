@@ -30,6 +30,8 @@ class ImmerseDetail:
         "image using cross-correlation to find the best position. "
     )
 
+    KEYWORDS = ("inset", "zoom", "merge", "overlay")
+
     def process(self, overview: DataField, detail: DataField, blend: str) -> tuple:
         ov = np.asarray(overview.data, dtype=np.float64)
         dt = np.asarray(detail.data, dtype=np.float64)

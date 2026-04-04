@@ -34,6 +34,8 @@ class LevelGrains:
         "Useful for consistent grain height comparisons. "
     )
 
+    KEYWORDS = ("align", "baseline", "flatten", "particle")
+
     def process(self, field: DataField, mask: np.ndarray, reference: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64).copy()
         grain_mask = mask_to_bool(mask)

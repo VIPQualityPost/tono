@@ -33,6 +33,8 @@ class GrainEdge:
         "controls the boundary thickness in pixels. "
     )
 
+    KEYWORDS = ("boundary", "outline", "perimeter", "contour")
+
     def process(self, field: DataField, mask: np.ndarray, width: int) -> tuple:
         grain = mask_to_bool(mask)
 

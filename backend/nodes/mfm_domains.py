@@ -49,6 +49,8 @@ class MFMDomainGeneration:
         "FFT-based transfer functions, suitable for MFM simulation and testing. "
     )
 
+    KEYWORDS = ("magnetic", "stripe", "stray field", "synthetic", "simulation")
+
     def process(
         self,
         field: DataField,

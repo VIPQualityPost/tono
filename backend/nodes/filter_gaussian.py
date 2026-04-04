@@ -20,7 +20,9 @@ class GaussianFilter:
     FUNCTION = "process"
 
     DESCRIPTION = "Apply a Gaussian blur."
-    
+
+    KEYWORDS = ("blur", "smooth", "lowpass")
+
     def process(self, field: DataField, sigma: float) -> tuple:
         from scipy.ndimage import gaussian_filter
         data = gaussian_filter(field.data, sigma=float(sigma))

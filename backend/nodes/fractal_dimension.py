@@ -310,6 +310,8 @@ class FractalDimension:
         "power-spectrum, or HHCF methods. The in-node graph shows the log-log curve and lets you drag the fit range."
     )
 
+    KEYWORDS = ("partitioning", "cube counting", "triangulation", "hhcf", "box counting", "self similar")
+
     def process(
         self,
         field,

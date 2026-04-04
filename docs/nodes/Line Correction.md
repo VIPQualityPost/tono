@@ -24,8 +24,8 @@ Correct scan-line mismatches using Gwyddion-derived row alignment methods. Suppo
 | method | dropdown | median | Alignment method: median, median_diff, trimmed_mean, trimmed_diff, polynomial, or step |
 | direction | dropdown | horizontal | Direction of scan lines to correct: horizontal or vertical |
 | masking | dropdown | ignore | How to use the mask: ignore, include (correct using masked rows only), or exclude |
-| trim_fraction | FLOAT | 0.05 | Fraction of extreme values to trim; visible only for trimmed_mean and trimmed_diff methods (0–0.5) |
-| polynomial_degree | INT | 1 | Polynomial degree for the polynomial method (0–5); visible only for polynomial method |
+| trim_fraction | FLOAT | 0.05 | Fraction of extreme values to trim; visible only for trimmed_mean and trimmed_diff methods (0-0.5) |
+| polynomial_degree | INT | 1 | Polynomial degree for the polynomial method (0-5); visible only for polynomial method |
 
 ## Notes
 

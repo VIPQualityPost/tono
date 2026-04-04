@@ -38,6 +38,8 @@ class TipModel:
         "sphere — ball-on-stick (sphere cap only). "
     )
 
+    KEYWORDS = ("apex", "parabola", "cone", "sphere", "synthetic", "probe", "cantilever")
+
     def process(
         self,
         field: DataField,
@@ -60,7 +62,7 @@ class TipModel:
 
         if shape == "parabola":
             # Gwyddion parabola(): a = 1/(2R), z0 = 2a·x_half²
-            # z[y,x] = z0 − a·r²  →  min at corners is exactly 0
+            # z[y,x] = z0 - a·r²  →  min at corners is exactly 0
             a = 0.5 / radius
             x_half = ci * pixel_size        # half-width in physical units
             z0 = 2.0 * a * x_half**2
@@ -69,11 +71,11 @@ class TipModel:
 
         elif shape == "cone":
             # Gwyddion cone():
-            #   angle = half-angle from horizontal = π/2 − half_angle_from_axis
+            #   angle = half-angle from horizontal = π/2 - half_angle_from_axis
             #   z0 = R/sin(angle)
             #   r_cross² = (R·cos(angle))²
-            #   inner (r² < r_cross²): z = sqrt(R² − r²)   ← spherical cap
-            #   outer:                  z = z0 − r/tan(angle)
+            #   inner (r² < r_cross²): z = sqrt(R² - r²)   ← spherical cap
+            #   outer:                  z = z0 - r/tan(angle)
             angle = np.radians(90.0 - half_angle)   # slope from horizontal
             z0 = radius / np.sin(angle)
             br2 = (radius * np.cos(angle))**2

@@ -32,6 +32,8 @@ class ZeroCrossing:
         "out weak edges (relative to the LoG range). "
     )
 
+    KEYWORDS = ("edge", "laplacian of gaussian", "log", "marr hildreth", "contour", "boundary")
+
     def process(self, field: DataField, sigma: float, threshold: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
 

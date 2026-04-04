@@ -296,6 +296,8 @@ class LineCorrection:
         "and the step-line correction path from Gwyddion's linecorrect/linematch modules."
     )
 
+    KEYWORDS = ("row", "linematch", "linecorrect", "destripe", "scanline", "align")
+
     def process(
         self,
         field: DataField,

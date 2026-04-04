@@ -33,6 +33,8 @@ class DrawMask:
         "and invert flips the final binary output."
     )
 
+    KEYWORDS = ("paint", "brush", "roi", "annotate", "manual")
+
     def process(self, field: DataField, pen_size: int, invert: bool, mask_paths: str) -> tuple:
         strokes = _parse_mask_strokes(mask_paths)
         mask = _rasterize_mask(field.xres, field.yres, strokes, pen_size)

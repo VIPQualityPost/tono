@@ -33,6 +33,8 @@ class FlattenBase:
         "this ignores tall features that would bias the fit. "
     )
 
+    KEYWORDS = ("level", "background", "substrate", "tilt")
+
     def process(self, field: DataField, threshold_percentile: float, poly_degree: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

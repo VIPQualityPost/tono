@@ -178,8 +178,9 @@ class PixelClassification:
         "Classify pixels into discrete classes based on height, slope, and/or curvature. "
         "Single-feature modes use threshold-based classification (Otsu, equal range, or quantile). "
         "Multi-feature modes (height_slope, all) use k-means clustering. "
-        "Equivalent to Gwyddion's classify.c module."
     )
+
+    KEYWORDS = ("kmeans", "cluster", "otsu", "segment", "quantile", "slope", "curvature")
 
     def process(self, field: DataField, n_classes: int, feature: str, method: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

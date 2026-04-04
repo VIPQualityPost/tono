@@ -32,6 +32,8 @@ class WrapValue:
         "Preset ranges for degrees and radians, or specify a custom range. "
     )
 
+    KEYWORDS = ("phase", "angle", "modulo", "periodic", "degree", "radian", "unwrap", "rewrap")
+
     def process(self, field: DataField, range: str,
                 custom_min: float, custom_max: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

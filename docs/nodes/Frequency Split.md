@@ -19,7 +19,7 @@ Separate a DATA_FIELD into low-frequency and high-frequency components using an 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| cutoff | FLOAT | 0.1 | Cutoff frequency as a fraction of Nyquist (0.001–0.5) |
+| cutoff | FLOAT | 0.1 | Cutoff frequency as a fraction of Nyquist (0.001-0.5) |
 
 ## Notes
 

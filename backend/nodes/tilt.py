@@ -32,6 +32,8 @@ class Tilt:
         "Use 'subtract' mode to remove a known tilt. "
     )
 
+    KEYWORDS = ("slope", "plane", "level", "bow", "ramp")
+
     def process(self, field: DataField, slope_x: float, slope_y: float,
                 mode: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

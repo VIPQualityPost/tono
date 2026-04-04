@@ -22,7 +22,7 @@ Correlate grain properties between two fields using a shared grain mask. Reports
 |------|------|---------|-------------|
 | property_a | dropdown | mean_height | Property to compute from field_a: area, mean_height, max_height, or volume |
 | property_b | dropdown | max_height | Property to compute from field_b: area, mean_height, max_height, or volume |
-| min_size | INT | 10 | Minimum grain area in pixels; smaller grains are excluded (1–100000) |
+| min_size | INT | 10 | Minimum grain area in pixels; smaller grains are excluded (1-100000) |
 
 ## Notes
 

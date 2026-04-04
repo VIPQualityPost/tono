@@ -29,6 +29,8 @@ class FieldArithmetic:
         "hypot computes sqrt(a² + b²) per pixel. "
     )
 
+    KEYWORDS = ("math", "add", "subtract", "multiply", "divide", "hypot")
+
     def process(self, field_a: DataField, field_b: DataField, operation: str) -> tuple:
         if field_a.data.shape != field_b.data.shape:
             raise ValueError(

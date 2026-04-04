@@ -55,6 +55,8 @@ class PlaneLevelField:
         "for flattening around features, similar to masked plane fitting workflows in Gwyddion."
     )
 
+    KEYWORDS = ("flatten", "tilt", "background")
+
     def process(
         self,
         field: DataField,

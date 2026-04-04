@@ -31,6 +31,8 @@ class ScanLineReorder:
         "odd or even rows and stretches to fill. flip_vertical reverses row order. "
     )
 
+    KEYWORDS = ("meander", "serpentine", "interlace", "trace retrace", "reverse")
+
     def process(self, field: DataField, operation: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64).copy()
         yres, xres = data.shape

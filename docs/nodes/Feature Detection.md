@@ -20,11 +20,11 @@ Detect edges or corners in a surface using Canny edge detection or Harris corner
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | method | dropdown | canny | Detection method: canny (edges) or harris (corners) |
-| sigma | FLOAT | 1.0 | Gaussian smoothing sigma in pixels (0.1–20.0) |
-| low_threshold | FLOAT | 0.1 | Canny low hysteresis threshold (0–1) |
-| high_threshold | FLOAT | 0.2 | Canny high hysteresis threshold (0–1) |
-| harris_k | FLOAT | 0.05 | Harris detector sensitivity parameter (0.01–0.5) |
-| min_distance | INT | 5 | Minimum distance between detected corners in pixels (1–100) |
+| sigma | FLOAT | 1.0 | Gaussian smoothing sigma in pixels (0.1-20.0) |
+| low_threshold | FLOAT | 0.1 | Canny low hysteresis threshold (0-1) |
+| high_threshold | FLOAT | 0.2 | Canny high hysteresis threshold (0-1) |
+| harris_k | FLOAT | 0.05 | Harris detector sensitivity parameter (0.01-0.5) |
+| min_distance | INT | 5 | Minimum distance between detected corners in pixels (1-100) |
 
 ## Notes
 

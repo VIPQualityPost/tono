@@ -552,8 +552,9 @@ class SyntheticSurface:
         "Generate synthetic test surfaces for development, calibration, and "
         "algorithm testing. 28 patterns covering noise, geometry, growth "
         "simulations, phase separation, reaction-diffusion, and tiling. "
-        "Equivalent to Gwyddion's *_synth.c modules."
     )
+
+    KEYWORDS = ("generate", "fbm", "fractal", "noise", "simulation", "test", "dla", "voronoi", "turing", "spinodal", "pattern")
 
     def process(
         self,

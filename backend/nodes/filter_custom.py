@@ -99,6 +99,8 @@ class CustomConvolution:
         "Example sharpen: '0 -1 0 / -1 5 -1 / 0 -1 0' (use newlines, not slashes). "
     )
 
+    KEYWORDS = ("kernel", "sharpen", "custom filter", "convolution")
+
     def process(
         self,
         field: DataField,

@@ -28,6 +28,8 @@ class LocalContrast:
         "Reveals fine surface features that are hidden by global contrast range. "
     )
 
+    KEYWORDS = ("clahe", "enhance", "adaptive", "dynamic range")
+
     def process(self, field: DataField, kernel_size: int, weight: float) -> tuple:
         from scipy.ndimage import minimum_filter, maximum_filter
 
@@ -50,7 +52,7 @@ class LocalContrast:
         safe_range = np.where(local_range > eps, local_range, 1.0)
         global_span = global_max - global_min
         if global_span <= eps:
-            # Uniform field – nothing to enhance.
+            # Uniform field - nothing to enhance.
             return (field.replace(data=data.copy()),)
 
         enhancement_factor = global_span / safe_range

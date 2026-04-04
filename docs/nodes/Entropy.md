@@ -1,6 +1,6 @@
 # Entropy
 
-Compute the Shannon entropy of the height or slope distribution. H = −Σ p·ln(p). Equivalent to Gwyddion entropy.c.
+Compute the Shannon entropy of the height or slope distribution. H = -Σ p·ln(p). Equivalent to Gwyddion entropy.c.
 
 ## Inputs
 
@@ -20,7 +20,7 @@ Compute the Shannon entropy of the height or slope distribution. H = −Σ p·ln
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | mode | dropdown | height values | Compute entropy of height values or slope magnitude |
-| n_bins | INT | 256 | Number of histogram bins for probability estimation (16–1024) |
+| n_bins | INT | 256 | Number of histogram bins for probability estimation (16-1024) |
 
 ## Notes
 

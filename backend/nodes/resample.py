@@ -29,6 +29,8 @@ class Resample:
         "Physical size (xreal, yreal) is unchanged; pixel size dx/dy scales accordingly. "
     )
 
+    KEYWORDS = ("resize", "rescale", "interpolate", "bilinear", "bicubic", "nearest", "zoom")
+
     _ORDERS = {"nearest": 0, "linear": 1, "cubic": 3}
 
     def process(self, field: DataField, width: int, height: int, interpolation: str) -> tuple:

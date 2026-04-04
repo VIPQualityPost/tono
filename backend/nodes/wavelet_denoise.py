@@ -36,6 +36,8 @@ class WaveletDenoise:
         "per sub-band; VisuShrink uses a global threshold."
     )
 
+    KEYWORDS = ("daubechies", "symlet", "coiflet", "biorthogonal", "dwt", "threshold", "bayesshrink", "visushrink", "smooth")
+
     def process(
         self,
         field: DataField,

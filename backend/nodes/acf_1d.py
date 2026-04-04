@@ -44,6 +44,8 @@ class ACF1D:
         "The measurement table reports the dominant period from the first positive peak."
     )
 
+    KEYWORDS = ("autocorrelation", "correlation", "period")
+
     def process(self, profile: LineData, level: str) -> tuple:
         z = np.asarray(profile, dtype=np.float64)
         if level == "mean":

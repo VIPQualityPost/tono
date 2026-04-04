@@ -31,10 +31,12 @@ class Image:
 
     DESCRIPTION = (
         "Load any supported file. "
-        "SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) provide calibrated dimensions; "
+        "SPM and HDF5 provide calibrated dimensions; "
         "each channel gets its own output. "
-        "Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields."
+        "Images and arrays are loaded as uncalibrated fields."
     )
+
+    KEYWORDS = ("load", "open", "file", "import", "gwy", "sxm", "ibw", "png", "tiff", "npy", "hdf5")
 
     def load(self, filename: str = "", colormap: str = "viridis", colormap_map=None, path: str | None = None):
         selected_path = str(path).strip() if path is not None else str(filename).strip()

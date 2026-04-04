@@ -43,6 +43,8 @@ class SEMSimulation:
         "edge-enhanced contrast similar to real SEM images."
     )
 
+    KEYWORDS = ("electron", "secondary electron", "synthetic", "render", "shading", "slope")
+
     def process(self, field: DataField, method: str, sigma: float,
                 n_samples: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

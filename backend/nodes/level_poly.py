@@ -26,6 +26,8 @@ class PolyLevelField:
         "Fit and subtract a polynomial background of given degree in x and y. "
     )
 
+    KEYWORDS = ("flatten", "background", "bow", "curvature")
+
     def process(self, field: DataField, degree_x: int, degree_y: int) -> tuple:
         data = field.data.copy()
         yres, xres = data.shape

@@ -74,6 +74,8 @@ class Save:
         "Save a single graph value to disk. Supports fields, images, lines, tables, scalars, and 3D meshes."
     )
 
+    KEYWORDS = ("export", "write", "download", "png", "tiff", "csv", "json", "npz", "obj", "stl")
+
     def save(
         self,
         filename: str,

@@ -126,6 +126,8 @@ class NeuralClassification:
         "Equivalent in purpose to Gwyddion's neural.c classifier."
     )
 
+    KEYWORDS = ("machine learning", "ml", "segment", "nn", "feedforward", "classifier")
+
     def process(
         self,
         field: DataField,

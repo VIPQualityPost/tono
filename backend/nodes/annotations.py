@@ -50,6 +50,8 @@ class Annotations:
         "or annotate an IMAGE that carries viewport metadata from View3D."
     )
 
+    KEYWORDS = ("scale bar", "legend", "colorbar", "publication")
+
     def render(
         self,
         input,

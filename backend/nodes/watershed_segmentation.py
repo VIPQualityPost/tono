@@ -232,6 +232,8 @@ class WatershedSegmentation:
         "and optional union/intersection with an existing mask."
     )
 
+    KEYWORDS = ("grain", "basin", "flood fill", "gwyddion", "peak", "valley", "hill", "marker")
+
     def process(
         self,
         field: DataField,

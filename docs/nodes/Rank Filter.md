@@ -18,9 +18,9 @@ Apply a general rank-order (morphological) filter to a DATA_FIELD. Selects the k
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| radius | INT | 3 | Radius of the circular filter window in pixels (1–50) |
+| radius | INT | 3 | Radius of the circular filter window in pixels (1-50) |
 | operation | dropdown | median | Filter operation: erosion (local minimum), dilation (local maximum), median (50th percentile), or percentile (custom rank) |
-| percentile | FLOAT | 50.0 | Custom percentile rank, used only when operation is percentile (0.0–100.0) |
+| percentile | FLOAT | 50.0 | Custom percentile rank, used only when operation is percentile (0.0-100.0) |
 
 ## Notes
 

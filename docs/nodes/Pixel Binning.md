@@ -18,7 +18,7 @@ Downsample a DATA_FIELD by grouping pixels into NxN blocks and reducing each blo
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| bin_size | INT | 2 | Side length of the square binning block in pixels (2–64) |
+| bin_size | INT | 2 | Side length of the square binning block in pixels (2-64) |
 | method | dropdown | mean | Reduction method per block: mean (average), sum (total), or median (middle value) |
 
 ## Notes

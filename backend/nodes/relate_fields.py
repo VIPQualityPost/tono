@@ -33,6 +33,8 @@ class RelateFields:
         "parameters with R² goodness-of-fit. "
     )
 
+    KEYWORDS = ("fit", "regression", "correlate", "polynomial", "power", "logarithmic")
+
     def process(self, field_a: DataField, field_b: DataField,
                 function: str) -> tuple:
         a = np.asarray(field_a.data, dtype=np.float64).ravel()

@@ -41,6 +41,8 @@ class MaskNoisify:
         "Use a fixed seed for reproducible results."
     )
 
+    KEYWORDS = ("random", "perturb", "boundary", "roughen", "jitter")
+
     def process(self, mask: np.ndarray, density: float, direction: str,
                 boundaries_only: bool, seed: int,
                 field: DataField | None = None) -> tuple:

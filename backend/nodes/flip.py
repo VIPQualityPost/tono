@@ -29,6 +29,8 @@ class FlipField:
         "Physical extents are preserved, and stored markup overlays are mirrored with the data."
     )
 
+    KEYWORDS = ("mirror", "reflect", "invert")
+
     def process(self, field: DataField, axis: str) -> tuple:
         axis_name = str(axis).strip().lower()
         if axis_name == "x":

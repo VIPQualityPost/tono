@@ -19,7 +19,7 @@ Blind tip estimation from a measured SPM image using the Villarrubia algorithm. 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| n_pixels | INT | 33 | Tip grid size in pixels (odd values only, 3–129) |
+| n_pixels | INT | 33 | Tip grid size in pixels (odd values only, 3-129) |
 | threshold | FLOAT | 0.0 | Noise floor in metres; increase if the estimated tip is unrealistically sharp |
 | method | dropdown | partial | partial: uses local maxima only (faster, needs sharp isolated features); full: uses all points above morphological opening (slower, more robust) |
 | use_edges | BOOLEAN | False | When enabled, also uses image edge pixels as refinement candidates |

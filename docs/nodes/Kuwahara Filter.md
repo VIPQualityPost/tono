@@ -18,7 +18,7 @@ Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method. Unl
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| iterations | INT | 1 | Number of times the 5×5 Kuwahara pass is applied (1–20) |
+| iterations | INT | 1 | Number of times the 5×5 Kuwahara pass is applied (1-20) |
 
 ## Notes
 

@@ -49,6 +49,8 @@ class MFMCurrentSimulation:
         "gradient dHz/dz."
     )
 
+    KEYWORDS = ("magnetic", "biot savart", "wire", "strip", "force", "dipole", "tip")
+
     def process(
         self,
         field: DataField,

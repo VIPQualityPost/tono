@@ -172,6 +172,8 @@ class LogisticClassification:
         "generates pseudo-labels automatically."
     )
 
+    KEYWORDS = ("machine learning", "regression", "segment", "ml", "neural")
+
     def process(
         self,
         field: DataField,

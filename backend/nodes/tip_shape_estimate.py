@@ -38,8 +38,9 @@ class TipShapeEstimate:
         "The 2D tip is built by revolving the 1D radial profile (axial "
         "symmetry assumption). Output parameters include estimated tip "
         "radius of curvature at the apex and half-cone angle. "
-        "Equivalent to Gwyddion's tipshape.c analysis. "
     )
+
+    KEYWORDS = ("calibration", "villarrubia", "tipshape", "radius", "apex", "half angle", "edge", "sphere", "cylinder", "dilation")
 
     def process(
         self,

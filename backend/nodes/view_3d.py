@@ -148,6 +148,8 @@ class View3D:
         "Drag to rotate, middle-drag to pan, and right-drag or scroll to zoom. z_scale exaggerates height."
     )
 
+    KEYWORDS = ("surface", "mesh", "render", "perspective", "height map", "visualize", "opengl")
+
     def render(
         self, field: DataField,
         colormap: str, z_scale: float, resolution: int, make_solid: bool = False,

@@ -18,7 +18,7 @@ Apply a Gaussian blur to a DATA_FIELD. Equivalent to gwy_data_field_filter_gauss
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| sigma | FLOAT | 1.0 | Standard deviation of the Gaussian kernel in pixels (0.01–50.0) |
+| sigma | FLOAT | 1.0 | Standard deviation of the Gaussian kernel in pixels (0.01-50.0) |
 
 ## Notes
 

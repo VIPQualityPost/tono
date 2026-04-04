@@ -5,19 +5,19 @@ Asylum Research instruments store scan metadata in a sidecar group rather
 than as dataset attributes.  This importer reads physical dimensions from:
 
   Image/DataSetInfo/Global/Channels/<channel>/ImageDims
-    DimScaling   – (2,2) array: [[Y_start, Y_end], [X_start, X_end]]
+    DimScaling   - (2,2) array: [[Y_start, Y_end], [X_start, X_end]]
                    absolute physical coordinate ranges in DimUnits
-    DimExtents   – pixel counts [yres, xres] (stored in a child group, not used for sizing)
-    DimUnits     – lateral unit strings [Y_unit, X_unit]
-    DataUnits    – Z unit string
+    DimExtents   - pixel counts [yres, xres] (stored in a child group, not used for sizing)
+    DimUnits     - lateral unit strings [Y_unit, X_unit]
+    DataUnits    - Z unit string
 
 If the sidecar group is absent (generic HDF5), standard dataset attributes
 are used as a fallback:
 
-  xreal / yreal   – physical scan size in metres  (fallback: 1e-6)
-  xoff  / yoff    – position offset in metres      (fallback: 0)
-  si_unit_xy      – lateral unit string            (fallback: "m")
-  si_unit_z       – value unit string              (fallback: "m")
+  xreal / yreal   - physical scan size in metres  (fallback: 1e-6)
+  xoff  / yoff    - position offset in metres      (fallback: 0)
+  si_unit_xy      - lateral unit string            (fallback: "m")
+  si_unit_z       - value unit string              (fallback: "m")
 
 Requires:
     pip install h5py

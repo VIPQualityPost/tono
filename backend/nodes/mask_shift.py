@@ -40,6 +40,8 @@ class MaskShift:
         "wrap (periodic roll), or mirror (reflected padding)."
     )
 
+    KEYWORDS = ("translate", "offset", "move", "roll")
+
     def process(self, mask: np.ndarray, shift_x: int, shift_y: int,
                 border_mode: str, field: DataField | None = None) -> tuple:
         binary = mask_to_bool(mask)

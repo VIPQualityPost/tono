@@ -92,7 +92,7 @@ def _quantize_tip(tip_data: np.ndarray, tip_max: float, step: float) -> np.ndarr
 
     Matches Gwyddion's i_datafield_to_field(tip, maxzero=TRUE, min=tip_min, step).
     With tip_min = 0 (our tips are always shifted so min = 0) this simplifies to:
-      itip[y,x] = floor( (tip[y,x] − tip_max) / step )
+      itip[y,x] = floor( (tip[y,x] - tip_max) / step )
     """
     return np.floor((tip_data - tip_max) / step).astype(np.int32)
 
@@ -155,7 +155,7 @@ def _estimate_point_interior(
 
       The tip "touches" the image at reference pixel (jxp+yc-jd, ixp+xc-id).
       For the tip to be inside the surface (physically valid), the image
-      height at that reference pixel must be ≥ image_p − tip0[jd, id].
+      height at that reference pixel must be ≥ image_p - tip0[jd, id].
 
     Pixels that pass this check are called "good pixels" — they are the tip
     positions that are geometrically consistent with the apex sitting at
@@ -384,14 +384,14 @@ def _certainty_map_fast(
 
     For tip pixel (ti, tj) and its reflected counterpart tip_flip[ti, tj]:
 
-      image[i, j] − tip_flip[ti, tj] − rsurf[sy, sx] ≈ 0
+      image[i, j] - tip_flip[ti, tj] - rsurf[sy, sx] ≈ 0
 
     means that placing the tip so that tip pixel (ti, tj) touches the surface
     at (sy, sx) exactly accounts for the measured height at image pixel (i, j).
     The reflected tip is used because dilation/erosion use the tip flipped
     180°.  Coordinates:
-      sy = ti + i − ryc,  sx = tj + j − rxc
-    where ryc = tyres−1−yc and rxc = txres−1−xc are the reflected-apex
+      sy = ti + i - ryc,  sx = tj + j - rxc
+    where ryc = tyres-1-yc and rxc = txres-1-xc are the reflected-apex
     offsets.
 
     ── Why "exactly one" contact? ───────────────────────────────────────────
@@ -493,6 +493,8 @@ class BlindTipEstimate:
         "Output tip has apex=max, edges=0 (same convention as TipModel). "
         "Certainty map marks surface pixels where the tip was in unambiguous single contact. "
     )
+
+    KEYWORDS = ("villarrubia", "morphology", "cantilever", "apex", "dilation", "reconstruct")
 
     def process(
         self,

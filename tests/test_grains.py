@@ -411,7 +411,7 @@ def test_pipeline_demo_image():
         assert grain["max_height"] >= grain["mean_height"]
         assert grain["mean_height"] > 0
 
-    # Physical size sanity: equivalent diameters should be in the nm–µm range
+    # Physical size sanity: equivalent diameters should be in the nm-µm range
     diams_nm = [g["equiv_diam_m"] * 1e9 for g in table]
     print(f"  Diameters: min={min(diams_nm):.0f} nm, max={max(diams_nm):.0f} nm")
     assert all(1 < d < 2000 for d in diams_nm), \

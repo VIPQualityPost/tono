@@ -19,7 +19,7 @@ Classify pixels into discrete classes based on height, slope, and/or curvature u
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| n_classes | INT | 3 | Number of output classes (2–10) |
+| n_classes | INT | 3 | Number of output classes (2-10) |
 | feature | dropdown | height | Feature used for classification: height, slope, curvature, height_slope, or all |
 | method | dropdown | otsu | Thresholding method: otsu, equal_range, or quantile |
 

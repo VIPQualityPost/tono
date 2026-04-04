@@ -20,8 +20,8 @@ Detect lines or circles in images using the Hough transform. Returns an accumula
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | mode | dropdown | lines | Detection mode: lines or circles |
-| n_peaks | INT | 3 | Number of strongest features to report (1–50) |
-| threshold | FLOAT | 1.0 | Minimum accumulator value relative to peak (0.1–10.0) |
+| n_peaks | INT | 3 | Number of strongest features to report (1-50) |
+| threshold | FLOAT | 1.0 | Minimum accumulator value relative to peak (0.1-10.0) |
 | min_radius | INT | 10 | Minimum circle radius in pixels (circles mode only) |
 | max_radius | INT | 30 | Maximum circle radius in pixels (circles mode only) |
 

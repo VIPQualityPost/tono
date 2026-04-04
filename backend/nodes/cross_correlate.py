@@ -30,6 +30,8 @@ class CrossCorrelate:
         "alignment."
     )
 
+    KEYWORDS = ("xcorr", "alignment", "registration", "drift", "match")
+
     def process(
         self,
         field_a: DataField,

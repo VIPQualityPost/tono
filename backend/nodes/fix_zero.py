@@ -24,6 +24,8 @@ class FixZero:
         "Shift data so that the minimum (or mean/median) is zero. "
     )
 
+    KEYWORDS = ("offset", "subtract", "baseline", "datum")
+
     def process(self, field: DataField, method: str) -> tuple:
         data = field.data.copy()
         if method == "min":

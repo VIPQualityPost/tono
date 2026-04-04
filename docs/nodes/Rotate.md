@@ -18,7 +18,7 @@ Rotate a DATA_FIELD counterclockwise by an angle in degrees. Optionally expand t
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| angle | FLOAT | 90.0 | Rotation angle in degrees, counterclockwise (−360 to 360) |
+| angle | FLOAT | 90.0 | Rotation angle in degrees, counterclockwise (-360 to 360) |
 | interpolation | dropdown | bilinear | Interpolation method for resampling: bilinear, nearest, or bicubic |
 | expand_canvas | BOOLEAN | True | When True, canvas is expanded to contain the full rotated image; when False, canvas is clipped to original size |
 

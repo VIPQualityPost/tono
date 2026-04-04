@@ -2,12 +2,12 @@
 Core data types for tono.
 
 DataField mirrors Gwyddion's GwyDataField structure:
-  xres, yres  – pixel dimensions
-  xreal, yreal – physical dimensions in metres
-  xoff, yoff   – position offset in metres
-  si_unit_xy   – lateral unit string (e.g. "m", "nm")
-  si_unit_z    – height/value unit string (e.g. "m", "V", "A")
-  domain       – "spatial" or "frequency" (set by FFT nodes)
+  xres, yres  - pixel dimensions
+  xreal, yreal - physical dimensions in metres
+  xoff, yoff   - position offset in metres
+  si_unit_xy   - lateral unit string (e.g. "m", "nm")
+  si_unit_z    - height/value unit string (e.g. "m", "V", "A")
+  domain       - "spatial" or "frequency" (set by FFT nodes)
 """
 
 from __future__ import annotations

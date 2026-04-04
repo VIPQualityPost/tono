@@ -19,7 +19,7 @@ Label connected grain regions in a binary mask and compute per-grain statistics:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| min_size | INT | 10 | Minimum grain area in pixels; smaller connected regions are ignored (1–100000) |
+| min_size | INT | 10 | Minimum grain area in pixels; smaller connected regions are ignored (1-100000) |
 
 ## Notes
 

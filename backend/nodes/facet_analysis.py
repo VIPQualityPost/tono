@@ -32,6 +32,8 @@ class FacetAnalysis:
         "Intensity represents how much surface area faces each orientation. "
     )
 
+    KEYWORDS = ("orientation", "stereographic", "azimuth", "inclination", "slope", "crystal")
+
     def process(self, field: DataField, n_bins: int, kernel_size: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
 

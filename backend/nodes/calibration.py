@@ -84,6 +84,8 @@ class Calibration:
         "Equivalent to Gwyddion's calibrate functionality."
     )
 
+    KEYWORDS = ("units", "rescale", "dimensions")
+
     def process(
         self,
         field: DataField,

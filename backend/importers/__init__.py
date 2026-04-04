@@ -2,10 +2,10 @@
 File importer registry.
 
 Each module in this package exposes:
-  extensions   frozenset[str]       – lower-case extensions it handles
-  calibrated   bool                 – True when physical dimensions are known
-  load(path)   → list[DataField]    – load all channels
-  channel_names(path) → list[str]   – channel name strings (same order as load)
+  extensions   frozenset[str]       - lower-case extensions it handles
+  calibrated   bool                 - True when physical dimensions are known
+  load(path)   → list[DataField]    - load all channels
+  channel_names(path) → list[str]   - channel name strings (same order as load)
 
 Usage::
 

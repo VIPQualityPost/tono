@@ -39,8 +39,9 @@ class DisplacementField:
         "Distort an image using synthetic displacement fields. "
         "Supports 1D Gaussian (row-correlated), 2D Gaussian (fully correlated), "
         "and tear (random horizontal tear lines) distortion modes. "
-        "Equivalent to Gwyddion's displfield.c module."
     )
+
+    KEYWORDS = ("distortion", "warp", "tear")
 
     def process(
         self,

@@ -40,6 +40,8 @@ class FeatureDetection:
         "Outputs a feature map and a table of detected feature locations. "
     )
 
+    KEYWORDS = ("canny", "harris", "corner", "edge", "interest point", "roi")
+
     def process(
         self,
         field: DataField,

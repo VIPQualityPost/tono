@@ -32,6 +32,8 @@ class SpotRemoval:
         "for smooth inpainting."
     )
 
+    KEYWORDS = ("defect", "hot pixel", "dropout", "inpaint", "fill", "despeckle", "artifact")
+
     def process(
         self,
         field: DataField,

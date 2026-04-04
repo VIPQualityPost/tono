@@ -32,6 +32,8 @@ class GrainSummary:
         "coverage fraction, mean/median area, total volume, and height statistics. "
     )
 
+    KEYWORDS = ("particle", "count", "density", "coverage", "statistics")
+
     def process(self, field: DataField, mask: np.ndarray, min_size: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         grain_mask = mask_to_bool(mask)

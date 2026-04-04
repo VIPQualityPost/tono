@@ -33,8 +33,9 @@ class PSFEstimation:
         "and an ideal (sharp) reference. The PSF can then be used with the "
         "Deconvolution node to restore other images. Three methods are available: "
         "pseudo-Wiener deconvolution, regularised least-squares, and Gaussian fit. "
-        "Equivalent to Gwyddion's psf.c / psf-fit.c modules."
     )
+
+    KEYWORDS = ("point spread function", "deconvolution", "wiener", "gaussian", "blur", "kernel")
 
     # ------------------------------------------------------------------
     # helpers

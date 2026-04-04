@@ -18,8 +18,8 @@ Compute the angular slope distribution of a DATA_FIELD surface. Equivalent to Gw
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| distribution | dropdown | theta | Distribution type: theta (inclination angle, probability density in 1/deg), phi (azimuthal direction, weighted by slope², 0–360°), or gradient (slope magnitude, probability density in 1/(z/xy)) |
-| n_bins | INT | 90 | Number of histogram bins (10–1000) |
+| distribution | dropdown | theta | Distribution type: theta (inclination angle, probability density in 1/deg), phi (azimuthal direction, weighted by slope², 0-360°), or gradient (slope magnitude, probability density in 1/(z/xy)) |
+| n_bins | INT | 90 | Number of histogram bins (10-1000) |
 
 ## Notes
 

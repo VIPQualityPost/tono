@@ -32,6 +32,8 @@ class ThresholdMask:
         "Otsu automatically finds the optimal threshold. "
     )
 
+    KEYWORDS = ("otsu", "binarize", "segment", "cutoff", "level")
+
     def process(self, field: DataField, method: str, threshold: float, direction: str) -> tuple:
         data = field.data
 

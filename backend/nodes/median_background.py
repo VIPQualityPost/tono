@@ -33,6 +33,8 @@ class MedianBackground:
         "for surfaces with sparse tall features. "
     )
 
+    KEYWORDS = ("rolling ball", "flatten", "level", "subtract", "baseline")
+
     def process(self, field: DataField, radius: int, output: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         size = 2 * radius + 1

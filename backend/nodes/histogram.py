@@ -34,6 +34,8 @@ class Histogram:
         "Outputs marker measurements while showing the histogram interactively in-node. "
     )
 
+    KEYWORDS = ("distribution", "height distribution", "dh")
+
     def process(
         self,
         field: DataField,

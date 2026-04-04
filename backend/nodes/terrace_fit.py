@@ -35,6 +35,8 @@ class TerraceFit:
         "Set n_terraces=0 for automatic detection via histogram clustering. "
     )
 
+    KEYWORDS = ("step height", "atomic step", "flatten", "crystal", "semiconductor", "monolayer")
+
     def process(self, field: DataField, n_terraces: int, broadening: float,
                 poly_degree: int, output: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

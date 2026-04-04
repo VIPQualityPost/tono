@@ -39,6 +39,8 @@ class PerspectiveCorrection:
         "a rectangle."
     )
 
+    KEYWORDS = ("keystone", "homography", "projective", "warp", "quadrilateral", "distortion")
+
     def process(self, field: DataField,
                 top_left_x: float, top_left_y: float,
                 top_right_x: float, top_right_y: float,

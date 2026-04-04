@@ -20,7 +20,7 @@ Compute the azimuthally averaged radial profile from a centre point. The output 
 |------|------|---------|-------------|
 | cx | FLOAT | 0.5 | Centre x position as a fraction of field width (0 = left, 1 = right) |
 | cy | FLOAT | 0.5 | Centre y position as a fraction of field height (0 = top, 1 = bottom) |
-| n_bins | INT | 128 | Number of radial bins (4–4096) |
+| n_bins | INT | 128 | Number of radial bins (4-4096) |
 
 ## Notes
 

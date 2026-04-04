@@ -39,6 +39,8 @@ class HoughTransform:
         "For circles: centre coordinates and radius. "
     )
 
+    KEYWORDS = ("line detection", "circle detection", "shape detection")
+
     def process(
         self,
         field: DataField,

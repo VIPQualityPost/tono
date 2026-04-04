@@ -18,8 +18,8 @@ Resample a DATA_FIELD to a new pixel resolution while preserving physical dimens
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| width | INT | 256 | Output pixel width (2–16384) |
-| height | INT | 256 | Output pixel height (2–16384) |
+| width | INT | 256 | Output pixel width (2-16384) |
+| height | INT | 256 | Output pixel height (2-16384) |
 | interpolation | dropdown | linear | Interpolation method: linear, cubic, or nearest |
 
 ## Notes

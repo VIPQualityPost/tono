@@ -181,6 +181,8 @@ class GrainVisualization:
         "Equivalent to Gwyddion's grain selection visualization (grain_makesel)."
     )
 
+    KEYWORDS = ("ellipse", "disc", "bounding box", "centroid", "inscribed", "label")
+
     def process(self, field: DataField, mask: np.ndarray, style: str, fill: bool) -> tuple:
         mask_bool = mask_to_bool(mask)
         labels, n_grains = label(mask_bool.astype(np.int32))

@@ -27,6 +27,8 @@ class ACF2D:
         "and uses the default half-range extents from acf2d."
     )
 
+    KEYWORDS = ("autocorrelation", "correlation")
+
     def process(self, field: DataField, level: str) -> tuple:
         data = preprocess_spectral_data(field, level=level, windowing="none")
         return (acf_field_from_data(field, data),)

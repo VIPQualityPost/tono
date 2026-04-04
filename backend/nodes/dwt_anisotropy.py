@@ -163,8 +163,10 @@ class DWTAnisotropy:
         "Quantify surface anisotropy using a multi-level 2-D Haar wavelet decomposition. "
         "At each level, horizontal (HL) and vertical (LH) detail energies are compared to "
         "produce an X/Y energy ratio. Ratio > 1 indicates more horizontal features; "
-        "ratio < 1 indicates more vertical features. Equivalent to Gwyddion's dwtanisotropy.c."
+        "ratio < 1 indicates more vertical features."
     )
+
+    KEYWORDS = ("wavelet", "haar", "directional", "texture")
 
     def process(
         self,

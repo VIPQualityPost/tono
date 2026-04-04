@@ -20,7 +20,7 @@ Denoise a DATA_FIELD using wavelet coefficient thresholding. BayesShrink adapts 
 |------|------|---------|-------------|
 | wavelet | dropdown | db4 | Wavelet family: db1 (Haar), db2, db4, db8, sym4, coif1, or bior1.3 |
 | method | dropdown | BayesShrink | Threshold estimation method: BayesShrink (per sub-band adaptive) or VisuShrink (global universal) |
-| sigma | FLOAT | 0.0 | Noise level estimate in data units; 0 = automatic estimation (0–1.0) |
+| sigma | FLOAT | 0.0 | Noise level estimate in data units; 0 = automatic estimation (0-1.0) |
 | mode | dropdown | soft | Thresholding mode: soft (smooth shrinkage) or hard (zero below threshold) |
 
 ## Notes

@@ -34,6 +34,8 @@ class ExtendPad:
         "Mirror and periodic modes avoid edge discontinuities for FFT. "
     )
 
+    KEYWORDS = ("border", "margin", "mirror", "periodic")
+
     def process(self, field: DataField, top: int, bottom: int,
                 left: int, right: int, method: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

@@ -75,9 +75,11 @@ class KuwaharaFilter:
     DESCRIPTION = (
         """
         Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method.
-        "Unlike Gaussian blur, sharp boundaries are preserved. 
+        "Unlike Gaussian blur, sharp boundaries are preserved.
         """
     )
+
+    KEYWORDS = ("edge preserving", "smooth", "denoise")
 
     def process(self, field: DataField, iterations: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

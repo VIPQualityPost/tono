@@ -20,7 +20,7 @@ Measure the included angle between two draggable line segments over a DATA_FIELD
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | color | STRING (color picker) | #ff9800 | Overlay color for the angle arms and arc |
-| stroke_width | FLOAT | 1.35 | Line thickness in display pixels (0.35–6.0) |
+| stroke_width | FLOAT | 1.35 | Line thickness in display pixels (0.35-6.0) |
 
 ## Notes
 

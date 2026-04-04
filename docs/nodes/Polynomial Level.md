@@ -19,8 +19,8 @@ Fit and subtract a polynomial background of given degree in x and y. Equivalent 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| degree_x | INT | 2 | Polynomial degree in the x direction (0–5) |
-| degree_y | INT | 2 | Polynomial degree in the y direction (0–5) |
+| degree_x | INT | 2 | Polynomial degree in the x direction (0-5) |
+| degree_y | INT | 2 | Polynomial degree in the y direction (0-5) |
 
 ## Notes
 

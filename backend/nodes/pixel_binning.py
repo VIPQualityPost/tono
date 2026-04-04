@@ -31,6 +31,8 @@ class PixelBinning:
         "resampling. Pixels that don't fill a complete block are trimmed. "
     )
 
+    KEYWORDS = ("downsample", "block", "reduce", "coarsen", "average")
+
     def process(self, field: DataField, bin_size: int, method: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

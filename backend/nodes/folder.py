@@ -20,8 +20,9 @@ class Folder:
 
     DESCRIPTION = (
         "Pick a folder and output its directory path plus one file socket per compatible image, array, or SPM file inside it. "
-        "Supported files include common images, .npy/.npz arrays, and .gwy/.sxm/.ibw scans."
     )
+
+    KEYWORDS = ("directory", "batch", "load", "open")
 
     def list_files(self, folder: str) -> tuple:
         entries = list_folder_paths(folder)

@@ -43,6 +43,8 @@ class Markup:
         "or rasterize markup directly onto an IMAGE."
     )
 
+    KEYWORDS = ("annotate", "arrow", "rectangle", "circle", "line", "draw", "overlay")
+
     def process(
         self,
         input,

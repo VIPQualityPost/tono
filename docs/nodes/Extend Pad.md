@@ -18,10 +18,10 @@ Add configurable borders around a DATA_FIELD using various padding methods. Usef
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| left | INT | 0 | Number of pixels to add on the left edge (0–1024) |
-| right | INT | 0 | Number of pixels to add on the right edge (0–1024) |
-| top | INT | 0 | Number of pixels to add on the top edge (0–1024) |
-| bottom | INT | 0 | Number of pixels to add on the bottom edge (0–1024) |
+| left | INT | 0 | Number of pixels to add on the left edge (0-1024) |
+| right | INT | 0 | Number of pixels to add on the right edge (0-1024) |
+| top | INT | 0 | Number of pixels to add on the top edge (0-1024) |
+| bottom | INT | 0 | Number of pixels to add on the bottom edge (0-1024) |
 | method | dropdown | mirror | Padding method: mean (fill with field mean), edge (replicate border pixels), mirror (reflect across edge), periodic (tile the field), or zero (fill with zeros) |
 
 ## Notes

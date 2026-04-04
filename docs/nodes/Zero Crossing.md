@@ -18,8 +18,8 @@ Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| sigma | FLOAT | 2.0 | Gaussian smoothing scale for the LoG operator (0.5–20.0) |
-| threshold | FLOAT | 0.0 | Minimum edge strength as a fraction of the maximum LoG contrast; filters weak edges (0.0–1.0) |
+| sigma | FLOAT | 2.0 | Gaussian smoothing scale for the LoG operator (0.5-20.0) |
+| threshold | FLOAT | 0.0 | Minimum edge strength as a fraction of the maximum LoG contrast; filters weak edges (0.0-1.0) |
 
 ## Notes
 

@@ -115,6 +115,8 @@ class GrainDistanceTransform:
         "image-boundary handling matching mask_edt."
     )
 
+    KEYWORDS = ("edt", "euclidean", "chessboard", "cityblock", "manhattan")
+
     def process(
         self,
         field: DataField,

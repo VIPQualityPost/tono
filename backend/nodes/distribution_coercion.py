@@ -67,6 +67,8 @@ class DistributionCoercion:
         "Equivalent to Gwyddion's coerce.c module."
     )
 
+    KEYWORDS = ("coerce", "histogram matching", "equalize", "uniform", "gaussian", "quantize")
+
     def process(self, field: DataField, distribution: str, n_levels: int,
                 processing: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

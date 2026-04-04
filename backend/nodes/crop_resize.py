@@ -37,6 +37,8 @@ class CropResizeField:
         "resizing preserves the cropped physical size."
     )
 
+    KEYWORDS = ("resize", "rescale", "trim", "bilinear", "bicubic", "nearest")
+
     def process(
         self,
         field: DataField,

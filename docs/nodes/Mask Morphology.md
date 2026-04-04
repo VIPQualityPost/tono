@@ -20,7 +20,7 @@ Apply morphological operations to a binary mask. Dilate expands regions, erode s
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | operation | dropdown | dilate | Morphological operation: dilate, erode, open, or close |
-| radius | INT | 1 | Structuring element radius in pixels (1–50) |
+| radius | INT | 1 | Structuring element radius in pixels (1-50) |
 | shape | dropdown | disk | Structuring element shape: disk or square |
 
 ## Notes

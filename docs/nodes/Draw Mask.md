@@ -18,7 +18,7 @@ Paint a binary mask directly over an image preview. Pen size controls newly draw
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| pen_size | INT | 12 | Brush diameter in pixels for newly drawn strokes (1–128) |
+| pen_size | INT | 12 | Brush diameter in pixels for newly drawn strokes (1-128) |
 | invert | BOOLEAN | False | When enabled, swaps painted and unpainted regions |
 | clear_mask | BUTTON | — | Clears all painted strokes |
 

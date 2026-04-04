@@ -18,12 +18,12 @@ Apply a local trimmed-mean filter to a DATA_FIELD. Within each circular window, 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| radius | INT | 3 | Radius of the circular filter window in pixels (1–50) |
-| trim_fraction | FLOAT | 0.1 | Fraction of values to exclude from each end of the sorted window (0.0–0.49) |
+| radius | INT | 3 | Radius of the circular filter window in pixels (1-50) |
+| trim_fraction | FLOAT | 0.1 | Fraction of values to exclude from each end of the sorted window (0.0-0.49) |
 
 ## Notes
 
 - A trim_fraction of 0.0 gives a plain local mean (no trimming). A trim_fraction approaching 0.5 converges to the local median.
-- Typical values of 0.05–0.2 effectively suppress outlier spikes while preserving smooth features better than a median filter.
+- Typical values of 0.05-0.2 effectively suppress outlier spikes while preserving smooth features better than a median filter.
 - The filter uses a circular (disc-shaped) kernel; the actual window diameter is 2*radius + 1 pixels.
 - More computationally expensive than a Gaussian filter due to the sorting step within each window.

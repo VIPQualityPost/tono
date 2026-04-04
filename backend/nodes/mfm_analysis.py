@@ -37,6 +37,8 @@ class MFMAnalysis:
         "magnetisation estimates the z-component of sample magnetisation. "
     )
 
+    KEYWORDS = ("magnetic", "force gradient", "stray field", "phase", "charge density", "magnetisation")
+
     def process(self, field: DataField, operation: str, lift_height: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

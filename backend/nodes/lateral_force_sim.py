@@ -43,6 +43,8 @@ class LateralForceSim:
         "the sample surface."
     )
 
+    KEYWORDS = ("lfm", "friction", "ffm", "tribology")
+
     def process(
         self,
         field: DataField,

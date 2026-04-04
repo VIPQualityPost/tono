@@ -32,6 +32,8 @@ class FractalInterpolation:
         "infill that preserves texture. Better than Laplace for rough surfaces. "
     )
 
+    KEYWORDS = ("inpaint", "fill", "hole", "infill")
+
     def process(self, field: DataField, mask: np.ndarray, iterations: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64).copy()
         hole = mask_to_bool(mask)

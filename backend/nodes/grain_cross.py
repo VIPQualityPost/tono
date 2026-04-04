@@ -38,6 +38,8 @@ class GrainCross:
         "plus Pearson correlation coefficient. "
     )
 
+    KEYWORDS = ("pearson", "scatter", "correlate", "property")
+
     def process(self, field_a: DataField, field_b: DataField, mask: np.ndarray,
                 property_a: str, property_b: str, min_size: int) -> tuple:
         data_a = np.asarray(field_a.data, dtype=np.float64)

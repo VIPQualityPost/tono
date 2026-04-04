@@ -4,10 +4,10 @@ Generic HDF5 importer (.h5, .hdf5, .he5).
 Each 2-D dataset found in the file is returned as a DataField.  Physical
 dimensions are read from standard dataset attributes if present:
 
-  xreal / yreal   – physical scan size in metres  (fallback: 1e-6)
-  xoff  / yoff    – position offset in metres      (fallback: 0)
-  si_unit_xy      – lateral unit string            (fallback: "m")
-  si_unit_z       – value unit string              (fallback: "m")
+  xreal / yreal   - physical scan size in metres  (fallback: 1e-6)
+  xoff  / yoff    - position offset in metres      (fallback: 0)
+  si_unit_xy      - lateral unit string            (fallback: "m")
+  si_unit_z       - value unit string              (fallback: "m")
 
 For Asylum Research / Ergo format files (which store scan metadata in a
 sidecar group rather than as dataset attributes), use the ergo_hdf5 importer.

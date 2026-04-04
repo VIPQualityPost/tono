@@ -41,6 +41,8 @@ class PFMAnalysis:
         "inclination angle (zero in 2D mode)."
     )
 
+    KEYWORDS = ("piezoresponse", "polarization", "ferroelectric", "vpfm", "lpfm", "domain")
+
     def process(
         self,
         vpfm_amplitude: DataField,

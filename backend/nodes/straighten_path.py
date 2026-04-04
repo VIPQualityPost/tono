@@ -30,10 +30,12 @@ class StraightenPath:
 
     DESCRIPTION = (
         "Extract a cross-section along an arbitrary curved path defined by "
-        "control points. Points are given as fractional coordinates (0–1). "
+        "control points. Points are given as fractional coordinates (0-1). "
         "The path is interpolated with cubic splines, and data is sampled "
         "along it with configurable thickness. "
     )
+
+    KEYWORDS = ("unbend", "unroll", "spline", "curved profile", "extract path")
 
     def process(self, field: DataField, points_x: str, points_y: str,
                 thickness: int, n_samples: int) -> tuple:

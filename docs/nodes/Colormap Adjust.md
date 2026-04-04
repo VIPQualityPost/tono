@@ -18,8 +18,8 @@ Adjust how a DATA_FIELD maps into its colormap without changing the underlying d
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| offset | FLOAT | 0.0 | Shift the colormap center in normalized units (−1 to 1) |
-| scale | FLOAT | 1.0 | Zoom the colormap range (0.05–4.0); values below 1 stretch contrast |
+| offset | FLOAT | 0.0 | Shift the colormap center in normalized units (-1 to 1) |
+| scale | FLOAT | 1.0 | Zoom the colormap range (0.05-4.0); values below 1 stretch contrast |
 | auto | BUTTON | — | Reset offset to 0 and scale to 1 (full data range) |
 
 ## Notes

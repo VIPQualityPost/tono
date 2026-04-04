@@ -44,8 +44,8 @@ for cx_f, cy_f, r_nm, h_nm in fixed:
 for _ in range(15):
     cx = RNG.uniform(20, N - 20)
     cy = RNG.uniform(20, N - 20)
-    radius = RNG.uniform(30, 180) * 1e-9   # 30–180 nm
-    height = RNG.uniform(8, 60) * 1e-9     # 8–60 nm
+    radius = RNG.uniform(30, 180) * 1e-9   # 30-180 nm
+    height = RNG.uniform(8, 60) * 1e-9     # 8-60 nm
     particles.append((cx, cy, radius, height))
 
 # --- Render height map ---

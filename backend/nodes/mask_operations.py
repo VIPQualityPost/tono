@@ -48,6 +48,8 @@ class MaskOperations:
         "XNOR, directional subtraction, implication, pass-through, and constant true/false outputs."
     )
 
+    KEYWORDS = ("boolean", "and", "or", "xor", "logic", "union", "intersect", "subtract")
+
     def process(
         self,
         mask_a: np.ndarray,

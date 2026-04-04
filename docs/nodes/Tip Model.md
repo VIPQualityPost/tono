@@ -20,8 +20,8 @@ Generate a synthetic AFM tip model DATA_FIELD. The input field sets the pixel si
 |------|------|---------|-------------|
 | shape | dropdown | parabola | Tip geometry: parabola (paraboloid with apex radius R), cone (sphere-capped cone), or sphere (ball-on-stick) |
 | radius | FLOAT | 10 nm | Apex radius of curvature in metres (1e-10 to 1e-6) |
-| half_angle | FLOAT | 20.0 | Half-cone angle from the tip axis in degrees for the cone shape (1–89°) |
-| n_pixels | INT | 65 | Side length of the square tip grid in pixels (odd values only, 3–511) |
+| half_angle | FLOAT | 20.0 | Half-cone angle from the tip axis in degrees for the cone shape (1-89°) |
+| n_pixels | INT | 65 | Side length of the square tip grid in pixels (odd values only, 3-511) |
 
 ## Notes
 

@@ -19,7 +19,7 @@ Compute aggregate statistics for all grains in a mask: count, density, coverage 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| min_size | INT | 10 | Minimum grain size in pixels to include (1–100000) |
+| min_size | INT | 10 | Minimum grain size in pixels to include (1-100000) |
 
 ## Notes
 

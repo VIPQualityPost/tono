@@ -55,6 +55,8 @@ class ImageStitch:
         "'auto' uses cross-correlation to determine the best placement. "
     )
 
+    KEYWORDS = ("mosaic", "merge", "combine", "panorama", "blend")
+
     def process(self, field_a: DataField, field_b: DataField, direction: str, blend: str) -> tuple:
         a = np.asarray(field_a.data, dtype=np.float64)
         b = np.asarray(field_b.data, dtype=np.float64)

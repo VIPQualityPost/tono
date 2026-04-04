@@ -36,6 +36,8 @@ class PolynomialDistortion:
         "k2 (quadratic), k3 (cubic) are applied independently to x and y axes. "
     )
 
+    KEYWORDS = ("warp", "scanner", "nonlinear", "cubic", "quadratic", "barrel")
+
     def process(self, field: DataField,
                 k1_x: float, k1_y: float,
                 k2_x: float, k2_y: float,

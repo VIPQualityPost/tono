@@ -32,8 +32,8 @@ def _parse_ibw_note(note_bytes: bytes) -> list[dict]:
     return rows
 
 
-@register_node(display_name="Note")
-class Note:
+@register_node(display_name="Igor Note")
+class IgorNote:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -54,6 +54,8 @@ class Note:
         "Read the Note metadata from an .ibw file and display all entries "
         "as a table of key/value pairs."
     )
+
+    KEYWORDS = ("ibw", "metadata", "header", "parameters", "igor")
 
     def load(self, filename: str = "", path: str | None = None) -> tuple:
         selected = str(path).strip() if path is not None else str(filename).strip()

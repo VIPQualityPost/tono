@@ -197,6 +197,8 @@ class ScarRemoval:
         "then interpolate over the detected mask with a Laplace-style inpaint."
     )
 
+    KEYWORDS = ("stripe", "streak", "glitch", "artifact", "inpaint", "destripe")
+
     def process(
         self,
         field: DataField,

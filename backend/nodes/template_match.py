@@ -34,6 +34,8 @@ class TemplateMatch:
         "above the threshold."
     )
 
+    KEYWORDS = ("find", "locate", "pattern", "cross correlation", "ncc", "detect")
+
     def process(
         self,
         image: DataField,

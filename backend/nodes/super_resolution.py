@@ -75,6 +75,8 @@ class SuperResolution:
         "is provided the image is upsampled using cubic interpolation."
     )
 
+    KEYWORDS = ("upscale", "upsample", "multiframe", "stack", "subpixel", "enhance")
+
     def process(
         self,
         field1: DataField,

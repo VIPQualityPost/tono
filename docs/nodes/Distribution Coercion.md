@@ -19,7 +19,7 @@ Transform pixel values so their distribution matches a target shape (uniform, Ga
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | distribution | dropdown | uniform | Target distribution shape: uniform, gaussian, or levels |
-| n_levels | INT | 4 | Number of discrete output levels (2–1000); visible only for levels mode |
+| n_levels | INT | 4 | Number of discrete output levels (2-1000); visible only for levels mode |
 | processing | dropdown | field | Processing scope: field (entire array at once) or rows (line-by-line) |
 
 ## Notes

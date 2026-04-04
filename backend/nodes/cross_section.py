@@ -38,6 +38,8 @@ class CrossSection:
         "Drag the markers on the image to set the line endpoints. "
     )
 
+    KEYWORDS = ("profile", "line profile", "extract", "slice")
+
     def process(
         self, field: DataField,
         x1: float, y1: float, x2: float, y2: float,

@@ -28,6 +28,8 @@ class RotateField:
         "Optionally expand the canvas to keep the full rotated field while preserving the field center."
     )
 
+    KEYWORDS = ("turn", "angle", "spin", "orient")
+
     def process(
         self,
         field: DataField,

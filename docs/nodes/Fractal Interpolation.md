@@ -19,7 +19,7 @@ Fill masked regions using fractal interpolation. Matches the spectral characteri
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| iterations | INT | 200 | Number of boundary relaxation iterations (10–5000) |
+| iterations | INT | 200 | Number of boundary relaxation iterations (10-5000) |
 
 ## Notes
 

@@ -31,6 +31,8 @@ class GrainFilter:
         "'remove_border': discard any grain that touches the image edge. "
     )
 
+    KEYWORDS = ("particle", "size filter", "despeckle", "area")
+
     def process(
         self,
         mask: np.ndarray,

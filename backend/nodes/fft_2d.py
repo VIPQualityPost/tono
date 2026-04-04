@@ -34,6 +34,8 @@ class FFT2D:
         "Outputs log magnitude, magnitude, phase, and PSDF as separate channels. "
     )
 
+    KEYWORDS = ("fourier", "frequency", "spectrum", "psdf", "magnitude", "phase")
+
     def process(self, field: DataField, windowing: str, level: str) -> tuple:
         data = preprocess_spectral_data(field, level=level, windowing=windowing)
         F = np.fft.fftshift(np.fft.fft2(data))

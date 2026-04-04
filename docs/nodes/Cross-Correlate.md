@@ -19,8 +19,8 @@ Compute 2D cross-correlation between two fields. The correlation peak indicates 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| mode | dropdown | same | Output size: full (Na+Nb−1), same (same as field_a), or valid (overlapping region only) |
-| normalize | BOOLEAN | True | Normalize the result to [−1, 1] by dividing by the product of RMS values |
+| mode | dropdown | same | Output size: full (Na+Nb-1), same (same as field_a), or valid (overlapping region only) |
+| normalize | BOOLEAN | True | Normalize the result to [-1, 1] by dividing by the product of RMS values |
 
 ## Notes
 

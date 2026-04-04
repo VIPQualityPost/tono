@@ -1,6 +1,6 @@
 # Grain Mark
 
-Mark grains by thresholding height, slope magnitude, or curvature. Thresholds are relative (0–1) to the data range. Small regions below min_size pixels are removed. Equivalent to Gwyddion's grain_mark.c module.
+Mark grains by thresholding height, slope magnitude, or curvature. Thresholds are relative (0-1) to the data range. Small regions below min_size pixels are removed. Equivalent to Gwyddion's grain_mark.c module.
 
 ## Inputs
 
@@ -19,9 +19,9 @@ Mark grains by thresholding height, slope magnitude, or curvature. Thresholds ar
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | criterion | dropdown | height | What to threshold: height, slope, or curvature |
-| threshold_low | FLOAT | 0.3 | Lower bound of the normalized threshold range (0–1) |
-| threshold_high | FLOAT | 1.0 | Upper bound of the normalized threshold range (0–1) |
-| min_size | INT | 10 | Minimum grain size in pixels; smaller regions are removed (1–100000) |
+| threshold_low | FLOAT | 0.3 | Lower bound of the normalized threshold range (0-1) |
+| threshold_high | FLOAT | 1.0 | Upper bound of the normalized threshold range (0-1) |
+| min_size | INT | 10 | Minimum grain size in pixels; smaller regions are removed (1-100000) |
 | inverted | BOOLEAN | False | Invert the mask to mark valleys instead of peaks |
 
 ## Notes

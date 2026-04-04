@@ -32,6 +32,8 @@ class TrimmedMean:
         "trim_fraction=0.5 approaches the median. "
     )
 
+    KEYWORDS = ("robust", "outlier", "percentile", "smoothing", "denoise", "alpha trimmed")
+
     def process(self, field: DataField, radius: int, trim_fraction: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

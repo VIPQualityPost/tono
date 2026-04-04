@@ -26,4 +26,4 @@ Detect and measure periodic lattice structures from ACF or FFT peak positions. R
 - ACF method finds the strongest off-center peaks in the 2D autocorrelation. Works well for real-space periodic structures.
 - FFT method finds peaks in the power spectrum. Better for weak periodicity or noisy data.
 - Reports up to two lattice vectors (a, b), their magnitudes, and the angle between them.
-- For best results, the field should contain at least 3–4 complete periods in each direction.
+- For best results, the field should contain at least 3-4 complete periods in each direction.

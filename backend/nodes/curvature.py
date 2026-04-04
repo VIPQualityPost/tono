@@ -291,6 +291,8 @@ class Curvature:
         "also returns the two corresponding height profiles."
     )
 
+    KEYWORDS = ("radius", "principal", "quadratic", "bow")
+
     def process(
         self,
         field: DataField,

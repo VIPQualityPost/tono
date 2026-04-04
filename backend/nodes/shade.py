@@ -34,6 +34,8 @@ class Shade:
         "Blend mixes original data (0) with shaded relief (1). "
     )
 
+    KEYWORDS = ("hillshade", "relief", "lighting", "lambertian", "render", "illumination")
+
     def process(self, field: DataField, azimuth: float, elevation: float,
                 blend: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

@@ -60,6 +60,8 @@ class DriftCorrection:
         "the drift offset, then shifts lines to correct. "
     )
 
+    KEYWORDS = ("thermal", "piezo", "alignment", "shift", "row")
+
     def process(self, field: DataField, reference: str, direction: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
 

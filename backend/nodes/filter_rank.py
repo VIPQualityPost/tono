@@ -34,6 +34,8 @@ class RankFilter:
         "median the 50th percentile. Custom percentile allows any rank. "
     )
 
+    KEYWORDS = ("erosion", "dilation", "percentile", "morphology", "minimum", "maximum")
+
     def process(self, field: DataField, operation: str, radius: int,
                 percentile: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

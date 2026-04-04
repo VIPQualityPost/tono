@@ -30,6 +30,8 @@ class RadialProfile:
         "Output x-axis is radius in physical xy units. "
     )
 
+    KEYWORDS = ("azimuthal average", "ring average", "circular", "isotropic")
+
     def process(self, field: DataField, cx: float, cy: float, n_bins: int) -> tuple:
         yres, xres = field.data.shape
 

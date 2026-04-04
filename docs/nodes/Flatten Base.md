@@ -18,11 +18,11 @@ Level the flat base of a surface that has raised features (particles, grains). U
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| threshold_percentile | FLOAT | 30.0 | Height percentile below which pixels are considered base (5–80) |
-| poly_degree | INT | 2 | Polynomial degree for base fit: 0 = constant, 1 = plane, 2 = quadratic (0–5) |
+| threshold_percentile | FLOAT | 30.0 | Height percentile below which pixels are considered base (5-80) |
+| poly_degree | INT | 2 | Polynomial degree for base fit: 0 = constant, 1 = plane, 2 = quadratic (0-5) |
 
 ## Notes
 
-- Set the threshold percentile so that it includes most of the base but excludes the features. For sparse particles on a flat substrate, 20–40% typically works well.
-- poly_degree=1 is equivalent to plane leveling on the base only. Use 2–3 for curved substrates.
+- Set the threshold percentile so that it includes most of the base but excludes the features. For sparse particles on a flat substrate, 20-40% typically works well.
+- poly_degree=1 is equivalent to plane leveling on the base only. Use 2-3 for curved substrates.
 - If the features dominate the surface (>50% coverage), this node may not give good results — consider Median Background instead.

@@ -81,6 +81,8 @@ class ShapeFitting:
         "of curvature, centre position, etc. "
     )
 
+    KEYWORDS = ("sphere", "paraboloid", "cylinder", "fit", "primitive", "geometry", "residual")
+
     def process(self, field: DataField, shape: str, output: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

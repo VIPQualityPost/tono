@@ -18,10 +18,10 @@ Extract a cross-section along an arbitrary curved path defined by control points
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| points_x | STRING | "0.25, 0.5, 0.75" | Comma-separated fractional x-coordinates of control points (0.0–1.0) |
-| points_y | STRING | "0.5, 0.3, 0.5" | Comma-separated fractional y-coordinates of control points (0.0–1.0) |
-| thickness | INT | 1 | Width of the sampled strip perpendicular to the path, in pixels (1–100) |
-| n_samples | INT | 256 | Number of sample points along the path (10–2048) |
+| points_x | STRING | "0.25, 0.5, 0.75" | Comma-separated fractional x-coordinates of control points (0.0-1.0) |
+| points_y | STRING | "0.5, 0.3, 0.5" | Comma-separated fractional y-coordinates of control points (0.0-1.0) |
+| thickness | INT | 1 | Width of the sampled strip perpendicular to the path, in pixels (1-100) |
+| n_samples | INT | 256 | Number of sample points along the path (10-2048) |
 
 ## Notes
 

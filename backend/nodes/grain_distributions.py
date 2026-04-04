@@ -36,6 +36,8 @@ class GrainDistributions:
         "max height, volume, and boundary length. "
     )
 
+    KEYWORDS = ("histogram", "particle", "diameter", "area", "volume")
+
     def process(self, field: DataField, mask: np.ndarray, property: str,
                 n_bins: int, min_size: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

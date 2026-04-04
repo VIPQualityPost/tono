@@ -21,12 +21,12 @@ Classify surface features using logistic regression on engineered height-derived
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | use_gaussians | BOOLEAN | True | Include Gaussian blur features at multiple scales |
-| n_gaussians | INT | 4 | Number of Gaussian scales (1–10). Only shown when use_gaussians is True |
+| n_gaussians | INT | 4 | Number of Gaussian scales (1-10). Only shown when use_gaussians is True |
 | use_sobel | BOOLEAN | True | Include Sobel gradient features (horizontal and vertical) |
 | use_laplacian | BOOLEAN | True | Include Laplacian (sum of second differences) feature |
-| regularization | FLOAT | 1.0 | L2 regularization strength lambda (0.0–10.0) |
-| max_iter | INT | 500 | Maximum gradient descent iterations (10–5000) |
-| seed | INT | 42 | Random seed for reproducibility (0–999999) |
+| regularization | FLOAT | 1.0 | L2 regularization strength lambda (0.0-10.0) |
+| max_iter | INT | 500 | Maximum gradient descent iterations (10-5000) |
+| seed | INT | 42 | Random seed for reproducibility (0-999999) |
 
 ## Notes
 

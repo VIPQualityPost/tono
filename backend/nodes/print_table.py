@@ -19,7 +19,9 @@ class PrintTable:
     FUNCTION = "print_table"
 
     OUTPUT_NODE = True
-    DESCRIPTION = "Send a measurement or record table to the browser as a WebSocket message for display."
+    DESCRIPTION = "Show a measurement or record table."
+
+    KEYWORDS = ("display", "show", "report", "view")
 
     def print_table(self, table: list) -> tuple:
         emit_table(table)

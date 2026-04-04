@@ -32,6 +32,8 @@ class LaplaceInterpolation:
         "Produces a smooth, harmonic interpolation without overshooting. "
     )
 
+    KEYWORDS = ("inpaint", "fill", "hole", "infill", "harmonic")
+
     def process(self, field: DataField, mask: np.ndarray, iterations: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64).copy()
         hole = mask_to_bool(mask)

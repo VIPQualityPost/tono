@@ -30,6 +30,8 @@ class Entropy:
         "H = -\u03a3 p\u00b7ln(p)."
     )
 
+    KEYWORDS = ("shannon", "information", "disorder")
+
     def process(self, field: DataField, mode: str, n_bins: int) -> tuple:
         n_bins = max(16, int(n_bins))
         data = np.asarray(field.data, dtype=np.float64)

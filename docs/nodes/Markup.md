@@ -20,7 +20,7 @@ Draw simple vector shapes (lines, rectangles, circles, arrows) over a DATA_FIELD
 |------|------|---------|-------------|
 | shape | dropdown | arrow | Shape type to draw next: line, rectangle, circle, or arrow |
 | stroke_color | STRING (color picker) | #ff0000 | Color for newly drawn shapes |
-| stroke_width | INT | 3 | Line thickness in display pixels for newly drawn shapes (1–64) |
+| stroke_width | INT | 3 | Line thickness in display pixels for newly drawn shapes (1-64) |
 | clear_shapes | BUTTON | — | Remove all drawn shapes |
 
 ## Notes

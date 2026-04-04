@@ -20,10 +20,10 @@ Detect and remove horizontal scan scars using Gwyddion-derived scar marking thre
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | scar_type | dropdown | both | Which scar polarity to detect: both, positive (bright), or negative (dark) |
-| threshold_high | FLOAT | 0.666 | High threshold relative to local RMS for strong scar detection (0–2) |
-| threshold_low | FLOAT | 0.25 | Low threshold for extending already-detected scars (0–2) |
-| min_length | INT | 16 | Minimum horizontal run length in pixels to classify as a scar (1–4096) |
-| max_width | INT | 4 | Maximum vertical width in pixels for a scar candidate (1–32) |
+| threshold_high | FLOAT | 0.666 | High threshold relative to local RMS for strong scar detection (0-2) |
+| threshold_low | FLOAT | 0.25 | Low threshold for extending already-detected scars (0-2) |
+| min_length | INT | 16 | Minimum horizontal run length in pixels to classify as a scar (1-4096) |
+| max_width | INT | 4 | Maximum vertical width in pixels for a scar candidate (1-32) |
 
 ## Notes
 

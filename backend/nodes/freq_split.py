@@ -31,6 +31,8 @@ class FrequencySplit:
         "frequency (0.5 = no filtering, 0.001 = very aggressive). "
     )
 
+    KEYWORDS = ("lowpass", "highpass", "decompose", "background", "detail")
+
     def process(self, field: DataField, cutoff: float) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         yres, xres = data.shape

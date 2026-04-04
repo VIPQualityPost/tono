@@ -67,6 +67,8 @@ class LatticeMeasurement:
         "and reports lattice vectors (spacing and angle). "
     )
 
+    KEYWORDS = ("periodic", "crystal", "unit cell", "spacing", "atomic")
+
     def process(self, field: DataField, method: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         data = data - data.mean()

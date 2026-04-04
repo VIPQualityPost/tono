@@ -35,6 +35,8 @@ class AffineCorrection:
         "The transform is applied about the centre of the field. "
     )
 
+    KEYWORDS = ("shear", "scale", "distortion", "warp")
+
     def process(
         self,
         field: DataField,

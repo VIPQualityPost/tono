@@ -46,6 +46,8 @@ class FFTFilter:
         "with a Butterworth roll-off. Cutoffs are fractions of the Nyquist frequency."
     )
 
+    KEYWORDS = ("butterworth", "lowpass", "highpass", "bandpass", "notch", "fourier")
+
     def process(self, input, filter_type: str, cutoff: float,
                 cutoff_high: float, order: int) -> tuple:
         if isinstance(input, DataField):

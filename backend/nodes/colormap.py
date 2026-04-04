@@ -33,6 +33,8 @@ class ColorMap:
         "and any number of intermediate stops."
     )
 
+    KEYWORDS = ("colour", "palette", "lut", "gradient")
+
     def build(self, mode: str, preset: str, stops: str | None = None, stops_json: str | None = None) -> tuple:
         if mode == "preset":
             return ({"mode": "preset", "preset": normalize_colormap_spec(preset)},)

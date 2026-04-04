@@ -31,6 +31,8 @@ class MutualCrop:
         "different times or with slight position offsets. "
     )
 
+    KEYWORDS = ("align", "overlap", "registration", "cross correlation", "match")
+
     def process(self, field_a: DataField, field_b: DataField) -> tuple:
         a = np.asarray(field_a.data, dtype=np.float64)
         b = np.asarray(field_b.data, dtype=np.float64)

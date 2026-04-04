@@ -29,6 +29,8 @@ class Gradient:
         "'azimuth' gives the local slope direction in radians via atan2(gy, gx). "
     )
 
+    KEYWORDS = ("sobel", "slope", "derivative", "azimuth")
+
     def process(self, field: DataField, component: str) -> tuple:
         from backend.nodes.surface_common import physical_sobel_gradient, slope_unit
 

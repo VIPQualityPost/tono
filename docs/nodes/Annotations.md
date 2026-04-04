@@ -23,7 +23,7 @@ Attach optional publication-style annotations (scale bar, color-map legend) to a
 | colormap | dropdown | auto | Colormap for the legend; hidden when colormap_map is connected |
 | show_scale_bar | BOOLEAN | True | Render a physical scale bar |
 | show_color_map | BOOLEAN | True | Render a color-map legend with min/mid/max values |
-| text_size | FLOAT | 14.0 | Font size in points for annotation labels (6–96) |
+| text_size | FLOAT | 14.0 | Font size in points for annotation labels (6-96) |
 
 ## Notes
 

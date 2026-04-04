@@ -64,8 +64,8 @@ def plugins_enabled(*, native: bool) -> bool:
 
     Default behaviour: enabled on native/desktop builds, disabled for web.
     Override with the TONO_PLUGINS environment variable:
-      TONO_PLUGINS=1   – force on  (useful for testing plugins via main.py)
-      TONO_PLUGINS=0   – force off (disable even on native builds)
+      TONO_PLUGINS=1   - force on  (useful for testing plugins via main.py)
+      TONO_PLUGINS=0   - force off (disable even on native builds)
     """
     env = os.getenv("TONO_PLUGINS", "").strip().lower()
     if env in ("1", "true", "yes"):

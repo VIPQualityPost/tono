@@ -20,8 +20,8 @@ Compute a histogram distribution of a grain property from a labeled mask. Suppor
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | property | dropdown | area | Grain property to plot: area, equiv_diameter, mean_height, max_height, volume, boundary_length |
-| n_bins | INT | 30 | Number of histogram bins (5–200) |
-| min_size | INT | 10 | Minimum grain size in pixels to include (1–100000) |
+| n_bins | INT | 30 | Number of histogram bins (5-200) |
+| min_size | INT | 10 | Minimum grain size in pixels to include (1-100000) |
 
 ## Notes
 

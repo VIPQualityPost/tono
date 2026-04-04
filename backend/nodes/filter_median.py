@@ -21,6 +21,8 @@ class MedianFilter:
 
     DESCRIPTION = "Apply a median filter."
 
+    KEYWORDS = ("denoise", "despeckle", "salt pepper")
+
     def process(self, field: DataField, size: int) -> tuple:
         from scipy.ndimage import median_filter
         size = max(1, int(size))

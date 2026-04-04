@@ -18,7 +18,7 @@ Apply a median filter to a DATA_FIELD. Equivalent to gwy_data_field_filter_media
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| size | INT | 3 | Kernel size (side length) in pixels; odd values only (1–21) |
+| size | INT | 3 | Kernel size (side length) in pixels; odd values only (1-21) |
 
 ## Notes
 

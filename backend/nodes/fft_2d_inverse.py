@@ -29,6 +29,8 @@ class FFT2DInverse:
         "or PSDF/phase) from the 2D FFT node. If phase is omitted, zero phase is assumed."
     )
 
+    KEYWORDS = ("fourier", "ifft", "reconstruct")
+
     def process(self, spectrum: DataField, representation: str, phase: DataField | None = None) -> tuple:
         if spectrum.domain != "frequency":
             raise ValueError("Inverse 2D FFT requires a frequency-domain DATA_FIELD input.")

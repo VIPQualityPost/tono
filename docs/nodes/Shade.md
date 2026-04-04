@@ -18,9 +18,9 @@ Render a DATA_FIELD as a directional hillshade image using Lambertian reflectanc
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| azimuth | FLOAT | 0.0 | Light direction in degrees: 0 = north, 90 = east, 180 = south, 270 = west (0–360) |
-| elevation | FLOAT | 45.0 | Light elevation angle above the horizon in degrees (0–90) |
-| blend | FLOAT | 0.5 | Blend factor between original data and shading: 0.0 = original data only, 1.0 = shading only (0.0–1.0) |
+| azimuth | FLOAT | 0.0 | Light direction in degrees: 0 = north, 90 = east, 180 = south, 270 = west (0-360) |
+| elevation | FLOAT | 45.0 | Light elevation angle above the horizon in degrees (0-90) |
+| blend | FLOAT | 0.5 | Blend factor between original data and shading: 0.0 = original data only, 1.0 = shading only (0.0-1.0) |
 
 ## Notes
 

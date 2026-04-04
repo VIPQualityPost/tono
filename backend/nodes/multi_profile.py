@@ -33,6 +33,8 @@ class MultipleProfiles:
         "profile, mean averages both, difference subtracts b from a. "
     )
 
+    KEYWORDS = ("line profile", "compare", "overlay", "cross section")
+
     def process(self, field_a: DataField, field_b: DataField,
                 row: int, direction: str, mode: str) -> tuple:
         a = np.asarray(field_a.data, dtype=np.float64)

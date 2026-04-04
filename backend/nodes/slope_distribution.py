@@ -25,10 +25,12 @@ class SlopeDistribution:
 
     DESCRIPTION = (
         "Compute the angular slope distribution of a DATA_FIELD surface. "
-        "'theta' is the inclination angle (0–max°), probability density (1/deg); "
-        "'phi' is the azimuthal slope direction (0–360°), weighted by slope² (z/xy)²; "
+        "'theta' is the inclination angle (0-max°), probability density (1/deg); "
+        "'phi' is the azimuthal slope direction (0-360°), weighted by slope² (z/xy)²; "
         "'gradient' is the gradient magnitude distribution, probability density (1/(z/xy)). "
     )
+
+    KEYWORDS = ("angle", "inclination", "azimuth", "theta", "phi", "facet", "histogram")
 
     def process(self, field: DataField, distribution: str, n_bins: int) -> tuple:
         from backend.nodes.surface_common import physical_sobel_gradient, slope_unit as _slope_unit

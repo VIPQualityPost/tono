@@ -125,6 +125,8 @@ class FacetLevelField:
         "selection and expects topographic data with compatible XY and Z units."
     )
 
+    KEYWORDS = ("flatten", "tilt", "plane")
+
     def process(
         self,
         field: DataField,

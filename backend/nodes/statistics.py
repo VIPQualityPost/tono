@@ -24,6 +24,8 @@ class Statistics:
         "and skewness."
     )
 
+    KEYWORDS = ("mean", "rms", "min", "max", "skewness", "kurtosis", "median", "roughness")
+
     def process(self, field: DataField) -> tuple:
         d = field.data
         mean = float(d.mean())

@@ -32,6 +32,8 @@ class OutlierMask:
         "low outliers, or both. Quick way to identify noise spikes and defects. "
     )
 
+    KEYWORDS = ("sigma", "zscore", "spikes", "defect", "anomaly", "despeckle")
+
     def process(self, field: DataField, sigma_threshold: float, mode: str) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         mean = data.mean()

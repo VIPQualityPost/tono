@@ -56,6 +56,8 @@ class Stats:
         "The available operations adapt to the connected input type."
     )
 
+    KEYWORDS = ("mean", "sum", "min", "max", "median", "scalar", "reduce")
+
     def process(self, input, operation: str, column: str = "value") -> tuple:
         source_type, values, resolved_column = self._resolve_input_values(input, column)
 

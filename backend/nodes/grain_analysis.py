@@ -27,6 +27,8 @@ class GrainAnalysis:
         "statistics: area, equivalent diameter, mean/max height, bounding box. "
     )
 
+    KEYWORDS = ("particle", "blob", "label", "connected components", "area")
+
     def process(self, field: DataField, mask: np.ndarray, min_size: int) -> tuple:
         from scipy.ndimage import label
 

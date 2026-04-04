@@ -34,6 +34,8 @@ class Deconvolution:
         "Richardson-Lucy is iterative and preserves positivity. "
     )
 
+    KEYWORDS = ("wiener", "richardson lucy", "deblur", "restoration", "psf")
+
     def process(
         self,
         field: DataField,

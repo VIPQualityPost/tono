@@ -56,6 +56,8 @@ class SMMAnalysis:
         "then extracts tip-sample capacitance and real impedance maps."
     )
 
+    KEYWORDS = ("microwave", "s11", "capacitance", "impedance", "vna", "calibration")
+
     def process(
         self,
         s11_amplitude: DataField,

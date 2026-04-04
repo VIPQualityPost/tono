@@ -42,8 +42,9 @@ class PresentationOps:
         "extract_presentation normalises the field to [0, 1]. "
         "attach replaces the field data with an overlay (resampled if needed). "
         "blend linearly mixes the field and overlay by a configurable factor. "
-        "Equivalent to Gwyddion's presentationops.c module."
     )
+
+    KEYWORDS = ("logscale", "normalize", "blend", "attach", "overlay")
 
     def process(self, field: DataField, operation: str, blend_factor: float,
                 overlay: DataField | None = None) -> tuple:

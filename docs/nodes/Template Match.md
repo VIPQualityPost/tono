@@ -20,7 +20,7 @@ Find a template pattern within a larger data field using normalised cross-correl
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| threshold | FLOAT | 0.8 | Minimum correlation score to mark as a detection (0.0–1.0) |
+| threshold | FLOAT | 0.8 | Minimum correlation score to mark as a detection (0.0-1.0) |
 
 ## Notes
 

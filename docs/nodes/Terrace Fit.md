@@ -19,9 +19,9 @@ Segment a surface into flat terraces separated by atomic steps, fit a polynomial
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| n_terraces | INT | 0 | Number of terraces to fit; 0 = auto-detect from histogram peaks (0–50) |
-| broadening | FLOAT | 1.0 | Smoothing factor for terrace detection; larger values merge noisy pixels (0.1–20.0) |
-| poly_degree | INT | 0 | Polynomial degree per terrace: 0 = constant (flat), 1 = linear, 2 = quadratic, 3 = cubic (0–3) |
+| n_terraces | INT | 0 | Number of terraces to fit; 0 = auto-detect from histogram peaks (0-50) |
+| broadening | FLOAT | 1.0 | Smoothing factor for terrace detection; larger values merge noisy pixels (0.1-20.0) |
+| poly_degree | INT | 0 | Polynomial degree per terrace: 0 = constant (flat), 1 = linear, 2 = quadratic, 3 = cubic (0-3) |
 | output | dropdown | residual | Output mode: residual (original minus fit), fitted (fit surface), or labels (terrace assignment map) |
 
 ## Notes

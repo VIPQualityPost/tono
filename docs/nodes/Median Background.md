@@ -18,7 +18,7 @@ Extract background using a local median filter and subtract it. The radius contr
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| radius | INT | 20 | Half-size of the median filter window in pixels; the full window is (2×radius+1)² (2–500) |
+| radius | INT | 20 | Half-size of the median filter window in pixels; the full window is (2×radius+1)² (2-500) |
 | output | dropdown | subtracted | Output mode: subtracted (original minus background) or background (extracted background) |
 
 ## Notes

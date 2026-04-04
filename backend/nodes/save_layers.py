@@ -63,6 +63,8 @@ class SaveImage:
         "Click Save to write (does not auto-run)."
     )
 
+    KEYWORDS = ("export", "write", "multipage", "stack", "tiff", "npz", "channels")
+
     def save(
         self,
         filename: str,

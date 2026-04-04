@@ -40,6 +40,8 @@ class Cursors:
         "On fields it reports x/y/z at both markers plus dx/dy/dz."
     )
 
+    KEYWORDS = ("marker", "distance", "measure", "delta", "ruler")
+
     def process(
         self, line, x1: float, y1: float, x2: float, y2: float,
         coord_pair=None,

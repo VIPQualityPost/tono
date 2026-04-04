@@ -19,7 +19,7 @@ Detect grain boundaries from a binary grain mask. Outputs a mask of pixels at gr
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| width | INT | 1 | Boundary thickness in pixels; values greater than 1 dilate the edge outward (1–10) |
+| width | INT | 1 | Boundary thickness in pixels; values greater than 1 dilate the edge outward (1-10) |
 
 ## Notes
 

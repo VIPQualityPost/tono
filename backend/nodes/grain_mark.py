@@ -32,9 +32,11 @@ class GrainMark:
 
     DESCRIPTION = (
         "Mark grains by thresholding height, slope magnitude, or curvature. "
-        "Thresholds are relative (0–1) to the data range. Small regions below "
+        "Thresholds are relative (0-1) to the data range. Small regions below "
         "min_size pixels are removed. Use inverted to mark valleys instead of peaks. "
     )
+
+    KEYWORDS = ("threshold", "segment", "peak", "particle")
 
     def process(self, field: DataField, criterion: str, threshold_low: float,
                 threshold_high: float, min_size: int, inverted: bool) -> tuple:

@@ -27,9 +27,11 @@ class LogPolarPSDF:
 
     DESCRIPTION = (
         "Compute the power spectral density function in log-polar coordinates. "
-        "The x-axis is the azimuthal angle (0–360°) and y-axis is log(frequency). "
+        "The x-axis is the azimuthal angle (0-360°) and y-axis is log(frequency). "
         "Better than Cartesian PSDF for anisotropy analysis. "
     )
+
+    KEYWORDS = ("power spectrum", "azimuthal", "anisotropy", "directional", "fourier")
 
     def process(self, field: DataField, n_phi: int, n_r: int) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)

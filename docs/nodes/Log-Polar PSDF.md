@@ -18,8 +18,8 @@ Compute the power spectral density function in log-polar coordinates. The x-axis
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| n_phi | INT | 180 | Number of azimuthal angle bins (36–720) |
-| n_r | INT | 100 | Number of radial (log-frequency) bins (20–500) |
+| n_phi | INT | 180 | Number of azimuthal angle bins (36-720) |
+| n_r | INT | 100 | Number of radial (log-frequency) bins (20-500) |
 
 ## Notes
 
