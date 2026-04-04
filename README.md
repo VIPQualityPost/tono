@@ -8,7 +8,7 @@ tono is a node-based SPM image processing and analysis tool. The main focus is o
 
 It is heavily inspired by [Gwyddion](https://gwyddion.net/), one of my favorite scientific FOSS programs on the web.
 
-<img src="frontend/public/default-workflow.png" width="600">
+<img src="frontend/public/default-workflow.png" width="800">
 
 ## Quick start
 Install a local binary from the Releases section, or run locally: 
@@ -28,9 +28,10 @@ npm run dev       # terminal 2 — Vite dev server, open the URL it prints
 
 ```bash
 git clone https://github.com/VIPQualityPost/tono.git && cd tono
+python -m venv .venv && source .venv/bin/activate
 pip install -e .
 cd frontend && npm ci && npm run build && cd ..
-TONO_HOST=0.0.0.0 tono
+TONO_HOST=0.0.0.0 python -m backend.main
 ```
 
 See [Self-Hosting](docs/self-hosting.md) for reverse proxy setup, environment variables, and configuration.

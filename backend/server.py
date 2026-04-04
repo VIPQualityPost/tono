@@ -715,10 +715,18 @@ def create_app(
     app.router.add_get("/check-update", check_update)
     app.router.add_get("/ws", websocket_handler)
 
+    async def dist_file(request: web.Request) -> web.Response:
+        filename = request.match_info["filename"]
+        path = (DIST_DIR / filename).resolve()
+        if not path.is_relative_to(DIST_DIR.resolve()) or not path.is_file():
+            raise web.HTTPNotFound()
+        return web.FileResponse(path)
+
     if (DIST_DIR / "assets").exists():
         app.router.add_static("/assets", DIST_DIR / "assets")
     if FRONTEND_DIR.exists():
         app.router.add_static("/static", FRONTEND_DIR)
+    app.router.add_get("/{filename}", dist_file)
 
     async def _cors_middleware(app_, handler):
         async def middleware(request):

@@ -608,10 +608,10 @@ html, body, #root {
 
 .node-help-panel {
   position: fixed;
-  top: 60px;
+  top: 12px;
   right: 20px;
   width: 620px;
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 32px);
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 8px;

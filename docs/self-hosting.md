@@ -9,7 +9,7 @@ git clone https://github.com/VIPQualityPost/tono.git && cd tono
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 cd frontend && npm ci && npm run build && cd ..
-TONO_HOST=0.0.0.0 tono
+TONO_HOST=0.0.0.0 python -m backend.main
 ```
 
 The server will be available at `http://<your-server-ip>:8188`.
@@ -48,7 +48,7 @@ After=network.target
 Type=simple
 User=tono
 WorkingDirectory=/opt/tono
-ExecStart=/opt/tono/.venv/bin/tono
+ExecStart=/opt/tono/.venv/bin/python -m backend.main
 Environment=TONO_HOST=127.0.0.1
 Environment=TONO_PORT=8188
 Environment=TONO_APPDATA=/var/lib/tono

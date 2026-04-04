@@ -4,16 +4,18 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 // Open external links in new tabs
-const renderer = new marked.Renderer();
-const defaultLinkRenderer = renderer.link.bind(renderer);
-renderer.link = function (token) {
-  const html = defaultLinkRenderer(token);
-  if (token.href && /^https?:\/\//.test(token.href)) {
-    return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
-  }
-  return html;
-};
-marked.use({ renderer });
+marked.use({
+  renderer: {
+    link({ href, title, tokens }) {
+      const text = this.parser.parseInline(tokens ?? []);
+      const titleAttr = title ? ` title="${title}"` : '';
+      if (href && /^https?:\/\//.test(href)) {
+        return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+      }
+      return `<a href="${href || ''}"${titleAttr}>${text}</a>`;
+    },
+  },
+});
 
 interface Heading {
   level: number;
