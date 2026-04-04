@@ -1,0 +1,48 @@
+name: Importers
+
+# Heavy importer tests that need real instrument files from the
+# tono-test-data submodule. Only run when importer code or tests change.
+
+on:
+  push:
+    paths:
+      - 'backend/importers/**'
+      - 'backend/nodes/image_demo.py'
+      - 'tests/node_tests/importers.py'
+      - 'tests/node_tests/image_demo.py'
+      - 'pyproject.toml'
+      - '.github/workflows/importers.yml'
+  pull_request:
+    paths:
+      - 'backend/importers/**'
+      - 'backend/nodes/image_demo.py'
+      - 'tests/node_tests/importers.py'
+      - 'tests/node_tests/image_demo.py'
+      - 'pyproject.toml'
+      - '.github/workflows/importers.yml'
+
+jobs:
+  importer-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pull only tests/fixtures — not demo/, which is ~100 MB of images
+      # that aren't needed here.
+      - name: Init tests/fixtures submodule
+        run: git submodule update --init --depth 1 tests/fixtures
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -e ".[server,dev]"
+
+      - name: Run importer tests
+        run: |
+          python -m pytest -q \
+            tests/node_tests/importers.py \
+            tests/node_tests/image_demo.py
