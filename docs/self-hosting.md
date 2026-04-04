@@ -7,7 +7,7 @@ tono can be self-hosted on any server with Python 3.10+ and Node.js 18+.
 ```bash
 git clone https://github.com/VIPQualityPost/tono.git && cd tono
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e ".[server]"
 cd frontend && npm ci && npm run build && cd ..
 TONO_HOST=0.0.0.0 python -m backend.main
 ```
@@ -31,7 +31,7 @@ sudo chown tono:tono /var/lib/tono
 ```bash
 sudo git clone https://github.com/VIPQualityPost/tono.git /opt/tono
 sudo chown -R tono:tono /opt/tono
-sudo -u tono bash -c 'cd /opt/tono && python3 -m venv .venv && source .venv/bin/activate && pip install -e .'
+sudo -u tono bash -c 'cd /opt/tono && python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[server]"'
 sudo -u tono bash -c 'cd /opt/tono/frontend && npm ci && npm run build'
 ```
 

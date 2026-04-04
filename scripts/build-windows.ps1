@@ -46,7 +46,7 @@ npm run build
 Assert-LastExitCode "Frontend build"
 
 Write-Host "Installing desktop build dependencies..."
-& uv pip install -e ".[desktop]"
+& uv pip install -e ".[server,desktop]"
 Assert-LastExitCode "Desktop dependency installation"
 
 $pyInstallerArgs = @(

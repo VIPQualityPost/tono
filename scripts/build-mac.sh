@@ -28,7 +28,7 @@ echo "Building frontend bundle..."
 npm run build
 
 echo "Installing desktop build dependencies..."
-uv pip install -e ".[desktop]"
+uv pip install -e ".[server,desktop]"
 
 echo "Packaging desktop app with PyInstaller..."
 $PYTHON -m PyInstaller \

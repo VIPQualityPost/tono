@@ -8,17 +8,17 @@
 ### First-time setup
 
 ```bash
-# Install Python dependencies
-pip install -e .
+# Install Python dependencies (server extra required for the web app)
+pip install -e ".[server]"
 
 # Install frontend dependencies
 npm install
 
 # For running tests
-pip install -e ".[dev]"
+pip install -e ".[server,dev]"
 
 # For building desktop executables
-pip install -e ".[desktop]"
+pip install -e ".[server,desktop]"
 ```
 
 Using a virtual environment is recommended:
@@ -26,7 +26,7 @@ Using a virtual environment is recommended:
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,desktop]"
+pip install -e ".[server,dev,desktop]"
 ```
 
 ---

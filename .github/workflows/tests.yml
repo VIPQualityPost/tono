@@ -22,7 +22,7 @@ jobs:
           cache: npm
 
       - name: Install Python dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[server,dev]"
 
       - name: Install Node dependencies
         run: npm install --ignore-scripts
