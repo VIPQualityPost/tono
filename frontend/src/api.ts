@@ -56,6 +56,34 @@ async function sessionFetch(input: string, init?: RequestInit) {
   return fetch(input, withSessionHeaders(init));
 }
 
+/**
+ * XHR wrapper used for file uploads. Unlike fetch(), XHR exposes upload
+ * progress events, which the toast UI uses to draw a progress bar.
+ */
+function xhrRequest(
+  method: string,
+  url: string,
+  body: XMLHttpRequestBodyInit | null,
+  {
+    headers = {},
+    onProgress,
+  }: { headers?: Record<string, string>; onProgress?: (fraction: number) => void } = {},
+): Promise<{ status: number; text: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(e.loaded / e.total);
+      };
+    }
+    xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText });
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(body);
+  });
+}
+
 export async function getNodes() {
   const r = await sessionFetch('/nodes');
   if (!r.ok) throw new Error(`GET /nodes failed: ${r.status}`);
@@ -84,30 +112,40 @@ export async function createUploadFolder(relativePath: string) {
   return r.json();
 }
 
-export async function uploadFile(file: File, { relativePath = '' } = {}) {
+export async function uploadFile(
+  file: File,
+  {
+    relativePath = '',
+    onProgress,
+  }: { relativePath?: string; onProgress?: (fraction: number) => void } = {},
+) {
   const fd = new FormData();
   if (relativePath) fd.append('relative_path', relativePath);
   fd.append('file', file);
-  const r = await sessionFetch('/upload', { method: 'POST', body: fd });
-  if (!r.ok) {
-    const text = await r.text();
-    throw new Error(`Upload failed (${r.status}): ${text}`);
+  const { status, text } = await xhrRequest('POST', '/upload', fd, {
+    headers: { 'X-Argonode-Session': getSessionId() },
+    onProgress,
+  });
+  if (status < 200 || status >= 300) {
+    throw new Error(`Upload failed (${status}): ${text}`);
   }
-  return r.json();
+  try { return JSON.parse(text); } catch { return {}; }
 }
 
-export async function uploadPlugin(file: File) {
+export async function uploadPlugin(
+  file: File,
+  { onProgress }: { onProgress?: (fraction: number) => void } = {},
+) {
   const fd = new FormData();
   fd.append('file', file);
-  const r = await fetch('/upload-plugin', { method: 'POST', body: fd });
-  if (r.status === 404) {
+  const { status, text } = await xhrRequest('POST', '/upload-plugin', fd, { onProgress });
+  if (status === 404) {
     throw new Error('Plugin upload is not available in this build.');
   }
-  if (!r.ok) {
-    const text = await r.text();
-    throw new Error(text || `Upload failed (${r.status})`);
+  if (status < 200 || status >= 300) {
+    throw new Error(text || `Upload failed (${status})`);
   }
-  return r.json();
+  try { return JSON.parse(text); } catch { return {}; }
 }
 
 export async function getChannels(filepath: string) {

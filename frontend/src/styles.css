@@ -497,14 +497,31 @@ html, body, #root {
   background: var(--bg-toolbar);
   border: 1px solid var(--border-toolbar);
   max-width: 60%;
+  min-width: 240px;
   text-align: center;
   animation: toast-in 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 .status-toast.closing {
   animation: toast-out 0.3s ease-in forwards;
 }
 .status-toast.info  { color: var(--accent-light); }
 .status-toast.error { color: var(--error-text); background: var(--error-bg); }
+
+.status-toast-progress {
+  height: 3px;
+  width: 100%;
+  background: rgba(127, 127, 127, 0.22);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.status-toast-progress-fill {
+  height: 100%;
+  background: var(--accent-light);
+  transition: width 0.12s linear;
+}
 
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }

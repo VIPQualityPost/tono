@@ -169,7 +169,7 @@ function restoreGroupEdges(edges: any[], groupId: string) {
 function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState<TonoNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<TonoEdge>([]);
-  const [status, setStatus] = useState({ text: 'Connecting…', level: 'info' });
+  const [status, setStatus] = useState<{ text: string; level: string; progress?: number | null }>({ text: 'Connecting…', level: 'info' });
   const [contextMenu, setContextMenu] = useState<any>(null);
   const [isCanvasRightZooming, setIsCanvasRightZooming] = useState(false);
   const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
@@ -983,9 +983,17 @@ function Flow() {
     setStatus({
       text: `Uploading ${entry.file.name}…`,
       level: 'info',
+      progress: 0,
     });
 
-    const uploaded = await api.uploadFile(entry.file, { relativePath: entry.relativePath });
+    const uploaded = await api.uploadFile(entry.file, {
+      relativePath: entry.relativePath,
+      onProgress: (pct) => setStatus({
+        text: `Uploading ${entry.file.name}… ${Math.round(pct * 100)}%`,
+        level: 'info',
+        progress: pct,
+      }),
+    });
     return uploaded.path;
   }, []);
 
@@ -1052,11 +1060,27 @@ function Flow() {
       }
     }
 
+    const total = toUpload.size;
+    let index = 0;
     for (const uri of toUpload) {
       const file = pending.get(uri)!;
       const relativePath = uri.replace(/^session:\/\/uploads\//, '');
-      await api.uploadFile(file, { relativePath });
+      const fileIndex = index;
+      setStatus({
+        text: `Uploading ${file.name} (${fileIndex + 1}/${total})…`,
+        level: 'info',
+        progress: fileIndex / total,
+      });
+      await api.uploadFile(file, {
+        relativePath,
+        onProgress: (pct) => setStatus({
+          text: `Uploading ${file.name} (${fileIndex + 1}/${total})… ${Math.round(pct * 100)}%`,
+          level: 'info',
+          progress: (fileIndex + pct) / total,
+        }),
+      });
       pending.delete(uri);
+      index++;
     }
   }, []);
 
@@ -1776,9 +1800,15 @@ function Flow() {
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement)?.files?.[0];
       if (!file) return;
-      setStatus({ text: 'Uploading plugin…', level: 'info' });
+      setStatus({ text: 'Uploading plugin…', level: 'info', progress: 0 });
       try {
-        await api.uploadPlugin(file);
+        await api.uploadPlugin(file, {
+          onProgress: (pct) => setStatus({
+            text: `Uploading plugin… ${Math.round(pct * 100)}%`,
+            level: 'info',
+            progress: pct,
+          }),
+        });
         // Node list refresh is handled by the nodes_updated WebSocket message.
       } catch (err: any) {
         setStatus({ text: err.message, level: 'error' });
@@ -2283,10 +2313,15 @@ function Flow() {
     return () => document.removeEventListener('pointerdown', handler);
   }, [menuOpen]);
 
-  // Auto-dismiss status toast after 5 seconds with close animation
+  // Auto-dismiss status toast after 5 seconds with close animation.
+  // Uploads in progress (progress < 1) pause the timer so the bar stays visible.
   const [toastClosing, setToastClosing] = useState(false);
   useEffect(() => {
     if (!status.text) return;
+    if (status.progress != null && status.progress < 1) {
+      setToastClosing(false);
+      return;
+    }
     setToastClosing(false);
     const fadeTimer = setTimeout(() => setToastClosing(true), 4700);
     const removeTimer = setTimeout(() => { setToastClosing(false); setStatus({ text: '', level: 'info' }); }, 5000);
@@ -2563,7 +2598,17 @@ function Flow() {
 
         {/* Status toast */}
         {(status.text || toastClosing) && (
-          <div className={`status-toast ${status.level}${toastClosing ? ' closing' : ''}`}>{status.text}</div>
+          <div className={`status-toast ${status.level}${toastClosing ? ' closing' : ''}`}>
+            <div className="status-toast-text">{status.text}</div>
+            {status.progress != null && (
+              <div className="status-toast-progress">
+                <div
+                  className="status-toast-progress-fill"
+                  style={{ width: `${Math.max(0, Math.min(1, status.progress)) * 100}%` }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {/* React Flow canvas */}
