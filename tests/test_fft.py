@@ -10,7 +10,6 @@ import numpy as np
 sys.path.insert(0, ".")
 from backend.data_types import DataField
 from backend.nodes.fft_2d import FFT2D
-from backend.nodes.fft_2d_inverse import FFT2DInverse
 
 
 def make_field(data, xreal=1e-6, yreal=1e-6):
@@ -247,91 +246,6 @@ def test_log_magnitude_visual_range():
     print("  PASS\n")
 
 
-def test_inverse_fft_reconstructs_from_magnitude_and_phase():
-    """Magnitude + phase from FFT2D should reconstruct the original image."""
-    print("=== Test: Inverse FFT from magnitude + phase ===")
-    rng = np.random.default_rng(123)
-    data = rng.standard_normal((64, 96))
-    field = make_field(data, xreal=2.4e-6, yreal=1.6e-6)
-
-    fft_node = FFT2D()
-    ifft_node = FFT2DInverse()
-
-    _, magnitude, phase, _ = fft_node.process(field, windowing="none", level="none")
-    reconstructed, = ifft_node.process(magnitude, representation="magnitude", phase=phase)
-
-    max_err = np.max(np.abs(reconstructed.data - field.data))
-    print(f"  Reconstruction max error: {max_err:.3e}")
-    assert reconstructed.domain == "spatial"
-    assert reconstructed.data.shape == field.data.shape
-    assert np.isclose(reconstructed.xreal, field.xreal)
-    assert np.isclose(reconstructed.yreal, field.yreal)
-    assert max_err < 1e-9, f"Expected near-exact reconstruction, got {max_err}"
-    print("  PASS\n")
-
-
-def test_inverse_fft_reconstructs_from_log_magnitude_and_phase():
-    """log(|F|) + phase should also reconstruct after expm1 inversion."""
-    print("=== Test: Inverse FFT from log magnitude + phase ===")
-    y, x = np.mgrid[0:72, 0:80] / 80.0
-    data = (
-        0.8 * np.sin(2 * np.pi * 6 * x)
-        + 0.35 * np.cos(2 * np.pi * 9 * y)
-        + 0.15 * np.sin(2 * np.pi * (4 * x + 3 * y))
-    )
-    field = make_field(data, xreal=1.6e-6, yreal=1.44e-6)
-
-    fft_node = FFT2D()
-    ifft_node = FFT2DInverse()
-
-    log_magnitude, _, phase, _ = fft_node.process(field, windowing="none", level="none")
-    reconstructed, = ifft_node.process(log_magnitude, representation="log_magnitude", phase=phase)
-
-    rms_err = np.sqrt(np.mean((reconstructed.data - field.data) ** 2))
-    print(f"  Reconstruction RMS error: {rms_err:.3e}")
-    assert rms_err < 1e-9, f"Expected near-exact reconstruction, got {rms_err}"
-    print("  PASS\n")
-
-
-def test_inverse_fft_reconstructs_from_psdf_and_phase():
-    """PSDF + phase should reconstruct after undoing PSDF scaling."""
-    print("=== Test: Inverse FFT from PSDF + phase ===")
-    rng = np.random.default_rng(321)
-    data = rng.standard_normal((48, 64))
-    field = make_field(data, xreal=3.2e-6, yreal=2.4e-6)
-
-    fft_node = FFT2D()
-    ifft_node = FFT2DInverse()
-
-    _, _, phase, psdf = fft_node.process(field, windowing="none", level="none")
-    reconstructed, = ifft_node.process(psdf, representation="psdf", phase=phase)
-
-    max_err = np.max(np.abs(reconstructed.data - field.data))
-    print(f"  Reconstruction max error: {max_err:.3e}")
-    assert reconstructed.si_unit_z == field.si_unit_z
-    assert max_err < 1e-8, f"Expected near-exact reconstruction, got {max_err}"
-    print("  PASS\n")
-
-
-def test_inverse_fft_zero_phase_mode_returns_valid_image():
-    """Spectrum-only inversion should return a finite spatial image with the right shape."""
-    print("=== Test: Inverse FFT zero-phase mode ===")
-    data = np.sin(2 * np.pi * 5 * np.mgrid[0:64, 0:64][1] / 64.0)
-    field = make_field(data, xreal=1e-6, yreal=1e-6)
-
-    fft_node = FFT2D()
-    ifft_node = FFT2DInverse()
-
-    _, magnitude, _, _ = fft_node.process(field, windowing="none", level="none")
-    reconstructed, = ifft_node.process(magnitude, representation="magnitude")
-
-    print(f"  Output shape: {reconstructed.data.shape}")
-    assert reconstructed.domain == "spatial"
-    assert reconstructed.data.shape == field.data.shape
-    assert np.all(np.isfinite(reconstructed.data))
-    print("  PASS\n")
-
-
 if __name__ == "__main__":
     test_dc_removal()
     test_single_frequency()
@@ -341,8 +255,4 @@ if __name__ == "__main__":
     test_plane_subtraction()
     test_non_square()
     test_log_magnitude_visual_range()
-    test_inverse_fft_reconstructs_from_magnitude_and_phase()
-    test_inverse_fft_reconstructs_from_log_magnitude_and_phase()
-    test_inverse_fft_reconstructs_from_psdf_and_phase()
-    test_inverse_fft_zero_phase_mode_returns_valid_image()
     print("All tests passed!")

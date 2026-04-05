@@ -11,20 +11,20 @@ export const DATA_TYPES = new Set([
 export const SOCKET_WIDGET_TYPES = new Set(['FLOAT', 'INT']);
 
 export const TYPE_COLORS: Record<string, string> = {
-  DATA_FIELD:    '#0800ff',
-  IMAGE:         '#00ff08',
+  DATA_FIELD:    '#7d8bdc',
+  IMAGE:         '#69cc6c',
   LINE:          '#ffb300',
-  RECORD_TABLE: '#ff0000',
-  DATA_TABLE:  '#fbff00',
-  COORD:         '#ea00ff',
-  COORDPAIR:     '#f0cbff',
-  FLOAT:         '#00bfff',
-  INT:           '#ffffff',
-  ANNOTATION_SOURCE: '#00ffbf',
-  COLORMAP:      '#000000',
+  RECORD_TABLE: '#cf6868',
+  DATA_TABLE:  '#cbcd67',
+  COORD:         '#bb65c2',
+  COORDPAIR:     '#bababa',
+  FLOAT:         '#76bcd4',
+  INT:           '#cf8e8e',
+  ANNOTATION_SOURCE: '#79cab6',
+  COLORMAP:      '#905454',
   MESH_MODEL:    '#6e659e',
-  FONT:          '#936991',
-  FILE_PATH:     '#f1d19b',
+  FONT:          '#cccf7f',
+  FILE_PATH:     '#b87f7f',
   DIRECTORY:     '#90d294',
 };
 

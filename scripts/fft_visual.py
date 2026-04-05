@@ -2,7 +2,7 @@
 Generate test images and their FFT outputs for visual comparison with Gwyddion.
 Saves PNG files to tests/output/.
 
-Run: .venv/bin/python -m tests.test_fft_visual
+Run from project root: .venv/bin/python scripts/fft_visual.py
 """
 import sys
 import os
@@ -12,7 +12,7 @@ sys.path.insert(0, ".")
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
 from backend.nodes.fft_2d import FFT2D
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
+OUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "output")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
