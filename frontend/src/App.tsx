@@ -1441,32 +1441,56 @@ function Flow() {
     initializeDynamicNodes(hydrated.nodes);
   }, [initializeDynamicNodes, setNodes, setEdges]);
 
+  const frameWorkflowViewport = useCallback(() => {
+    const flowEl = document.querySelector('.react-flow') as HTMLElement | null;
+    if (!flowEl) return;
+    const width = flowEl.offsetWidth;
+    const height = flowEl.offsetHeight;
+    if (width <= 0 || height <= 0) return;
+    const allNodes = (reactFlow.getNodes() as TonoNode[]);
+    if (allNodes.length === 0) return;
+    const bounds = getRenderedNodeBounds(allNodes);
+    if (!bounds) return;
+    const vp = getViewportForBounds(bounds, width, height, 0.5, 1, 0.1);
+    reactFlow.setViewport(vp, { duration: 300 });
+  }, [reactFlow]);
+
+  const scheduleFrameWorkflowViewport = useCallback(() => {
+    // Two rAFs so ReactFlow has rendered and measured the freshly-applied nodes
+    // before we read their DOM dimensions.
+    requestAnimationFrame(() => requestAnimationFrame(() => frameWorkflowViewport()));
+  }, [frameWorkflowViewport]);
+
   const applyMaybePackedWorkflow = useCallback(async (data: any) => {
     if (data.packed && data.packedFiles) {
       setStatus({ text: 'Unpacking files…', level: 'info' });
       try {
         const { workflow, restoredPaths } = await unpackWorkflow(data);
         applyWorkflowData(workflow, { preservedPaths: restoredPaths });
+        scheduleFrameWorkflowViewport();
         // Auto-run after packed workflow loads so all previews populate
         requestAnimationFrame(() => requestAnimationFrame(() => scheduleAutoRun()));
       } catch {
         // Unpack failed (e.g. stale session) — load the workflow without file restoration
         const { packedFiles: _, packed: __, ...cleanWorkflow } = data;
         applyWorkflowData(cleanWorkflow);
+        scheduleFrameWorkflowViewport();
         setStatus({ text: 'Workflow loaded but packed files could not be restored. Re-browse your input files.', level: 'error' });
         return;
       }
     } else {
       applyWorkflowData(data);
+      scheduleFrameWorkflowViewport();
     }
-  }, [applyWorkflowData, scheduleAutoRun]);
+  }, [applyWorkflowData, scheduleAutoRun, scheduleFrameWorkflowViewport]);
 
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
     defaultWorkflowLoadAttemptedRef.current = true;
 
-    // Only auto-load the example workflow on first visit
-    if (localStorage.getItem('tono_visited')) return;
+    // First-visit gating is handled by the caller (see the mount useEffect
+    // below) so we avoid a race with /help-docs, which also flips the
+    // tono_visited flag and often resolves before api.getNodes().
 
     const graphHasContent = () => {
       const currentNodes = (reactFlow.getNodes() as TonoNode[]);
@@ -1507,16 +1531,20 @@ function Flow() {
   // ── Load node definitions ───────────────────────────────────────────
 
   useEffect(() => {
+    // Capture first-visit state once at mount so the /help-docs fetch (which
+    // sets tono_visited as a side effect) cannot race with the default-workflow
+    // gate below. Both decisions must see the same value.
+    const isFirstVisit = !localStorage.getItem('tono_visited');
+
     api.getNodes().then((defs) => {
       nodeDefsRef.current = defs;
       setStatus({ text: `Loaded ${Object.keys(defs).length} nodes.`, level: 'info' });
-      loadDefaultWorkflow();
+      if (isFirstVisit) loadDefaultWorkflow();
     }).catch((err) => {
       setStatus({ text: 'Failed to load nodes: ' + err.message, level: 'error' });
     });
 
     // Load any .md files from frontend/public/ as help tabs
-    const isFirstVisit = !localStorage.getItem('tono_visited');
     fetch('/help-docs')
       .then((r) => r.ok ? r.json() : [])
       .then((docs: any[]) => {

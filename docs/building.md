@@ -35,6 +35,14 @@ pip install -e ".[server,dev,desktop]"
 
 Two servers run in development: the Vite frontend dev server and the Python backend. Vite proxies all API and WebSocket requests to the backend, so you only open the Vite URL in your browser.
 
+The easiest way is the combined runner, which starts both with prefixed, colour-coded output and tears everything down on Ctrl-C:
+
+```bash
+npm run dev:all
+```
+
+Or run them in separate terminals if you prefer independent logs:
+
 ```bash
 # Terminal 1 — Python backend (http://127.0.0.1:8188)
 npm run backend
@@ -157,8 +165,9 @@ TONO_APPDATA=/my/data/dir python desktop.py
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start Vite dev server + Python backend |
-| `npm run backend` | Start Python backend only |
+| `npm run dev:all` | Start the Python backend and the Vite dev server together |
+| `npm run dev` | Start the Vite dev server only |
+| `npm run backend` | Start the Python backend only |
 | `npm run build` | Build frontend to `frontend/dist/` |
 | `npm run preview` | Preview the production frontend build |
 | `npm run desktop` | Build frontend + launch desktop app |

@@ -20,8 +20,7 @@ pip install -e ".[server,dev]"
 npm install
 
 # Running the servers
-npm run backend   # terminal 1 — Python server at http://127.0.0.1:8188
-npm run dev       # terminal 2 — Vite dev server, open the URL it prints
+npm run dev:all   # one terminal — starts the Python backend and the Vite dev server together
 ```
 
 ## Self-hosting
