@@ -492,7 +492,7 @@ class ExecutionEngine:
             return
 
         if cls in (Image, ImageDemo) and on_preview:
-            preview = self._render_load_node_preview(result, inputs or {})
+            preview = self._render_load_node_preview(cls, result, inputs or {})
             if preview:
                 on_preview(node_id, preview)
                 return
@@ -539,17 +539,23 @@ class ExecutionEngine:
 
     def _render_load_node_preview(
         self,
+        cls: type,
         result: tuple,
         inputs: dict[str, Any],
     ) -> dict | None:
         from backend.data_types import DataField, encode_preview, render_datafield_preview
-        from backend.nodes.helpers import list_channels
+        from backend.nodes.helpers import list_channels, DEMO_DIR
+        from backend.nodes.image_demo import ImageDemo
 
         fields = [value for value in result if isinstance(value, DataField)]
         if not fields:
             return None
 
         selected_path = str(inputs.get("path") or inputs.get("filename") or inputs.get("name") or "").strip()
+        # ImageDemo passes only the bare demo filename; resolve against DEMO_DIR
+        # so list_channels() can find the file and return real channel names.
+        if cls is ImageDemo and selected_path:
+            selected_path = str(DEMO_DIR / selected_path)
         channel_names: list[str] = []
         if selected_path:
             try:
