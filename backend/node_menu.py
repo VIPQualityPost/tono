@@ -33,7 +33,6 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ValueIO",
         "PrintTable",
         "Save",
-        "SaveImage",
         "Shade",
         "PresentationOps",
     ],

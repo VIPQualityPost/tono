@@ -1110,11 +1110,24 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
   for (const [name, spec] of Object.entries(optional)) {
     const [type, opts] = getSpecTypeAndOptions(spec as InputSpec);
     if (isProgressive && isDataSocketSpec(spec as InputSpec)) {
-      // Progressive: show this slot only if it's the first or the previous is connected
+      // Progressive: show this slot only if it's the first or the previous
+      // is connected. If the socket also carries `show_when_source_type`,
+      // the gating input must be connected to a matching source type before
+      // any slot in the chain is revealed — this lets Save's layer stack
+      // stay hidden until `value` is a DataField or Image.
       const match = name.match(/^field_(\d+)$/);
       if (match) {
         const idx = parseInt(match[1], 10);
-        if (idx === 0 || (connectedInputs && connectedInputs.has(`field_${idx - 1}`))) {
+        const sourceTypeRules = opts?.show_when_source_type;
+        let sourceTypeOk = true;
+        if (sourceTypeRules && typeof sourceTypeRules === 'object') {
+          const gateInput = Object.keys(sourceTypeRules)[0];
+          const allowed = Array.isArray(sourceTypeRules[gateInput]) ? sourceTypeRules[gateInput] : [];
+          const actualSourceType = connectedSourceTypes?.[gateInput] ?? null;
+          sourceTypeOk = actualSourceType != null && allowed.includes(actualSourceType);
+        }
+        const progressiveOk = idx === 0 || (connectedInputs && connectedInputs.has(`field_${idx - 1}`));
+        if (sourceTypeOk && progressiveOk) {
           dataInputs.push({ name, type, label: formatUiLabel(opts?.label || name) });
           visibleInputNames.add(name);
         }
