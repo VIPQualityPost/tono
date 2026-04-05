@@ -26,7 +26,7 @@ jobs:
             set -e
             cd /opt/tono
             git pull --ff-only
-            .venv/bin/pip install -e ".[server]" --quiet
+            uv pip install -e ".[server]" --quiet
             cd frontend && npm ci --ignore-scripts && npm run build && cd ..
             sudo systemctl restart tono
           REMOTE
