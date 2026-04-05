@@ -1,4 +1,10 @@
 /* ── Theme tokens ──────────────────────────────────────────────────── */
+/*
+ * The default :root block defines the dark palette. A light override
+ * lives in :root[data-theme="light"] below. The active theme is selected
+ * at runtime by theme.ts, which sets data-theme on <html> to either
+ * "light" or "dark" (auto mode resolves via prefers-color-scheme).
+ */
 :root {
   /* Backgrounds */
   --bg-app:          #1a1a2e;
@@ -22,6 +28,7 @@
   --text-primary:    #e0e0e0;
   --text-bright:     #e2e8f0;
   --text-heading:    #ffffff;
+  --text-node-title: #ffffff;
   --text-secondary:  #94a3b8;
   --text-muted:      #64748b;
   --text-faint:      #475569;
@@ -45,8 +52,13 @@
   --danger:          #e94560;
   --danger-hover:    #ff6b81;
   --danger-locked:   #e91e63;
+  --danger-outline:  #ef4444;
+  --danger-outline-glow: rgba(239, 68, 68, 0.35);
   --error-text:      #ef9a9a;
   --error-bg:        rgba(183, 28, 28, 0.2);
+  --error-text-2:    #fca5a5;
+  --error-bg-2:      rgba(239, 68, 68, 0.12);
+  --error-border-2:  rgba(239, 68, 68, 0.3);
 
   /* Warning */
   --warning:         #fbbf24;
@@ -120,6 +132,212 @@
   /* Dynamic-lookup fallbacks */
   --fallback-type:   #999;
   --fallback-cat:    #333;
+
+  /* Group node extras */
+  --bg-group-title:     #334155;
+  --bg-overlay-input:   rgba(15, 23, 42, 0.7);
+  --text-watermark:     rgba(148, 163, 184, 0.58);
+
+  /* Help panel */
+  --bg-help-tabs:       #0a0f1a;
+  --bg-help-tab:        #0f172a;
+  --bg-help-tab-hover:  #162032;
+  --bg-help-tab-active: #1e293b;
+  --bg-help-panel:      #1e293b;
+  --bg-help-textarea:   #0d1624;
+  --border-help-tab-add:#334155;
+  --link-color:         #ff9800;
+  --link-hover:         #ffb74d;
+
+  /* Canvas overlay chips (badges, pills, floating widgets) */
+  --overlay-chip-bg:        rgba(15, 23, 42, 0.86);
+  --overlay-chip-bg-strong: rgba(15, 23, 42, 0.9);
+  --overlay-chip-bg-hover:  rgba(30, 41, 59, 0.94);
+  --overlay-chip-border:    rgba(148, 163, 184, 0.42);
+  --overlay-chip-border-hover: rgba(125, 211, 252, 0.55);
+  --overlay-chip-shadow:    rgba(2, 6, 23, 0.28);
+
+  /* Node-title help button (sits on category-coloured title bar) */
+  --node-help-btn-bg:          rgba(255, 255, 255, 0.12);
+  --node-help-btn-bg-hover:    rgba(255, 255, 255, 0.28);
+  --node-help-btn-border:      rgba(255, 255, 255, 0.25);
+  --node-help-btn-border-hover:rgba(255, 255, 255, 0.5);
+  --node-help-btn-text:        rgba(255, 255, 255, 0.75);
+
+  /* Text note content overlays (on top of coloured text notes) */
+  --note-code-bg:      rgba(0, 0, 0, 0.3);
+  --note-textarea-bg:  rgba(0, 0, 0, 0.25);
+  --note-hr:           rgba(255, 255, 255, 0.1);
+  --note-quote-border: rgba(255, 255, 255, 0.2);
+  --note-active-ring:  rgba(255, 255, 255, 0.7);
+}
+
+/* Light palette — applied when <html data-theme="light"> */
+:root[data-theme="light"] {
+  /* Backgrounds — warm palette: eggshell canvas, tan node bodies */
+  --bg-app:          #e8e0c6;
+  --bg-toolbar:      #ede5cc;
+  --bg-canvas:       #f0e9d4;   /* eggshell */
+  --bg-surface:      #e4d6b4;   /* tan (node body) */
+  --bg-deep:         #d4c29e;   /* deeper tan (widget wells) */
+  --bg-panel:        #e0d7bc;
+  --bg-backdrop:     rgba(60, 50, 20, 0.35);
+  --bg-overlay-dim:  rgba(60, 50, 20, 0.18);
+
+  /* Borders — warm tan-gray to blend with the warm surfaces */
+  --border-default:  #b8ab87;
+  --border-strong:   #2563eb;
+  --border-toolbar:  #b8ab87;
+  --border-subtle:   rgba(120, 105, 70, 0.28);
+  --border-table:    rgba(120, 105, 70, 0.55);
+  --border-title:    rgba(60, 50, 20, 0.2);
+
+  /* Text */
+  --text-primary:    #2a2318;
+  --text-bright:     #1a1710;
+  --text-heading:    #1a1710;   /* for text on tan/eggshell surfaces */
+  --text-node-title: #ffffff;   /* stays white — sits on colored title bars */
+  --text-secondary:  #5a4e36;
+  --text-muted:      #726544;
+  --text-faint:      #9c8f6a;
+  --text-disabled:   #9c8f6a;
+  --text-table:      #3a301c;
+  --text-value:      #3e2e10;
+  --text-value-unit: rgba(62, 46, 16, 0.78);
+
+  /* Accent */
+  --accent:          #2563eb;
+  --accent-bg:       #dbeafe;
+  --accent-hover:    #bfdbfe;
+  --accent-pressed:  #93c5fd;
+  --accent-light:    #1d4ed8;
+  --accent-lighter:  #0284c7;
+  --accent-lightest: #0369a1;
+  --accent-deep:     #eff6ff;
+  --accent-deep-text:#1e3a8a;
+
+  /* Danger */
+  --danger:          #dc2626;
+  --danger-hover:    #ef4444;
+  --danger-locked:   #be123c;
+  --danger-outline:  #dc2626;
+  --danger-outline-glow: rgba(220, 38, 38, 0.35);
+  --error-text:      #991b1b;
+  --error-bg:        rgba(220, 38, 38, 0.12);
+  --error-text-2:    #b91c1c;
+  --error-bg-2:      rgba(220, 38, 38, 0.1);
+  --error-border-2:  rgba(220, 38, 38, 0.35);
+
+  /* Warning */
+  --warning:         #b45309;
+  --warning-bg:      rgba(251, 191, 36, 0.2);
+  --warning-border:  rgba(180, 83, 9, 0.35);
+
+  /* Selection */
+  --selection:       #2563eb;
+  --selection-glow:  rgba(37, 99, 235, 0.3);
+  --selection-edge:  rgba(37, 99, 235, 0.55);
+
+  /* Marker / cursor */
+  --marker:          #ca8a04;
+  --marker-active:   #eab308;
+  --marker-border:   #1a1710;
+  --marker-shadow:   rgba(60, 50, 20, 0.4);
+  --marker-shadow-light: rgba(60, 50, 20, 0.25);
+
+  /* Plot */
+  --plot-line:       #ea580c;
+
+  /* Linked state */
+  --linked-border:   rgba(190, 24, 93, 0.55);
+  --linked-bg:       rgba(251, 232, 220, 0.85);
+  --linked-text:     #9d174d;
+
+  /* Value display */
+  --value-label:     #3e2e10;
+  --value-border:    rgba(62, 46, 16, 0.45);
+  --value-grad-top:  rgba(120, 85, 30, 0.08);
+  --value-grad-bot:  rgba(80, 60, 20, 0.14);
+  --value-grad-a:    rgba(160, 120, 50, 0.08);
+  --value-grad-b:    rgba(200, 160, 80, 0.05);
+  --value-shadow-in: rgba(255, 248, 220, 0.6);
+  --value-shadow:    rgba(80, 60, 20, 0.12);
+
+  /* Node title meta */
+  --meta-bg:         rgba(60, 50, 20, 0.1);
+  --meta-text:       rgba(255, 255, 255, 0.92);
+
+  /* Mask paint cursor */
+  --mask-cursor-border: rgba(60, 50, 20, 0.9);
+  --mask-cursor-bg:     rgba(60, 50, 20, 0.08);
+  --mask-cursor-ring:   rgba(220, 38, 38, 0.85);
+  --mask-cursor-shadow: rgba(184, 171, 135, 0.4);
+
+  /* Shadows */
+  --shadow-heavy:    rgba(60, 50, 20, 0.22);
+
+  /* Gallery */
+  --gallery-name-border: rgba(184, 171, 135, 0.8);
+  --gallery-name-bg:     rgba(240, 233, 212, 0.92);
+
+  /* Benchmark */
+  --benchmark-border: rgba(120, 105, 70, 0.32);
+  --benchmark-bg:     rgba(245, 238, 219, 0.94);
+
+  /* Markup toolbar */
+  --markup-btn-border: rgba(120, 105, 70, 0.38);
+  --markup-btn-bg:     rgba(245, 238, 219, 0.94);
+
+  /* Table */
+  --table-stripe:    rgba(120, 105, 70, 0.15);
+
+  /* Crop */
+  --crop-inset:      rgba(60, 50, 20, 0.28);
+
+  /* Shape default */
+  --shape-default:   #dc2626;
+
+  /* Dynamic-lookup fallbacks */
+  --fallback-type:   #9c8f6a;
+  --fallback-cat:    #b8ab87;
+
+  /* Group node extras */
+  --bg-group-title:     #b8ab87;
+  --bg-overlay-input:   rgba(240, 233, 212, 0.85);
+  --text-watermark:     rgba(90, 78, 54, 0.55);
+
+  /* Help panel */
+  --bg-help-tabs:       #d4c29e;
+  --bg-help-tab:        #e0d3ad;
+  --bg-help-tab-hover:  #d4c29e;
+  --bg-help-tab-active: #f0e9d4;
+  --bg-help-panel:      #f0e9d4;
+  --bg-help-textarea:   #e8dcc0;
+  --border-help-tab-add:#b8ab87;
+  --link-color:         #c2410c;
+  --link-hover:         #9a3412;
+
+  /* Canvas overlay chips */
+  --overlay-chip-bg:        rgba(240, 233, 212, 0.94);
+  --overlay-chip-bg-strong: rgba(240, 233, 212, 0.97);
+  --overlay-chip-bg-hover:  rgba(228, 214, 180, 0.96);
+  --overlay-chip-border:    rgba(120, 105, 70, 0.42);
+  --overlay-chip-border-hover: rgba(194, 65, 12, 0.55);
+  --overlay-chip-shadow:    rgba(60, 50, 20, 0.16);
+
+  /* Node-title help button (still sits on a coloured title bar) */
+  --node-help-btn-bg:          rgba(255, 255, 255, 0.35);
+  --node-help-btn-bg-hover:    rgba(255, 255, 255, 0.55);
+  --node-help-btn-border:      rgba(255, 255, 255, 0.5);
+  --node-help-btn-border-hover:rgba(255, 255, 255, 0.75);
+  --node-help-btn-text:        rgba(255, 255, 255, 0.9);
+
+  /* Text note content overlays */
+  --note-code-bg:      rgba(60, 50, 20, 0.1);
+  --note-textarea-bg:  rgba(60, 50, 20, 0.05);
+  --note-hr:           rgba(60, 50, 20, 0.14);
+  --note-quote-border: rgba(60, 50, 20, 0.22);
+  --note-active-ring:  rgba(60, 50, 20, 0.6);
 }
 
 /* ── Reset & base ──────────────────────────────────────────────────── */
@@ -343,7 +561,7 @@ html, body, #root {
 }
 
 .group-node-title {
-  background: #334155;
+  background: var(--bg-group-title);
 }
 
 .group-node-title .node-title-main {
@@ -384,7 +602,7 @@ html, body, #root {
   padding: 2px 6px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.72);
+  background: var(--bg-overlay-input);
   color: var(--text-heading);
   font: inherit;
 }
@@ -398,7 +616,7 @@ html, body, #root {
 
 .group-toggle {
   border: 0;
-  background: rgba(15, 23, 42, 0.65);
+  background: var(--bg-overlay-input);
   color: var(--text-heading);
   border-radius: 4px;
   padding: 2px 8px;
@@ -447,7 +665,7 @@ html, body, #root {
   position: absolute;
   top: 10px;
   left: 12px;
-  color: rgba(148, 163, 184, 0.58);
+  color: var(--text-watermark);
   font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: lowercase;
@@ -497,7 +715,7 @@ html, body, #root {
   gap: 8px;
   font-weight: 600;
   font-size: 12px;
-  color: var(--text-heading);
+  color: var(--text-node-title);
   border-radius: 5px 5px 0 0;
   border-bottom: 1px solid var(--border-title);
 }
@@ -537,9 +755,9 @@ html, body, #root {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--node-help-btn-bg);
+  border: 1px solid var(--node-help-btn-border);
+  color: var(--node-help-btn-text);
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
@@ -553,8 +771,8 @@ html, body, #root {
 }
 
 .node-help-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: var(--node-help-btn-bg-hover);
+  border-color: var(--node-help-btn-border-hover);
 }
 
 /* ── Node help panel ─────────────────────────────────────── */
@@ -564,15 +782,15 @@ html, body, #root {
   flex-wrap: wrap;
   gap: 2px;
   padding: 6px 8px 0;
-  background: #0a0f1a;
-  border-bottom: 1px solid #1e293b;
+  background: var(--bg-help-tabs);
+  border-bottom: 1px solid var(--bg-help-tab-active);
   flex-shrink: 0;
 }
 
 .node-help-fold-btn {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 9px;
   padding: 0 4px;
   cursor: pointer;
@@ -581,7 +799,7 @@ html, body, #root {
   align-self: center;
   transition: color 0.12s;
 }
-.node-help-fold-btn:hover { color: #f1f5f9; }
+.node-help-fold-btn:hover { color: var(--text-heading); }
 
 .node-help-tab {
   display: flex;
@@ -589,23 +807,23 @@ html, body, #root {
   gap: 4px;
   padding: 4px 8px;
   border-radius: 5px 5px 0 0;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--bg-help-tab);
+  border: 1px solid var(--bg-help-tab-active);
   border-bottom: none;
   cursor: pointer;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   transition: color 0.12s, background 0.12s;
   user-select: none;
   max-width: 160px;
 }
 
-.node-help-tab:hover { color: #94a3b8; background: #162032; }
+.node-help-tab:hover { color: var(--text-secondary); background: var(--bg-help-tab-hover); }
 
 .node-help-tab.active {
-  color: #f1f5f9;
-  background: #1e293b;
-  border-color: #334155;
+  color: var(--text-heading);
+  background: var(--bg-help-tab-active);
+  border-color: var(--border-default);
 }
 
 .node-help-tab-label {
@@ -630,8 +848,8 @@ html, body, #root {
 
 .node-help-tab-add {
   background: none;
-  border: 1px dashed #334155;
-  color: #475569;
+  border: 1px dashed var(--border-help-tab-add);
+  color: var(--text-faint);
   font-size: 13px;
   line-height: 1;
   width: 22px;
@@ -645,7 +863,7 @@ html, body, #root {
   flex-shrink: 0;
   transition: color 0.12s, border-color 0.12s;
 }
-.node-help-tab-add:hover { color: #f1f5f9; border-color: #64748b; }
+.node-help-tab-add:hover { color: var(--text-heading); border-color: var(--text-muted); }
 
 .node-help-panel {
   position: fixed;
@@ -653,10 +871,10 @@ html, body, #root {
   right: 20px;
   width: 620px;
   max-height: calc(100vh - 32px);
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-help-panel);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 32px var(--shadow-heavy);
   display: flex;
   flex-direction: column;
   z-index: 9999;
@@ -676,33 +894,33 @@ html, body, #root {
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--bg-help-tab-active);
   flex-shrink: 0;
 }
 
 .node-help-journal-toggle {
-  background: #0f172a;
-  border: 1px solid #334155;
-  color: #94a3b8;
+  background: var(--bg-help-tab);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.node-help-journal-toggle:hover { color: #f1f5f9; border-color: #475569; }
+.node-help-journal-toggle:hover { color: var(--text-heading); border-color: var(--text-faint); }
 
 .node-help-journal-hint {
   font-size: 10px;
-  color: #475569;
+  color: var(--text-faint);
 }
 
 .node-help-journal-textarea {
   flex: 1;
-  background: #0d1624;
+  background: var(--bg-help-textarea);
   border: none;
   outline: none;
-  color: #e2e8f0;
+  color: var(--text-bright);
   font-family: monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -718,7 +936,7 @@ html, body, #root {
 }
 
 .node-help-journal-placeholder {
-  color: #475569;
+  color: var(--text-faint);
   font-style: italic;
 }
 
@@ -727,14 +945,14 @@ html, body, #root {
   overflow-y: auto;
   flex: 1;
   font-size: 12.5px;
-  color: #cbd5e1;
+  color: var(--text-table);
   line-height: 1.65;
 }
 
 .node-help-panel-body h1,
 .node-help-panel-body h2,
 .node-help-panel-body h3 {
-  color: #f1f5f9;
+  color: var(--text-heading);
   margin: 14px 0 5px;
   font-weight: 600;
 }
@@ -754,23 +972,23 @@ html, body, #root {
 
 .node-help-panel-body th,
 .node-help-panel-body td {
-  border: 1px solid #334155;
+  border: 1px solid var(--border-default);
   padding: 4px 8px;
   text-align: left;
 }
 
 .node-help-panel-body th {
-  background: #0f172a;
-  color: #94a3b8;
+  background: var(--bg-help-tab);
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 .node-help-panel-body code {
-  background: #0f172a;
+  background: var(--bg-help-tab);
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 11px;
-  color: #7dd3fc;
+  color: var(--accent-lighter);
 }
 
 .node-help-panel-body ul,
@@ -781,12 +999,12 @@ html, body, #root {
 
 .node-help-panel-body li { margin: 2px 0; }
 
-.node-help-panel-body em { color: #94a3b8; }
+.node-help-panel-body em { color: var(--text-secondary); }
 
-.node-help-panel-body strong { color: #e2e8f0; }
+.node-help-panel-body strong { color: var(--text-bright); }
 
-.node-help-panel-body a { color: #ff9800; }
-.node-help-panel-body a:hover { color: #ffb74d; }
+.node-help-panel-body a { color: var(--link-color); }
+.node-help-panel-body a:hover { color: var(--link-hover); }
 
 /* ── Help panel TOC + content layout ──────────────────────────────── */
 
@@ -806,10 +1024,10 @@ html, body, #root {
   width: 160px;
   flex-shrink: 0;
   overflow-y: auto;
-  border-right: 1px solid #1e293b;
+  border-right: 1px solid var(--bg-help-tab-active);
   padding: 8px 0;
   font-size: 11px;
-  background: #0f172a;
+  background: var(--bg-help-tab);
 }
 
 .help-toc-root { padding: 0; }
@@ -833,7 +1051,7 @@ html, body, #root {
 .help-toc-arrow {
   background: none;
   border: none;
-  color: #475569;
+  color: var(--text-faint);
   font-size: 7px;
   padding: 0;
   width: 12px;
@@ -843,7 +1061,7 @@ html, body, #root {
   line-height: 1;
   transition: color 0.12s;
 }
-.help-toc-arrow:hover { color: #94a3b8; }
+.help-toc-arrow:hover { color: var(--text-secondary); }
 
 .help-toc-arrow-spacer {
   display: inline-block;
@@ -852,7 +1070,7 @@ html, body, #root {
 }
 
 .help-toc-link {
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-decoration: none;
   padding: 2px 6px 2px 0;
   display: block;
@@ -862,7 +1080,7 @@ html, body, #root {
   white-space: nowrap;
   transition: color 0.12s;
 }
-.help-toc-link:hover { color: #f1f5f9; }
+.help-toc-link:hover { color: var(--text-heading); }
 
 .node-body {
   padding: 4px 0;
@@ -886,18 +1104,18 @@ html, body, #root {
 }
 
 .custom-node.node-error {
-  outline: 2px solid #ef4444;
+  outline: 2px solid var(--danger-outline);
   outline-offset: -1px;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 8px var(--danger-outline-glow);
 }
 
 .node-error-message {
   padding: 3px 10px;
   font-size: 10px;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.12);
-  border-top: 1px solid rgba(239, 68, 68, 0.3);
-  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--error-text-2);
+  background: var(--error-bg-2);
+  border-top: 1px solid var(--error-border-2);
+  border-bottom: 1px solid var(--error-border-2);
 }
 
 .node-value-display {
@@ -1415,6 +1633,15 @@ html, body, #root {
   border-radius: 6px;
 }
 
+:root[data-theme="light"] .angle-overlay {
+  --angle-line-color: #c2410c;
+  --angle-arc-color: #ea580c;
+  --angle-end-handle-color: #c2410c;
+  --angle-mid-handle-color: #9a3412;
+  --angle-badge-text-color: #9a3412;
+  --angle-badge-border-color: #c2410c;
+}
+
 .angle-image {
   width: 100%;
   display: block;
@@ -1480,13 +1707,13 @@ html, body, #root {
   transform: translate(-50%, -50%);
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--overlay-chip-bg-strong);
   border: 1px solid var(--angle-badge-border-color);
   color: var(--angle-badge-text-color);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 2px 8px var(--overlay-chip-shadow);
   cursor: grab;
   user-select: none;
   z-index: 1;
@@ -1720,21 +1947,21 @@ html, body, #root {
   z-index: 2;
   min-width: 54px;
   padding: 4px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.42);
+  border: 1px solid var(--overlay-chip-border);
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.86);
+  background: var(--overlay-chip-bg);
   color: var(--text-bright);
   font-size: 10px;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.28);
+  box-shadow: 0 4px 14px var(--overlay-chip-shadow);
 }
 
 .surface-view-home:hover {
-  background: rgba(30, 41, 59, 0.94);
-  border-color: rgba(125, 211, 252, 0.55);
+  background: var(--overlay-chip-bg-hover);
+  border-color: var(--overlay-chip-border-hover);
 }
 
 .surface-view-diagnostics {
@@ -1745,8 +1972,8 @@ html, body, #root {
   max-width: calc(100% - 84px);
   padding: 7px 8px;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.82);
-  color: rgba(226, 232, 240, 0.92);
+  background: var(--overlay-chip-bg);
+  color: var(--text-bright);
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 9px;
   line-height: 1.35;
@@ -1945,7 +2172,7 @@ html, body, #root {
 }
 .text-note-color-btn:hover { transform: scale(1.25); }
 .text-note-color-btn.active {
-  border-color: rgba(255,255,255,0.7);
+  border-color: var(--note-active-ring);
 }
 .text-note-fold-btn {
   background: none;
@@ -1987,15 +2214,15 @@ html, body, #root {
 .text-note-content code {
   font-family: monospace;
   font-size: 11px;
-  background: rgba(0,0,0,0.3);
+  background: var(--note-code-bg);
   border-radius: 3px;
   padding: 1px 4px;
 }
 .text-note-content strong { font-weight: 600; }
 .text-note-content em { font-style: italic; opacity: 0.85; }
-.text-note-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0; }
+.text-note-content hr { border: none; border-top: 1px solid var(--note-hr); margin: 8px 0; }
 .text-note-content blockquote {
-  border-left: 3px solid rgba(255,255,255,0.2);
+  border-left: 3px solid var(--note-quote-border);
   margin: 4px 0;
   padding-left: 10px;
   opacity: 0.8;
@@ -2003,7 +2230,7 @@ html, body, #root {
 .text-note-placeholder { color: var(--text-faint); font-style: italic; }
 .text-note-textarea {
   flex: 1;
-  background: rgba(0,0,0,0.25);
+  background: var(--note-textarea-bg);
   border: none;
   outline: none;
   color: inherit;

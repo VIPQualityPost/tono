@@ -30,6 +30,13 @@ import {
 } from './nodeClipboard';
 import { loadDefaultWorkflowAsset } from './defaultWorkflow';
 import {
+  cycleTheme,
+  getStoredTheme,
+  resolveTheme,
+  subscribeTheme,
+  type Theme,
+} from './theme';
+import {
   serializeExecutionGraph,
   getAutoRunnableNodes,
   hasBlockingAutoRunInput,
@@ -171,6 +178,15 @@ function Flow() {
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; url: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
+  const resolvedTheme = resolveTheme(theme);
+  useEffect(() => {
+    return subscribeTheme((next) => setThemeState(next));
+  }, []);
+  const onCycleTheme = useCallback(() => {
+    const next = cycleTheme();
+    setThemeState(next);
+  }, []);
   const closeMenu = useCallback(() => {
     if (!menuOpen || menuClosing) return;
     setMenuClosing(true);
@@ -2520,6 +2536,13 @@ function Flow() {
               <button className="btn" onClick={() => { openDocByFilename('getting-started.md'); closeMenu(); }} title="Getting started guide">
                 ? Help
               </button>
+              <button
+                className="btn"
+                onClick={onCycleTheme}
+                title={`Theme: ${theme} (click to cycle auto → light → dark)`}
+              >
+                {theme === 'auto' ? '◐' : theme === 'light' ? '☀' : '☾'} Theme: {theme}
+              </button>
               <a className="btn" href="https://github.com/VIPQualityPost/tono/issues" target="_blank" rel="noopener noreferrer" onClick={closeMenu} title="Report a bug or request a feature">
                 ↗ Feedback
               </a>
@@ -2566,7 +2589,7 @@ function Flow() {
             isValidConnection={isValidConnection}
             nodeTypes={NODE_TYPES}
             onPaneContextMenu={onPaneContextMenu}
-            colorMode="dark"
+            colorMode={resolvedTheme}
             panOnDrag={[1]}
             panOnScroll
             panOnScrollSpeed={1.5}

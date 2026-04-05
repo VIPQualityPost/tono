@@ -14,8 +14,8 @@ from typing import Any
 MENU_LAYOUT: dict[str, list[str]] = {
     "Input": [
         "Image",
+        "ImageDemo",        
         "Folder",
-        "ImageDemo",
         "SyntheticSurface",
         "Note",
         "TextNote",
