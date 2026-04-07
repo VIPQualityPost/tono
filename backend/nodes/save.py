@@ -61,7 +61,7 @@ class Save:
                 "default": "",
                 "placeholder": "name",
                 "show_when_input_visible": "field_0",
-                "inline_with_input": "value",
+                "inline_with_input": "layer_1",
                 "hide_label": True,
             }),
         }
@@ -91,7 +91,7 @@ class Save:
                     "placement": "top",
                 }),
                 "value": ("DATA_FIELD", {
-                    "label": "value",
+                    "label": "layer 1",
                     "accepted_types": [
                         "IMAGE",
                         "ANNOTATION_SOURCE",
@@ -117,11 +117,8 @@ class Save:
     OUTPUT_NODE = True
     MANUAL_TRIGGER = True
     DESCRIPTION = (
-        "Save one or more graph values to disk. A single value works for every type "
-        "(fields, images, lines, tables, scalars, meshes). For DataFields and Images, "
-        "additional layer slots appear as you connect each one, letting you write "
-        "multi-channel TIFF, NPZ, GWY, or HDF5 stacks from a single node. "
-        "Use 'GWY' or 'TIFF (data)' when you need to re-open the result with its "
+        "Save one or more channels."
+        "Use 'GWY','TIFF (data)', or 'HDF5' when you need to re-open the result with its "
         "physical units preserved."
     )
 
