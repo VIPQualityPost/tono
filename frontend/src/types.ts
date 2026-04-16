@@ -66,6 +66,10 @@ export interface OverlayData {
   y2?: number;
   xm?: number;
   ym?: number;
+  cx?: number;
+  cy?: number;
+  ex?: number;
+  ey?: number;
   a_locked?: boolean;
   b_locked?: boolean;
   section_title?: string;

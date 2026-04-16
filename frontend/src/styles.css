@@ -1633,6 +1633,62 @@ html, body, #root {
   opacity: 0.9;
 }
 
+/* ── Radial profile overlay ───────────────────────────────────────── */
+.radial-overlay {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+}
+.radial-image {
+  width: 100%;
+  display: block;
+}
+.radial-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.radial-circle {
+  fill: none;
+  stroke: var(--marker);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 4 3;
+}
+.radial-diameter {
+  stroke: var(--marker);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+.radial-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--marker);
+  border: 1px solid var(--marker-border);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  box-shadow: 0 0 4px var(--marker-shadow);
+  z-index: 1;
+}
+.radial-marker:active {
+  cursor: grabbing;
+  background: var(--marker-active);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+.radial-marker-center {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
 .angle-overlay {
   --angle-line-color: #ff9800;
   --angle-arc-color: rgb(255, 166, 77);
@@ -1879,7 +1935,8 @@ html, body, #root {
 .is-panning .lineplot-overlay,
 .is-panning .crop-overlay,
 .is-panning .mask-paint-overlay,
-.is-panning .markup-overlay {
+.is-panning .markup-overlay,
+.is-panning .radial-overlay {
   pointer-events: none;
 }
 

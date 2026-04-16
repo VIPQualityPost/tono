@@ -11,6 +11,7 @@ export const OVERLAY_CAPTURE_SELECTORS = [
   '.crop-overlay',       // CropBoxOverlay
   '.markup-overlay',     // MarkupOverlay
   '.angle-overlay',      // AngleMeasureOverlay
+  '.radial-overlay',     // RadialProfileOverlay
 ];
 
 function encodeBase64(bytes: Uint8Array) {

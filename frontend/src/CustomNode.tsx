@@ -12,6 +12,7 @@ const MaskPaintOverlay = lazy(() => import('./MaskPaintOverlay'));
 const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
+const RadialProfileOverlay = lazy(() => import('./RadialProfileOverlay'));
 
 import TextNoteNode from './TextNoteNode';
 
@@ -1194,6 +1195,7 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
     || data.overlay.kind === 'mask_paint'
     || data.overlay.kind === 'markup'
     || data.overlay.kind === 'threshold_histogram'
+    || data.overlay.kind === 'radial_profile'
   );
   const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
@@ -1209,6 +1211,8 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
       ? 'Cursors'
       : data.overlay?.kind === 'line_plot'
         ? 'Line Plot'
+      : data.overlay?.kind === 'radial_profile'
+        ? 'Radial Profile'
       : 'Cross Section');
   const headerMeta = (() => {
     if (data.className === 'Folder') {
@@ -1538,6 +1542,16 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   overlay={data.overlay!}
                   threshold={data.widgetValues.threshold as number}
                   thresholdConnected={!!connectedInputs?.has('threshold')}
+                  nodeId={id}
+                  onWidgetChange={ctx!.onWidgetChange}
+                />
+              ) : data.overlay!.kind === 'radial_profile' ? (
+                <RadialProfileOverlay
+                  image={data.overlay!.image ?? ''}
+                  cx={(data.widgetValues.cx ?? data.overlay!.cx ?? 0.5) as number}
+                  cy={(data.widgetValues.cy ?? data.overlay!.cy ?? 0.5) as number}
+                  ex={(data.widgetValues.ex ?? data.overlay!.ex ?? 0.9) as number}
+                  ey={(data.widgetValues.ey ?? data.overlay!.ey ?? 0.5) as number}
                   nodeId={id}
                   onWidgetChange={ctx!.onWidgetChange}
                 />
