@@ -3,6 +3,7 @@ import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
 from backend.data_types import DataField, datafield_to_uint8, encode_preview
+from backend.nodes.helpers import coerce_physical_square
 
 
 @register_node(display_name="Crop / Resize")
@@ -19,6 +20,7 @@ class CropResizeField:
                 "target_width": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 1}),
                 "target_height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 1}),
                 "interpolation": (["bilinear", "nearest", "bicubic"],),
+                "square": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "corner_a": ("COORD",),
@@ -34,7 +36,8 @@ class CropResizeField:
     DESCRIPTION = (
         "Crop a DATA_FIELD with a draggable rectangle defined by two corners, then optionally resize it. "
         "Incoming COORD inputs can lock either corner. Cropping updates physical extents and offsets; "
-        "resizing preserves the cropped physical size."
+        "resizing preserves the cropped physical size. Enable 'square' to constrain the crop region to a "
+        "physical square (longer side shrinks to match shorter)."
     )
 
     KEYWORDS = ("resize", "rescale", "trim", "bilinear", "bicubic", "nearest")
@@ -49,6 +52,7 @@ class CropResizeField:
         target_width: int,
         target_height: int,
         interpolation: str,
+        square: bool = False,
         corner_a=None,
         corner_b=None,
     ) -> tuple:
@@ -62,21 +66,29 @@ class CropResizeField:
         x2 = float(np.clip(x2, 0.0, 1.0))
         y2 = float(np.clip(y2, 0.0, 1.0))
 
-        emit_overlay({
-            "kind": "crop_box",
-            "image": encode_preview(datafield_to_uint8(field, field.colormap)),
-            "x1": x1,
-            "y1": y1,
-            "x2": x2,
-            "y2": y2,
-            "a_locked": corner_a is not None,
-            "b_locked": corner_b is not None,
-        })
-
         left = min(x1, x2)
         right = max(x1, x2)
         top = min(y1, y2)
         bottom = max(y1, y2)
+
+        if square:
+            left, top, right, bottom = coerce_physical_square(
+                left, top, right, bottom, field.xreal, field.yreal,
+            )
+
+        emit_overlay({
+            "kind": "crop_box",
+            "image": encode_preview(datafield_to_uint8(field, field.colormap)),
+            "x1": left,
+            "y1": top,
+            "x2": right,
+            "y2": bottom,
+            "xreal": float(field.xreal),
+            "yreal": float(field.yreal),
+            "a_locked": corner_a is not None,
+            "b_locked": corner_b is not None,
+        })
+
         if right <= left or bottom <= top:
             raise ValueError("Crop region must have non-zero width and height.")
 

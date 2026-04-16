@@ -319,6 +319,20 @@ def bool_to_mask(binary: np.ndarray) -> np.ndarray:
     return np.asarray(binary, dtype=np.uint8) * 255
 
 
+def coerce_physical_square(
+    left: float, top: float, right: float, bottom: float,
+    xreal: float, yreal: float,
+) -> tuple[float, float, float, float]:
+    """Shrink the longer physical side so the rectangle is a physical square,
+    anchored at (left, top)."""
+    side_phys = min((right - left) * xreal, (bottom - top) * yreal)
+    if xreal > 0:
+        right = left + side_phys / xreal
+    if yreal > 0:
+        bottom = top + side_phys / yreal
+    return left, top, right, bottom
+
+
 def normalize_mask(
     mask: np.ndarray | None, shape: tuple[int, int],
 ) -> np.ndarray | None:

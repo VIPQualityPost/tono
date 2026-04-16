@@ -150,6 +150,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MarkDisconnected",
         "MaskShift",
         "MaskNoisify",
+        "RectangularMask",
     ],
     "Grains": [
         "GrainDistanceTransform",

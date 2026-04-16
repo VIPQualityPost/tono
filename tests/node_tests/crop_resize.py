@@ -55,3 +55,73 @@ def test_crop_resize_field():
             raise AssertionError("Expected invalid crop bounds to raise ValueError")
         except ValueError:
             pass
+
+
+def test_crop_resize_square_constraint():
+    """With square=True, the crop region is coerced to a physical square."""
+    from backend.nodes.crop_resize import CropResizeField
+    node = CropResizeField()
+
+    # Square-pixel field (xreal == yreal): fraction-square == physical-square.
+    data = np.arange(64 * 64, dtype=np.float64).reshape(64, 64)
+    field = DataField(
+        data=data, xreal=1e-6, yreal=1e-6,
+        si_unit_xy="m", si_unit_z="m",
+    )
+
+    # Requested region: 0.1..0.9 (wide, 80%) x 0.1..0.5 (tall, 40%).
+    # Physical-square clamp shrinks the longer (x) side to match y → 40% x 40%.
+    cropped, = node.process(
+        field, x1=0.1, y1=0.1, x2=0.9, y2=0.5,
+        target_width=0, target_height=0, interpolation="bilinear", square=True,
+    )
+    assert cropped.data.shape[0] == cropped.data.shape[1], (
+        f"expected square crop, got {cropped.data.shape}"
+    )
+    assert np.isclose(cropped.xreal, cropped.yreal)
+
+
+def test_crop_resize_square_physical_aspect():
+    """Square on a non-square-pixel field gives a physical square (not pixel square)."""
+    from backend.nodes.crop_resize import CropResizeField
+    node = CropResizeField()
+
+    # 64x64 pixels but xreal = 2*yreal → x is physically twice as wide per fraction.
+    data = np.arange(64 * 64, dtype=np.float64).reshape(64, 64)
+    field = DataField(
+        data=data, xreal=2e-6, yreal=1e-6,
+        si_unit_xy="m", si_unit_z="m",
+    )
+
+    # Requested region: 0.1..0.9 x 0.1..0.9 (both 80% fraction).
+    # Physical widths: 0.8 * 2e-6 = 1.6e-6 vs 0.8 * 1e-6 = 0.8e-6.
+    # Shorter is y (0.8e-6). Clamp x to 0.4 fraction → 0.1..0.5.
+    cropped, = node.process(
+        field, x1=0.1, y1=0.1, x2=0.9, y2=0.9,
+        target_width=0, target_height=0, interpolation="bilinear", square=True,
+    )
+    assert np.isclose(cropped.xreal, cropped.yreal, rtol=0.05), (
+        f"expected physical square, got xreal={cropped.xreal} yreal={cropped.yreal}"
+    )
+
+
+def test_crop_resize_overlay_includes_aspect():
+    """Overlay payload should include xreal/yreal so the frontend can snap to square."""
+    from backend.nodes.crop_resize import CropResizeField
+    node = CropResizeField()
+
+    data = np.ones((16, 16), dtype=np.float64)
+    field = DataField(
+        data=data, xreal=3e-6, yreal=2e-6,
+        si_unit_xy="m", si_unit_z="m",
+    )
+
+    overlays = []
+    with execution_callbacks(overlay=lambda nid, d: overlays.append(d)), active_node("test"):
+        node.process(
+            field, x1=0.1, y1=0.1, x2=0.9, y2=0.9,
+            target_width=0, target_height=0, interpolation="bilinear",
+        )
+
+    assert overlays[0]["xreal"] == 3e-6
+    assert overlays[0]["yreal"] == 2e-6

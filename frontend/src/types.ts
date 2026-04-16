@@ -70,6 +70,9 @@ export interface OverlayData {
   cy?: number;
   ex?: number;
   ey?: number;
+  xreal?: number;
+  yreal?: number;
+  square?: boolean;
   a_locked?: boolean;
   b_locked?: boolean;
   section_title?: string;

@@ -1503,6 +1503,9 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   bLocked={!!data.overlay!.b_locked}
                   nodeId={id}
                   onWidgetChange={ctx!.onWidgetChange}
+                  square={!!(data.widgetValues.square ?? data.overlay!.square)}
+                  xreal={(data.overlay!.xreal ?? 1) as number}
+                  yreal={(data.overlay!.yreal ?? 1) as number}
                 />
               ) : data.overlay!.kind === 'cursor_points' ? (
                 <CrossSectionOverlay
