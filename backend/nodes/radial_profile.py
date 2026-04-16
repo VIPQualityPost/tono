@@ -33,10 +33,13 @@ class RadialProfile:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Compute the azimuthally averaged radial profile from a centre point. "
+        "Compute an azimuthally averaged profile around a centre point. "
+        "At each radius, every pixel in the full 360° ring is averaged together, "
+        "so the profile is direction-independent — there is no clockwise/counter-clockwise "
+        "traversal and no start/end point along the ring. "
         "Drag the centre marker on the preview to reposition the profile, "
-        "drag either end marker to change the radius. "
-        "Output x-axis is radius in physical xy units. "
+        "or drag either end marker (both just set the outer radius) to change the extent. "
+        "Output x-axis is radius in physical xy units."
     )
 
     KEYWORDS = ("azimuthal average", "ring average", "circular", "isotropic")
