@@ -1689,6 +1689,53 @@ html, body, #root {
   border-radius: 2px;
 }
 
+/* ── Straighten Path overlay ──────────────────────────────────────── */
+.straighten-overlay {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  cursor: crosshair;
+}
+.straighten-image {
+  width: 100%;
+  display: block;
+}
+.straighten-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.straighten-band {
+  stroke: var(--accent-lighter);
+  opacity: 0.25;
+}
+.straighten-curve {
+  stroke: var(--marker);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+.straighten-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--marker);
+  border: 1px solid var(--marker-border);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  box-shadow: 0 0 4px var(--marker-shadow);
+  z-index: 1;
+}
+.straighten-marker:active {
+  cursor: grabbing;
+  background: var(--marker-active);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
 .angle-overlay {
   --angle-line-color: #ff9800;
   --angle-arc-color: rgb(255, 166, 77);
@@ -1944,7 +1991,8 @@ html, body, #root {
 .is-panning .crop-overlay,
 .is-panning .mask-paint-overlay,
 .is-panning .markup-overlay,
-.is-panning .radial-overlay {
+.is-panning .radial-overlay,
+.is-panning .straighten-overlay {
   pointer-events: none;
 }
 

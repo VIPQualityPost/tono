@@ -13,6 +13,7 @@ const MarkupOverlay = lazy(() => import('./MarkupOverlay'));
 const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
 const RadialProfileOverlay = lazy(() => import('./RadialProfileOverlay'));
+const StraightenPathOverlay = lazy(() => import('./StraightenPathOverlay'));
 
 import TextNoteNode from './TextNoteNode';
 
@@ -1196,6 +1197,7 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
     || data.overlay.kind === 'markup'
     || data.overlay.kind === 'threshold_histogram'
     || data.overlay.kind === 'radial_profile'
+    || data.overlay.kind === 'straighten_path'
   );
   const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
@@ -1213,6 +1215,8 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
         ? 'Line Plot'
       : data.overlay?.kind === 'radial_profile'
         ? 'Radial Profile'
+      : data.overlay?.kind === 'straighten_path'
+        ? 'Path'
       : 'Cross Section');
   const headerMeta = (() => {
     if (data.className === 'Folder') {
@@ -1555,6 +1559,16 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   cy={(data.widgetValues.cy ?? data.overlay!.cy ?? 0.5) as number}
                   ex={(data.widgetValues.ex ?? data.overlay!.ex ?? 0.9) as number}
                   ey={(data.widgetValues.ey ?? data.overlay!.ey ?? 0.5) as number}
+                  nodeId={id}
+                  onWidgetChange={ctx!.onWidgetChange}
+                />
+              ) : data.overlay!.kind === 'straighten_path' ? (
+                <StraightenPathOverlay
+                  image={data.overlay!.image ?? ''}
+                  points={(data.overlay!.points ?? []) as Array<{ x: number; y: number }>}
+                  thickness={(data.widgetValues.thickness ?? data.overlay!.thickness ?? 1) as number}
+                  xres={(data.overlay!.xres ?? 1) as number}
+                  yres={(data.overlay!.yres ?? 1) as number}
                   nodeId={id}
                   onWidgetChange={ctx!.onWidgetChange}
                 />

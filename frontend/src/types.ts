@@ -75,6 +75,10 @@ export interface OverlayData {
   square?: boolean;
   a_locked?: boolean;
   b_locked?: boolean;
+  points?: Array<{ x: number; y: number }>;
+  thickness?: number;
+  xres?: number;
+  yres?: number;
   section_title?: string;
   line?: number[];
   shape?: string;
