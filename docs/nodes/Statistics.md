@@ -7,6 +7,7 @@ Compute basic surface statistics: min, max, mean, RMS roughness, median, and ske
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | field | DATA_FIELD | Yes | Input field to analyze |
+| mask | IMAGE | No | Optional binary mask — only pixels inside the mask contribute to the statistics |
 
 ## Outputs
 
@@ -20,4 +21,4 @@ None.
 
 ## Notes
 
-- None.
+- When a mask is provided, it must match the field's pixel resolution. Only pixels where the mask is non-zero are included in the statistics.

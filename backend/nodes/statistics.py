@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import DataField, RecordTable
+from backend.nodes.helpers import mask_to_bool
 
 
 @register_node(display_name="Statistics")
@@ -11,7 +12,10 @@ class Statistics:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-            }
+            },
+            "optional": {
+                "mask": ("IMAGE",),
+            },
         }
 
     OUTPUTS = (
@@ -21,13 +25,24 @@ class Statistics:
 
     DESCRIPTION = (
         "Compute basic surface statistics: min, max, mean, RMS roughness, median, "
-        "and skewness."
+        "and skewness. When a mask is provided, only pixels inside the mask are "
+        "included."
     )
 
     KEYWORDS = ("mean", "rms", "min", "max", "skewness", "kurtosis", "median", "roughness")
 
-    def process(self, field: DataField) -> tuple:
+    def process(self, field: DataField, mask: np.ndarray | None = None) -> tuple:
         d = field.data
+        if mask is not None:
+            selector = mask_to_bool(mask)
+            if selector.shape != d.shape:
+                raise ValueError(
+                    f"Mask shape {selector.shape} does not match field shape {d.shape}"
+                )
+            d = d[selector]
+            if d.size == 0:
+                raise ValueError("Mask selects no pixels")
+
         mean = float(d.mean())
         rms = float(np.sqrt(np.mean((d - mean) ** 2)))
         skewness = float(np.mean(((d - mean) / rms) ** 3)) if rms > 0 else 0.0
