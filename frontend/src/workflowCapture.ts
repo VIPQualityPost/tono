@@ -13,6 +13,7 @@ export const OVERLAY_CAPTURE_SELECTORS = [
   '.angle-overlay',      // AngleMeasureOverlay
   '.radial-overlay',     // RadialProfileOverlay
   '.straighten-overlay', // StraightenPathOverlay
+  '.multiprofile-overlay', // MultiProfileOverlay
 ];
 
 function encodeBase64(bytes: Uint8Array) {

@@ -79,6 +79,9 @@ export interface OverlayData {
   thickness?: number;
   xres?: number;
   yres?: number;
+  row?: number;
+  direction?: 'horizontal' | 'vertical';
+  max_index?: number;
   section_title?: string;
   line?: number[];
   shape?: string;

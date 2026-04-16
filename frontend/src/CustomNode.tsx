@@ -14,6 +14,7 @@ const AngleMeasureOverlay = lazy(() => import('./AngleMeasureOverlay'));
 const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
 const RadialProfileOverlay = lazy(() => import('./RadialProfileOverlay'));
 const StraightenPathOverlay = lazy(() => import('./StraightenPathOverlay'));
+const MultiProfileOverlay = lazy(() => import('./MultiProfileOverlay'));
 
 import TextNoteNode from './TextNoteNode';
 
@@ -1198,6 +1199,7 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
     || data.overlay.kind === 'threshold_histogram'
     || data.overlay.kind === 'radial_profile'
     || data.overlay.kind === 'straighten_path'
+    || data.overlay.kind === 'multi_profile'
   );
   const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
@@ -1217,6 +1219,8 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
         ? 'Radial Profile'
       : data.overlay?.kind === 'straighten_path'
         ? 'Path'
+      : data.overlay?.kind === 'multi_profile'
+        ? 'Preview'
       : 'Cross Section');
   const headerMeta = (() => {
     if (data.className === 'Folder') {
@@ -1569,6 +1573,15 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   thickness={(data.widgetValues.thickness ?? data.overlay!.thickness ?? 1) as number}
                   xres={(data.overlay!.xres ?? 1) as number}
                   yres={(data.overlay!.yres ?? 1) as number}
+                  nodeId={id}
+                  onWidgetChange={ctx!.onWidgetChange}
+                />
+              ) : data.overlay!.kind === 'multi_profile' ? (
+                <MultiProfileOverlay
+                  image={data.overlay!.image ?? ''}
+                  row={(data.overlay!.row ?? 0) as number}
+                  direction={(data.overlay!.direction ?? 'horizontal') as 'horizontal' | 'vertical'}
+                  maxIndex={(data.overlay!.max_index ?? 0) as number}
                   nodeId={id}
                   onWidgetChange={ctx!.onWidgetChange}
                 />

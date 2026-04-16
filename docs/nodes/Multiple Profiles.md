@@ -1,6 +1,6 @@
 # Multiple Profiles
 
-Extract and compare line profiles from two fields along a chosen row or column. Supports overlay, mean, and difference modes. Equivalent to Gwyddion's multiprofile.c module.
+Extract and compare line profiles from two fields along a chosen row or column. Supports overlay, mean, and difference modes.
 
 ## Inputs
 
@@ -13,7 +13,7 @@ Extract and compare line profiles from two fields along a chosen row or column. 
 
 | Name | Type | Description |
 |------|------|-------------|
-| profile | LINE_DATA | Resulting line profile |
+| profile | LINE | Resulting line profile |
 
 ## Controls
 
@@ -22,6 +22,11 @@ Extract and compare line profiles from two fields along a chosen row or column. 
 | row | INT | -1 | Row (horizontal) or column (vertical) index to extract; -1 uses the centre row/column (-1-10000) |
 | direction | dropdown | horizontal | Profile direction: horizontal (extract a row) or vertical (extract a column) |
 | mode | dropdown | overlay | Combination mode: overlay (field_a profile only), mean (average of both), or difference (field_a minus field_b) |
+| blend | FLOAT | 0.5 | Opacity of field B in the preview (0 = only A, 1 = only B). Affects the preview image only, not the extracted profile. |
+
+## Interactive preview
+
+The preview shows field A blended with field B and highlights the row or column being sampled. Click or drag on the image to move the line; switch between row and column extraction with the `direction` control.
 
 ## Notes
 

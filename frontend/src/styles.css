@@ -1736,6 +1736,43 @@ html, body, #root {
   transform: translate(-50%, -50%) scale(1.2);
 }
 
+/* ── Multi Profile overlay ────────────────────────────────────────── */
+.multiprofile-overlay {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+}
+.multiprofile-overlay.cursor-row { cursor: row-resize; }
+.multiprofile-overlay.cursor-col { cursor: col-resize; }
+.multiprofile-image {
+  width: 100%;
+  display: block;
+}
+.multiprofile-line {
+  position: absolute;
+  pointer-events: none;
+}
+.multiprofile-line-horizontal {
+  border-top: 1.5px solid var(--marker);
+  box-shadow: 0 0 4px var(--marker-shadow);
+}
+.multiprofile-line-vertical {
+  border-left: 1.5px solid var(--marker);
+  box-shadow: 0 0 4px var(--marker-shadow);
+}
+.multiprofile-readout {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
 .angle-overlay {
   --angle-line-color: #ff9800;
   --angle-arc-color: rgb(255, 166, 77);
@@ -1992,7 +2029,8 @@ html, body, #root {
 .is-panning .mask-paint-overlay,
 .is-panning .markup-overlay,
 .is-panning .radial-overlay,
-.is-panning .straighten-overlay {
+.is-panning .straighten-overlay,
+.is-panning .multiprofile-overlay {
   pointer-events: none;
 }
 
