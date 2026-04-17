@@ -792,6 +792,34 @@ html, body, #root {
   border-color: var(--node-help-btn-border-hover);
 }
 
+.node-fav-btn {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--node-help-btn-bg);
+  border: 1px solid var(--node-help-btn-border);
+  color: var(--node-help-btn-text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.node-fav-btn:hover {
+  background: var(--node-help-btn-bg-hover);
+  border-color: var(--node-help-btn-border-hover);
+}
+
+.node-fav-btn.is-favorited {
+  color: #ffffff;
+}
+
 /* ── Node help panel ─────────────────────────────────────── */
 
 .node-help-tabs {
@@ -2483,6 +2511,9 @@ html, body, #root {
 }
 .ctx-cat-active .ctx-cat-arrow {
   color: var(--text-primary);
+}
+.ctx-cat-favorites .ctx-cat-label {
+  text-transform: none;
 }
 
 /* ── Submenu panel (separate fixed-position sibling) ── */

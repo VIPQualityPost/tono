@@ -2,6 +2,9 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { socketSpecAcceptsType } from './constants';
 import { outputTypeCanConnectToTarget } from './connectionUtils';
 import { compareMenuNodes, compareMenuCategories } from './canvasEvents';
+import { useFavorites } from './favorites';
+
+const FAVORITES_CATEGORY = 'favorites';
 
 export default function ContextMenu({
   x,
@@ -26,6 +29,7 @@ export default function ContextMenu({
   selectedNodeCount?: number;
   onCreateGroup?: (() => void) | null;
 }) {
+  const favorites = useFavorites();
   const [openCat, setOpenCat] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -88,13 +92,31 @@ export default function ContextMenu({
         });
       }
     }
-    return Object.values(cats)
+    const sorted = Object.values(cats)
       .map((category: any) => ({
         ...category,
         items: [...category.items].sort(compareMenuNodes),
       }))
       .sort(compareMenuCategories);
-  }, [nodeDefs, filterDirection, filterSpec, filterType]);
+
+    const favItems: any[] = [];
+    const seenFav = new Set<string>();
+    for (const category of sorted) {
+      for (const item of category.items) {
+        if (favorites.has(item.className) && !seenFav.has(item.className)) {
+          seenFav.add(item.className);
+          favItems.push(item);
+        }
+      }
+    }
+    if (favItems.length > 0) {
+      return [
+        { name: FAVORITES_CATEGORY, order: -Infinity, items: favItems.sort(compareMenuNodes) },
+        ...sorted,
+      ];
+    }
+    return sorted;
+  }, [nodeDefs, filterDirection, filterSpec, filterType, favorites]);
 
   // Flat filtered list for search
   const searchResults = useMemo(() => {
@@ -262,10 +284,12 @@ export default function ContextMenu({
               <div
                 key={cat}
                 ref={(el) => { catRowRefs.current[cat] = el; }}
-                className={`ctx-cat-item${openCat === cat ? ' ctx-cat-active' : ''}`}
+                className={`ctx-cat-item${openCat === cat ? ' ctx-cat-active' : ''}${cat === FAVORITES_CATEGORY ? ' ctx-cat-favorites' : ''}`}
                 onMouseEnter={() => handleCatEnter(cat)}
               >
-                <span className="ctx-cat-label">{cat}</span>
+                <span className="ctx-cat-label">
+                  {cat === FAVORITES_CATEGORY ? '♥ favorites' : cat}
+                </span>
                 <span className="ctx-cat-arrow">▶</span>
               </div>
             ))}

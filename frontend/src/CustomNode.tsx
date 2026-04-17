@@ -24,6 +24,7 @@ import {
 import { getGroupMinimumSize } from './groupSizing';
 import { buildCombinedInputNameByWidgetName, formatUiLabel } from './nodeWidgetLayout';
 import { applySIPrefix, formatNumericCell, formatTableRowCell, getTableColumns, parseNumberWithUnit, formatSI, parseSI } from './valueFormatting';
+import { useIsFavorite, toggleFavorite } from './favorites';
 
 import type { NodeData, NodeContextValue, InputSpec, InputOptions, WidgetDescriptor, PreviewPayload, OverlayData } from './types';
 
@@ -1001,6 +1002,7 @@ function NodeTable({ rows }: { rows: Array<Record<string, unknown>> }) {
 function CustomNode({ id, data }: { id: string; data: NodeData }) {
   const ctx = useContext(NodeContext);
   const def = data.definition;
+  const favorited = useIsFavorite(data.className);
   const scalarDisplay = formatScalarDisplay(data.scalarValue);
   const processingTimeText = formatProcessingTime(data.processingTimeMs);
   const nodeWidth = useStore(
@@ -1244,6 +1246,14 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
         <div className="node-title-left">
           <span className="node-title-main">{data.label}</span>
           <button className="node-help-btn nodrag nopan" title="Documentation" onClick={(e) => { e.stopPropagation(); ctx?.openHelp(data.label); }}>?</button>
+          <button
+            className={`node-fav-btn nodrag nopan${favorited ? ' is-favorited' : ''}`}
+            title={favorited ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={favorited}
+            onClick={(e) => { e.stopPropagation(); toggleFavorite(data.className); }}
+          >
+            {favorited ? '♥' : '♡'}
+          </button>
         </div>
         {headerMeta && <span className="node-title-meta" title={headerMeta}>{headerMeta}</span>}
       </div>
