@@ -133,6 +133,8 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
   const pointerEnteredAtRef = useRef(0);
   const lastWheelAtRef = useRef(0);
   const gestureStartedInsideRef = useRef(false);
+  const scheduleViewportSyncRef = useRef<(delay?: number, scheduleRun?: boolean) => void>(() => {});
+  const updateDiagnosticsRef = useRef<(patch: Partial<DiagnosticsState>) => void>(() => {});
   const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({
     status: meshData ? 'initializing' : 'waiting for mesh',
     webgl: 'pending',
@@ -239,6 +241,9 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     scheduleViewportSync(0, true);
   }, [applyCameraState, scheduleViewportSync]);
 
+  scheduleViewportSyncRef.current = scheduleViewportSync;
+  updateDiagnosticsRef.current = updateDiagnostics;
+
   // Initialize Three.js scene once
   useEffect(() => {
     const container = containerRef.current;
@@ -256,8 +261,8 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x0f172a);
     container.appendChild(renderer.domElement);
-    updateDiagnostics({
-      status: meshData ? 'renderer ready' : 'waiting for mesh',
+    updateDiagnosticsRef.current({
+      status: 'renderer ready',
       webgl: `${renderer.capabilities.isWebGL2 ? 'webgl2' : 'webgl1'} / ${renderer.capabilities.precision}`,
       canvas: `${renderer.domElement.width}x${renderer.domElement.height} px`,
       render: `calls ${renderer.info.render.calls} tris ${renderer.info.render.triangles} geo ${renderer.info.memory.geometries}`,
@@ -266,13 +271,13 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
 
     const handleContextLost = (event: Event) => {
       event.preventDefault();
-      updateDiagnostics({
+      updateDiagnosticsRef.current({
         status: 'webgl context lost',
         error: 'WebGL context lost',
       });
     };
     const handleContextRestored = () => {
-      updateDiagnostics({
+      updateDiagnosticsRef.current({
         status: 'webgl context restored',
         error: '',
       });
@@ -303,7 +308,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       TWO: THREE.TOUCH.DOLLY_ROTATE,
     };
     renderer.domElement.style.touchAction = 'none';
-    const handleControlsEnd = () => scheduleViewportSync(120, true);
+    const handleControlsEnd = () => scheduleViewportSyncRef.current(120, true);
     controls.addEventListener('end', handleControlsEnd);
 
     // Lighting
@@ -341,7 +346,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       r.setSize(w, w);
       c.aspect = 1;
       c.updateProjectionMatrix();
-      updateDiagnostics({
+      updateDiagnosticsRef.current({
         canvas: `${r.domElement.width}x${r.domElement.height} px`,
       });
     });
@@ -361,7 +366,8 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       }
       threeRef.current = null;
     };
-  }, [scheduleViewportSync, updateDiagnostics]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applyCameraState]);
 
   useEffect(() => {
     if (meshData) {

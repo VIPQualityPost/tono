@@ -1426,15 +1426,17 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
         {/* Interactive 3D surface view */}
         {!!data.meshData && (
           <CollapsibleSection title="3D View" defaultOpen={true}>
-            <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading 3D...</div>}>
-              <SurfaceView
-                meshData={data.meshData as any}
-                nodeId={id}
-                widgetValues={data.widgetValues}
-                runtimeValues={data.runtimeValues}
-                onRuntimeValuesChange={ctx?.onRuntimeValuesChange}
-              />
-            </Suspense>
+            <PreviewBoundary resetKey={String(data.meshData)}>
+              <Suspense fallback={<div className="node-preview" style={{color:'var(--text-muted)',padding:4}}>Loading 3D...</div>}>
+                <SurfaceView
+                  meshData={data.meshData as any}
+                  nodeId={id}
+                  widgetValues={data.widgetValues}
+                  runtimeValues={data.runtimeValues}
+                  onRuntimeValuesChange={ctx?.onRuntimeValuesChange}
+                />
+              </Suspense>
+            </PreviewBoundary>
           </CollapsibleSection>
         )}
 

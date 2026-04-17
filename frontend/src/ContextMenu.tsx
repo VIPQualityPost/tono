@@ -3,6 +3,7 @@ import { socketSpecAcceptsType } from './constants';
 import { outputTypeCanConnectToTarget } from './connectionUtils';
 import { compareMenuNodes, compareMenuCategories } from './canvasEvents';
 import { useFavorites } from './favorites';
+import { recordUsage, pickWeightedRandom } from './nodeUsage';
 
 const FAVORITES_CATEGORY = 'favorites';
 
@@ -213,6 +214,29 @@ export default function ContextMenu({
     setOpenCat(cat);
   }, []);
 
+  const allNodeEntries = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const category of categories) {
+      for (const item of category.items) {
+        if (!map.has(item.className)) map.set(item.className, item.def);
+      }
+    }
+    return map;
+  }, [categories]);
+
+  const handleAdd = useCallback((className: string, def: any) => {
+    recordUsage(className);
+    onAdd(className, def);
+  }, [onAdd]);
+
+  const handleRandomNode = useCallback(() => {
+    const classNames = [...allNodeEntries.keys()];
+    const pick = pickWeightedRandom(classNames);
+    if (!pick) return;
+    const def = allNodeEntries.get(pick);
+    if (def) { handleAdd(pick, def); onClose(); }
+  }, [allNodeEntries, handleAdd, onClose]);
+
   if (categories.length === 0) {
     return (
       <div className="context-menu" ref={menuRef} style={{ left: menuPos.x, top: menuPos.y }} onClick={(e) => e.stopPropagation()}>
@@ -256,7 +280,7 @@ export default function ContextMenu({
             className="context-item"
             onClick={() => { onCreateGroup(); onClose(); }}
           >
-            create group
+            Create Group
           </div>
         )}
 
@@ -270,7 +294,7 @@ export default function ContextMenu({
                   key={className}
                   ref={idx === selectedIndex ? selectedItemRef : null}
                   className={`context-item${idx === selectedIndex ? ' context-item--selected' : ''}`}
-                  onClick={() => { onAdd(className, def); onClose(); }}
+                  onClick={() => { handleAdd(className, def); onClose(); }}
                   onMouseEnter={() => setSelectedIndex(idx)}
                 >
                   {def.display_name || className}
@@ -288,11 +312,18 @@ export default function ContextMenu({
                 onMouseEnter={() => handleCatEnter(cat)}
               >
                 <span className="ctx-cat-label">
-                  {cat === FAVORITES_CATEGORY ? '♥ favorites' : cat}
+                  {cat === FAVORITES_CATEGORY ? 'Favorites' : cat}
                 </span>
                 <span className="ctx-cat-arrow">▶</span>
               </div>
             ))}
+            <div
+              className="ctx-cat-item ctx-random-node"
+              onClick={handleRandomNode}
+              onMouseEnter={() => setOpenCat(null)}
+            >
+              <span className="ctx-cat-label">surprise me</span>
+            </div>
           </div>
         )}
       </div>
@@ -314,7 +345,7 @@ export default function ContextMenu({
             <div
               key={className}
               className="context-item"
-              onClick={() => { onAdd(className, def); onClose(); }}
+              onClick={() => { handleAdd(className, def); onClose(); }}
             >
               {def.display_name || className}
             </div>

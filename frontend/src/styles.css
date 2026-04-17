@@ -2515,6 +2515,11 @@ html, body, #root {
 .ctx-cat-favorites .ctx-cat-label {
   text-transform: none;
 }
+.ctx-random-node {
+  border-top: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-style: italic;
+}
 
 /* ── Submenu panel (separate fixed-position sibling) ── */
 .ctx-submenu {
