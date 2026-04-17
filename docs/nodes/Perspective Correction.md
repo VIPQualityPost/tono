@@ -1,12 +1,16 @@
 # Perspective Correction
 
-Fix perspective distortion in a DATA_FIELD via a projective (homography) transform. Each corner can be shifted by a fractional offset to map a distorted quadrilateral back to a rectangle. Equivalent to Gwyddion's `correct_perspective.c` module.
+Fix perspective distortion in a DATA_FIELD via a projective (homography) transform. Each corner can be shifted by a fractional offset to map a distorted quadrilateral back to a rectangle.
 
 ## Inputs
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | field | DATA_FIELD | Yes | Input field with perspective distortion |
+| top_left | COORD | No | Override top-left corner offset (x, y) |
+| top_right | COORD | No | Override top-right corner offset (x, y) |
+| bottom_left | COORD | No | Override bottom-left corner offset (x, y) |
+| bottom_right | COORD | No | Override bottom-right corner offset (x, y) |
 
 ## Outputs
 
@@ -14,22 +18,15 @@ Fix perspective distortion in a DATA_FIELD via a projective (homography) transfo
 |------|------|-------------|
 | corrected | DATA_FIELD | Perspective-corrected field |
 
-## Controls
+## Interactive preview
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| top_left_x | FLOAT | 0.0 | Horizontal offset of the top-left corner as a fraction of image width (-0.5-0.5) |
-| top_left_y | FLOAT | 0.0 | Vertical offset of the top-left corner as a fraction of image height (-0.5-0.5) |
-| top_right_x | FLOAT | 0.0 | Horizontal offset of the top-right corner as a fraction of image width (-0.5-0.5) |
-| top_right_y | FLOAT | 0.0 | Vertical offset of the top-right corner as a fraction of image height (-0.5-0.5) |
-| bottom_left_x | FLOAT | 0.0 | Horizontal offset of the bottom-left corner as a fraction of image width (-0.5-0.5) |
-| bottom_left_y | FLOAT | 0.0 | Vertical offset of the bottom-left corner as a fraction of image height (-0.5-0.5) |
-| bottom_right_x | FLOAT | 0.0 | Horizontal offset of the bottom-right corner as a fraction of image width (-0.5-0.5) |
-| bottom_right_y | FLOAT | 0.0 | Vertical offset of the bottom-right corner as a fraction of image height (-0.5-0.5) |
+The preview shows the source image with a draggable quadrilateral overlay. Drag any corner handle to adjust the perspective correction. Use the Source/Corrected tabs to switch between the input image (with handles) and the corrected result.
+
+Corner positions can also be set by connecting Coordinate nodes to the optional COORD inputs, which override the handle-driven values.
 
 ## Notes
 
 - All offsets are given as fractions of the image dimensions (0.0 = no shift, 0.1 = 10% shift). Positive x shifts right, positive y shifts down.
 - The transform uses bilinear interpolation to resample pixel values at non-integer locations.
 - For trapezoidal distortions (common in tilted AFM scans), typically only two corners need adjustment.
-- Set all offsets to 0.0 to pass the field through unchanged.
+- When all offsets are zero (default), the field passes through unchanged.

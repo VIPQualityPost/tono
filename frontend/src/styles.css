@@ -1801,6 +1801,73 @@ html, body, #root {
   pointer-events: none;
 }
 
+/* ── Perspective correction overlay ──────────────────────────────────── */
+.perspective-overlay-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.perspective-tab-bar {
+  display: flex;
+  gap: 1px;
+  background: var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+}
+.perspective-tab {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: var(--bg-deep);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.perspective-tab:hover {
+  background: var(--bg-panel);
+}
+.perspective-tab.active {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+.perspective-overlay {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+}
+.perspective-overlay img {
+  width: 100%;
+  display: block;
+}
+.perspective-quad {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.perspective-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--selection, #3b82f6);
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 2;
+}
+.perspective-handle:hover,
+.perspective-handle.dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+.is-panning .perspective-overlay {
+  pointer-events: none;
+}
+
 .angle-overlay {
   --angle-line-color: #ff9800;
   --angle-arc-color: rgb(255, 166, 77);

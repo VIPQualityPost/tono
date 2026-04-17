@@ -15,6 +15,7 @@ const ThresholdHistogram = lazy(() => import('./ThresholdHistogram'));
 const RadialProfileOverlay = lazy(() => import('./RadialProfileOverlay'));
 const StraightenPathOverlay = lazy(() => import('./StraightenPathOverlay'));
 const MultiProfileOverlay = lazy(() => import('./MultiProfileOverlay'));
+const PerspectiveOverlay = lazy(() => import('./PerspectiveOverlay'));
 
 import TextNoteNode from './TextNoteNode';
 
@@ -1202,6 +1203,7 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
     || data.overlay.kind === 'radial_profile'
     || data.overlay.kind === 'straighten_path'
     || data.overlay.kind === 'multi_profile'
+    || data.overlay.kind === 'perspective'
   );
   const hidePreviewForInteractiveMask = data.overlay?.kind === 'mask_paint' || data.overlay?.kind === 'markup';
   const overlayTitle = data.overlay?.section_title
@@ -1223,6 +1225,8 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
         ? 'Path'
       : data.overlay?.kind === 'multi_profile'
         ? 'Preview'
+      : data.overlay?.kind === 'perspective'
+        ? 'Perspective'
       : 'Cross Section');
   const headerMeta = (() => {
     if (data.className === 'Folder') {
@@ -1594,6 +1598,14 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   row={(data.overlay!.row ?? 0) as number}
                   direction={(data.overlay!.direction ?? 'horizontal') as 'horizontal' | 'vertical'}
                   maxIndex={(data.overlay!.max_index ?? 0) as number}
+                  nodeId={id}
+                  onWidgetChange={ctx!.onWidgetChange}
+                />
+              ) : data.overlay!.kind === 'perspective' ? (
+                <PerspectiveOverlay
+                  image={data.overlay!.image ?? ''}
+                  correctedImage={data.overlay!.corrected_image ?? ''}
+                  corners={(data.overlay!.corners ?? []) as Array<{ x: number; y: number }>}
                   nodeId={id}
                   onWidgetChange={ctx!.onWidgetChange}
                 />

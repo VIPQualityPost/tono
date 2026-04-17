@@ -82,6 +82,8 @@ export interface OverlayData {
   row?: number;
   direction?: 'horizontal' | 'vertical';
   max_index?: number;
+  corrected_image?: string;
+  corners?: Array<{ x: number; y: number }>;
   section_title?: string;
   line?: number[];
   shape?: string;

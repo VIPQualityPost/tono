@@ -14,6 +14,7 @@ export const OVERLAY_CAPTURE_SELECTORS = [
   '.radial-overlay',     // RadialProfileOverlay
   '.straighten-overlay', // StraightenPathOverlay
   '.multiprofile-overlay', // MultiProfileOverlay
+  '.perspective-overlay',  // PerspectiveOverlay
 ];
 
 function encodeBase64(bytes: Uint8Array) {
