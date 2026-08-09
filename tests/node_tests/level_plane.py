@@ -2,6 +2,18 @@ import numpy as np
 from tests.node_tests._shared import make_field
 
 
+def _assert_plane_table(plane, z_unit="m"):
+    """Plane table must report the offset plus Tilt X/Tilt Y rows."""
+    rows = {row["quantity"]: row for row in plane}
+    assert set(rows) == {"Plane offset", "Tilt X", "Tilt Y"}
+    assert all(set(row) == {"quantity", "value", "unit"} for row in plane)
+    assert rows["Plane offset"]["unit"] == z_unit
+    assert rows["Tilt X"]["unit"] == "deg"
+    assert rows["Tilt Y"]["unit"] == "deg"
+    assert np.isfinite(rows["Tilt X"]["value"])
+    assert np.isfinite(rows["Tilt Y"]["value"])
+
+
 def test_plane_level():
     from backend.nodes.level_plane import PlaneLevelField
     node = PlaneLevelField()
@@ -12,11 +24,12 @@ def test_plane_level():
     data = 100 * x + 50 * y + signal
     field = make_field(data=data)
 
-    result, = node.process(field)
+    result, plane = node.process(field)
     assert result.data.shape == field.data.shape
     assert abs(result.data.mean()) < 1e-10
     corr = np.corrcoef(result.data.ravel(), signal.ravel())[0, 1]
     assert corr > 0.98
+    _assert_plane_table(plane)
 
     yy_px, xx_px = np.mgrid[0:N, 0:N]
 
@@ -31,10 +44,12 @@ def test_plane_level():
     feature[mask > 0] = 35.0
     masked_field = make_field(data=100 * x + 50 * y + feature)
 
-    unmasked, = node.process(masked_field)
-    masked, = node.process(masked_field, masking="exclude", mask=mask)
+    unmasked, unmasked_plane = node.process(masked_field)
+    masked, masked_plane = node.process(masked_field, masking="exclude", mask=mask)
 
     outside = mask == 0
     _, unmasked_bx, unmasked_by = fit_pixel_plane(unmasked.data, outside)
     _, masked_bx, masked_by = fit_pixel_plane(masked.data, outside)
     assert np.hypot(masked_bx, masked_by) < np.hypot(unmasked_bx, unmasked_by) * 1e-3
+    _assert_plane_table(unmasked_plane)
+    _assert_plane_table(masked_plane)

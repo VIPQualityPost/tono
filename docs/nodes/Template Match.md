@@ -15,6 +15,7 @@ Find a template pattern within a larger data field using normalised cross-correl
 |------|------|-------------|
 | score | DATA_FIELD | Normalized cross-correlation score map |
 | detections | IMAGE | Binary mask marking positions above the threshold |
+| matches | RECORD_TABLE | Detected match positions (physical X/Y) and scores, up to 20 matches |
 
 ## Controls
 

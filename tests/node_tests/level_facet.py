@@ -3,6 +3,18 @@ from backend.data_types import DataField
 from tests.node_tests._shared import make_field
 
 
+def _assert_plane_table(plane, z_unit="m"):
+    """Plane table must report the offset plus Tilt X/Tilt Y rows."""
+    rows = {row["quantity"]: row for row in plane}
+    assert set(rows) == {"Plane offset", "Tilt X", "Tilt Y"}
+    assert all(set(row) == {"quantity", "value", "unit"} for row in plane)
+    assert rows["Plane offset"]["unit"] == z_unit
+    assert rows["Tilt X"]["unit"] == "deg"
+    assert rows["Tilt Y"]["unit"] == "deg"
+    assert np.isfinite(rows["Tilt X"]["value"])
+    assert np.isfinite(rows["Tilt Y"]["value"])
+
+
 def test_facet_level():
     from backend.node_registry import get_node_info
     from backend.nodes.level_facet import FacetLevelField
@@ -26,8 +38,9 @@ def test_facet_level():
     terraces[18:70, 68:88] += 3.5
     field = make_field(data=base + terraces)
 
-    plane_leveled, = plane_node.process(field)
-    facet_leveled, = node.process(field, masking="ignore")
+    plane_leveled, _ = plane_node.process(field)
+    facet_leveled, facet_plane = node.process(field, masking="ignore")
+    _assert_plane_table(facet_plane)
 
     left_region = xx < 48
     right_region = (xx > 60) & ~((yy >= 18) & (yy < 70) & (xx >= 68) & (xx < 88))
@@ -46,8 +59,10 @@ def test_facet_level():
     competing = np.where(mask > 0, masked_facet, base_only)
     competing_field = make_field(data=competing)
 
-    excluded, = node.process(competing_field, masking="exclude", mask=mask)
-    included, = node.process(competing_field, masking="include", mask=mask)
+    excluded, excluded_plane = node.process(competing_field, masking="exclude", mask=mask)
+    included, included_plane = node.process(competing_field, masking="include", mask=mask)
+    _assert_plane_table(excluded_plane)
+    _assert_plane_table(included_plane)
 
     outer_region = (mask == 0) & (xx > 4) & (xx < N - 4) & (yy > 4) & (yy < N - 4)
     inner_region = (mask > 0) & (xx > 28) & (xx < 68) & (yy > 28) & (yy < 68)

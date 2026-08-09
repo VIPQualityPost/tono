@@ -28,7 +28,7 @@ print(f"  Height range: {np.ptp(surface.data)*1e9:.1f} nm")
 # ── 2. Level the surface ─────────────────────────────────────────────
 
 print("\nLeveling...")
-leveled = tono.PlaneLevelField(surface)
+leveled, plane = tono.PlaneLevelField(surface)
 print(f"  Mean after leveling: {leveled.data.mean()*1e9:.4f} nm")
 
 # ── 3. Apply a Gaussian filter ───────────────────────────────────────

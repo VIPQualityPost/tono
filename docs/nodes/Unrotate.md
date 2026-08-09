@@ -13,6 +13,7 @@ Auto-detect and correct in-plane scan rotation. Computes a slope angle histogram
 | Name | Type | Description |
 |------|------|-------------|
 | leveled | DATA_FIELD | Field with rotation corrected |
+| angle | FLOAT | Detected correction angle in degrees (applied rotation) |
 
 ## Controls
 

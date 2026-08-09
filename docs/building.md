@@ -3,7 +3,7 @@
 ## Prerequisites
 
 **Python** ≥ 3.10
-**Node.js** ≥ 18, **npm** ≥ 9
+**Node.js** ≥ 24, **npm** ≥ 9
 
 ### First-time setup
 
@@ -33,9 +33,11 @@ pip install -e ".[server,dev,desktop]"
 
 ## Development
 
+All `npm run …` commands below are run from the **repository root** (they live in the root `package.json`, not `frontend/`).
+
 Two servers run in development: the Vite frontend dev server and the Python backend. Vite proxies all API and WebSocket requests to the backend, so you only open the Vite URL in your browser.
 
-The easiest way is the combined runner, which starts both with prefixed, colour-coded output and tears everything down on Ctrl-C:
+The easiest way is the combined runner, which starts both processes in the same terminal with interleaved output and tears everything down on Ctrl-C:
 
 ```bash
 npm run dev:all

@@ -6,7 +6,8 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 @register_node(display_name="Level Rotate")
@@ -21,6 +22,7 @@ class LevelRotate:
 
     OUTPUTS = (
         ('DATA_FIELD', 'leveled'),
+        ('RECORD_TABLE', 'tilt'),
     )
     FUNCTION = "process"
 
@@ -72,4 +74,9 @@ class LevelRotate:
         result = map_coordinates(src_z, [src_y_rot, src_x_rot], order=1,
                                  mode='nearest')
 
-        return (field.replace(data=result),)
+        tilt = RecordTable([
+            {"quantity": "Tilt X", "value": float(np.degrees(alpha_x)), "unit": "deg"},
+            {"quantity": "Tilt Y", "value": float(np.degrees(alpha_y)), "unit": "deg"},
+        ])
+        emit_table(tilt)
+        return (field.replace(data=result), tilt)

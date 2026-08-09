@@ -14,6 +14,7 @@ Compute 2D cross-correlation between two fields. The correlation peak indicates 
 | Name | Type | Description |
 |------|------|-------------|
 | correlation | DATA_FIELD | Cross-correlation map |
+| measurement | RECORD_TABLE | Peak shift of field_b relative to field_a in pixels and physical units, and the normalized peak correlation coefficient |
 
 ## Controls
 

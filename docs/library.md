@@ -20,7 +20,7 @@ fields = tono.load("scan.gwy")
 height = fields[0]
 
 # Every registered node is available as a top-level callable
-leveled = tono.PlaneLevelField(height)
+leveled, plane = tono.PlaneLevelField(height)
 filtered = tono.GaussianFilter(leveled, sigma=2.0)
 
 # Access the raw numpy array
@@ -193,7 +193,7 @@ for path in input_dir.glob("*.gwy"):
     height = fields[0]
 
     # Standard processing pipeline
-    leveled = tono.PlaneLevelField(height)
+    leveled, plane = tono.PlaneLevelField(height)
     filtered = tono.GaussianFilter(leveled, sigma=1.5)
 
     # Scalar measurements
@@ -224,7 +224,7 @@ axes[0].set_title("Raw")
 axes[0].set_xlabel("x (um)")
 axes[0].set_ylabel("y (um)")
 
-leveled = tono.PlaneLevelField(field)
+leveled, plane = tono.PlaneLevelField(field)
 axes[1].imshow(leveled.data * 1e9, extent=extent, cmap="afmhot")
 axes[1].set_title("Leveled")
 

@@ -8,11 +8,14 @@ def test_basic_extraction():
 
     node = StraightenPath()
     field = make_field(shape=(64, 64))
-    result, profile = node.process(field, points_x="0.25, 0.5, 0.75",
-                                   points_y="0.5, 0.3, 0.5",
-                                   thickness=1, n_samples=256)
+    result, profile, length = node.process(field, points_x="0.25, 0.5, 0.75",
+                                           points_y="0.5, 0.3, 0.5",
+                                           thickness=1, n_samples=256)
     assert result.data.shape[1] == 256, f"Output width should be n_samples=256, got {result.data.shape[1]}"
     assert profile.data.shape == (256,)
+    # Physical path length is reported as a positive float.
+    assert isinstance(length, float)
+    assert length > 0.0
 
 
 def test_thickness():
@@ -20,14 +23,17 @@ def test_thickness():
 
     node = StraightenPath()
     field = make_field(shape=(64, 64))
-    result, profile = node.process(field, points_x="0.2, 0.8",
-                                   points_y="0.5, 0.5",
-                                   thickness=5, n_samples=100)
+    result, profile, length = node.process(field, points_x="0.2, 0.8",
+                                           points_y="0.5, 0.5",
+                                           thickness=5, n_samples=100)
     assert result.data.shape[0] == 5, f"Output height should be thickness=5, got {result.data.shape[0]}"
     # Profile is the 1-pixel-wide centerline regardless of thickness.
     assert profile.data.shape == (100,)
     # For a horizontal line, the centerline equals the middle row of the strip.
     assert np.allclose(profile.data, result.data[2])
+    # A two-point path has a positive physical length.
+    assert isinstance(length, float)
+    assert length > 0.0
 
 
 def test_single_point_returns_input():
@@ -35,12 +41,15 @@ def test_single_point_returns_input():
 
     node = StraightenPath()
     field = make_field(shape=(64, 64))
-    result, profile = node.process(field, points_x="0.5",
-                                   points_y="0.5",
-                                   thickness=1, n_samples=100)
+    result, profile, length = node.process(field, points_x="0.5",
+                                           points_y="0.5",
+                                           thickness=1, n_samples=100)
     # With only 1 point, node returns the original field unchanged + empty profile.
     assert np.array_equal(result.data, field.data)
     assert profile.data.shape == (0,)
+    # Degenerate path: nothing to measure, length is zero.
+    assert isinstance(length, float)
+    assert length == 0.0
 
 
 def test_emits_overlay_with_points_and_thickness():

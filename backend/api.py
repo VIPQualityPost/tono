@@ -13,8 +13,8 @@ Usage::
     result = tono.apply("GaussianFilter", field, sigma=3.0)
 
     # Chain operations
-    result = tono.apply("PlaneLevelField", field, mode="subtract_mean")
-    result = tono.apply("GaussianFilter", result, sigma=2.0)
+    leveled, plane = tono.apply("PlaneLevelField", field)
+    result = tono.apply("GaussianFilter", leveled, sigma=2.0)
 
     # Get available nodes
     print(tono.nodes())
@@ -184,7 +184,7 @@ def apply(class_name: str, *args: Any, **kwargs: Any) -> Any:
     Examples
     --------
     >>> result = tono.apply("GaussianFilter", field, sigma=3.0)
-    >>> leveled, mask = tono.apply("PlaneLevelField", field, mode="subtract_mean")
+    >>> leveled, plane = tono.apply("PlaneLevelField", field)
     """
     from backend.node_registry import NODE_CLASS_MAPPINGS
     from backend.execution_context import execution_callbacks, active_node

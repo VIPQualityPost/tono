@@ -12,7 +12,7 @@ def test_output_shapes():
 
     previews = []
     with execution_callbacks(preview=lambda nid, uri: previews.append(uri)), active_node("test"):
-        mask, prob = node.process(
+        mask, prob, model_stats = node.process(
             field,
             use_gaussians=True,
             n_gaussians=4,
@@ -25,6 +25,9 @@ def test_output_shapes():
 
     assert mask.shape == field.data.shape
     assert prob.data.shape == field.data.shape
+    # Model stats is a standard {quantity, value, unit} record table.
+    assert len(model_stats) >= 3
+    assert all(set(row) == {"quantity", "value", "unit"} for row in model_stats)
 
 
 def test_mask_binary():
@@ -36,7 +39,7 @@ def test_mask_binary():
     field = make_field(data=data)
 
     with execution_callbacks(preview=lambda nid, uri: None), active_node("test"):
-        mask, _ = node.process(
+        mask, _, _ = node.process(
             field,
             use_gaussians=True,
             n_gaussians=2,
@@ -59,7 +62,7 @@ def test_probability_range():
     field = make_field(data=data)
 
     with execution_callbacks(preview=lambda nid, uri: None), active_node("test"):
-        _, prob = node.process(
+        _, prob, _ = node.process(
             field,
             use_gaussians=True,
             n_gaussians=3,
@@ -89,7 +92,7 @@ def test_with_training():
     training_mask[:, 32:] = 255
 
     with execution_callbacks(preview=lambda nid, uri: None), active_node("test"):
-        mask, prob = node.process(
+        mask, prob, model_stats = node.process(
             field,
             use_gaussians=True,
             n_gaussians=3,
@@ -109,3 +112,14 @@ def test_with_training():
     assert right_positive > left_positive, (
         f"Expected more positives on right ({right_positive}) than left ({left_positive})"
     )
+    # Training was performed on the full field: accuracy, pixel count and weights are reported.
+    assert all(set(row) == {"quantity", "value", "unit"} for row in model_stats)
+    quantities = {row["quantity"] for row in model_stats}
+    assert "Training accuracy" in quantities
+    assert "Training pixels" in quantities
+    training_pixels = next(row["value"] for row in model_stats
+                           if row["quantity"] == "Training pixels")
+    assert training_pixels == 64 * 64
+    accuracy = next(row["value"] for row in model_stats
+                    if row["quantity"] == "Training accuracy")
+    assert 0.0 <= accuracy <= 1.0

@@ -14,6 +14,8 @@ Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The 
 | Name | Type | Description |
 |------|------|-------------|
 | result | DATA_FIELD | Field with defect pixels replaced by interpolated values |
+| mask | IMAGE | Binary defect mask (0/255) marking the filled pixels |
+| stats | RECORD_TABLE | Defect pixel count and fraction of the image |
 
 ## Controls
 

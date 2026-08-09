@@ -1,7 +1,8 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 from backend.nodes.helpers import normalize_mask, apply_masking
 
 
@@ -47,6 +48,7 @@ class PlaneLevelField:
 
     OUTPUTS = (
         ('DATA_FIELD', 'leveled'),
+        ('RECORD_TABLE', 'plane'),
     )
     FUNCTION = "process"
 
@@ -68,4 +70,13 @@ class PlaneLevelField:
         pa, pbx, pby, xx, yy = _fit_plane(data, mask_array, masking)
 
         plane = (pa + pbx * xx + pby * yy)
-        return (field.replace(data=data - plane),)
+
+        tilt_x_deg = float(np.degrees(np.arctan(pbx / field.xreal))) if field.xreal > 0 else float(np.degrees(np.arctan(pbx)))
+        tilt_y_deg = float(np.degrees(np.arctan(pby / field.yreal))) if field.yreal > 0 else float(np.degrees(np.arctan(pby)))
+        plane_table = RecordTable([
+            {"quantity": "Plane offset", "value": pa, "unit": field.si_unit_z},
+            {"quantity": "Tilt X", "value": tilt_x_deg, "unit": "deg"},
+            {"quantity": "Tilt Y", "value": tilt_y_deg, "unit": "deg"},
+        ])
+        emit_table(plane_table)
+        return (field.replace(data=data - plane), plane_table)

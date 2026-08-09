@@ -18,7 +18,7 @@ def test_watershed_segmentation():
 
     previews = []
     with execution_callbacks(preview=lambda nid, uri: previews.append(uri)), active_node("test"):
-        mask, = node.process(
+        mask, regions = node.process(
             field,
             invert_height=False,
             locate_steps=10,
@@ -33,12 +33,23 @@ def test_watershed_segmentation():
     assert len(previews) == 1
     assert previews[0].startswith("data:image/png;base64,")
 
+    regions_by_name = {row["quantity"]: row for row in regions}
+    assert set(regions_by_name) == {"Grain count", "Mask coverage"}
+    assert all(set(row) == {"quantity", "value", "unit"} for row in regions)
+    grain_count = regions_by_name["Grain count"]
+    assert grain_count["unit"] == ""
+    assert grain_count["value"] >= 1, "Peaked field must yield at least one grain"
+
     _, ngrains = label(mask > 127)
     assert ngrains >= 2
+    # The reported grain count matches the labeled mask.
+    assert grain_count["value"] == ngrains
+    coverage = regions_by_name["Mask coverage"]
+    assert coverage["value"] == float(np.count_nonzero(mask) / mask.size)
 
     seed_mask = np.zeros_like(mask)
     seed_mask[:, :32] = 255
-    intersected, = node.process(
+    intersected, _ = node.process(
         field,
         invert_height=False,
         locate_steps=10,

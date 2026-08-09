@@ -26,13 +26,15 @@ class Image:
     OUTPUTS = (
         ("FILE_PATH", 'path'),
         ('DATA_FIELD', 'field'),
+        ('DATA_FIELD', 'channel_2'),
+        ('DATA_FIELD', 'channel_3'),
     )
     FUNCTION = "load"
 
     DESCRIPTION = (
         "Load any supported file. "
         "SPM and HDF5 provide calibrated dimensions; "
-        "each channel gets its own output. "
+        "up to three channels are exposed as separate outputs. "
         "Images and arrays are loaded as uncalibrated fields."
     )
 
@@ -64,7 +66,10 @@ class Image:
         if ext not in calibrated_extensions():
             emit_warning("Uncalibrated data — no physical dimensions.")
 
-        return (str(path_obj.resolve()),) + fields
+        if len(fields) > 3:
+            emit_warning(f"{len(fields)} channels loaded; only the first 3 are exposed as outputs.")
+
+        return (str(path_obj.resolve()),) + fields[:3]
 
     @staticmethod
     @lru_cache(maxsize=32)

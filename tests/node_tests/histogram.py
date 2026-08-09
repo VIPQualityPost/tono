@@ -12,8 +12,14 @@ def test_height_histogram():
     from backend.execution_context import execution_callbacks, active_node
     overlays = []
     with execution_callbacks(overlay=lambda nid, data: overlays.append(data)), active_node("test"):
-        table, coord_pair = node.process(field, n_bins=10, y_scale="linear", x1=0.2, y1=0.5, x2=0.8, y2=0.5)
+        table, coord_pair, curve = node.process(field, n_bins=10, y_scale="linear", x1=0.2, y1=0.5, x2=0.8, y2=0.5)
         assert isinstance(coord_pair, tuple) and len(coord_pair) == 2
+        # LINE output carries one entry per bin, in the field's Z unit.
+        assert len(curve.data) == 10
+        assert np.all(np.isfinite(curve.data))
+        assert curve.data.min() >= 0.0
+        assert curve.x_unit == field.si_unit_z
+        assert curve.y_unit == "count"
         measurements = {row["quantity"]: row for row in table}
         assert "A position" in measurements
         assert "A count" in measurements

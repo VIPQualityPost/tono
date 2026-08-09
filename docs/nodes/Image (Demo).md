@@ -10,7 +10,9 @@ None.
 
 | Name | Type | Description |
 |------|------|-------------|
-| field | DATA_FIELD | Loaded demo field |
+| field | DATA_FIELD | Loaded demo field (first channel) |
+| channel_2 | DATA_FIELD | Second channel, when the demo file has two or more channels |
+| channel_3 | DATA_FIELD | Third channel, when the demo file has three or more channels |
 
 ## Controls
 

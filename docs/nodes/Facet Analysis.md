@@ -13,6 +13,7 @@ Compute the facet orientation distribution of a surface. Outputs a 2D histogram 
 | Name | Type | Description |
 |------|------|-------------|
 | facet_map | DATA_FIELD | 2D histogram of facet orientations (phi vs theta) |
+| measurement | RECORD_TABLE | Mean azimuth, mean inclination, and dominant azimuth/inclination of the steepest (top 10%) facets, in degrees |
 
 ## Controls
 

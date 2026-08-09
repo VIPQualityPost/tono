@@ -13,7 +13,8 @@ Detect and remove horizontal scan scars using Gwyddion-derived scar marking thre
 | Name | Type | Description |
 |------|------|-------------|
 | corrected | DATA_FIELD | Field with scars removed and interpolated |
-| scar_mask | IMAGE | Binary mask of the detected scar pixels |
+| mask | IMAGE | Binary mask of the detected scar pixels |
+| stats | RECORD_TABLE | Scar pixel count and fraction of the image |
 
 ## Controls
 

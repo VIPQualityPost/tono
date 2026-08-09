@@ -14,7 +14,7 @@ def test_acf():
     ], dtype=np.float64)
     field = DataField(data=data, xreal=8.0, yreal=4.0, si_unit_xy="nm", si_unit_z="V")
 
-    acf, = node.process(field, level="none")
+    acf, measurement = node.process(field, level="none")
     assert acf.data.shape == (3, 3)
     assert acf.domain == "spatial"
     assert acf.si_unit_xy == "nm"
@@ -23,6 +23,16 @@ def test_acf():
     assert np.isclose(acf.yreal, 3.0)
     assert np.isclose(acf.xoff, -3.0)
     assert np.isclose(acf.yoff, -1.5)
+
+    # Measurement reports Period x / Period y in physical units, but only
+    # when a first positive peak exists along that axis.
+    assert isinstance(measurement, list)
+    for row in measurement:
+        assert set(row) == {"quantity", "value", "unit"}
+        assert row["quantity"] in {"Period x", "Period y"}
+        assert row["unit"] == "nm"
+        assert row["value"] > 0.0
+        assert isinstance(row["value"], float)
 
     expected = np.zeros((3, 3), dtype=np.float64)
     for iy, dy in enumerate(range(-1, 2)):

@@ -23,6 +23,7 @@ class FlattenBase:
 
     OUTPUTS = (
         ('DATA_FIELD', 'leveled'),
+        ('DATA_FIELD', 'background'),
     )
     FUNCTION = "process"
 
@@ -30,7 +31,8 @@ class FlattenBase:
         "Level the flat base of a surface that has raised features (particles, "
         "grains). Uses a height percentile threshold to identify base pixels, "
         "fits a polynomial to those pixels, and subtracts it. Unlike plane level, "
-        "this ignores tall features that would bias the fit. "
+        "this ignores tall features that would bias the fit. The fitted background "
+        "is also provided as a second output. "
     )
 
     KEYWORDS = ("level", "background", "substrate", "tilt")
@@ -45,7 +47,8 @@ class FlattenBase:
 
         if base_mask.sum() < max(3, (poly_degree + 1) ** 2):
             # Not enough base pixels, fall back to subtracting the mean
-            return (field.replace(data=data - data.mean()),)
+            bg = np.full_like(data, float(data.mean()))
+            return (field.replace(data=data - data.mean()), field.replace(data=bg))
 
         yy, xx = np.mgrid[:yres, :xres]
         x_norm = xx.ravel() / max(xres - 1, 1)
@@ -66,4 +69,4 @@ class FlattenBase:
 
         # Evaluate and subtract
         background = (A_full @ coeffs).reshape(data.shape)
-        return (field.replace(data=data - background),)
+        return (field.replace(data=data - background), field.replace(data=background))

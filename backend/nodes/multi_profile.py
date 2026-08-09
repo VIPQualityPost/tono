@@ -41,6 +41,7 @@ class MultipleProfiles:
 
     OUTPUTS = (
         ('LINE', 'profile'),
+        ('LINE', 'profile_b'),
     )
     FUNCTION = "process"
 
@@ -48,6 +49,7 @@ class MultipleProfiles:
         "Extract and compare line profiles from two fields. "
         "Row=-1 uses the center row/column. Modes: overlay returns field_a's "
         "profile, mean averages both, difference subtracts b from a. "
+        "Field B's raw profile is exposed as profile_b alongside the result. "
         "The preview shows field A blended with field B and highlights the "
         "row or column being sampled — drag to move the line."
     )
@@ -101,5 +103,8 @@ class MultipleProfiles:
             "max_index": int(line_axis_max),
         })
 
-        return (LineData(data=result, x_axis=x_axis, x_unit=x_unit,
-                         y_unit=field_a.si_unit_z),)
+        profile = LineData(data=result, x_axis=x_axis, x_unit=x_unit,
+                           y_unit=field_a.si_unit_z)
+        profile_b = LineData(data=pb, x_axis=x_axis, x_unit=x_unit,
+                             y_unit=field_a.si_unit_z)
+        return (profile, profile_b)

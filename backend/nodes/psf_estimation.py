@@ -6,6 +6,7 @@ import numpy as np
 
 from backend.node_registry import register_node
 from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 @register_node(display_name="PSF Estimation")
@@ -33,6 +34,7 @@ class PSFEstimation:
         "and an ideal (sharp) reference. The PSF can then be used with the "
         "Deconvolution node to restore other images. Three methods are available: "
         "pseudo-Wiener deconvolution, regularised least-squares, and Gaussian fit. "
+        "All methods report fitted Gaussian parameters (sigma_x, sigma_y, amplitude). "
     )
 
     KEYWORDS = ("point spread function", "deconvolution", "wiener", "gaussian", "blur", "kernel")
@@ -147,9 +149,21 @@ class PSFEstimation:
 
         if method == "wiener":
             psf = self._wiener(F_measured, F_ideal, regularization, psf_size)
+            _, sigma_x, sigma_y, amplitude = self._fit_gaussian_2d(psf)
+            parameters = RecordTable([
+                {"quantity": "sigma_x",   "value": sigma_x,   "unit": "px"},
+                {"quantity": "sigma_y",   "value": sigma_y,   "unit": "px"},
+                {"quantity": "amplitude", "value": amplitude,  "unit": ""},
+            ])
 
         elif method == "least_squares":
             psf = self._least_squares(F_measured, F_ideal, regularization, psf_size)
+            _, sigma_x, sigma_y, amplitude = self._fit_gaussian_2d(psf)
+            parameters = RecordTable([
+                {"quantity": "sigma_x",   "value": sigma_x,   "unit": "px"},
+                {"quantity": "sigma_y",   "value": sigma_y,   "unit": "px"},
+                {"quantity": "amplitude", "value": amplitude,  "unit": ""},
+            ])
 
         elif method == "gaussian_fit":
             raw_psf = self._wiener(F_measured, F_ideal, regularization, psf_size)
@@ -174,5 +188,7 @@ class PSFEstimation:
             xoff=0.0,
             yoff=0.0,
         )
+
+        emit_table(parameters)
 
         return (psf_field, parameters)

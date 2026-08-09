@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from backend.data_types import DataField
+from backend.execution_context import emit_table
+from backend.data_types import DataField, RecordTable
 from backend.node_registry import register_node
+from backend.nodes.helpers import bool_to_mask
 
 
 @register_node(display_name="Spot Removal")
@@ -23,13 +25,15 @@ class SpotRemoval:
 
     OUTPUTS = (
         ('DATA_FIELD', 'result'),
+        ('IMAGE', 'mask'),
+        ('RECORD_TABLE', 'stats'),
     )
     FUNCTION = "process"
 
     DESCRIPTION = (
         "Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. "
         "The mask defines defect locations. Laplace method solves the 2D Laplace equation "
-        "for smooth inpainting."
+        "for smooth inpainting. Also outputs the defect mask and statistics."
     )
 
     KEYWORDS = ("defect", "hot pixel", "dropout", "inpaint", "fill", "despeckle", "artifact")
@@ -42,36 +46,38 @@ class SpotRemoval:
         mask: np.ndarray | None = None,
     ) -> tuple:
         if mask is None:
-            return (field,)
+            defect = np.zeros(field.data.shape, dtype=bool)
+            result = np.asarray(field.data, dtype=np.float64)
+        else:
+            mask_array = np.asarray(mask)
+            # Reshape mask to match field shape if it has extra dimensions (e.g. HxWx1)
+            if mask_array.ndim == 3:
+                mask_array = mask_array[:, :, 0]
+            if mask_array.shape != field.data.shape:
+                raise ValueError(
+                    f"Mask shape {mask_array.shape} does not match field shape {field.data.shape}."
+                )
 
-        mask_array = np.asarray(mask)
-        # Reshape mask to match field shape if it has extra dimensions (e.g. HxWx1)
-        if mask_array.ndim == 3:
-            mask_array = mask_array[:, :, 0]
-        if mask_array.shape != field.data.shape:
-            raise ValueError(
-                f"Mask shape {mask_array.shape} does not match field shape {field.data.shape}."
-            )
+            defect = mask_array > 0
+            result = np.asarray(field.data, dtype=np.float64)
 
-        defect = mask_array > 0
+            if np.any(defect):
+                if method == "zero":
+                    result = result.copy()
+                    result[defect] = 0.0
+                elif method == "mean":
+                    result = _mean_fill(result, defect)
+                else:
+                    # method == "laplace"
+                    result = _laplace_fill(result, defect, int(max_iter))
 
-        if not np.any(defect):
-            return (field,)
-
-        data = np.asarray(field.data, dtype=np.float64)
-
-        if method == "zero":
-            result = data.copy()
-            result[defect] = 0.0
-            return (field.replace(data=result),)
-
-        if method == "mean":
-            result = _mean_fill(data, defect)
-            return (field.replace(data=result),)
-
-        # method == "laplace"
-        result = _laplace_fill(data, defect, int(max_iter))
-        return (field.replace(data=result),)
+        nonzero = int(defect.sum())
+        stats = RecordTable([
+            {"quantity": "Defect pixels", "value": nonzero, "unit": "px"},
+            {"quantity": "Defect fraction", "value": float(nonzero / defect.size), "unit": ""},
+        ])
+        emit_table(stats)
+        return (field.replace(data=result), bool_to_mask(defect), stats)
 
 
 def _mean_fill(data: np.ndarray, defect: np.ndarray) -> np.ndarray:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 from backend.node_registry import register_node
 
 
@@ -189,12 +190,27 @@ class DWTAnisotropy:
         rows = []
         for i, (xe, ye, r) in enumerate(zip(x_energies, y_energies, ratios)):
             rows.append({
-                "level": i + 1,
-                "x_energy": float(xe),
-                "y_energy": float(ye),
-                "ratio": float(r),
-                "anisotropic": abs(r - 1.0) > float(ratio_threshold),
+                "quantity": f"Level {i + 1} X energy",
+                "value": float(xe),
+                "unit": "",
+            })
+            rows.append({
+                "quantity": f"Level {i + 1} Y energy",
+                "value": float(ye),
+                "unit": "",
+            })
+            rows.append({
+                "quantity": f"Level {i + 1} X/Y ratio",
+                "value": float(r),
+                "unit": "",
+            })
+            rows.append({
+                "quantity": f"Level {i + 1} anisotropic",
+                "value": 1.0 if abs(r - 1.0) > float(ratio_threshold) else 0.0,
+                "unit": "",
             })
         stats = RecordTable(rows)
+
+        emit_table(stats)
 
         return (aniso_field, stats)

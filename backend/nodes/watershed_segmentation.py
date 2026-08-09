@@ -4,9 +4,10 @@ from functools import lru_cache
 
 import numpy as np
 from scipy.ndimage import label
+from skimage.measure import label as skimage_label
 
-from backend.execution_context import emit_preview
-from backend.data_types import DataField, encode_preview
+from backend.execution_context import emit_preview, emit_table
+from backend.data_types import DataField, encode_preview, RecordTable
 from backend.node_registry import register_node
 from backend.nodes.helpers import _mask_overlay, mask_to_bool, bool_to_mask
 
@@ -223,13 +224,15 @@ class WatershedSegmentation:
 
     OUTPUTS = (
         ('IMAGE', 'mask'),
+        ('RECORD_TABLE', 'regions'),
     )
     FUNCTION = "process"
 
     DESCRIPTION = (
         "Segment a height field into grains using the two-stage Gwyddion watershed workflow: "
         "drop-based seed location followed by watershed growth. Supports hill or valley detection "
-        "and optional union/intersection with an existing mask."
+        "and optional union/intersection with an existing mask. Reports grain count and mask "
+        "coverage for the final result."
     )
 
     KEYWORDS = ("grain", "basin", "flood fill", "gwyddion", "peak", "valley", "hill", "marker")
@@ -267,5 +270,15 @@ class WatershedSegmentation:
         result_mask = bool_to_mask(labels > 0)
         result_mask = _combine_masks(result_mask, mask, combine_mode)
 
+        mask_bool = np.asarray(result_mask, dtype=bool)
+        regions = skimage_label(mask_bool)
+        count = int(regions.max())
+        coverage = float(mask_bool.sum() / mask_bool.size)
+        regions_table = RecordTable([
+            {"quantity": "Grain count", "value": count, "unit": ""},
+            {"quantity": "Mask coverage", "value": coverage, "unit": ""},
+        ])
+
         emit_preview(encode_preview(_mask_overlay(field, result_mask)))
-        return (result_mask,)
+        emit_table(regions_table)
+        return (result_mask, regions_table)

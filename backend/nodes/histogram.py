@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
 from backend.execution_context import emit_overlay
-from backend.data_types import DataField, RecordTable
+from backend.data_types import DataField, LineData, RecordTable
 from backend.nodes.helpers import frac_to_index, histogram_with_centers
 
 
@@ -25,13 +25,15 @@ class Histogram:
     OUTPUTS = (
         ('RECORD_TABLE', 'measurements'),
         ('COORDPAIR', 'marker_pair'),
+        ('LINE', 'curve'),
     )
     FUNCTION = "process"
 
     DESCRIPTION = (
         "Compute the height distribution histogram (DH). "
         "Use log scale to reveal small peaks next to a dominant background. "
-        "Outputs marker measurements while showing the histogram interactively in-node. "
+        "Outputs marker measurements, the cursor marker pair, and the displayed "
+        "histogram curve; the histogram is also shown interactively in-node. "
     )
 
     KEYWORDS = ("distribution", "height distribution", "dh")
@@ -86,4 +88,8 @@ class Histogram:
             {"quantity": "B position", "value": xb, "unit": field.si_unit_z},
             {"quantity": "B count",    "value": yb, "unit": count_unit},
         ])
-        return (table, ((x1, y1), (x2, y2)))
+
+        # LINE output carrying the displayed (post-log) curve
+        curve = LineData(data=counts.copy(), x_axis=bin_centers.copy(),
+                         x_unit=field.si_unit_z, y_unit=count_unit)
+        return (table, ((x1, y1), (x2, y2)), curve)

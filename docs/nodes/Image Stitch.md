@@ -14,6 +14,7 @@ Combine two overlapping scans into a single image. Uses cross-correlation to ali
 | Name | Type | Description |
 |------|------|-------------|
 | stitched | DATA_FIELD | Combined field |
+| alignment | RECORD_TABLE | Overlap shift of field_b relative to field_a, in pixels and physical units |
 
 ## Controls
 

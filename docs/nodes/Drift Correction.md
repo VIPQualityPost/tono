@@ -13,6 +13,7 @@ Compensate for thermal or piezo drift between scan lines. Estimates inter-row di
 | Name | Type | Description |
 |------|------|-------------|
 | corrected | DATA_FIELD | Drift-corrected field |
+| drift | RECORD_TABLE | Drift statistics: max, mean \|drift\|, and RMS drift in px, plus max drift in physical units along the corrected direction |
 
 ## Controls
 

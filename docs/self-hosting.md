@@ -1,6 +1,6 @@
 # Self-Hosting
 
-tono can be self-hosted on any server with Python 3.10+ and Node.js 18+.
+tono can be self-hosted on any server with Python 3.10+ and Node.js 24+ (Node is only needed to build the frontend bundle; the packaged build ships `frontend/dist/` pre-built).
 
 ## Quick start
 
