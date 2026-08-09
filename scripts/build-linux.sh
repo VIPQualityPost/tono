@@ -28,7 +28,7 @@ DEMO_DIR="$REPO_ROOT/demo"
 # Read at runtime via resource_root()/build_version.txt; the file is gitignored.
 # The git commit hash is deliberately NOT baked: desktop builds have no .git at
 # runtime and the UI hides the hash row when it is absent.
-GIT_VERSION="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+GIT_VERSION="$(git describe --tags --always 2>/dev/null || echo dev)"
 printf '%s' "$GIT_VERSION" > "$REPO_ROOT/build_version.txt"
 
 echo "Building frontend bundle..."

@@ -41,7 +41,7 @@ $demoDir = Join-Path $repoRoot "demo"
 # Read at runtime via resource_root()/build_version.txt; the file is gitignored.
 # The git commit hash is deliberately NOT baked: desktop builds have no .git at
 # runtime and the UI hides the hash row when it is absent.
-$gitVersion = if (Get-Command git -ErrorAction SilentlyContinue) { (git describe --tags --always --dirty 2>$null) } else { "dev" }
+$gitVersion = if (Get-Command git -ErrorAction SilentlyContinue) { (git describe --tags --always 2>$null) } else { "dev" }
 Set-Content -Path (Join-Path $repoRoot "build_version.txt") -Value $gitVersion -NoNewline
 
 Write-Host "Removing cached frontend and desktop build artifacts..."

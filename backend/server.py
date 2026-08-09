@@ -120,11 +120,10 @@ _APP_GIT_VERSION: str | None = None
 
 
 def _describe_git_version() -> str | None:
-    """Resolve the human-readable version from the nearest git tag."""
     try:
         import subprocess
         result = subprocess.run(
-            ["git", "describe", "--tags", "--always", "--dirty"],
+            ["git", "describe", "--tags", "--always"],
             cwd=project_root(),
             capture_output=True,
             text=True,
@@ -144,7 +143,7 @@ def _get_git_version() -> str | None:
     """Human-readable version of the running build, derived from a git tag.
 
     Precedence: build_version.txt baked into packaged builds at build time, then
-    ``git describe --tags --always --dirty``, then the package version from
+    ``git describe --tags --always``, then the package version from
     pyproject.toml. Returns None only when nothing resolvable exists (never in
     practice; the pyproject fallback always wins out).
     """
