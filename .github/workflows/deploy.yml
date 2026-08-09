@@ -1,8 +1,8 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,6 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Deploy to server
@@ -21,11 +20,15 @@ jobs:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
         run: |
+          # ${{ github.ref_name }} is the tag name (e.g. v1.1.0) on release
+          # events, or the branch name on manual dispatch.
           echo "$SSH_KEY" > key && chmod 600 key
-          ssh -o StrictHostKeyChecking=no -i key "${USER}@${HOST}" bash -s <<'REMOTE'
+          ssh -o StrictHostKeyChecking=no -i key "${USER}@${HOST}" bash -s -- "${{ github.ref_name }}" <<'REMOTE'
             set -e
+            TAG="$1"
             cd /opt/tono
-            git pull --ff-only
+            git fetch --tags origin
+            git checkout "$TAG"
             uv pip install -e ".[server]" --quiet
             cd frontend && npm ci --ignore-scripts && npm run build && cd ..
             sudo systemctl restart tono

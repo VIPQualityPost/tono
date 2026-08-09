@@ -20,6 +20,7 @@ export default defineConfig({
       '/help-docs': { target: 'http://127.0.0.1:8188', changeOrigin: true },
       '/prompt': 'http://127.0.0.1:8188',
       '/check-update': 'http://127.0.0.1:8188',
+      '/version': 'http://127.0.0.1:8188',
       '/ws': {
         target: 'http://127.0.0.1:8188',
         ws: true,

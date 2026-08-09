@@ -454,6 +454,30 @@ html, body, #root {
   text-align: left;
 }
 
+.floating-menu-build {
+  margin-top: 3px;
+}
+
+.floating-menu-version {
+  padding: 4px 6px 0;
+  font-size: 0.72em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text-muted, var(--text-value));
+  opacity: 0.75;
+  text-align: left;
+  user-select: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.floating-menu-hash {
+  padding-top: 1px;
+  font-size: 0.62em;
+  opacity: 0.6;
+}
+
 /* ── Buttons ───────────────────────────────────────────────────────── */
 .btn {
   padding: 5px 12px;

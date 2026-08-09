@@ -84,6 +84,89 @@ def _get_app_version() -> str:
     return _APP_VERSION
 
 
+_APP_GIT_HASH: str | None = None
+
+# A bare (untagged) git describe result — not a human-readable version.
+_BARE_HASH_VERSION = re.compile(r"[0-9a-f]{4,40}(?:-dirty)?")
+
+
+def _get_git_hash() -> str | None:
+    """Commit hash of the running build, or None when unavailable.
+
+    Resolved once per process from the repository HEAD. Packaged desktop builds
+    (no .git directory, possibly no git on PATH) yield None — the UI then hides
+    the hash row.
+    """
+    global _APP_GIT_HASH
+    if _APP_GIT_HASH is not None:
+        return _APP_GIT_HASH
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=project_root(),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        candidate = result.stdout.strip()
+        _APP_GIT_HASH = candidate if len(candidate) == 40 else None
+    except Exception:
+        _APP_GIT_HASH = None
+    return _APP_GIT_HASH
+
+
+_APP_GIT_VERSION: str | None = None
+
+
+def _describe_git_version() -> str | None:
+    """Resolve the human-readable version from the nearest git tag."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--always", "--dirty"],
+            cwd=project_root(),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        text = result.stdout.strip()
+        if not text or _BARE_HASH_VERSION.fullmatch(text):
+            # Untagged checkout: describe falls back to the bare hash, which the
+            # UI already shows separately — do not present it as a version.
+            return None
+        return text
+    except Exception:
+        return None
+
+
+def _get_git_version() -> str | None:
+    """Human-readable version of the running build, derived from a git tag.
+
+    Precedence: build_version.txt baked into packaged builds at build time, then
+    ``git describe --tags --always --dirty``, then the package version from
+    pyproject.toml. Returns None only when nothing resolvable exists (never in
+    practice; the pyproject fallback always wins out).
+    """
+    global _APP_GIT_VERSION
+    if _APP_GIT_VERSION is not None:
+        return _APP_GIT_VERSION
+
+    from backend.runtime_paths import resource_root
+    try:
+        baked = resource_root() / "build_version.txt"
+        if baked.is_file():
+            text = baked.read_text(encoding="utf-8").strip()
+            if text and not _BARE_HASH_VERSION.fullmatch(text):
+                _APP_GIT_VERSION = text
+                return _APP_GIT_VERSION
+    except Exception:
+        pass
+
+    _APP_GIT_VERSION = _describe_git_version() or _get_app_version()
+    return _APP_GIT_VERSION
+
+
 class _SafeEncoder(json.JSONEncoder):
     def default(self, obj):
         import numpy as np
@@ -673,7 +756,10 @@ def create_app(
     async def check_update(_request: web.Request) -> web.Response:
         import aiohttp as _aiohttp
 
-        current = _get_app_version()
+        # Compare the running build's version (git-tag derived, from build_version.txt
+        # in packaged builds or git describe elsewhere) against the latest release tag,
+        # so a deployed release does not report itself as outdated.
+        current = str(_get_git_version() or "").lstrip("vV")
         if os.getenv("TONO_UPDATE_CHECK", "").strip().lower() in ("off", "0", "false", "no"):
             return web.json_response({"current": current, "latest": None, "update_available": False})
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -706,10 +792,17 @@ def create_app(
             "total_executions": sum(v["count"] for v in stats.values()),
         })
 
+    async def get_version(_request: web.Request) -> web.Response:
+        return web.json_response({
+            "version": _get_git_version(),
+            "git_hash": _get_git_hash(),
+        })
+
     app = web.Application(client_max_size=100 * 1024 * 1024)  # 100 MB upload cap
     app["allow_local_filesystem"] = allow_local_filesystem
 
     app.router.add_get("/health", health_check)
+    app.router.add_get("/version", get_version)
     app.router.add_get("/usage-stats", get_usage_stats)
     app.router.add_get("/", index)
     app.router.add_get("/nodes", get_nodes)

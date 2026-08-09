@@ -37,6 +37,13 @@ $pythonExe = if (Test-Path ".\.venv\Scripts\python.exe") {
 $frontendDist = Join-Path $repoRoot "frontend\dist"
 $demoDir = Join-Path $repoRoot "demo"
 
+# Bake the git-tag-derived version (nearest tag, fallback to short hash or "dev").
+# Read at runtime via resource_root()/build_version.txt; the file is gitignored.
+# The git commit hash is deliberately NOT baked: desktop builds have no .git at
+# runtime and the UI hides the hash row when it is absent.
+$gitVersion = if (Get-Command git -ErrorAction SilentlyContinue) { (git describe --tags --always --dirty 2>$null) } else { "dev" }
+Set-Content -Path (Join-Path $repoRoot "build_version.txt") -Value $gitVersion -NoNewline
+
 Write-Host "Removing cached frontend and desktop build artifacts..."
 node scripts\clean-build-artifacts.mjs --mode=native
 Assert-LastExitCode "Artifact cleanup"
@@ -62,6 +69,7 @@ $pyInstallerArgs = @(
     "--specpath", "desktop-build",
     "--add-data", "${frontendDist};frontend/dist",
     "--add-data", "${demoDir};demo",
+    "--add-data", "$(Join-Path $repoRoot 'build_version.txt');.",
     "--collect-all", "matplotlib",
     "--collect-all", "scipy",
     "--collect-all", "skimage",

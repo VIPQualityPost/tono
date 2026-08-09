@@ -176,6 +176,7 @@ function Flow() {
   const [helpTabs, setHelpTabs] = useState<{ label: string; type?: string; content: string | null }[]>([]);
   const [activeHelpTab, setActiveHelpTab] = useState<string | null>(null);
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; url: string } | null>(null);
+  const [buildInfo, setBuildInfo] = useState<{ version?: string; gitHash?: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
@@ -213,6 +214,18 @@ function Flow() {
   const pendingUndoSnapshotRef = useRef<{ nodes: TonoNode[]; edges: TonoEdge[]; nextId: number } | null>(null);
   const reactFlow = useReactFlow<TonoNode, TonoEdge>() as ReturnType<typeof useReactFlow<TonoNode, TonoEdge>> & { updateNodeInternals: (id: string) => void };
   const undoRedo = useUndoRedo();
+
+  // ── Build version / git info (web and native) ──────────────────────
+  useEffect(() => {
+    fetch('/version')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.version || data?.git_hash) {
+          setBuildInfo({ version: data.version, gitHash: data.git_hash });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Update check (native builds only) ──────────────────────────────
   useEffect(() => {
@@ -2591,6 +2604,20 @@ function Flow() {
                     ↑ Update to {updateInfo.latest}
                   </a>
                 </>
+              )}
+              {(buildInfo?.version || buildInfo?.gitHash) && (
+                <div className="floating-menu-build">
+                  {buildInfo?.version && (
+                    <div className="floating-menu-version" title={`tono ${buildInfo.version}`}>
+                      {buildInfo.version}
+                    </div>
+                  )}
+                  {buildInfo?.gitHash && (
+                    <div className="floating-menu-version floating-menu-hash" title={`git ${buildInfo.gitHash}`}>
+                      {buildInfo.gitHash.slice(0, 7)}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

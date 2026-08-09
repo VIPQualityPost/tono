@@ -1,0 +1,48 @@
+name: Sync Version
+
+# Keep pyproject.toml's version on main aligned with released tags. A tag's own
+# commit is immutable, so the sync lands on main right after the release is
+# published; the released version itself comes from the tag (git describe), not
+# from this file. The commit is marked [actions skip] so it does not re-trigger
+# tests/build/deploy.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to set in pyproject.toml (e.g. 1.2.0)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set version from release tag
+        id: set
+        run: |
+          VERSION_RAW="${{ github.event.inputs.version || github.ref_name }}"
+          VERSION="$(python scripts/set_version.py "$VERSION_RAW")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ steps.set.outputs.version }}
+        run: |
+          if git diff --quiet -- pyproject.toml; then
+            echo "pyproject.toml already at $VERSION — nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: sync version to ${VERSION} [actions skip]"
+          git push origin main
