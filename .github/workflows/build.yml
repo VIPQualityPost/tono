@@ -4,6 +4,10 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing release tag to attach binaries to (e.g. v1.3.0)"
+        required: false
 
 jobs:
   build:
@@ -16,21 +20,26 @@ jobs:
             build_cmd: npm run build:mac
             artifact_path: desktop-dist/tono.dmg
             artifact_name: tono-macos
+            release_files: desktop-dist/tono.dmg
 
           - os: ubuntu-latest
             label: Linux
             build_cmd: npm run build:linux
             artifact_path: desktop-dist/tono-linux.tar.gz
             artifact_name: tono-linux
+            release_files: desktop-dist/tono-linux.tar.gz
 
           - os: windows-latest
             label: Windows
             build_cmd: npm run build:windows
             artifact_path: desktop-dist
             artifact_name: tono-windows
+            release_files: desktop-dist/tono.exe
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.label }})
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -81,3 +90,29 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_path }}
           if-no-files-found: error
+
+      # Attach the binary to a release so it shows up on the release page
+      # (workflow artifacts expire after 90 days and stay hidden inside the
+      # run). --clobber makes re-runs idempotent. Target resolution: the
+      # release event that triggered this workflow, or the release_tag input
+      # on a manual dispatch. A manual run without release_tag skips.
+      - name: Attach binary to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ github.event.inputs.release_tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "No release target: manual run without 'release_tag' input. Nothing to attach."
+            exit 0
+          fi
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release '$TAG' not found. Publish it first (Releases -> New release -> Publish), then re-run."
+            exit 1
+          fi
+          gh release upload "$TAG" \
+            ${{ matrix.release_files }} \
+            --clobber
