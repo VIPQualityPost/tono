@@ -16,21 +16,26 @@ jobs:
             build_cmd: npm run build:mac
             artifact_path: desktop-dist/tono.dmg
             artifact_name: tono-macos
+            release_files: desktop-dist/tono.dmg
 
           - os: ubuntu-latest
             label: Linux
             build_cmd: npm run build:linux
             artifact_path: desktop-dist/tono-linux.tar.gz
             artifact_name: tono-linux
+            release_files: desktop-dist/tono-linux.tar.gz
 
           - os: windows-latest
             label: Windows
             build_cmd: npm run build:windows
             artifact_path: desktop-dist
             artifact_name: tono-windows
+            release_files: desktop-dist/tono.exe
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.label }})
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -81,3 +86,16 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_path }}
           if-no-files-found: error
+
+      # Attach the binary to the release that triggered this workflow so it
+      # shows up on the release page (workflow artifacts expire after 90 days
+      # and stay hidden inside the run). --clobber makes re-runs idempotent.
+      - name: Attach binary to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$TAG" \
+            ${{ matrix.release_files }} \
+            --clobber
