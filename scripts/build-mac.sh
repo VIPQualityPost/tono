@@ -50,7 +50,11 @@ $PYTHON -m PyInstaller \
     --specpath desktop-build \
     --add-data "${FRONTEND_DIST}:frontend/dist" \
     --add-data "${DEMO_DIR}:demo" \
+    --add-data "$REPO_ROOT/backend/nodes:backend/nodes" \
+    --add-data "$REPO_ROOT/backend/importers:backend/importers" \
+    --add-data "$REPO_ROOT/backend/exporters:backend/exporters" \
     --add-data "${REPO_ROOT}/build_version.txt:." \
+    --collect-all backend \
     --collect-all matplotlib \
     --collect-all scipy \
     --collect-all skimage \

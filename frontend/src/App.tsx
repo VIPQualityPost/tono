@@ -4,6 +4,7 @@ import React, {
 import {
   ReactFlow, Background, Controls, MiniMap,
   useNodesState, useEdgesState, addEdge, useReactFlow,
+  useUpdateNodeInternals,
   ReactFlowProvider, getViewportForBounds, PanOnScrollMode, SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -212,7 +213,8 @@ function Flow() {
   const loadNodeOutputRequestVersionsRef = useRef(new Map<string, number>());
   const journalContentRef = useRef('');
   const pendingUndoSnapshotRef = useRef<{ nodes: TonoNode[]; edges: TonoEdge[]; nextId: number } | null>(null);
-  const reactFlow = useReactFlow<TonoNode, TonoEdge>() as ReturnType<typeof useReactFlow<TonoNode, TonoEdge>> & { updateNodeInternals: (id: string) => void };
+  const reactFlow = useReactFlow<TonoNode, TonoEdge>();
+  const updateNodeInternals = useUpdateNodeInternals();
   const undoRedo = useUndoRedo();
 
   // ── Build version / git info (web and native) ──────────────────────
@@ -274,8 +276,8 @@ function Flow() {
           },
         } as unknown as TonoNode
     )));
-    reactFlow.updateNodeInternals(groupId);
-  }, [reactFlow, setNodes]);
+    updateNodeInternals(groupId);
+  }, [updateNodeInternals, setNodes]);
 
   const refreshAllGroups = useCallback((explicitNodes: any[] | null = null, explicitEdges: any[] | null = null) => {
     setTimeout(() => {
@@ -515,8 +517,8 @@ function Flow() {
         },
       };
     }));
-    reactFlow.updateNodeInternals(nodeId);
-  }, [reactFlow, setNodes]);
+    updateNodeInternals(nodeId);
+  }, [updateNodeInternals, setNodes]);
 
   const getResolvedPathInput = useCallback((nodeId: string) => {
     const edge = (reactFlow.getEdges() as TonoEdge[]).find(
@@ -1309,10 +1311,10 @@ function Flow() {
         }
       });
       nodesToInitialize.forEach((node: any) => {
-        reactFlow.updateNodeInternals(node.id);
+        updateNodeInternals(node.id);
       });
     }, 0);
-  }, [reactFlow, refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs]);
+  }, [updateNodeInternals, refreshAnnotationNodeOutputs, refreshFolderNodeOutputs, refreshLoadNodeOutputs]);
 
   const pasteClipboardSelection = useCallback((clipboardText: string) => {
     const payload = parseNodeClipboardPayload(clipboardText);
@@ -1383,7 +1385,7 @@ function Flow() {
       };
     }));
 
-    setTimeout(() => reactFlow.updateNodeInternals(String(groupId)), 0);
+    setTimeout(() => updateNodeInternals(String(groupId)), 0);
   }, [reactFlow, setNodes]);
 
   const renameGroup = useCallback((groupId: string, label: string) => {
