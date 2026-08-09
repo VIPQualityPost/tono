@@ -4,21 +4,12 @@ name: Importers
 # tono-test-data submodule. Only run when importer code or tests change.
 
 on:
-  push:
-    paths:
-      - 'backend/importers/**'
-      - 'backend/nodes/image_demo.py'
-      - 'tests/node_tests/importers.py'
-      - 'tests/node_tests/image_demo.py'
-      - 'pyproject.toml'
-      - '.github/workflows/importers.yml'
   pull_request:
     paths:
       - 'backend/importers/**'
       - 'backend/nodes/image_demo.py'
       - 'tests/node_tests/importers.py'
       - 'tests/node_tests/image_demo.py'
-      - 'pyproject.toml'
       - '.github/workflows/importers.yml'
 
 jobs:
