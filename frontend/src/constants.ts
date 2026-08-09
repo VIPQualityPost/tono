@@ -39,6 +39,9 @@ export const CAT_COLORS: Record<string, string> = {
   Measure:         '#382f43',
   Mask:            '#4d3c2a',
   Grains:    '#5a4703',
+  Detect:          '#4b3f57',
+  SPM:             '#3f4a5a',
+  Probe:           '#55423a',
 };
 
 export const SOCKET_COMPATIBILITY: Record<string, Set<string>> = {

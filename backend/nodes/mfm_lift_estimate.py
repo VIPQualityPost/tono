@@ -179,7 +179,7 @@ class MFMLiftEstimate:
     )
     FUNCTION = "process"
 
-    CATEGORY = "Detect"
+    CATEGORY = "SPM"
 
     DESCRIPTION = (
         "Estimates the lift height difference between two MFM images of the same "

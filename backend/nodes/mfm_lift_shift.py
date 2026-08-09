@@ -46,7 +46,7 @@ class MFMLiftShift:
     )
     FUNCTION = "process"
 
-    CATEGORY = "Detect"
+    CATEGORY = "SPM"
 
     DESCRIPTION = (
         "Shifts a magnetic field image to a different lift height above the "

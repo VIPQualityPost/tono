@@ -155,7 +155,7 @@ class MFMParallelMedia:
     )
     FUNCTION = "process"
 
-    CATEGORY = "Detect"
+    CATEGORY = "SPM"
 
     DESCRIPTION = (
         "Simulates the stray field above an in-plane magnetised parallel medium: "

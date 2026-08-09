@@ -253,4 +253,5 @@ Use `tono.nodes()` to list all nodes. Major categories include:
 | **Mask** | ThresholdMask, GrainMark, DrawMask, MaskMorphology |
 | **Grains** | GrainAnalysis, WatershedSegmentation, GrainDistributions |
 | **Geometry** | CropResizeField, RotateField, Resample, AffineCorrection |
-| **Tip** | TipModel, TipDeconvolution, BlindTipEstimate |
+| **SPM** | MFMAnalysis, MFMDomainGeneration, MFMParallelMedia, SMMAnalysis, SEMSimulation |
+| **Probe** | TipModel, TipDeconvolution, BlindTipEstimate, TipShapeEstimate, PSFEstimation |
