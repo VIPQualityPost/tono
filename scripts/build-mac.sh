@@ -24,6 +24,13 @@ fi
 FRONTEND_DIST="$REPO_ROOT/frontend/dist"
 DEMO_DIR="$REPO_ROOT/demo"
 
+# Bake the git-tag-derived version (nearest tag, fallback to short hash or "dev").
+# Read at runtime via resource_root()/build_version.txt; the file is gitignored.
+# The git commit hash is deliberately NOT baked: desktop builds have no .git at
+# runtime and the UI hides the hash row when it is absent.
+GIT_VERSION="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+printf '%s' "$GIT_VERSION" > "$REPO_ROOT/build_version.txt"
+
 echo "Building frontend bundle..."
 npm run build
 
@@ -43,6 +50,7 @@ $PYTHON -m PyInstaller \
     --specpath desktop-build \
     --add-data "${FRONTEND_DIST}:frontend/dist" \
     --add-data "${DEMO_DIR}:demo" \
+    --add-data "${REPO_ROOT}/build_version.txt:." \
     --collect-all matplotlib \
     --collect-all scipy \
     --collect-all skimage \

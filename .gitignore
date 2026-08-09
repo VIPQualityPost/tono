@@ -16,3 +16,4 @@ sessions/
 frontend/coverage/
 usage_stats.json
 tests/output/*.png
+build_version.txt

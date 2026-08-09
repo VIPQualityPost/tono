@@ -115,7 +115,7 @@ sudo certbot renew --dry-run
 | `TONO_APPDATA` | Platform-dependent | Data directory for sessions and uploads. |
 | `TONO_PLUGINS` | `0` (web mode) | Set to `1` to enable the plugin system. **Warning:** plugins execute arbitrary Python code. |
 | `TONO_SESSION_TTL` | `60` | Seconds to wait after a user disconnects before cleaning up their session data. Set to `0` to disable cleanup. |
-| `TONO_UPDATE_CHECK` | (enabled) | Set to `off` to disable the GitHub release update checker. |
+| `TONO_UPDATE_CHECK` | (enabled) | Set to `off` to disable the GitHub release update checker. The check compares the running build's git-tag version against the latest release. |
 
 ## Reverse proxy
 
