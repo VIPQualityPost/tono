@@ -116,6 +116,124 @@ def _find_row_shifts_trimmed_diff(
     return _slope_level_row_shifts(shifts)
 
 
+def _kth_order_statistic(values: np.ndarray, k: int) -> float:
+    """Return the k-th smallest value (0-based), mirroring Gwyddion's kth-rank helpers."""
+    values = np.asarray(values, dtype=np.float64)
+    if values.size == 0:
+        return 0.0
+    k = max(0, min(int(k), values.size - 1))
+    return float(np.partition(values, k)[k])
+
+
+def _find_row_shifts_modus(
+    data: np.ndarray,
+    mask: np.ndarray | None,
+    masking: str,
+) -> np.ndarray:
+    """Per-row modus shifts, ported from linematch_do_modus() in linematch.c.
+
+    The modus (most common value) of each row is estimated from the densest
+    sample cluster: for rows with at least 9 unmasked pixels the sorted values
+    are scanned with a window of length round(sqrt(n)) and the window with the
+    smallest range is used; its inner third is averaged.
+    """
+    yres, xres = data.shape
+    if yres == 0:
+        return np.zeros(0, dtype=np.float64)
+
+    total_median = _global_masked_median(data, mask, masking)
+    shifts = np.empty(yres, dtype=np.float64)
+
+    for i in range(yres):
+        row = data[i]
+        if mask is None or masking == "ignore":
+            values = row
+        elif masking == "include":
+            values = row[mask[i]]
+        else:  # exclude
+            values = row[~mask[i]]
+
+        count = values.size
+        if count == 0:
+            modus = total_median
+        elif count < 9:
+            # gwy_math_median() is the k-th rank at n/2 (upper median for even counts).
+            modus = _kth_order_statistic(values, count // 2)
+        else:
+            sorted_values = np.sort(values, kind="mergesort")
+            seglen = int(np.rint(np.sqrt(count)))
+            nwin = count - seglen + 1
+            diffs = sorted_values[seglen - 1:] - sorted_values[:nwin]
+            bestj = int(np.argmin(diffs))
+            lo = bestj + seglen // 3
+            hi = bestj + seglen - seglen // 3
+            modus = float(sorted_values[lo:hi].mean())
+        shifts[i] = modus
+
+    shifts -= shifts.mean()
+    return shifts
+
+
+def _find_row_shifts_matching(
+    data: np.ndarray,
+    mask: np.ndarray | None,
+    masking: str,
+) -> np.ndarray:
+    """Cumulative Gaussian-weighted row alignment, ported from linematch_do_match() in linematch.c.
+
+    Consecutive row pairs are compared through their local slopes: pair positions
+    with similar slopes receive weights exp(-x^2/(2q)) and the row offset is the
+    slope-weighted average of the value difference, accumulated over all rows.
+    """
+    yres, xres = data.shape
+    shifts = np.zeros(yres, dtype=np.float64)
+    if yres < 2 or xres < 2:
+        return shifts
+
+    x_diff = np.diff(data, axis=1)  # (yres, xres-1): local row slopes
+    for i in range(1, yres):
+        a = data[i - 1]
+        b = data[i]
+        if mask is None or masking == "ignore":
+            valid = np.ones(xres - 1, dtype=bool)
+        elif masking == "include":
+            valid = mask[i - 1][:-1] & mask[i][:-1]
+        else:  # exclude
+            valid = ~(mask[i - 1][:-1] | mask[i][:-1])
+
+        x = x_diff[i - 1] - x_diff[i]
+        if not valid.any():
+            shifts[i] = 0.0
+            continue
+
+        wsum = float(np.abs(x[valid]).sum())
+        if wsum == 0.0:
+            shifts[i] = 0.0
+            continue
+        q = wsum / (xres - 1)
+
+        w = np.zeros(xres - 1, dtype=np.float64)
+        w[valid] = np.exp(-(x[valid] ** 2) / (2.0 * q))
+        wsum = float(w.sum())
+        if wsum == 0.0:
+            shifts[i] = 0.0
+            continue
+
+        lambda_ = (a[0] - b[0]) * w[0]
+        interior = np.arange(1, xres - 1)
+        jvalid = interior[valid[interior]]
+        if jvalid.size:
+            lambda_ += float(np.sum((a[jvalid] - b[jvalid]) * (w[jvalid - 1] + w[jvalid])))
+        lambda_ += (a[xres - 1] - b[xres - 1]) * w[xres - 2]
+        lambda_ /= 2.0 * wsum
+        shifts[i] = -lambda_
+
+    shifts[0] = 0.0
+    shifts = np.cumsum(shifts)
+    shifts -= shifts.mean()
+    return shifts
+
+
 def _vandermonde(x: np.ndarray, degree: int) -> np.ndarray:
     return np.vander(np.asarray(x, dtype=np.float64), N=degree + 1, increasing=True)
 
@@ -260,6 +378,8 @@ class LineCorrection:
                     "trimmed_diff",
                     "polynomial",
                     "step",
+                    "modus",
+                    "matching",
                 ], {"default": "median"}),
                 "direction": (["horizontal", "vertical"], {"default": "horizontal"}),
                 "masking": (["ignore", "include", "exclude"], {"default": "ignore"}),
@@ -292,11 +412,12 @@ class LineCorrection:
 
     DESCRIPTION = (
         "Correct scan-line mismatches using Gwyddion-derived row alignment methods. "
-        "Supports median and trimmed row alignment, difference-based alignment, polynomial row leveling, "
-        "and the step-line correction path from Gwyddion's linecorrect/linematch modules."
+        "Supports median and trimmed row alignment, difference-based alignment, modus (most-common value) alignment, "
+        "Gaussian-weighted row matching, polynomial row leveling, and the step-line correction path "
+        "from Gwyddion's linecorrect/linematch modules."
     )
 
-    KEYWORDS = ("row", "linematch", "linecorrect", "destripe", "scanline", "align")
+    KEYWORDS = ("row", "linematch", "linecorrect", "destripe", "scanline", "align", "modus", "matching")
 
     def process(
         self,
@@ -344,6 +465,14 @@ class LineCorrection:
                 masking,
                 int(polynomial_degree),
             )
+        elif method == "modus":
+            shifts = _find_row_shifts_modus(working, working_mask, masking)
+            corrected = working - shifts[:, np.newaxis]
+            background = np.broadcast_to(shifts[:, np.newaxis], working.shape).copy()
+        elif method == "matching":
+            shifts = _find_row_shifts_matching(working, working_mask, masking)
+            corrected = working - shifts[:, np.newaxis]
+            background = np.broadcast_to(shifts[:, np.newaxis], working.shape).copy()
         elif method == "step":
             corrected, shifts = _line_correct_step(working)
             background = working - corrected

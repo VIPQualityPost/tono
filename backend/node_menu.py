@@ -35,6 +35,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "Save",
         "Shade",
         "PresentationOps",
+        "RankTransform",
     ],
     "Overlay": [
         "Markup",
@@ -57,6 +58,11 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ExtendPad",
         "FieldArithmetic",
         "DisplacementField",
+        "ConvolveTwoImages",
+        "XYDenoise",
+        "MergeChannels",
+        "SquareSamples",
+        "RadialSmoothing",
     ],
     "Level & Correct": [
         "FixZero",
@@ -75,6 +81,13 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "WrapValue",
         "DistributionCoercion",
         "Calibration",
+        "StepBlockCorrection",
+        "GoodMeanProfile",
+        "CorrelationAveraging",
+        "PeriodicTranslate",
+        "InvertValue",
+        "LimitRange",
+        "NullOffsets",
     ],
     "Filter": [
         "GaussianFilter",
@@ -102,6 +115,8 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "FrequencySplit",
         "CrossCorrelate",
         "SuperResolution",
+        "CWT2D",
+        "TransferFunctionGuess",
     ],
     "Measure": [
         "CrossSection",
@@ -121,6 +136,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "StraightenPath",
         "RelateFields",
         "DWTAnisotropy",
+        "AngleDistribution",
     ],
     "Detect": [
         "FeatureDetection",
@@ -130,6 +146,9 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MFMAnalysis",
         "MFMCurrentSimulation",
         "MFMDomainGeneration",
+        "MFMParallelMedia",
+        "MFMLiftShift",
+        "MFMLiftEstimate",
         "ZeroCrossing",
         "PFMAnalysis",
         "LateralForceSim",
@@ -151,6 +170,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "MaskShift",
         "MaskNoisify",
         "RectangularMask",
+        "MarkWith",
     ],
     "Grains": [
         "GrainDistanceTransform",
@@ -163,6 +183,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "GrainEdge",
         "GrainCross",
         "GrainVisualization",
+        "GrainSelectionShapes",
     ],
     "Tip": [
         "TipModel",

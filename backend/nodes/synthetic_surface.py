@@ -446,6 +446,187 @@ def _wfr_surface(shape, rng, n_sources, frequency):
 
 
 # ---------------------------------------------------------------------------
+# Line noise (lno_synth.c)
+# ---------------------------------------------------------------------------
+
+_SQRT2 = float(np.sqrt(2.0))
+_SQRT3 = float(np.sqrt(3.0))
+_SQRT6 = float(np.sqrt(6.0))
+
+
+def _gwy_round(value):
+    """GWY_ROUND: floor(x + 0.5), scalar or array."""
+    return np.floor(np.asarray(value, dtype=np.float64) + 0.5)
+
+
+def _point_noise(rng, n, distribution, direction, sigma=1.0):
+    """Sample line-noise point noise like lno_synth.c's generators[].
+
+    The distributions are centred with RMS sigma; direction mirrors the
+    symmetrical/up/down noise-sign variants.
+    """
+    if distribution == "gaussian":
+        x = rng.normal(0.0, sigma, n)
+    elif distribution == "exponential":
+        u = np.maximum(rng.random(n), np.finfo(np.float64).tiny)
+        sign = rng.integers(0, 2, n, dtype=np.int64) * 2 - 1
+        x = sign * sigma / _SQRT2 * np.log(u)
+    elif distribution == "uniform":
+        x = (2.0 * rng.random(n) - 1.0) * _SQRT3 * sigma
+    elif distribution == "triangular":
+        u = np.maximum(rng.random(n), np.finfo(np.float64).tiny)
+        x = np.where(u <= 0.5, np.sqrt(2.0 * u) - 1.0,
+                     1.0 - np.sqrt(2.0 * (1.0 - u))) * _SQRT6 * sigma
+    else:
+        raise ValueError(f"Unknown line-noise distribution: {distribution!r}")
+
+    if direction == "up":
+        return np.abs(x)
+    if direction == "down":
+        return -np.abs(x)
+    return x
+
+
+def _exp_noise_up(rng, n, sigma):
+    """Absolute exponential (noise_exp_up): always >= 0."""
+    u = np.maximum(rng.random(n), np.finfo(np.float64).tiny)
+    return sigma / _SQRT2 * np.abs(np.log(u))
+
+
+def _scan_xgrid(shape, lineprob):
+    """x = (lineprob*(j + 0.5)/xres + i)/yres for every pixel."""
+    yres, xres = shape
+    cols = lineprob * (np.arange(xres, dtype=np.float64) + 0.5) / (xres * yres)
+    return cols[np.newaxis, :] + np.arange(yres, dtype=np.float64)[:, np.newaxis] / yres
+
+
+def _line_noise_steps(shape, rng, density, lineprob, scandir, cumulative,
+                      distribution, direction):
+    """Steps: random scan-direction steps, one per crossed position line.
+
+    Ports lno_synth.c make_noise_steps(), including the stratified step
+    positions and the cumulative vs. one-shot step heights.
+    """
+    yres, xres = shape
+    nsteps = int(np.maximum(_gwy_round(yres * density), 1))
+    # Stratified positions covering [0, 1) in batches of 64 like the C code.
+    nbatches = (nsteps + 63) // 64
+    pos = np.empty(nsteps)
+    for ib in range(nbatches):
+        base = ib * nsteps // nbatches
+        nxt = (ib + 1) * nsteps // nbatches
+        pos[base:nxt] = rng.uniform(base / nsteps, nxt / nsteps, nxt - base)
+    pos = np.sort(pos)
+    dh = _point_noise(rng, nsteps, distribution, direction)
+
+    x = _scan_xgrid(shape, lineprob)
+    idx = np.searchsorted(pos, x, side="left")   # steps crossed before x
+    if cumulative:
+        cum = np.concatenate(([0.0], np.cumsum(dh)))
+        h = cum[np.minimum(idx, nsteps)]
+    else:
+        h = np.where(idx > 0, dh[np.maximum(idx - 1, 0)], 0.0)
+
+    data = np.zeros(shape)
+    if scandir == "LTR":
+        data += h
+    else:
+        data[:, ::-1] += h
+    return data
+
+
+def _line_noise_scars(shape, rng, coverage, length, length_noise,
+                      distribution, direction):
+    """Scars: horizontal line segments with a constant height offset.
+
+    Ports lno_synth.c make_noise_scars(), using the same scar count formula
+    (stick-out correction, length dispersion) and per-segment constant heights.
+    """
+    yres, xres = shape
+    n = xres * yres
+    noise_corr = np.exp(length_noise * length_noise)
+    stickout_corr = (length + xres) / length if length > 0 else 1.0
+    nscars = int(np.maximum(_gwy_round(coverage * n * stickout_corr
+                                       / (length * noise_corr)), 1))
+    L = int(_gwy_round(length))
+
+    # Uniform row/position draws equivalent to the C's rejected uint32 stream.
+    i_param = yres * (xres + L)
+    m = (0xFFFFFFFF // i_param) * i_param
+    t = rng.integers(0, m, nscars)
+    rows = t % yres
+    j = (t // yres) % (xres + L) + L // 2 - L
+
+    h = _point_noise(rng, nscars, distribution, direction)
+    if length_noise:
+        ln = rng.normal(0.0, length_noise, nscars)
+        lens = np.maximum(_gwy_round(length * np.exp(ln)), 0).astype(np.int64)
+    else:
+        lens = np.full(nscars, L, dtype=np.int64)
+
+    frm = np.clip(j - lens // 2, 0, xres - 1).astype(np.int64)
+    to = np.clip(j + lens - lens // 2, 0, xres - 1).astype(np.int64)
+    valid = frm <= to
+
+    data = np.zeros((yres, xres + 1))
+    rr = rows[valid]
+    ff = frm[valid]
+    tt = to[valid]
+    hh = h[valid]
+    np.add.at(data, (rr, ff), hh)
+    np.add.at(data, (rr, tt + 1), -hh)
+    return data[:, :xres]
+
+
+def _line_noise_ridges(shape, rng, density, lineprob, scandir, width,
+                       distribution, direction):
+    """Ridges: ramps bounded by paired rising/falling events.
+
+    Ports lno_synth.c make_noise_ridges() (ridge events sorted by position,
+    heights accumulate as the scan crosses each event).
+    """
+    yres, xres = shape
+    nridges = int(np.maximum(_gwy_round(yres * (1.0 + width) * density), 1))
+    centre = rng.uniform(-width, 1.0 + width, nridges)
+    w = _exp_noise_up(rng, nridges, width)
+    dh = _point_noise(rng, nridges, distribution, direction)
+
+    pos = np.concatenate([centre - w, centre + w])
+    dhh = np.concatenate([dh, -dh])
+    order = np.argsort(pos, kind="stable")
+    pos = pos[order]
+    dhh = dhh[order]
+
+    x = _scan_xgrid(shape, lineprob)
+    idx = np.searchsorted(pos, x, side="left")
+    cum = np.concatenate(([0.0], np.cumsum(dhh)))
+    h = cum[np.minimum(idx, dhh.size)]
+
+    data = np.zeros(shape)
+    if scandir == "LTR":
+        data += h
+    else:
+        data[:, ::-1] += h
+    return data
+
+
+def _line_noise(shape, rng, ln_type, ln_distribution, ln_direction,
+                density=1.0, lineprob=0.0, scandir="LTR", cumulative=False,
+                coverage=0.01, length=10.0, length_noise=0.0, width=0.01):
+    """Generate one of the line-noise structures (lno_synth.c)."""
+    if ln_type == "steps":
+        return _line_noise_steps(shape, rng, density, lineprob, scandir,
+                                 cumulative, ln_distribution, ln_direction)
+    if ln_type == "scars":
+        return _line_noise_scars(shape, rng, coverage, length, length_noise,
+                                 ln_distribution, ln_direction)
+    if ln_type == "ridges":
+        return _line_noise_ridges(shape, rng, density, lineprob, scandir,
+                                  width, ln_distribution, ln_direction)
+    raise ValueError(f"Unknown line-noise type: {ln_type!r}")
+
+
+# ---------------------------------------------------------------------------
 # Node class
 # ---------------------------------------------------------------------------
 
@@ -461,7 +642,7 @@ class SyntheticSurface:
                     "domains", "ballistic", "deposition", "rods", "dla",
                     "discs", "plateaus", "pileups", "annealing", "voronoi",
                     "spinodal", "pde", "spectral", "residues",
-                    "noise", "periodic", "wfr",
+                    "noise", "periodic", "wfr", "line_noise",
                 ], {"default": "fbm"}),
                 "xres": ("INT", {"default": 256, "min": 16, "max": 2048}),
                 "yres": ("INT", {"default": 256, "min": 16, "max": 2048}),
@@ -540,6 +721,66 @@ class SyntheticSurface:
                         "waves", "dunes", "periodic", "wfr",
                     ]},
                 }),
+                "ln_type": (["steps", "scars", "ridges"], {
+                    "default": "steps",
+                    "show_when_widget_value": {"pattern": ["line_noise"]},
+                }),
+                "ln_distribution": (["gaussian", "exponential", "uniform", "triangular"], {
+                    "default": "gaussian",
+                    "show_when_widget_value": {"pattern": ["line_noise"]},
+                }),
+                "ln_direction": (["both", "up", "down"], {
+                    "default": "both",
+                    "show_when_widget_value": {"pattern": ["line_noise"]},
+                }),
+                "ln_density": ("FLOAT", {
+                    "default": 1.0, "min": 5e-4, "max": 200.0, "step": 0.1,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["steps", "ridges"],
+                    },
+                }),
+                "ln_lineprob": ("FLOAT", {
+                    "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["steps", "ridges"],
+                    },
+                }),
+                "ln_scandir": (["LTR", "RTL"], {
+                    "default": "LTR",
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["steps", "ridges"],
+                    },
+                }),
+                "ln_cumulative": ("BOOLEAN", {
+                    "default": False,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["steps"],
+                    },
+                }),
+                "ln_coverage": ("FLOAT", {
+                    "default": 0.01, "min": 1e-4, "max": 20.0, "step": 0.01,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["scars"],
+                    },
+                }),
+                "ln_length": ("FLOAT", {
+                    "default": 10.0, "min": 1.0, "max": 1e4, "step": 0.5,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["scars"],
+                    },
+                }),
+                "ln_length_noise": ("FLOAT", {
+                    "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["scars"],
+                    },
+                }),
+                "ln_width": ("FLOAT", {
+                    "default": 0.01, "min": 1e-4, "max": 1.0, "step": 0.001,
+                    "show_when_widget_value": {
+                        "pattern": ["line_noise"], "ln_type": ["ridges"],
+                    },
+                }),
             }
         }
 
@@ -550,11 +791,12 @@ class SyntheticSurface:
 
     DESCRIPTION = (
         "Generate synthetic test surfaces for development, calibration, and "
-        "algorithm testing. 28 patterns covering noise, geometry, growth "
-        "simulations, phase separation, reaction-diffusion, and tiling. "
+        "algorithm testing. 29 patterns covering noise, geometry, growth "
+        "simulations, phase separation, reaction-diffusion, tiling, and line "
+        "noise. "
     )
 
-    KEYWORDS = ("generate", "fbm", "fractal", "noise", "simulation", "test", "dla", "voronoi", "turing", "spinodal", "pattern")
+    KEYWORDS = ("generate", "fbm", "fractal", "noise", "simulation", "test", "dla", "voronoi", "turing", "spinodal", "pattern", "line noise")
 
     def process(
         self,
@@ -579,6 +821,17 @@ class SyntheticSurface:
         periodic_type: str = "checker",
         spectral_exponent: float = 2.0,
         frequency: float = 5.0,
+        ln_type: str = "steps",
+        ln_distribution: str = "gaussian",
+        ln_direction: str = "both",
+        ln_density: float = 1.0,
+        ln_lineprob: float = 0.0,
+        ln_scandir: str = "LTR",
+        ln_cumulative: bool = False,
+        ln_coverage: float = 0.01,
+        ln_length: float = 10.0,
+        ln_length_noise: float = 0.0,
+        ln_width: float = 0.01,
     ) -> tuple:
         shape = (yres, xres)
         rng = np.random.default_rng(seed)
@@ -639,6 +892,13 @@ class SyntheticSurface:
             data = _periodic_surface(shape, frequency, periodic_type)
         elif pattern == "wfr":
             data = _wfr_surface(shape, rng, n_particles, frequency)
+        elif pattern == "line_noise":
+            data = _line_noise(
+                shape, rng, ln_type, ln_distribution, ln_direction,
+                density=ln_density, lineprob=ln_lineprob, scandir=ln_scandir,
+                cumulative=ln_cumulative, coverage=ln_coverage,
+                length=ln_length, length_noise=ln_length_noise, width=ln_width,
+            )
         else:
             raise ValueError(f"Unknown pattern: {pattern!r}")
 
