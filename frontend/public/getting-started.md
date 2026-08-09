@@ -22,7 +22,9 @@ Click and drag from an output socket (right side of a node) to an input socket (
 
 Handles are color-coded by type. You can only connect compatible types — tono will snap to valid sockets as you drag.
 
-You can select a connection and press Delete to delete the node.
+**Drag a socket onto empty canvas to add a compatible node.** Grab an *output* socket and drop it on blank space: a menu opens showing only nodes whose inputs accept that type; pick one and it is placed and connected automatically. The same works backwards — grab an *input* socket and drop it on empty space to see nodes whose outputs can feed that input, and the new node's output is connected when you pick it.
+
+You can select a connection and press Delete to delete the connection.
 
 You are not allowed to create cyclic node graphs.
 
