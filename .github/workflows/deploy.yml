@@ -29,6 +29,7 @@ jobs:
             cd /opt/tono
             git fetch --tags origin
             git checkout "$TAG"
+            git submodule update --init --depth 1 demo
             uv pip install -e ".[server]" --quiet
             cd frontend && npm ci --ignore-scripts && npm run build && cd ..
             sudo systemctl restart tono
