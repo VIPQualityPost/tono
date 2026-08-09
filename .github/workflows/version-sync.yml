@@ -25,6 +25,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Release events check out the tag (detached HEAD) by default; this
+          # workflow updates main, so checkout the branch it must commit to.
+          ref: main
 
       - name: Set version from release tag
         id: set
