@@ -24,7 +24,7 @@ jobs:
       - name: Init tests/fixtures submodule
         run: git submodule update --init --depth 1 tests/fixtures
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
