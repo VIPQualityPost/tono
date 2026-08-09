@@ -13,6 +13,7 @@ Compute the two-dimensional autocorrelation function with Gwyddion-style mean or
 | Name | Type | Description |
 |------|------|-------------|
 | acf | DATA_FIELD | 2D autocorrelation field centered on zero shift |
+| measurement | RECORD_TABLE | Dominant period along x and y from the first positive peak of the center row/column (rows only present when a peak exists) |
 
 ## Controls
 

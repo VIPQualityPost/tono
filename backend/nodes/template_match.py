@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 from backend.node_registry import register_node
 from backend.nodes.helpers import bool_to_mask
 
@@ -25,6 +26,7 @@ class TemplateMatch:
     OUTPUTS = (
         ('DATA_FIELD', 'score'),
         ('IMAGE', 'detections'),
+        ('RECORD_TABLE', 'matches'),
     )
     FUNCTION = "process"
 
@@ -43,13 +45,40 @@ class TemplateMatch:
         threshold: float,
     ) -> tuple:
         from skimage.feature import match_template
+        from skimage.measure import label
 
-        score = match_template(image.data, template.data, pad_input=True)
+        image_data = np.asarray(image.data, dtype=np.float64)
+        template_data = np.asarray(template.data, dtype=np.float64)
+
+        # match_template returns all zeros for very small data magnitudes (nm-scale SPM
+        # heights ~1e-9). Normalized cross-correlation is scale-invariant, so rescale
+        # both inputs to O(1) before matching; the scores are unchanged.
+        amp = max(float(np.abs(image_data).max()), float(np.abs(template_data).max()))
+        if amp > 0:
+            image_data = image_data / amp
+            template_data = template_data / amp
+
+        score = match_template(image_data, template_data, pad_input=True)
 
         # Clip to [0, 1] for display (match_template returns values in [-1, 1])
         score_clipped = np.clip(score, 0.0, 1.0)
 
         detections = bool_to_mask(score_clipped >= float(threshold))
 
+        # Report up to 20 detected match positions: centroid of each connected
+        # component of the detection mask, in physical coordinates.
+        lab = label(detections > 0)
+        rows: list[dict] = []
+        for i in range(1, int(min(lab.max(), 20)) + 1):
+            pts = np.argwhere(lab == i)
+            if pts.size == 0:
+                continue
+            yc, xc = pts.mean(axis=0)
+            rows.append({"quantity": f"Match {i} X", "value": float(xc) * image.dx, "unit": image.si_unit_xy})
+            rows.append({"quantity": f"Match {i} Y", "value": float(yc) * image.dy, "unit": image.si_unit_xy})
+            rows.append({"quantity": f"Match {i} score", "value": float(score_clipped[int(yc), int(xc)]), "unit": ""})
+        matches = RecordTable(rows)
+        emit_table(matches)
+
         score_field = image.replace(data=score_clipped)
-        return (score_field, detections)
+        return (score_field, detections, matches)

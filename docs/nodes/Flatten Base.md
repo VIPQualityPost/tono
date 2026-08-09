@@ -13,6 +13,7 @@ Level the flat base of a surface that has raised features (particles, grains). U
 | Name | Type | Description |
 |------|------|-------------|
 | leveled | DATA_FIELD | Field with base leveled |
+| background | DATA_FIELD | Fitted polynomial background that was subtracted |
 
 ## Controls
 

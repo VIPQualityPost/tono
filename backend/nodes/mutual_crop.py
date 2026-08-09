@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 @register_node(display_name="Mutual Crop")
@@ -22,6 +23,7 @@ class MutualCrop:
     OUTPUTS = (
         ('DATA_FIELD', 'cropped_a'),
         ('DATA_FIELD', 'cropped_b'),
+        ('RECORD_TABLE', 'alignment'),
     )
     FUNCTION = "process"
 
@@ -54,6 +56,15 @@ class MutualCrop:
         dy = peak[0] - cy
         dx = peak[1] - cx
 
+        # Alignment summary (shift of b relative to a), available on both return paths
+        alignment = RecordTable([
+            {"quantity": "Shift X (px)", "value": float(dx), "unit": "px"},
+            {"quantity": "Shift Y (px)", "value": float(dy), "unit": "px"},
+            {"quantity": "Shift X", "value": float(dx) * field_a.dx, "unit": field_a.si_unit_xy},
+            {"quantity": "Shift Y", "value": float(dy) * field_a.dy, "unit": field_a.si_unit_xy},
+        ])
+        emit_table(alignment)
+
         # Compute overlap region
         ay_start = max(0, dy)
         ay_end = min(a.shape[0], b.shape[0] + dy)
@@ -67,15 +78,27 @@ class MutualCrop:
 
         if ay_end <= ay_start or ax_end <= ax_start:
             # No overlap found, return originals
-            return (field_a, field_b)
+            return (field_a, field_b, alignment)
 
         crop_a = a[ay_start:ay_end, ax_start:ax_end]
         crop_b = b[by_start:by_end, bx_start:bx_end]
 
+        # Crop origins: each cropped field keeps its physical position in its own frame
         xreal = crop_a.shape[1] * field_a.dx
         yreal = crop_a.shape[0] * field_a.dy
-
-        return (
-            field_a.replace(data=crop_a, xreal=xreal, yreal=yreal),
-            field_b.replace(data=crop_b, xreal=xreal, yreal=yreal),
+        crop_a_field = field_a.replace(
+            data=crop_a,
+            xreal=xreal,
+            yreal=yreal,
+            xoff=field_a.xoff + ax_start * field_a.dx,
+            yoff=field_a.yoff + ay_start * field_a.dy,
         )
+        crop_b_field = field_b.replace(
+            data=crop_b,
+            xreal=crop_b.shape[1] * field_b.dx,
+            yreal=crop_b.shape[0] * field_b.dy,
+            xoff=field_b.xoff + bx_start * field_b.dx,
+            yoff=field_b.yoff + by_start * field_b.dy,
+        )
+
+        return (crop_a_field, crop_b_field, alignment)

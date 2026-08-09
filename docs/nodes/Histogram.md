@@ -14,6 +14,7 @@ Compute the height distribution histogram (DH). Use log scale to reveal small pe
 |------|------|-------------|
 | measurements | RECORD_TABLE | Measurements at the two cursor markers (x/y positions and dx/dy) |
 | marker_pair | COORDPAIR | Current cursor marker positions |
+| curve | LINE | The displayed histogram curve (counts vs. bin centers; log-transformed when log scale is selected) |
 
 ## Controls
 

@@ -14,6 +14,7 @@ Level a field by iteratively finding the dominant local facet orientation and su
 | Name | Type | Description |
 |------|------|-------------|
 | leveled | DATA_FIELD | Field with dominant facet plane subtracted |
+| plane | RECORD_TABLE | Fitted plane offset (in the field's z unit) and tilt angles X/Y in degrees |
 
 ## Controls
 

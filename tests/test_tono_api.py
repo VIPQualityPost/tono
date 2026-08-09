@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import tono
-from backend.data_types import DataField, RecordTable
+from backend.data_types import DataField
 
 
 @pytest.fixture
@@ -55,11 +55,11 @@ def test_awkward_required_order(sample_field):
     # ThresholdMask has ``threshold`` (default 0.0) followed by ``direction``
     # (no default). The wrapper must handle this without raising, and the
     # metadata default for threshold must still fire at call time.
-    mask, record = tono.ThresholdMask(
+    mask, threshold = tono.ThresholdMask(
         sample_field, method="otsu", direction="above"
     )
     assert mask.shape == sample_field.data.shape
-    assert isinstance(record, RecordTable)
+    assert isinstance(threshold, float)
 
 
 # ── Signature introspection ─────────────────────────────────────────────

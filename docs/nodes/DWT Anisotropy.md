@@ -13,7 +13,7 @@ Quantify surface anisotropy using a multi-level 2-D Haar wavelet decomposition. 
 | Name | Type | Description |
 |------|------|-------------|
 | anisotropy_map | DATA_FIELD | Per-pixel anisotropy ratio map (averaged across decomposition levels) |
-| statistics | RECORD_TABLE | Per-level X/Y energy ratios and anisotropy flags |
+| statistics | RECORD_TABLE | Per-level X/Y detail energies, energy ratio, and anisotropy flag (quantity/value/unit rows) |
 
 ## Controls
 
@@ -29,4 +29,4 @@ Quantify surface anisotropy using a multi-level 2-D Haar wavelet decomposition. 
 - Ratio > 1 means the surface has more horizontal features; ratio < 1 means more vertical features; ratio near 1 indicates isotropy.
 - The input is padded to the next power of 2 if necessary; padding uses edge values.
 - The anisotropy map is built by upsampling each level's per-pixel ratio and averaging across levels.
-- The statistics table includes per-level x_energy, y_energy, ratio, and a boolean anisotropic flag based on the ratio_threshold control.
+- The statistics table contains per-level rows with quantity/value/unit: X energy, Y energy, X/Y ratio, and the anisotropic flag (1.0 when |ratio - 1| exceeds ratio_threshold, else 0.0).

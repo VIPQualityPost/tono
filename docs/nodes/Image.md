@@ -1,6 +1,6 @@
 # Image
 
-Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) provide calibrated dimensions; each channel gets its own output. Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields.
+Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) provide calibrated dimensions; up to three channels are exposed as separate outputs. Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields.
 
 ## Inputs
 
@@ -13,7 +13,9 @@ Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) pr
 | Name | Type | Description |
 |------|------|-------------|
 | path | FILE_PATH | Resolved absolute file path |
-| field | DATA_FIELD | Loaded data field (one per channel for multi-channel formats) |
+| field | DATA_FIELD | Loaded data field (first channel) |
+| channel_2 | DATA_FIELD | Second channel, when the file has two or more channels |
+| channel_3 | DATA_FIELD | Third channel, when the file has three or more channels |
 
 ## Controls
 
@@ -25,4 +27,4 @@ Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) pr
 ## Notes
 
 - Uncalibrated formats (images, arrays) emit a warning and produce fields without physical dimensions.
-- Multi-channel files (e.g. .gwy with multiple data channels) produce one DATA_FIELD output socket per channel; the socket count is determined at load time.
+- Multi-channel files (e.g. .gwy with multiple data channels) expose up to three channels on the channel_2/channel_3 outputs; further channels are dropped with a warning.

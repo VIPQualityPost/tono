@@ -5,8 +5,10 @@ from __future__ import annotations
 import numpy as np
 from scipy.ndimage import rotate as ndimage_rotate
 
+from backend.execution_context import emit_value
 from backend.node_registry import register_node
 from backend.data_types import DataField
+from backend.nodes.helpers import _scalar_payload
 
 
 def _slope_angle_histogram(data: np.ndarray, n_bins: int = 3600) -> np.ndarray:
@@ -60,13 +62,15 @@ class Unrotate:
 
     OUTPUTS = (
         ('DATA_FIELD', 'leveled'),
+        ('FLOAT', 'angle'),
     )
     FUNCTION = "process"
 
     DESCRIPTION = (
         "Auto-detect and correct in-plane scan rotation. Computes a slope "
         "angle histogram, finds the dominant feature direction for the given "
-        "symmetry, and rotates the image to align features with the axes."
+        "symmetry, and rotates the image to align features with the axes. "
+        "The angle output reports the applied correction in degrees."
     )
 
     KEYWORDS = ("rotation", "alignment", "angle", "symmetry", "crystal")
@@ -80,9 +84,11 @@ class Unrotate:
         angle_deg = float(np.degrees(angle_rad))
 
         if abs(angle_deg) < 0.01:
-            return (field,)
+            result = field
+        else:
+            rotated = ndimage_rotate(data, angle_deg, reshape=False, order=1,
+                                     mode='nearest')
+            result = field.replace(data=rotated)
 
-        rotated = ndimage_rotate(data, angle_deg, reshape=False, order=1,
-                                 mode='nearest')
-
-        return (field.replace(data=rotated),)
+        emit_value(_scalar_payload(angle_deg, "deg"))
+        return (result, float(angle_deg))

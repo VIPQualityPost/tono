@@ -1,9 +1,9 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.execution_context import emit_overlay
-from backend.data_types import DataField, RecordTable
-from backend.nodes.helpers import bool_to_mask, histogram_with_centers, emit_mask_preview
+from backend.execution_context import emit_overlay, emit_value
+from backend.data_types import DataField
+from backend.nodes.helpers import bool_to_mask, histogram_with_centers, emit_mask_preview, _scalar_payload
 
 
 @register_node(display_name="Threshold Mask")
@@ -30,6 +30,7 @@ class ThresholdMask:
     DESCRIPTION = (
         "Create a binary mask by thresholding data. "
         "Otsu automatically finds the optimal threshold. "
+        "The threshold output reports the effective threshold applied. "
     )
 
     KEYWORDS = ("otsu", "binarize", "segment", "cutoff", "level")
@@ -75,8 +76,6 @@ class ThresholdMask:
 
         emit_mask_preview(field, mask)
 
-        table = RecordTable([
-            {"quantity": "threshold", "value": threshold, "unit": field.si_unit_xy},
-        ])
-        
-        return (mask, table)
+        emit_value(_scalar_payload(t, field.si_unit_z))
+
+        return (mask, float(t))

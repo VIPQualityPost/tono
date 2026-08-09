@@ -9,8 +9,9 @@ def test_unrotate_preserves_shape():
     data = np.random.default_rng(42).standard_normal((64, 64))
     field = make_field(data=data)
 
-    (result,) = node.process(field, symmetry="4-fold")
+    (result, angle) = node.process(field, symmetry="4-fold")
     assert result.data.shape == (64, 64)
+    assert isinstance(angle, float)
 
 
 def test_unrotate_small_angle():
@@ -34,7 +35,10 @@ def test_unrotate_no_rotation_passthrough():
     data = np.sin(2 * np.pi * x / 16.0)
     field = make_field(data=data)
 
-    (result,) = node.process(field, symmetry="4-fold")
+    (result, angle) = node.process(field, symmetry="4-fold")
+    assert isinstance(angle, float)
+    # Features are already axis-aligned, so the correction angle is ≈ 0 deg.
+    assert abs(angle) < 0.5
     assert np.allclose(result.data, data, atol=0.1)
 
 
@@ -46,5 +50,6 @@ def test_unrotate_symmetry_options():
     field = make_field(data=data)
 
     for sym in ["2-fold", "3-fold", "4-fold", "6-fold"]:
-        (result,) = node.process(field, symmetry=sym)
+        (result, angle) = node.process(field, symmetry=sym)
         assert result.data.shape == (64, 64)
+        assert isinstance(angle, float)

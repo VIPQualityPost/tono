@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 def _find_overlap_shift(a: np.ndarray, b: np.ndarray) -> tuple[int, int]:
@@ -45,6 +46,7 @@ class ImageStitch:
 
     OUTPUTS = (
         ('DATA_FIELD', 'stitched'),
+        ('RECORD_TABLE', 'alignment'),
     )
     FUNCTION = "process"
 
@@ -129,4 +131,13 @@ class ImageStitch:
 
         xreal = out.shape[1] * field_a.dx
         yreal = out.shape[0] * field_a.dy
-        return (field_a.replace(data=out, xreal=xreal, yreal=yreal),)
+
+        # Overlap shift of b relative to a from the last cross-correlation
+        alignment = RecordTable([
+            {"quantity": "Overlap shift X (px)", "value": float(dx), "unit": "px"},
+            {"quantity": "Overlap shift Y (px)", "value": float(dy), "unit": "px"},
+            {"quantity": "Overlap shift X", "value": float(dx) * field_a.dx, "unit": field_a.si_unit_xy},
+            {"quantity": "Overlap shift Y", "value": float(dy) * field_a.dy, "unit": field_a.si_unit_xy},
+        ])
+        emit_table(alignment)
+        return (field_a.replace(data=out, xreal=xreal, yreal=yreal), alignment)

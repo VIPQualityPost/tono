@@ -16,6 +16,7 @@ Combine multiple aligned scans to produce a super-resolved image with higher spa
 | Name | Type | Description |
 |------|------|-------------|
 | result | DATA_FIELD | Super-resolved image |
+| alignment | RECORD_TABLE | Per-frame sub-pixel shifts (px and physical units) relative to the reference |
 
 ## Controls
 

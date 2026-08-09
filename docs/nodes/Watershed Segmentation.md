@@ -14,6 +14,7 @@ Segment a height field into grains using the two-stage Gwyddion watershed workfl
 | Name | Type | Description |
 |------|------|-------------|
 | mask | IMAGE | Binary grain mask from watershed segmentation |
+| regions | RECORD_TABLE | Grain count and mask coverage of the final mask |
 
 ## Controls
 

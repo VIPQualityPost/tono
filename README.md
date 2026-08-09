@@ -19,7 +19,7 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -e ".[server,dev]"
 npm install
 
-# Running the servers
+# Running the servers (from the repo root — scripts live in the root package.json, not frontend/)
 npm run dev:all   # one terminal — starts the Python backend and the Vite dev server together
 ```
 
@@ -47,7 +47,7 @@ pip install -e .
 import tono
 
 fields = tono.load("scan.gwy")
-leveled = tono.apply("PlaneLevelField", fields[0])
+leveled, plane = tono.apply("PlaneLevelField", fields[0])
 filtered = tono.apply("GaussianFilter", leveled, sigma=2.0)
 ```
 

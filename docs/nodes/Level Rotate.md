@@ -13,6 +13,7 @@ Level by physically rotating the data plane. Fits a best-fit plane, converts its
 | Name | Type | Description |
 |------|------|-------------|
 | leveled | DATA_FIELD | Field with tilt removed by rotation |
+| tilt | RECORD_TABLE | Applied tilt angles X/Y in degrees |
 
 ## Notes
 

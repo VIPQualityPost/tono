@@ -4,7 +4,8 @@ import warnings
 
 import numpy as np
 
-from backend.data_types import DataField
+from backend.execution_context import emit_table
+from backend.data_types import DataField, RecordTable
 from backend.node_registry import register_node
 from backend.nodes.helpers import bool_to_mask
 
@@ -188,13 +189,15 @@ class ScarRemoval:
 
     OUTPUTS = (
         ('DATA_FIELD', 'corrected'),
-        ('IMAGE', 'scar_mask'),
+        ('IMAGE', 'mask'),
+        ('RECORD_TABLE', 'stats'),
     )
     FUNCTION = "process"
 
     DESCRIPTION = (
         "Detect and remove horizontal scan scars using Gwyddion-derived scar marking thresholds, "
-        "then interpolate over the detected mask with a Laplace-style inpaint."
+        "then interpolate over the detected mask with a Laplace-style inpaint. Also reports "
+        "statistics for the detected scar mask."
     )
 
     KEYWORDS = ("stripe", "streak", "glitch", "artifact", "inpaint", "destripe")
@@ -221,4 +224,9 @@ class ScarRemoval:
         )
         scar_mask = marks > 0.0
         corrected = _laplace_inpaint(np.asarray(field.data, dtype=np.float64), scar_mask)
-        return (field.replace(data=corrected), bool_to_mask(scar_mask))
+        stats = RecordTable([
+            {"quantity": "Scar pixels", "value": int(scar_mask.sum()), "unit": "px"},
+            {"quantity": "Scar fraction", "value": float(scar_mask.sum() / scar_mask.size), "unit": ""},
+        ])
+        emit_table(stats)
+        return (field.replace(data=corrected), bool_to_mask(scar_mask), stats)

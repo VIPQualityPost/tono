@@ -8,7 +8,8 @@ from scipy.ndimage import map_coordinates
 
 from backend.node_registry import register_node
 from backend.data_types import DataField, LineData, datafield_to_uint8, encode_preview
-from backend.execution_context import emit_overlay
+from backend.execution_context import emit_overlay, emit_value
+from backend.nodes.helpers import _scalar_payload
 
 
 @register_node(display_name="Straighten Path")
@@ -28,6 +29,7 @@ class StraightenPath:
     OUTPUTS = (
         ('DATA_FIELD', 'straightened'),
         ('LINE', 'profile'),
+        ('FLOAT', 'length'),
     )
     FUNCTION = "process"
 
@@ -35,7 +37,8 @@ class StraightenPath:
         "Extract a cross-section along an arbitrary curved path defined by "
         "control points. The path is a natural cubic spline through the "
         "points. Drag the points on the preview to reshape the path; the "
-        "shaded band shows the sampling thickness. "
+        "shaded band shows the sampling thickness. The physical path length "
+        "is reported alongside the straightened strip. "
     )
 
     KEYWORDS = ("unbend", "unroll", "spline", "curved profile", "extract path")
@@ -67,7 +70,8 @@ class StraightenPath:
                 x_unit=field.si_unit_xy,
                 y_unit=field.si_unit_z,
             )
-            return (field, empty_line)
+            emit_value(_scalar_payload(0.0, field.si_unit_xy))
+            return (field, empty_line, 0.0)
 
         px = [f * (xres - 1) for f in fx]
         py = [f * (yres - 1) for f in fy]
@@ -117,4 +121,5 @@ class StraightenPath:
             data=result, xreal=total_length,
             yreal=thickness * max(field.dx, field.dy),
         )
-        return (straightened, profile)
+        emit_value(_scalar_payload(float(total_length), field.si_unit_xy))
+        return (straightened, profile, float(total_length))

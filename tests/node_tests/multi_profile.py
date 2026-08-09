@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from backend.data_types import LineData
 from tests.node_tests._shared import make_field
 
 
@@ -8,10 +9,14 @@ def test_horizontal_center():
 
     node = MultipleProfiles()
     field = make_field(shape=(64, 128))
-    (profile,) = node.process(field, field, row=-1, direction="horizontal", mode="overlay")
+    profile, profile_b = node.process(field, field, row=-1, direction="horizontal", mode="overlay")
     assert len(profile.data) == 128, f"Expected width 128, got {len(profile.data)}"
     assert profile.x_axis is not None
     assert len(profile.x_axis) == len(profile.data)
+    # profile_b is field b's raw sample of the same center row
+    assert isinstance(profile_b, LineData)
+    assert len(profile_b.data) == 128
+    assert np.allclose(profile_b.data, field.data[32, :])
 
 
 def test_difference_mode():
@@ -20,8 +25,10 @@ def test_difference_mode():
     node = MultipleProfiles()
     data = np.random.default_rng(5).standard_normal((32, 32))
     field = make_field(data=data)
-    (profile,) = node.process(field, field, row=-1, direction="horizontal", mode="difference")
+    profile, profile_b = node.process(field, field, row=-1, direction="horizontal", mode="difference")
     assert np.allclose(profile.data, 0.0), "Difference of same field should be zero"
+    # profile_b matches field b's center row regardless of mode
+    assert np.allclose(profile_b.data, data[16, :])
 
 
 def test_vertical_direction():
@@ -29,8 +36,11 @@ def test_vertical_direction():
 
     node = MultipleProfiles()
     field = make_field(shape=(80, 40))
-    (profile,) = node.process(field, field, row=-1, direction="vertical", mode="overlay")
+    profile, profile_b = node.process(field, field, row=-1, direction="vertical", mode="overlay")
     assert len(profile.data) == 80, f"Vertical profile length should be field height (80), got {len(profile.data)}"
+    # Vertical sample of field b's center column
+    assert len(profile_b.data) == 80
+    assert np.allclose(profile_b.data, field.data[:, 20])
 
 
 def test_emits_blended_overlay():
@@ -42,7 +52,7 @@ def test_emits_blended_overlay():
 
     overlays = []
     with execution_callbacks(overlay=lambda nid, d: overlays.append(d)), active_node("test"):
-        node.process(field, field, row=10, direction="horizontal", mode="overlay")
+        profile, profile_b = node.process(field, field, row=10, direction="horizontal", mode="overlay")
 
     assert len(overlays) == 1
     ov = overlays[0]
@@ -52,6 +62,9 @@ def test_emits_blended_overlay():
     assert ov["row"] == 10
     assert ov["direction"] == "horizontal"
     assert ov["max_index"] == 63  # height - 1
+    # Raw field-b profile is exposed alongside the overlay-mode result
+    assert len(profile_b.data) == 128
+    assert np.allclose(profile.data, profile_b.data)
 
 
 def test_overlay_max_index_for_vertical():
@@ -63,9 +76,10 @@ def test_overlay_max_index_for_vertical():
 
     overlays = []
     with execution_callbacks(overlay=lambda nid, d: overlays.append(d)), active_node("test"):
-        node.process(field, field, row=-1, direction="vertical", mode="overlay")
+        profile, profile_b = node.process(field, field, row=-1, direction="vertical", mode="overlay")
 
     ov = overlays[0]
     assert ov["direction"] == "vertical"
     assert ov["max_index"] == 39  # width - 1
     assert ov["row"] == 20  # center column for 40 wide
+    assert len(profile_b.data) == 80

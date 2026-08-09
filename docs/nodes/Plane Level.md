@@ -14,6 +14,7 @@ Fit and subtract a least-squares plane from the data. Supports include/exclude m
 | Name | Type | Description |
 |------|------|-------------|
 | leveled | DATA_FIELD | Field with the fitted plane subtracted |
+| plane | RECORD_TABLE | Fitted plane offset (in the field's z unit) and tilt angles X/Y in degrees |
 
 ## Controls
 

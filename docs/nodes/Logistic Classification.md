@@ -15,6 +15,7 @@ Classify surface features using logistic regression on engineered height-derived
 |------|------|-------------|
 | mask | IMAGE | Binary classification result (0 or 255) |
 | probability | DATA_FIELD | Per-pixel probability from the logistic model (values in [0, 1]) |
+| model_stats | RECORD_TABLE | Training accuracy, training pixel count, and learned per-feature weights |
 
 ## Controls
 

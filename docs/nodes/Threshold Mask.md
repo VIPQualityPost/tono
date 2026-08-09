@@ -13,7 +13,7 @@ Create a binary mask by thresholding data. Otsu automatically finds the optimal 
 | Name | Type | Description |
 |------|------|-------------|
 | mask | IMAGE | Binary mask (white = selected pixels) |
-| threshold | RECORD_TABLE | Table with the threshold value applied |
+| threshold | FLOAT | Effective threshold value applied (Otsu result for the otsu method), in the field's z unit |
 
 ## Controls
 

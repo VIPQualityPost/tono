@@ -14,6 +14,7 @@ Extract and compare line profiles from two fields along a chosen row or column. 
 | Name | Type | Description |
 |------|------|-------------|
 | profile | LINE | Resulting line profile |
+| profile_b | LINE | Field B's raw line profile (same x-axis and units as profile) |
 
 ## Controls
 

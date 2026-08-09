@@ -6,7 +6,8 @@ import numpy as np
 from scipy.ndimage import gaussian_filter, sobel
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 from backend.nodes.helpers import mask_to_bool, bool_to_mask
 
 
@@ -162,6 +163,7 @@ class LogisticClassification:
     OUTPUTS = (
         ('IMAGE', 'mask'),
         ('DATA_FIELD', 'probability'),
+        ('RECORD_TABLE', 'model_stats'),
     )
     FUNCTION = "process"
 
@@ -169,7 +171,8 @@ class LogisticClassification:
         "Classify surface features using logistic regression on engineered "
         "height-derived features (Gaussian blurs, Sobel gradients, Laplacian). "
         "Optionally accepts a training mask; otherwise an Otsu-based threshold "
-        "generates pseudo-labels automatically."
+        "generates pseudo-labels automatically. Reports the per-pixel training "
+        "accuracy, the training pixel count, and the learned feature weights."
     )
 
     KEYWORDS = ("machine learning", "regression", "segment", "ml", "neural")
@@ -228,4 +231,16 @@ class LogisticClassification:
         # Build probability output as a DataField
         prob_field = field.replace(data=probability, si_unit_z="")
 
-        return (mask, prob_field)
+        # Model statistics table
+        accuracy = float(np.mean((probability.ravel() > 0.5) == y_train.astype(bool)))
+        rows = [
+            {"quantity": "Training accuracy", "value": accuracy, "unit": ""},
+            {"quantity": "Training pixels", "value": int(y_train.size), "unit": "px"},
+        ]
+        # Bias sits at theta[0]; report one row per learned feature weight.
+        for i in range(1, len(theta)):
+            rows.append({"quantity": f"Feature {i} weight", "value": float(theta[i]), "unit": ""})
+        model_stats = RecordTable(rows)
+        emit_table(model_stats)
+
+        return (mask, prob_field, model_stats)

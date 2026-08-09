@@ -14,6 +14,7 @@ Extract a cross-section along an arbitrary curved path defined by control points
 |------|------|-------------|
 | straightened | DATA_FIELD | Straightened cross-section; width = n_samples, height = thickness |
 | profile | LINE | 1-pixel-wide profile sampled along the centerline of the path |
+| length | FLOAT | Physical length of the path (in the field's lateral units) |
 
 ## Controls
 

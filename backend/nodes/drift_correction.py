@@ -6,7 +6,8 @@ import numpy as np
 from scipy.ndimage import shift as ndimage_shift
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 def _estimate_drift(data: np.ndarray, reference: str) -> np.ndarray:
@@ -51,6 +52,7 @@ class DriftCorrection:
 
     OUTPUTS = (
         ('DATA_FIELD', 'corrected'),
+        ('RECORD_TABLE', 'drift'),
     )
     FUNCTION = "process"
 
@@ -58,6 +60,8 @@ class DriftCorrection:
         "Compensate for thermal or piezo drift between scan lines. "
         "Cross-correlates each row (or column) against a reference to estimate "
         "the drift offset, then shifts lines to correct. "
+        "The drift table reports max, mean |drift|, and RMS drift in pixels, "
+        "plus the max drift in physical units along the corrected direction."
     )
 
     KEYWORDS = ("thermal", "piezo", "alignment", "shift", "row")
@@ -79,4 +83,14 @@ class DriftCorrection:
         if direction == "vertical":
             corrected = corrected.T
 
-        return (field.replace(data=corrected),)
+        shifts_abs = np.abs(shifts)
+        scale = field.dx if direction == "horizontal" else field.dy
+        rows = [
+            {"quantity": "Max drift (px)", "value": float(np.max(shifts_abs)), "unit": "px"},
+            {"quantity": "Mean |drift| (px)", "value": float(np.mean(shifts_abs)), "unit": "px"},
+            {"quantity": "RMS drift (px)", "value": float(np.sqrt(np.mean(shifts ** 2))), "unit": "px"},
+            {"quantity": "Max drift", "value": float(np.max(shifts_abs)) * scale, "unit": field.si_unit_xy},
+        ]
+        drift = RecordTable(rows)
+        emit_table(drift)
+        return (field.replace(data=corrected), drift)

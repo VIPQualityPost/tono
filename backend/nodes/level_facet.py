@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 from backend.node_registry import register_node
 from backend.nodes.surface_common import require_compatible_xy_z_units
 from backend.nodes.helpers import normalize_mask
@@ -83,13 +84,14 @@ def _facet_level_data(
     *,
     max_iterations: int = 100,
     eps: float = 1e-9,
-) -> np.ndarray:
+) -> tuple[np.ndarray, float, float, float]:
     working = np.asarray(field.data, dtype=np.float64).copy()
+    a, bx, by = 0.0, 0.0, 0.0
 
     for _ in range(max(1, int(max_iterations))):
         ok, a, bx, by = _fit_facet_plane(working, field.dx, field.dy, mask, masking)
         if not ok:
-            return np.asarray(field.data, dtype=np.float64).copy()
+            return np.asarray(field.data, dtype=np.float64).copy(), a, bx, by
 
         working = _subtract_plane(working, a, bx, by)
         slope_x = float(bx) / (field.dx if field.dx > 0.0 else 1.0)
@@ -97,7 +99,7 @@ def _facet_level_data(
         if slope_x * slope_x + slope_y * slope_y < float(eps):
             break
 
-    return working
+    return working, a, bx, by
 
 
 @register_node(display_name="Facet Level")
@@ -116,6 +118,7 @@ class FacetLevelField:
 
     OUTPUTS = (
         ('DATA_FIELD', 'leveled'),
+        ('RECORD_TABLE', 'plane'),
     )
     FUNCTION = "process"
 
@@ -135,5 +138,14 @@ class FacetLevelField:
     ) -> tuple:
         require_compatible_xy_z_units(field, "Facet Level")
         mask_array = normalize_mask(mask, field.data.shape)
-        leveled = _facet_level_data(field, mask_array, masking, max_iterations=100)
-        return (field.replace(data=leveled),)
+        leveled, a, bx, by = _facet_level_data(field, mask_array, masking, max_iterations=100)
+
+        tilt_x_deg = float(np.degrees(np.arctan(bx / field.dx))) if field.dx > 0 else float(np.degrees(np.arctan(bx)))
+        tilt_y_deg = float(np.degrees(np.arctan(by / field.dy))) if field.dy > 0 else float(np.degrees(np.arctan(by)))
+        plane = RecordTable([
+            {"quantity": "Plane offset", "value": a, "unit": field.si_unit_z},
+            {"quantity": "Tilt X", "value": tilt_x_deg, "unit": "deg"},
+            {"quantity": "Tilt Y", "value": tilt_y_deg, "unit": "deg"},
+        ])
+        emit_table(plane)
+        return (field.replace(data=leveled), plane)

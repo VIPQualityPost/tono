@@ -17,9 +17,14 @@ def test_spot_removal_no_mask_returns_field_unchanged():
 
     node = SpotRemoval()
     field = make_field()
-    result, = node.process(field, method="laplace", max_iter=50)
-    # Should be the identical object (short-circuit path)
-    assert result is field
+    result, mask, stats = node.process(field, method="laplace", max_iter=50)
+    # No-mask path returns the field data unchanged (as a new replace() copy)
+    assert np.array_equal(result.data, field.data)
+    assert mask.dtype == np.uint8
+    assert not np.any(mask)
+    by_quantity = {row["quantity"]: row["value"] for row in stats}
+    assert by_quantity["Defect pixels"] == 0
+    assert by_quantity["Defect fraction"] == pytest.approx(0.0)
 
 
 def test_spot_removal_zero_fill():
@@ -30,11 +35,18 @@ def test_spot_removal_zero_fill():
     data = np.ones((16, 16)) * 5.0
     field = make_field(data=data)
     mask = _make_mask((16, 16), [(4, 4), (8, 8)])
-    result, = node.process(field, method="zero", max_iter=1, mask=mask)
+    result, mask, stats = node.process(field, method="zero", max_iter=1, mask=mask)
     assert result.data[4, 4] == pytest.approx(0.0)
     assert result.data[8, 8] == pytest.approx(0.0)
     # Non-defect pixels should stay 5.0
     assert result.data[0, 0] == pytest.approx(5.0)
+    # Mask output marks exactly the two defect pixels
+    assert mask.dtype == np.uint8
+    assert set(np.unique(mask)) <= {0, 255}
+    assert int((mask == 255).sum()) == 2
+    by_quantity = {row["quantity"]: row["value"] for row in stats}
+    assert by_quantity["Defect pixels"] == 2
+    assert by_quantity["Defect fraction"] == pytest.approx(2 / (16 * 16))
 
 
 def test_spot_removal_mean_fill_surrounded_by_constant():
@@ -45,8 +57,9 @@ def test_spot_removal_mean_fill_surrounded_by_constant():
     data = np.full((16, 16), 3.0)
     field = make_field(data=data)
     mask = _make_mask((16, 16), [(7, 7)])
-    result, = node.process(field, method="mean", max_iter=1, mask=mask)
+    result, mask, stats = node.process(field, method="mean", max_iter=1, mask=mask)
     assert result.data[7, 7] == pytest.approx(3.0, abs=1e-10)
+    assert int((mask == 255).sum()) == 1
 
 
 def test_spot_removal_laplace_fill_surrounded_by_constant():
@@ -57,8 +70,10 @@ def test_spot_removal_laplace_fill_surrounded_by_constant():
     data = np.full((16, 16), 2.5)
     field = make_field(data=data)
     mask = _make_mask((16, 16), [(8, 8)])
-    result, = node.process(field, method="laplace", max_iter=200, mask=mask)
+    result, _, stats = node.process(field, method="laplace", max_iter=200, mask=mask)
     assert result.data[8, 8] == pytest.approx(2.5, abs=1e-3)
+    by_quantity = {row["quantity"]: row["value"] for row in stats}
+    assert by_quantity["Defect pixels"] == 1
 
 
 def test_spot_removal_laplace_smooth_interpolation():
@@ -72,7 +87,7 @@ def test_spot_removal_laplace_smooth_interpolation():
     field = make_field(data=data)
     # Defect at the boundary column
     mask = _make_mask((16, 16), [(8, 7)])
-    result, = node.process(field, method="laplace", max_iter=500, mask=mask)
+    result, _, _ = node.process(field, method="laplace", max_iter=500, mask=mask)
     # The filled value should be between 0 and 10
     filled = result.data[8, 7]
     assert 0.0 <= filled <= 10.0
@@ -84,8 +99,9 @@ def test_spot_removal_shape_preserved():
     node = SpotRemoval()
     field = make_field(shape=(48, 64))
     mask = _make_mask((48, 64), [(10, 20)])
-    result, = node.process(field, method="mean", max_iter=10, mask=mask)
+    result, mask, _ = node.process(field, method="mean", max_iter=10, mask=mask)
     assert result.data.shape == (48, 64)
+    assert mask.shape == (48, 64)
 
 
 def test_spot_removal_mask_shape_mismatch_raises():
@@ -106,5 +122,9 @@ def test_spot_removal_empty_mask_unchanged():
     data = np.random.default_rng(0).standard_normal((16, 16))
     field = make_field(data=data)
     mask = np.zeros((16, 16), dtype=np.uint8)
-    result, = node.process(field, method="laplace", max_iter=50, mask=mask)
-    assert result is field
+    result, mask, stats = node.process(field, method="laplace", max_iter=50, mask=mask)
+    # All-zero mask means no defects — field data returned unchanged (new replace() copy)
+    assert np.array_equal(result.data, field.data)
+    assert not np.any(mask)
+    by_quantity = {row["quantity"]: row["value"] for row in stats}
+    assert by_quantity["Defect pixels"] == 0

@@ -14,6 +14,7 @@ Overlay a high-resolution detail scan onto a lower-resolution overview image. Us
 | Name | Type | Description |
 |------|------|-------------|
 | combined | DATA_FIELD | Overview field with the detail region replaced or blended in |
+| placement | RECORD_TABLE | Detail placement position (pixels and physical units) and match score |
 
 ## Controls
 

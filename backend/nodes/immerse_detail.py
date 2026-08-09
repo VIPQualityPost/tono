@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from backend.node_registry import register_node
-from backend.data_types import DataField
+from backend.data_types import DataField, RecordTable
+from backend.execution_context import emit_table
 
 
 @register_node(display_name="Immerse Detail")
@@ -22,6 +23,7 @@ class ImmerseDetail:
 
     OUTPUTS = (
         ('DATA_FIELD', 'combined'),
+        ('RECORD_TABLE', 'placement'),
     )
     FUNCTION = "process"
 
@@ -47,15 +49,27 @@ class ImmerseDetail:
         dy_res, dx_res = dt.shape
         oy_res, ox_res = ov.shape
 
-        if dy_res >= oy_res or dx_res >= ox_res:
-            # Detail is larger than overview, just return overview
-            return (overview,)
-
-        # Cross-correlate to find best position
-        # Use a sliding window approach for small detail
+        # Placement summary; available on both return paths
         best_score = -np.inf
         best_y, best_x = 0, 0
 
+        def build_table() -> RecordTable:
+            return RecordTable([
+                {"quantity": "Placement X (px)", "value": float(best_x), "unit": "px"},
+                {"quantity": "Placement Y (px)", "value": float(best_y), "unit": "px"},
+                {"quantity": "Placement X", "value": float(best_x) * overview.dx, "unit": overview.si_unit_xy},
+                {"quantity": "Placement Y", "value": float(best_y) * overview.dy, "unit": overview.si_unit_xy},
+                {"quantity": "Match score", "value": float(best_score), "unit": ""},
+            ])
+
+        if dy_res >= oy_res or dx_res >= ox_res:
+            # Detail is larger than overview, just return overview
+            placement = build_table()
+            emit_table(placement)
+            return (overview, placement)
+
+        # Cross-correlate to find best position
+        # Use a sliding window approach for small detail
         dt_norm = dt - dt.mean()
         dt_std = dt.std()
         if dt_std < 1e-30:
@@ -88,4 +102,6 @@ class ImmerseDetail:
             result[best_y:best_y + dy_res, best_x:best_x + dx_res] = \
                 0.5 * (ov[best_y:best_y + dy_res, best_x:best_x + dx_res] + dt)
 
-        return (overview.replace(data=result),)
+        placement = build_table()
+        emit_table(placement)
+        return (overview.replace(data=result), placement)

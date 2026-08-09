@@ -15,6 +15,7 @@ Align two images using FFT cross-correlation and crop both to their overlapping 
 |------|------|-------------|
 | cropped_a | DATA_FIELD | Field A cropped to the overlapping region |
 | cropped_b | DATA_FIELD | Field B cropped to the overlapping region |
+| alignment | RECORD_TABLE | Detected shift of B relative to A, in pixels and physical units |
 
 ## Controls
 

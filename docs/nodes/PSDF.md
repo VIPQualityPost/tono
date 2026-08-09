@@ -13,6 +13,7 @@ Compute the two-dimensional power spectral density function with Gwyddion-style 
 | Name | Type | Description |
 |------|------|-------------|
 | psdf | DATA_FIELD | 2D power spectral density, centered on DC |
+| measurement | RECORD_TABLE | Total RMS roughness recovered from the PSD (Parseval-consistent) |
 
 ## Controls
 
