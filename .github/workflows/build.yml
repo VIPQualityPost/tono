@@ -97,6 +97,7 @@ jobs:
       # release event that triggered this workflow, or the release_tag input
       # on a manual dispatch. A manual run without release_tag skips.
       - name: Attach binary to GitHub release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
