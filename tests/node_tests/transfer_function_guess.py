@@ -39,7 +39,7 @@ def test_regularised_recovers_gaussian_psf():
     psf, table = TransferFunctionGuess().process(field, ideal_f, method="regularised", sigma_log10=0.0,
                                                  auto_sigma=False, txres=33, tyres=33, border=3,
                                                  windowing="none", as_integral=True)
-    # TF is cropped to 33x33 centered on the image centre.
+    # TF is cropped to 33x33 centered on the image center.
     assert psf.data.shape == (33, 33)
     assert np.unravel_index(np.argmax(psf.data), psf.data.shape) == (16, 16)
     # Slight blurring by the regularisation keeps the profile very close.

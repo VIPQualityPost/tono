@@ -15,8 +15,8 @@ def test_convolve_output_arity():
 
 
 def test_convolve_same_matches_scipy():
-    """'same' mode equals scipy convolve2d for odd kernels (their centres agree
-    with the node's centre at kx//2)."""
+    """'same' mode equals scipy convolve2d for odd kernels (their centers agree
+    with the node's center at kx//2)."""
     from backend.nodes.convolve_two import ConvolveTwoImages
 
     rng = np.random.default_rng(4)
@@ -29,7 +29,7 @@ def test_convolve_same_matches_scipy():
     assert out.data.shape == a.shape
 
 
-def test_convolve_same_even_kernel_centre():
+def test_convolve_same_even_kernel_center():
     """Even kernels use the kx//2 center convention, not scipy's
     (kx//2 - 1): the node output equals the zero-exterior full convolution
     sliced at (ky//2, kx//2), which scipy's 'same' mode does not reproduce."""
@@ -81,8 +81,8 @@ def test_convolve_full_and_valid_shapes_and_extents():
 
 
 def test_convolve_identity_kernel():
-    """A unit impulse at the kernel centre reproduces the field in 'same' mode
-    (kernel centred on the output pixel)."""
+    """A unit impulse at the kernel center reproduces the field in 'same' mode
+    (kernel centerd on the output pixel)."""
     from backend.nodes.convolve_two import ConvolveTwoImages
 
     rng = np.random.default_rng(6)
@@ -92,13 +92,13 @@ def test_convolve_identity_kernel():
     node = ConvolveTwoImages()
     (out,) = node.process(make_field(data=a), make_field(data=kernel), mode="same")
     assert np.allclose(out.data, a)
-    # even kernel: centre sits 0.5 px towards lower indices (index kx//2), so an
+    # even kernel: center sits 0.5 px towards lower indices (index kx//2), so an
     # impulse at (1,1) of a 4x4 kernel shifts the field up-left by one pixel,
     # with zero exterior at the far edges.
     kernel2 = np.zeros((4, 4))
     kernel2[1, 1] = 1.0
     (out2,) = node.process(make_field(data=a), make_field(data=kernel2), mode="same")
-    # impulse at kernel index (1,1), centre at kx//2 = 2: out[j,i] = a[j+1, i+1]
+    # impulse at kernel index (1,1), center at kx//2 = 2: out[j,i] = a[j+1, i+1]
     # with zero exterior -> a shifted up-left, zero at the last row/column.
     expected = np.zeros_like(a)
     expected[:-1, :-1] = a[1:, 1:]

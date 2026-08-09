@@ -32,7 +32,7 @@ class TipModel:
     DESCRIPTION = (
         "Generate a synthetic AFM tip model DATA_FIELD. "
         "The input field sets the pixel size for the tip. "
-        "The apex (centre pixel) is the maximum value; edges are shifted to zero. "
+        "The apex (center pixel) is the maximum value; edges are shifted to zero. "
         "Shapes: parabola — paraboloid with apex radius R; "
         "cone — sphere-capped cone (radius R, half_angle from tip axis in degrees); "
         "sphere — ball-on-stick (sphere cap only). "
@@ -50,11 +50,11 @@ class TipModel:
     ) -> tuple:
         pixel_size = (field.dx + field.dy) * 0.5
 
-        # Ensure odd size so the centre pixel is well-defined
+        # Ensure odd size so the center pixel is well-defined
         n = n_pixels if n_pixels % 2 == 1 else n_pixels + 1
         ci = n // 2
 
-        # Physical offsets from the centre pixel
+        # Physical offsets from the center pixel
         offsets = (np.arange(n) - ci) * pixel_size
         gx, gy = np.meshgrid(offsets, offsets)
         r2 = gx**2 + gy**2

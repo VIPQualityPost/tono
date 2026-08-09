@@ -20,7 +20,7 @@ def test_boundary_detection():
 
     # Edge pixels should lie on the grain boundary (outermost ring of the grain)
     assert edge_bool.any(), "Should detect some edge pixels"
-    # Boundary pixels: grain pixels with at least one non-grain 4-neighbour
+    # Boundary pixels: grain pixels with at least one non-grain 4-neighbor
     # Rows 22 and 41 (top/bottom edges), cols 22 and 41 (left/right edges)
     assert edge_bool[22, 30], "Top boundary row should be marked"
     assert edge_bool[41, 30], "Bottom boundary row should be marked"
@@ -42,7 +42,7 @@ def test_interior_excluded():
     (edge_mask,) = node.process(field, mask=mask, width=1)
     edge_bool = mask_to_bool(edge_mask)
 
-    # Deep interior pixel (centre of the 40x40 grain) should NOT be edge
+    # Deep interior pixel (center of the 40x40 grain) should NOT be edge
     assert not edge_bool[30, 30], "Interior pixel should not be in edge mask"
     assert not edge_bool[25, 25], "Another interior pixel should not be edge"
 

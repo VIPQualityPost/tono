@@ -159,7 +159,7 @@ Heights are randomised per object and the maximum-height rule applies. This mode
 - *stripe*: vertical stripes (binary, based on sine threshold).
 - *diamond*: diamond/rhombus tiling pattern.
 - *staircase*: stepped ramp repeating across x.
-- *rings*: concentric ring pattern centred on the field.
+- *rings*: concentric ring pattern centerd on the field.
 
 This models lithographic patterns, photonic crystal layouts, and periodic test structures. Use it for testing spatial frequency analysis, periodicity detection, and pattern recognition. The `frequency` parameter controls the spatial frequency (number of pattern repeats across the field).
 
@@ -195,7 +195,7 @@ This models lithographic patterns, photonic crystal layouts, and periodic test s
 
 - Controls: `n_particles` (number of deposited particles), `particle_radius_px` (particle radius)
 
-**ballistic** -- Ballistic deposition with neighbour adhesion. In each iteration, ~30% of randomly chosen sites receive a particle. The deposited height is one plus the maximum of the site's own height and its four nearest neighbours, producing lateral correlation and rough, porous growth fronts. This is a vectorised simulation of the classic ballistic deposition model. Models thin film growth with surface tension effects and produces surfaces with characteristic scaling exponents. Use it for testing roughness scaling analysis and growth exponent estimation.
+**ballistic** -- Ballistic deposition with neighbor adhesion. In each iteration, ~30% of randomly chosen sites receive a particle. The deposited height is one plus the maximum of the site's own height and its four nearest neighbors, producing lateral correlation and rough, porous growth fronts. This is a vectorised simulation of the classic ballistic deposition model. Models thin film growth with surface tension effects and produces surfaces with characteristic scaling exponents. Use it for testing roughness scaling analysis and growth exponent estimation.
 
 - Controls: `n_iterations` (10--5000)
 
@@ -219,7 +219,7 @@ This models lithographic patterns, photonic crystal layouts, and periodic test s
 
 - Controls: `n_iterations` (10--5000; recommend 500--2000 for fully developed patterns)
 
-**annealing** -- Simulated annealing surface relaxation. Starts with a random Gaussian noise surface and progressively smooths it by averaging with nearest neighbours while adding decreasing amounts of thermal noise. The temperature decreases linearly from 1.0 to 0.01 over the iteration count. This models thermal relaxation, surface diffusion at elevated temperature, and produces surfaces with controlled correlation lengths. More iterations yield smoother surfaces. Use it for testing smoothness quantification and correlation analysis.
+**annealing** -- Simulated annealing surface relaxation. Starts with a random Gaussian noise surface and progressively smooths it by averaging with nearest neighbors while adding decreasing amounts of thermal noise. The temperature decreases linearly from 1.0 to 0.01 over the iteration count. This models thermal relaxation, surface diffusion at elevated temperature, and produces surfaces with controlled correlation lengths. More iterations yield smoother surfaces. Use it for testing smoothness quantification and correlation analysis.
 
 - Controls: `n_iterations` (10--5000)
 

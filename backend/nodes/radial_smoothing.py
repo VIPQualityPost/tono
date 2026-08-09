@@ -24,7 +24,7 @@ def _polar_dimensions(xres: int, yres: int) -> tuple[int, int]:
 
 
 def _to_polar(data: np.ndarray, rres: int, ares: int, order: int) -> np.ndarray:
-    """Remap the image to polar (r, phi) coordinates, centre at pixel (xres/2, yres/2).
+    """Remap the image to polar (r, phi) coordinates, center at pixel (xres/2, yres/2).
 
     Uses polar remapping with linear interpolation and border-extension
     exterior.  Rows are the angle phi (one full revolution in ``ares`` steps),
@@ -89,8 +89,8 @@ class RadialSmoothing:
     DESCRIPTION = (
         "Smooth an image in polar coordinates: sigma_r blurs along the radial "
         "direction (concentric circles), sigma_phi_deg blurs along the angular "
-        "direction (constant distance from the centre). The image is resampled "
-        "to polar coordinates around its centre, Gaussian-filtered, and mapped "
+        "direction (constant distance from the center). The image is resampled "
+        "to polar coordinates around its center, Gaussian-filtered, and mapped "
         "back. Any sigma set to zero disables that component."
     )
 

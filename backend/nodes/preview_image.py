@@ -34,7 +34,7 @@ class PreviewImage:
     FUNCTION = "preview"
 
     OUTPUT_NODE = True
-    DESCRIPTION = "Display an IMAGE or DATA_FIELD as a coloured thumbnail."
+    DESCRIPTION = "Display an IMAGE or DATA_FIELD as a colored thumbnail."
 
     KEYWORDS = ("display", "thumbnail", "show", "view", "render")
 

@@ -16,7 +16,7 @@ _SMOOTH_SIGMA = 2.0 / (2.0 * np.sqrt(2.0 * np.log(2.0)))
 def _gather_mean(a: np.ndarray, kx: int, ky: int) -> np.ndarray:
     """Clipped local-window arithmetic mean.
 
-    The window centred on each sample covers [j-(kx-1)/2, j+kx/2] x
+    The window centerd on each sample covers [j-(kx-1)/2, j+kx/2] x
     [i-(ky-1)/2, i+ky/2]; where it extends out of the field only the in-bounds
     samples are averaged.
     """
@@ -47,7 +47,7 @@ def _normalized_correlation_score(data: np.ndarray, kernel: np.ndarray) -> np.nd
     """Normalised correlation score field.
 
     The score at pixel (j, i) is the mean of (d - davg)*(k - kavg) over the
-    kernel window centred on (j, i), divided by the product of the local RMS of
+    kernel window centerd on (j, i), divided by the product of the local RMS of
     the data and the RMS of the kernel.  Positions where the kernel does not fit
     completely keep the value -1.  The raw window sum matches
     scipy.signal.correlate2d(mode="same") for both even and odd kernel sizes.
@@ -77,9 +77,9 @@ def _normalized_correlation_score(data: np.ndarray, kernel: np.ndarray) -> np.nd
 
 
 def _find_local_maxima(score: np.ndarray, threshold_fraction: float = 0.75) -> list[tuple[int, int, float]]:
-    """Local maxima of the smoothed score (4-neighbourhood, >= comparison).
+    """Local maxima of the smoothed score (4-neighborhood, >= comparison).
 
-    Pixel (i, j) is kept when no strict 4-neighbour is larger and the value
+    Pixel (i, j) is kept when no strict 4-neighbor is larger and the value
     exceeds threshold_fraction * max.  Returns (row, col, value) triples in scan
     order.
     """
@@ -198,7 +198,7 @@ class CorrelationAveraging:
             result[ytop:ytop + kh, xtop:xtop + kw] = res_kernel
 
         # Alignment table: per-detected-repeat shifts in px (C's score coordinates
-        # are kernel centres, so the shift is relative to the template centre).
+        # are kernel centers, so the shift is relative to the template center).
         tc_col = x0 + (kw - 1) / 2.0
         tc_row = y0 + (kh - 1) / 2.0
         rows: list[dict] = []

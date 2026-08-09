@@ -42,7 +42,7 @@ def test_parameters_table():
 # ── Tip apex is maximum ──────────────────────────────────────────────────────
 
 def test_tip_apex_is_maximum():
-    """The centre of the tip shape should be the highest point."""
+    """The center of the tip shape should be the highest point."""
     field = make_field(shape=(64, 64), xreal=64e-9, yreal=64e-9)
     tip_shape, _ = run_tip_shape(field, feature_type="edge", n_points=33)
     n = tip_shape.data.shape[0]

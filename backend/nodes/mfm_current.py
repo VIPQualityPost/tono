@@ -63,7 +63,7 @@ class MFMCurrentSimulation:
         yres, xres = data.shape
         xreal = field.xreal
 
-        # Spatial grid centred on the field: current line sits at x = 0.
+        # Spatial grid centerd on the field: current line sits at x = 0.
         # Grid convention: x = j * xreal / xres - xreal / 2
         x = np.linspace(0, xreal, xres, endpoint=False) - xreal / 2.0
 

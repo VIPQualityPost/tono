@@ -23,7 +23,7 @@ Compute the power spectral density function in log-polar coordinates. The x-axis
 
 ## Notes
 
-- The mean value is subtracted before computing the 2D FFT, and the power spectrum is shifted so DC is at the centre.
+- The mean value is subtracted before computing the 2D FFT, and the power spectrum is shifted so DC is at the center.
 - Bilinear interpolation is used when sampling the Cartesian power spectrum onto the log-polar grid.
 - The output is log-scaled via `log1p` for better visual contrast.
 - Output xreal is 360.0 (degrees) and yreal is log(r_max) where r_max is half the shorter image dimension.

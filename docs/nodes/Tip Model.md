@@ -1,6 +1,6 @@
 # Tip Model
 
-Generate a synthetic AFM tip model DATA_FIELD. The input field sets the pixel size for the tip. The apex (centre pixel) is the maximum value; edges are shifted to zero. Equivalent to gwy_tip_model_preset_create (tip.c / tip_model.c).
+Generate a synthetic AFM tip model DATA_FIELD. The input field sets the pixel size for the tip. The apex (center pixel) is the maximum value; edges are shifted to zero. Equivalent to gwy_tip_model_preset_create (tip.c / tip_model.c).
 
 ## Inputs
 

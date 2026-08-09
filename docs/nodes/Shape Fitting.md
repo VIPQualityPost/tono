@@ -1,6 +1,6 @@
 # Shape Fitting
 
-Fit a geometric primitive (sphere, paraboloid, or cylinder) to the surface data. Outputs either the fitted surface or the residual. Reports fitted parameters including radius of curvature, centre position, etc.
+Fit a geometric primitive (sphere, paraboloid, or cylinder) to the surface data. Outputs either the fitted surface or the residual. Reports fitted parameters including radius of curvature, center position, etc.
 
 ## Inputs
 
@@ -24,7 +24,7 @@ Fit a geometric primitive (sphere, paraboloid, or cylinder) to the surface data.
 
 ## Notes
 
-- **Sphere**: Fits z = z0 - sqrt(R² - (x-cx)² - (y-cy)²). Reports centre (cx, cy), apex height (z0), and radius R.
-- **Paraboloid**: Fits z = z0 + a(x-cx)² + b(y-cy)². Reports centre, apex, and curvature coefficients a, b.
+- **Sphere**: Fits z = z0 - sqrt(R² - (x-cx)² - (y-cy)²). Reports center (cx, cy), apex height (z0), and radius R.
+- **Paraboloid**: Fits z = z0 + a(x-cx)² + b(y-cy)². Reports center, apex, and curvature coefficients a, b.
 - **Cylinder**: Fits a parabolic profile along one axis. Reports radius, curvature, and cylinder orientation angle.
 - The residual output is useful for evaluating fit quality — a good fit produces small, random residuals.

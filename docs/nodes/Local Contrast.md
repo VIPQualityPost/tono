@@ -18,7 +18,7 @@ Expand the local dynamic range at each pixel to reveal fine surface features tha
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| kernel_size | INT | 10 | Size of the local neighbourhood window in pixels (2-100) |
+| kernel_size | INT | 10 | Size of the local neighborhood window in pixels (2-100) |
 | weight | FLOAT | 0.5 | Blend weight between original and full-contrast output (0 = original, 1 = full local contrast; 0-1) |
 
 ## Notes

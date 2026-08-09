@@ -21,7 +21,7 @@ def test_custom_convolution_uniform_kernel_normalized():
     node = CustomConvolution()
     data = np.random.default_rng(1).standard_normal((32, 32))
     field = make_field(data=data)
-    # 3x3 all-ones kernel, normalized → each pixel becomes mean of its neighbourhood
+    # 3x3 all-ones kernel, normalized → each pixel becomes mean of its neighborhood
     kernel = "1 1 1\n1 1 1\n1 1 1"
     result, = node.process(field, kernel=kernel, normalize=True, boundary="reflect")
     # Output std should be less than input std (smoothing)

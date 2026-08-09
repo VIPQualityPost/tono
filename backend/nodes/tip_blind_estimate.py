@@ -111,8 +111,8 @@ def _useit(image: np.ndarray, x: int, y: int, delta: int) -> bool:
     Return True if (x, y) should be used as a refinement point.
 
     A pixel qualifies when:
-      1. It is the maximum value within a (2·delta + 1)² neighbourhood.
-      2. Fewer than 1/5 of the neighbourhood pixels share that maximum
+      1. It is the maximum value within a (2·delta + 1)² neighborhood.
+      2. Fewer than 1/5 of the neighborhood pixels share that maximum
          (to exclude flat plateaux, which give no tip shape information).
 
     delta = max(max(txres, tyres) // 10, 1) so larger tips use a wider
@@ -255,7 +255,7 @@ def _itip_estimate_partial(
 
     Steps:
       1. Scan the image for pixels that are local maxima in a ±delta
-         neighbourhood and are not on a flat plateau (useit criterion).
+         neighborhood and are not on a flat plateau (useit criterion).
          These are the image features most likely to have been produced by
          the tip apex — they constrain the tip shape most tightly.
       2. Iterate _estimate_point_interior over every qualifying pixel until
@@ -266,7 +266,7 @@ def _itip_estimate_partial(
     """
     yres, xres = image.shape
 
-    # delta: neighbourhood radius for the local-maximum test.
+    # delta: neighborhood radius for the local-maximum test.
     # Larger tips look over a wider window to avoid spurious maxima.
     delta = max(max(txres, tyres) // 10, 1)
     maxcount = 20  # convergence: stop when ≤ maxcount pixels updated per pass
@@ -406,7 +406,7 @@ def _certainty_map_fast(
     yres, xres = image.shape
     tyres, txres = tip.shape
     # Reflected-apex offsets: ryc = tyres-1-yc, rxc = txres-1-xc.
-    # For a centred tip (yc = tyres//2), ryc = tyres//2 as well.
+    # For a centerd tip (yc = tyres//2), ryc = tyres//2 as well.
     ryc = tyres - 1 - yc
     rxc = txres - 1 - xc
 
@@ -499,10 +499,10 @@ class BlindTipEstimate:
         use_edges: bool,
     ) -> tuple:
         # ── Tip grid setup ────────────────────────────────────────────────
-        # Ensure odd size so the apex pixel is exactly centred.
+        # Ensure odd size so the apex pixel is exactly centerd.
         n = n_pixels if n_pixels % 2 == 1 else n_pixels + 1
         txres = tyres = n
-        xc = yc = n // 2   # apex is at the centre pixel
+        xc = yc = n // 2   # apex is at the center pixel
 
         # ── Integer quantisation ──────────────────────────────────────────
         # All estimation arithmetic is performed in integer units.  step is

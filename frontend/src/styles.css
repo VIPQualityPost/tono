@@ -157,14 +157,14 @@
   --overlay-chip-border-hover: rgba(125, 211, 252, 0.55);
   --overlay-chip-shadow:    rgba(2, 6, 23, 0.28);
 
-  /* Node-title help button (sits on category-coloured title bar) */
+  /* Node-title help button (sits on category-colored title bar) */
   --node-help-btn-bg:          rgba(255, 255, 255, 0.12);
   --node-help-btn-bg-hover:    rgba(255, 255, 255, 0.28);
   --node-help-btn-border:      rgba(255, 255, 255, 0.25);
   --node-help-btn-border-hover:rgba(255, 255, 255, 0.5);
   --node-help-btn-text:        rgba(255, 255, 255, 0.75);
 
-  /* Text note content overlays (on top of coloured text notes) */
+  /* Text note content overlays (on top of colored text notes) */
   --note-code-bg:      rgba(0, 0, 0, 0.3);
   --note-textarea-bg:  rgba(0, 0, 0, 0.25);
   --note-hr:           rgba(255, 255, 255, 0.1);
@@ -325,7 +325,7 @@
   --overlay-chip-border-hover: rgba(194, 65, 12, 0.55);
   --overlay-chip-shadow:    rgba(60, 50, 20, 0.16);
 
-  /* Node-title help button (still sits on a coloured title bar) */
+  /* Node-title help button (still sits on a colored title bar) */
   --node-help-btn-bg:          rgba(255, 255, 255, 0.35);
   --node-help-btn-bg-hover:    rgba(255, 255, 255, 0.55);
   --node-help-btn-border:      rgba(255, 255, 255, 0.5);

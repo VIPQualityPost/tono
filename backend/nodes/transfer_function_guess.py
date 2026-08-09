@@ -22,7 +22,7 @@ def _ifft2_unnorm(F: np.ndarray) -> np.ndarray:
 
 
 def _humanize(a: np.ndarray) -> np.ndarray:
-    """Humanized FFT: move zero frequency to the centre (odd-size
+    """Humanized FFT: move zero frequency to the center (odd-size
     convention keeps the DC block one item larger, same as fftshift)."""
     return np.fft.fftshift(a)
 
@@ -315,7 +315,7 @@ def _find_regularization_sigma(meas: np.ndarray, ideal: np.ndarray, method: str,
 
 def _ext_convolve(field: np.ndarray, kernel: np.ndarray, dx: float, dy: float) -> np.ndarray:
     """Extend-convolve with border-extended exterior and as_integral=TRUE:
-    nearest-neighbour (edge-extended) correlation scaled by dx*dy."""
+    nearest-neighbor (edge-extended) correlation scaled by dx*dy."""
     return ndi_correlate(field, kernel, mode="nearest") * (dx * dy)
 
 
@@ -329,9 +329,9 @@ def _measure_tf_width(psf: np.ndarray) -> float:
         return 0.0
     labels, _ = label(mask)
     central = labels[yres // 2, xres // 2]
-    centre_grain = labels == central
+    center_grain = labels == central
     radius = 0.5 * np.log(float(xres * yres))
-    dist = distance_transform_edt(~centre_grain)
+    dist = distance_transform_edt(~center_grain)
     grown = dist <= radius
     abspsf = np.abs(psf)
     return float(np.sqrt(np.var(abspsf[grown])))

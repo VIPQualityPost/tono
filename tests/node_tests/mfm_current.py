@@ -35,7 +35,7 @@ def test_hz_antisymmetric():
     from backend.nodes.mfm_current import MFMCurrentSimulation
 
     node = MFMCurrentSimulation()
-    # Use even grid so centre falls between pixels symmetrically
+    # Use even grid so center falls between pixels symmetrically
     field = make_field(shape=(16, 64), xreal=1e-6, yreal=1e-6)
 
     _, hz, _ = node.process(field, height=100e-9, current=1e-3,

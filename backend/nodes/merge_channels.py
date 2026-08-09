@@ -68,7 +68,7 @@ class MergeChannels:
         "user-provided offset and scale, then combined as red, green and blue."
     )
 
-    KEYWORDS = ("rgb", "compose", "channel", "color", "colour", "combine")
+    KEYWORDS = ("rgb", "compose", "channel", "color", "color", "combine")
 
     def process(
         self,

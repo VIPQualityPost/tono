@@ -23,7 +23,7 @@ def test_output_arity():
 
 def test_inscribed_disc_rectangle():
     """For a 7x5 rectangle the inscribed disc has radius min(7,5)/2 - 0.5 = 2.0
-    (EDT maximum 2.5 at the rectangle centre pixel (5, 4))."""
+    (EDT maximum 2.5 at the rectangle center pixel (5, 4))."""
     from backend.nodes.grain_selection_shapes import GrainSelectionShapes
 
     sel, = GrainSelectionShapes().process(_mask_with_grains(), method="inscribed_discs", min_area=0)
@@ -32,7 +32,7 @@ def test_inscribed_disc_rectangle():
     assert binary[4, 4] and binary[2, 5]
     assert not binary[2, 2]
     # Every filled pixel inside the rectangle region belongs to its inscribed
-    # disc, i.e. lies within radius 2.5 of the centre (5, 4).
+    # disc, i.e. lies within radius 2.5 of the center (5, 4).
     yyg, xxg = np.mgrid[0:41, 0:41]
     in_rect = (yyg >= 2) & (yyg < 7) & (xxg >= 2) & (xxg < 9)
     filled_in_rect = binary & in_rect
@@ -59,13 +59,13 @@ def test_inscribed_disc_of_round_grain():
     assert disc_pixels.sum() > 30
     assert np.all(grain[disc_pixels])  # every selected pixel is inside the mask
     ys, xs = np.nonzero(disc_pixels)
-    centre_y, centre_x = float(np.mean(ys)), float(np.mean(xs))
-    radii = np.sqrt((xs - centre_x) ** 2 + (ys - centre_y) ** 2)
+    center_y, center_x = float(np.mean(ys)), float(np.mean(xs))
+    radii = np.sqrt((xs - center_x) ** 2 + (ys - center_y) ** 2)
     assert 3.0 < radii.max() < 5.0
 
 
 def test_circumscribed_single_pixel_grain():
-    """A single pixel's circumcircle is built over its four corners: centre at the
+    """A single pixel's circumcircle is built over its four corners: center at the
     corner (35.5, 35.5) with radius 0.707, filling the 2x2 pixel block."""
     from backend.nodes.grain_selection_shapes import GrainSelectionShapes
 

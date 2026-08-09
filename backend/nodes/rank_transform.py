@@ -31,7 +31,7 @@ def _elliptic_footprint(asize: int) -> np.ndarray:
 
 def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
                 chunk_rows: int = 64) -> np.ndarray:
-    """Fraction of elliptic-window pixels not exceeding the centre pixel.
+    """Fraction of elliptic-window pixels not exceeding the center pixel.
 
     Conservative rank filter whose window is the ellipse inscribed in the
     (2*asize+1)^2 square, truncated at the data edges, and tied values count
@@ -50,7 +50,7 @@ def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
         nch = row1 - row0
         num_c = np.zeros((nch, xres))
         den_c = np.zeros((nch, xres))
-        centre = data[rows]
+        center = data[rows]
 
         for it, off in enumerate(k):
             w = int(halfwidths[it])
@@ -59,7 +59,7 @@ def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
             if not valid.any():
                 continue
             row_vals = data[r[valid]]
-            vv = centre[valid]
+            vv = center[valid]
 
             width = 2 * w + 1
             rowpad = np.pad(row_vals, ((0, 0), (w, w)), mode="edge")
@@ -71,7 +71,7 @@ def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
             oob = (j_idx < 0) | (j_idx >= xres)
             seg = np.where(oob[np.newaxis, :, :], np.inf, seg)
             vv3 = vv[..., np.newaxis]
-            # Count values strictly below and at most the centre value; the
+            # Count values strictly below and at most the center value; the
             # +inf masked-out entries never compare <= v.
             cl = (seg < vv3).sum(axis=-1)
             cr = (seg <= vv3).sum(axis=-1)
@@ -117,7 +117,7 @@ class RankTransform:
 
     DESCRIPTION = (
         "Enhance local contrast with a rank transform. 'rank' replaces every "
-        "pixel by the fraction of its elliptic kernel neighbourhood (inscribed "
+        "pixel by the fraction of its elliptic kernel neighborhood (inscribed "
         "in a (2*size+1)^2 square) whose values do not exceed it, 'range' by the "
         "local value range (max - min) and 'normalization' by the local "
         "normalization (v - min)/(max - min). The result is min-max normalized "

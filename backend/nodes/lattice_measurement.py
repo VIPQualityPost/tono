@@ -9,7 +9,7 @@ from backend.data_types import DataField, RecordTable
 
 
 def _find_acf_peaks(acf: np.ndarray, dx: float, dy: float, n_peaks: int = 6):
-    """Find the strongest off-centre peaks in a 2D ACF.
+    """Find the strongest off-center peaks in a 2D ACF.
 
     Returns list of (row, col, distance, angle_deg) tuples sorted by
     correlation strength.
@@ -30,13 +30,13 @@ def _find_acf_peaks(acf: np.ndarray, dx: float, dy: float, n_peaks: int = 6):
         r, c = np.unravel_index(idx, acf.shape)
         if acf_masked[r, c] == -np.inf:
             break
-        # Physical distance from centre
+        # Physical distance from center
         dist_x = (c - cx) * dx
         dist_y = (r - cy) * dy
         distance = np.hypot(dist_x, dist_y)
         angle = np.degrees(np.arctan2(dist_y, dist_x))
         peaks.append((r, c, distance, angle, float(acf[r, c])))
-        # Suppress neighbourhood
+        # Suppress neighborhood
         sup_r = max(0, r - mask_radius), min(yres, r + mask_radius + 1)
         sup_c = max(0, c - mask_radius), min(xres, c + mask_radius + 1)
         acf_masked[sup_r[0]:sup_r[1], sup_c[0]:sup_c[1]] = -np.inf

@@ -9,7 +9,7 @@ def _make_node():
 
 
 def _spike_field(size=9):
-    """Field filled with 5.0 and a single 10.0 pixel at the centre."""
+    """Field filled with 5.0 and a single 10.0 pixel at the center."""
     data = np.full((size, size), 5.0)
     data[size // 2, size // 2] = 10.0
     return make_field(data=data)
@@ -122,7 +122,7 @@ def test_range_type_two_levels():
 
 
 def test_normalization_type():
-    """Local normalization: 1 at the spike centre, 0 in windows containing it
+    """Local normalization: 1 at the spike center, 0 in windows containing it
     (v == min), 0.5 for constant windows (the C convention), then normalized."""
     node = _make_node()
     (out,) = node.process(_spike_field(), size=1, filter_type="normalization")

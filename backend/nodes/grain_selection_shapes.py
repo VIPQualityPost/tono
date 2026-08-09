@@ -53,17 +53,17 @@ def _grain_circles(binary: np.ndarray, method: str, min_area: int) -> list[tuple
 def _inscribed_disc(grain: np.ndarray, y0: int, x0: int,
                     dist: np.ndarray) -> tuple[float, float, float]:
     """Largest disc inside the grain: Euclidean distance transform maximum, ties
-    resolved towards the grain centre of mass. Radius from pixel-centre distances
+    resolved towards the grain center of mass. Radius from pixel-center distances
     converted to geometric half-widths (EDT - 0.5), matching the continuous
     inscribed disc semantics."""
     dmax = float(dist[grain].max())
-    centre_y, centre_x = (float(v) for v in np.mean(np.argwhere(grain), axis=0))
+    center_y, center_x = (float(v) for v in np.mean(np.argwhere(grain), axis=0))
     candidates = np.argwhere(np.isclose(dist, dmax))
-    closest = candidates[np.argmin(np.sum((candidates - np.array([centre_y, centre_x])) ** 2, axis=1))]
-    centre_y = float(closest[0]) + y0
-    centre_x = float(closest[1]) + x0
+    closest = candidates[np.argmin(np.sum((candidates - np.array([center_y, center_x])) ** 2, axis=1))]
+    center_y = float(closest[0]) + y0
+    center_x = float(closest[1]) + x0
     radius = max(0.5, dmax - 0.5)
-    return centre_x, centre_y, radius
+    return center_x, center_y, radius
 
 
 def _circumscribed_circle(grain: np.ndarray, y0: int, x0: int) -> tuple[float, float, float]:
@@ -83,7 +83,7 @@ def _circumscribed_circle(grain: np.ndarray, y0: int, x0: int) -> tuple[float, f
         return float(np.mean(xs)) + x0, float(np.mean(ys)) + y0, 0.5
     vertices = corners[hull.vertices]
 
-    # Polygon centroid (grain_convex_hull_centre()).
+    # Polygon centroid (grain_convex_hull_center()).
     a = vertices[0]
     s = 0.0
     xc = yc = 0.0

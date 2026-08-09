@@ -22,12 +22,12 @@ Calculate the two-dimensional distribution of angle projections: for every pixel
 | size | INT | 200 | Output resolution (size x size bins) |
 | steps | INT | 360 | Number of projection directions used to accumulate the histogram |
 | logscale | BOOLEAN | False | Display logarithmic counts: log(count) + 1 for non-empty bins, 0 otherwise |
-| fit_plane | BOOLEAN | False | Compute slopes by fitting a local plane through each neighbourhood instead of using simple differences |
-| kernel_size | INT | 5 | Neighbourhood size for the local plane fitting; only used when fit_plane is on |
+| fit_plane | BOOLEAN | False | Compute slopes by fitting a local plane through each neighborhood instead of using simple differences |
+| kernel_size | INT | 5 | neighborhood size for the local plane fitting; only used when fit_plane is on |
 
 ## Notes
 
 - With fit_plane off, slopes are computed with symmetric differences (one-sided at edges), exactly as with the slope filter; the values are in physical units (height per metre).
-- With fit_plane on, a plane is least-squares fitted through each clamped neighbourhood. The fit is exact for centred windows; edge windows reproduce the approximate edge behaviour.
+- With fit_plane on, a plane is least-squares fitted through each clamped neighborhood. The fit is exact for centerd windows; edge windows reproduce the approximate edge behaviour.
 - Every pixel deposits one vote per direction step, so the total histogram mass equals pixels x steps (before logscale).
 - A perfectly flat image produces an all-zero distribution.

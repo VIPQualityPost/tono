@@ -11,7 +11,7 @@ def _assert_measurement_rows(measurement):
 
 
 def test_cross_correlate_same_field_peak_at_center():
-    """Correlating a field with itself in 'same' mode peaks at the centre."""
+    """Correlating a field with itself in 'same' mode peaks at the center."""
     from backend.nodes.cross_correlate import CrossCorrelate
 
     rng = np.random.default_rng(0)
@@ -22,7 +22,7 @@ def test_cross_correlate_same_field_peak_at_center():
 
     peak_y, peak_x = np.unravel_index(np.argmax(result.data), result.data.shape)
     cy, cx = result.data.shape[0] // 2, result.data.shape[1] // 2
-    # Peak should be within a few pixels of centre
+    # Peak should be within a few pixels of center
     assert abs(peak_y - cy) <= 2
     assert abs(peak_x - cx) <= 2
     # Self-correlation needs no shift to align the field with itself

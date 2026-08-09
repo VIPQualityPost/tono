@@ -81,7 +81,7 @@ class SpotRemoval:
 
 
 def _mean_fill(data: np.ndarray, defect: np.ndarray) -> np.ndarray:
-    """Fill defect pixels with the mean of non-defect neighbours in a 3x3 window."""
+    """Fill defect pixels with the mean of non-defect neighbors in a 3x3 window."""
     result = data.copy()
     yres, xres = data.shape
 
@@ -96,9 +96,9 @@ def _mean_fill(data: np.ndarray, defect: np.ndarray) -> np.ndarray:
         x0 = max(x - 1, 0)
         x1 = min(x + 2, xres)
 
-        neighbourhood_data = data[y0:y1, x0:x1]
-        neighbourhood_defect = defect[y0:y1, x0:x1]
-        good = neighbourhood_data[~neighbourhood_defect]
+        neighborhood_data = data[y0:y1, x0:x1]
+        neighborhood_defect = defect[y0:y1, x0:x1]
+        good = neighborhood_data[~neighborhood_defect]
 
         if good.size > 0:
             result[y, x] = float(good.mean())
@@ -109,7 +109,7 @@ def _mean_fill(data: np.ndarray, defect: np.ndarray) -> np.ndarray:
 
 
 def _laplace_fill(data: np.ndarray, defect: np.ndarray, max_iter: int) -> np.ndarray:
-    """Iterative Laplace solver: set defect pixels to neighbour average each iteration."""
+    """Iterative Laplace solver: set defect pixels to neighbor average each iteration."""
     non_defect_vals = data[~defect]
     init_val = float(non_defect_vals.mean()) if non_defect_vals.size > 0 else 0.0
 
@@ -117,14 +117,14 @@ def _laplace_fill(data: np.ndarray, defect: np.ndarray, max_iter: int) -> np.nda
     result[defect] = init_val
 
     for _ in range(max_iter):
-        # Compute neighbour averages via rolled arrays
-        neighbour_sum = (
+        # Compute neighbor averages via rolled arrays
+        neighbor_sum = (
             np.roll(result, -1, axis=0)
             + np.roll(result,  1, axis=0)
             + np.roll(result, -1, axis=1)
             + np.roll(result,  1, axis=1)
         )
-        new_vals = neighbour_sum / 4.0
+        new_vals = neighbor_sum / 4.0
         result[defect] = new_vals[defect]
 
     return result

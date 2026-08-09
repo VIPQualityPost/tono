@@ -9,7 +9,7 @@ def _make_node():
 
 
 def _radial_bump(shape=(64, 64), peak=1.0, sigma=8.0):
-    """Rotationally symmetric Gaussian bump centred on the image centre pixel."""
+    """Rotationally symmetric Gaussian bump centerd on the image center pixel."""
     yres, xres = shape
     yy, xx = np.mgrid[0:yres, 0:xres]
     r = np.sqrt((xx - xres / 2.0) ** 2 + (yy - yres / 2.0) ** 2)
@@ -48,7 +48,7 @@ def test_zero_sigmas_close_to_identity_interior():
     """With no smoothing the polar round trip only shifts smooth data by about
     half a pixel, so on the interior the field comes back nearly unchanged.
     (Pixels within a pixel of the corners exceed the polar radius grid; there
-    the C code's periodic radial extension mixes the field centre in.)"""
+    the C code's periodic radial extension mixes the field center in.)"""
     node = _make_node()
     data = _radial_bump()
     field = make_field(data=data)
@@ -60,16 +60,16 @@ def test_zero_sigmas_close_to_identity_interior():
         assert np.allclose(smooth.data[interior], data[interior], atol=atol), interp
 
 
-def test_corner_pixels_read_centre_value():
+def test_corner_pixels_read_center_value():
     """Faithful to raveraging.c: the polar field is extended periodically along
     the radius, so corner pixels (radius beyond the polar grid) interpolate
-    towards the centre column and read a large value."""
+    towards the center column and read a large value."""
     node = _make_node()
     data = _radial_bump()
     field = make_field(data=data)
     (smooth,) = node.process(field, sigma_r=0.0, sigma_phi_deg=0.0,
                              interpolation="linear")
-    assert smooth.data[0, 0] > 0.5          # corner mixes in the centre value
+    assert smooth.data[0, 0] > 0.5          # corner mixes in the center value
     assert data[0, 0] < 1e-6                 # the input corner is negligible
 
 
@@ -98,9 +98,9 @@ def test_radial_smoothing_reduces_bump_peak():
     assert smooth.data.max() < data.max()
 
 
-def test_angular_smoothing_spreads_offcentre_blob():
+def test_angular_smoothing_spreads_offcenter_blob():
     """Angular smoothing moves mass along the circle of constant radius: an
-    off-centre blob is smeared over an arc, reducing its peak and raising the
+    off-center blob is smeared over an arc, reducing its peak and raising the
     value at an angularly separated point on the same circle."""
     node = _make_node()
     data = np.zeros((64, 64))

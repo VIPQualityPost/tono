@@ -63,8 +63,8 @@ def test_tip_min_is_zero(shape):
 
 
 @pytest.mark.parametrize("shape", ["parabola", "cone", "sphere"])
-def test_tip_apex_at_centre(shape):
-    """Centre pixel must equal the maximum for all shapes."""
+def test_tip_apex_at_center(shape):
+    """center pixel must equal the maximum for all shapes."""
     tip = make_tip(shape=shape)
     n = tip.data.shape[0]
     ci = n // 2
@@ -95,13 +95,13 @@ def test_parabola_apex_formula():
     assert abs(tip.data[n // 2, n // 2] - expected_apex) < 1e-12 * expected_apex
 
 
-def test_parabola_decreases_monotonically_from_centre():
-    """Parabola row profile must be monotonically decreasing from centre outward."""
+def test_parabola_decreases_monotonically_from_center():
+    """Parabola row profile must be monotonically decreasing from center outward."""
     tip = make_tip(shape="parabola", n_pixels=33)
     ci = 16
     row = tip.data[ci, :]
-    assert np.all(np.diff(row[:ci + 1]) >= 0)   # left half increases toward centre
-    assert np.all(np.diff(row[ci:]) <= 0)        # right half decreases from centre
+    assert np.all(np.diff(row[:ci + 1]) >= 0)   # left half increases toward center
+    assert np.all(np.diff(row[ci:]) <= 0)        # right half decreases from center
 
 
 def test_parabola_corner_value_is_zero():
@@ -122,8 +122,8 @@ def test_cone_apex_greater_than_edges():
     assert tip.data[0, 0] >= -1e-15   # edges should be ~0
 
 
-def test_cone_decreases_away_from_centre():
-    """Cone must be monotonically decreasing along any radial line from centre."""
+def test_cone_decreases_away_from_center():
+    """Cone must be monotonically decreasing along any radial line from center."""
     tip = make_tip(shape="cone", half_angle=20.0, n_pixels=33)
     ci = 16
     row = tip.data[ci, :]

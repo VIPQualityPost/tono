@@ -9,19 +9,19 @@ from backend.data_types import DataField
 def _kuwahara_pass(data: np.ndarray) -> np.ndarray:
     """Single pass of the 5x5 Kuwahara filter.
 
-    Divides a 5x5 neighbourhood around each pixel into four overlapping 3x3
+    Divides a 5x5 neighborhood around each pixel into four overlapping 3x3
     quadrants (TL, TR, BL, BR), computes the mean and variance of each quadrant,
-    and replaces the centre pixel with the mean of the quadrant that has the
+    and replaces the center pixel with the mean of the quadrant that has the
     smallest variance. Boundary pixels are handled by reflecting the image.
     """
-    # Pad with reflect so every pixel has a full 5x5 neighbourhood.
+    # Pad with reflect so every pixel has a full 5x5 neighborhood.
     padded = np.pad(data, pad_width=2, mode="reflect")
 
     rows, cols = data.shape
 
     # For each of the four 3x3 quadrant offsets we need the per-pixel mean and
     # variance.  The quadrant window positions (relative to the padded array)
-    # for a centre pixel at (r+2, c+2) are:
+    # for a center pixel at (r+2, c+2) are:
     #   TL : rows r..r+2,  cols c..c+2    →  offset (0,0) in padded
     #   TR : rows r..r+2,  cols c+2..c+4  →  offset (0,2)
     #   BL : rows r+2..r+4, cols c..c+2   →  offset (2,0)

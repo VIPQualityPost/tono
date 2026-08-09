@@ -43,8 +43,8 @@ def test_radial_profile_x_axis_monotone():
     assert np.all(np.diff(result.x_axis) > 0)
 
 
-def test_radial_profile_off_centre():
-    """Off-centre origin produces a valid profile with the same number of bins."""
+def test_radial_profile_off_center():
+    """Off-center origin produces a valid profile with the same number of bins."""
     from backend.nodes.radial_profile import RadialProfile
 
     node = RadialProfile()

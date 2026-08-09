@@ -38,7 +38,7 @@ def test_merge_auto_scaling_channels():
     assert image[0, 0, 1] == 0
     assert image[-1, -1, 1] == 255
     assert np.all(np.diff(image[..., 1].ravel()) >= 0)
-    # linear ramp: centre pixel (row 4, col 0) -> index 32 of 64 -> 32/63
+    # linear ramp: center pixel (row 4, col 0) -> index 32 of 64 -> 32/63
     mid = image[h // 2, 0, 1]
     assert int(mid) == int(np.round(255.0 * (32.0 / 63.0)))  # = 130
 

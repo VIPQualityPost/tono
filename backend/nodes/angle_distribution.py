@@ -31,12 +31,12 @@ def _filter_slope(data: np.ndarray, dx: float, dy: float) -> tuple[np.ndarray, n
 def _fit_local_plane_slopes(data: np.ndarray, size: int,
                             dx: float, dy: float) -> tuple[np.ndarray, np.ndarray]:
     """Local plane fit with the 1/dx, 1/dy slope scaling. Fits a plane z = c + bx*x
-    + by*y through each clamped neighbourhood and returns bx/dx, by/dy."""
+    + by*y through each clamped neighborhood and returns bx/dx, by/dy."""
     yres, xres = data.shape
     xder = np.zeros((yres, xres), dtype=np.float64)
     yder = np.zeros((yres, xres), dtype=np.float64)
     # as in the C: the shift moves the origin to the sample pixel; for even sizes
-    # the neighbourhood sticks to the right, giving the extra 0.5.
+    # the neighborhood sticks to the right, giving the extra 0.5.
     asym = (1 - size % 2) / 2.0
     half_lo = (size - 1) // 2
     half_hi = size // 2

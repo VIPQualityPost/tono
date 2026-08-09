@@ -462,7 +462,7 @@ def _gwy_round(value):
 def _point_noise(rng, n, distribution, direction, sigma=1.0):
     """Sample line-noise point noise like lno_synth.c's generators[].
 
-    The distributions are centred with RMS sigma; direction mirrors the
+    The distributions are centerd with RMS sigma; direction mirrors the
     symmetrical/up/down noise-sign variants.
     """
     if distribution == "gaussian":
@@ -587,11 +587,11 @@ def _line_noise_ridges(shape, rng, density, lineprob, scandir, width,
     """
     yres, xres = shape
     nridges = int(np.maximum(_gwy_round(yres * (1.0 + width) * density), 1))
-    centre = rng.uniform(-width, 1.0 + width, nridges)
+    center = rng.uniform(-width, 1.0 + width, nridges)
     w = _exp_noise_up(rng, nridges, width)
     dh = _point_noise(rng, nridges, distribution, direction)
 
-    pos = np.concatenate([centre - w, centre + w])
+    pos = np.concatenate([center - w, center + w])
     dhh = np.concatenate([dh, -dh])
     order = np.argsort(pos, kind="stable")
     pos = pos[order]

@@ -38,7 +38,7 @@ class GrainEdge:
     def process(self, field: DataField, mask: np.ndarray, width: int) -> tuple:
         grain = mask_to_bool(mask)
 
-        # Find boundary: grain pixels with at least one non-grain 4-neighbour
+        # Find boundary: grain pixels with at least one non-grain 4-neighbor
         padded = np.pad(grain, 1, mode='constant', constant_values=False)
         interior = (padded[:-2, 1:-1] & padded[2:, 1:-1] &
                     padded[1:-1, :-2] & padded[1:-1, 2:])

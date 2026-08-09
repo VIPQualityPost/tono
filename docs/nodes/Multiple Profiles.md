@@ -20,7 +20,7 @@ Extract and compare line profiles from two fields along a chosen row or column. 
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| row | INT | -1 | Row (horizontal) or column (vertical) index to extract; -1 uses the centre row/column (-1-10000) |
+| row | INT | -1 | Row (horizontal) or column (vertical) index to extract; -1 uses the center row/column (-1-10000) |
 | direction | dropdown | horizontal | Profile direction: horizontal (extract a row) or vertical (extract a column) |
 | mode | dropdown | overlay | Combination mode: overlay (field_a profile only), mean (average of both), or difference (field_a minus field_b) |
 | blend | FLOAT | 0.5 | Opacity of field B in the preview (0 = only A, 1 = only B). Affects the preview image only, not the extracted profile. |

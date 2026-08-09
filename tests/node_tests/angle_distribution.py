@@ -33,8 +33,8 @@ def test_filter_slope_exact_for_plane():
 
 
 def test_local_plane_fit_exact_interior():
-    """Plane fitting is exact for centred windows; edge windows are
-    clamped and only approximately centred."""
+    """Plane fitting is exact for centerd windows; edge windows are
+    clamped and only approximately centerd."""
     field = _plane_field()
     xder, yder = _fit_local_plane_slopes(field.data, 5, field.dx, field.dy)
     interior = (slice(6, 58), slice(6, 58))

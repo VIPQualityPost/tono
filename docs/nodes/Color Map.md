@@ -1,6 +1,6 @@
 # Color Map
 
-Build a reusable colormap. Choose a preset from the built-in palette list, or create a custom gradient with min/max colours and any number of intermediate stops.
+Build a reusable colormap. Choose a preset from the built-in palette list, or create a custom gradient with min/max colors and any number of intermediate stops.
 
 ## Inputs
 

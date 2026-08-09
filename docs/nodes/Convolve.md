@@ -1,6 +1,6 @@
 # Convolve
 
-Convolve two images: each output pixel is the sum of the product of field_a with the reversed field_b kernel, computed with FFT convolution. This mirrors the Convolve process, which places the kernel centred on the output pixel with a zero-filled exterior (the default "Zero" exterior type). Mode selects the output extent.
+Convolve two images: each output pixel is the sum of the product of field_a with the reversed field_b kernel, computed with FFT convolution. This mirrors the Convolve process, which places the kernel centerd on the output pixel with a zero-filled exterior (the default "Zero" exterior type). Mode selects the output extent.
 
 ## Inputs
 

@@ -23,7 +23,7 @@ def _find_subpixel_shift(ref: np.ndarray, img: np.ndarray) -> tuple[float, float
     cy, cx = np.array(cc.shape) // 2
     peak_y, peak_x = np.unravel_index(np.argmax(cc), cc.shape)
 
-    # Integer shift relative to centre
+    # Integer shift relative to center
     dy = peak_y - cy
     dx = peak_x - cx
 

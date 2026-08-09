@@ -26,7 +26,7 @@ Add random noise to a binary mask by flipping pixels near boundaries.
 
 ## Notes
 
-- Boundary detection uses four-neighbour comparison (up, down, left, right) via np.roll. A pixel is a boundary pixel if it differs from at least one of its four neighbours.
+- Boundary detection uses four-neighbor comparison (up, down, left, right) via np.roll. A pixel is a boundary pixel if it differs from at least one of its four neighbors.
 - Direction modes control which candidates are eligible: "add" selects only unmasked boundary pixels, "remove" selects only masked boundary pixels, and "both" selects all boundary pixels.
 - Setting boundaries_only to False allows any pixel in the mask to be a candidate, not just those at edges.
 - The seed parameter ensures deterministic output for a given input, which is useful for repeatable experiments.

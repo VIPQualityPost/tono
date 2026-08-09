@@ -36,7 +36,7 @@ def _interpolate_parabolic(xy):
 
 def _min_in_array(xy, n):
     """Index of the minimumvalue among points 1..n (point 0 excluded)
-    , plus a flag telling whether the minimum is distinct from its neighbours.  
+    , plus a flag telling whether the minimum is distinct from its neighbors.  
     As in the C code, the array has 13 slots and slot n may hold stale data 
     from an earlier iteration."""
     any_variation = False

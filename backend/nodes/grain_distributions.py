@@ -68,7 +68,7 @@ class GrainDistributions:
                 base = float(data[~grain_mask].mean()) if (~grain_mask).any() else 0.0
                 values.append(float(np.sum(data[gpx] - base) * pixel_area))
             elif property == "boundary_length":
-                # Count boundary pixels (pixels with at least one non-grain neighbour)
+                # Count boundary pixels (pixels with at least one non-grain neighbor)
                 padded = np.pad(gpx, 1, mode='constant', constant_values=False)
                 boundary = gpx & ~(
                     padded[:-2, 1:-1] & padded[2:, 1:-1] &

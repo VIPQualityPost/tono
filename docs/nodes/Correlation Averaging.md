@@ -17,7 +17,7 @@ Average repeats of a periodic structure to remove noise. The rectangle (x, y, wi
 | Name | Type | Description |
 |------|------|-------------|
 | averaged | DATA_FIELD | Field with each detected repeat replaced by the averaged template patch |
-| alignment | RECORD_TABLE | Per-detected-repeat X/Y offset from the template centre (px) and correlation score |
+| alignment | RECORD_TABLE | Per-detected-repeat X/Y offset from the template center (px) and correlation score |
 
 ## Controls
 

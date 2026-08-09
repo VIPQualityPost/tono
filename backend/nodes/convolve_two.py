@@ -45,7 +45,7 @@ class ConvolveTwoImages:
     DESCRIPTION = (
         "Convolve two images. The result value at each pixel is the sum of the "
         "product of field_a with the reversed field_b kernel, computed with FFT "
-        "convolution, with the kernel centred on the output pixel (zero exterior). "
+        "convolution, with the kernel centerd on the output pixel (zero exterior). "
         "Mode selects the output "
         "extent: full (Na+Nb-1), same (field_a size) or valid (overlap only, "
         "requires field_b smaller than field_a)."
@@ -66,7 +66,7 @@ class ConvolveTwoImages:
                 )
 
         if mode == "same":
-            # Gwyddion convolves with the kernel centre at kx//2, ky//2 (for
+            # Gwyddion convolves with the kernel center at kx//2, ky//2 (for
             # even kernels this sits 0.5 px towards lower indices, which scipy's
             # 'same' mode does not reproduce).  Slice the zero-exterior full
             # convolution exactly like gwy_data_field_area_ext_convolve().

@@ -34,7 +34,7 @@ Correct scan-line mismatches using row alignment methods. Supports median and tr
   levels (terraces, plateaus).
 - The matching method (Gaussian-weighted, from linematch.c LINE_MATCH_MATCH)
   aligns consecutive rows through their locally similar slopes and accumulates
-  the offsets; rows that are exact copies of their neighbours are left in
+  the offsets; rows that are exact copies of their neighbors are left in
   place by the C algorithm and are then not shifted.
 - The step method is designed for step-like scan artifacts and may over-correct smooth surfaces.
 - Mask shape must match the field shape if a mask is connected.

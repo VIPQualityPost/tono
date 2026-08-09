@@ -48,7 +48,7 @@ class MaskNoisify:
                 field: DataField | None = None) -> tuple:
         binary = mask_to_bool(mask)
 
-        # Identify boundary pixels: pixels that differ from at least one neighbour
+        # Identify boundary pixels: pixels that differ from at least one neighbor
         if boundaries_only:
             boundary = np.zeros_like(binary)
             for shift_axis, shift_dir in [(0, 1), (0, -1), (1, 1), (1, -1)]:

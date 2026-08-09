@@ -337,9 +337,9 @@ def _conservative_filter(data: np.ndarray, size: int) -> np.ndarray:
 
     footprint = np.ones((size, size), dtype=bool)
     footprint[size // 2, size // 2] = False
-    min_neighbours = minimum_filter(data, footprint=footprint, mode="nearest")
-    max_neighbours = maximum_filter(data, footprint=footprint, mode="nearest")
-    return np.clip(data, min_neighbours, max_neighbours)
+    min_neighbors = minimum_filter(data, footprint=footprint, mode="nearest")
+    max_neighbors = maximum_filter(data, footprint=footprint, mode="nearest")
+    return np.clip(data, min_neighbors, max_neighbors)
 
 
 def _line_correct_step(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

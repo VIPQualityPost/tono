@@ -61,8 +61,8 @@ def test_tip_min_is_zero():
     assert tip.data.min() >= -1e-15
 
 
-def test_tip_max_at_centre():
-    """Apex (centre pixel) must be the maximum of the estimated tip."""
+def test_tip_max_at_center():
+    """Apex (center pixel) must be the maximum of the estimated tip."""
     field = make_field(shape=(32, 32), xreal=32e-9, yreal=32e-9)
     tip, _ = run_blind(field, n_pixels=9)
     ci = tip.data.shape[0] // 2
