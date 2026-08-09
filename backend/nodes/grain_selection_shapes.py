@@ -1,6 +1,5 @@
 """Grain Selection Shapes — create selections visualizing inscribed discs or
-circumscribed circles of grains (port of Gwyddion modules/process/grain_makesel.c
-with the quantity algorithms from libprocess/grains-values.c)."""
+circumscribed circles of grains."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from scipy.spatial import ConvexHull, QhullError
 from backend.node_registry import register_node
 from backend.nodes.helpers import mask_to_bool
 
-# 12 shift directions every 7.5 degrees (grains-values.c shift_directions[]).
+# 12 shift directions every 7.5 degrees (Gywddion grains-values.c shift_directions[]).
 _SHIFT_DIRECTIONS = np.array([
     [1.0, 0.0],
     [0.9914448613738104, 0.1305261922200516],
@@ -56,7 +55,7 @@ def _inscribed_disc(grain: np.ndarray, y0: int, x0: int,
     """Largest disc inside the grain: Euclidean distance transform maximum, ties
     resolved towards the grain centre of mass. Radius from pixel-centre distances
     converted to geometric half-widths (EDT - 0.5), matching the continuous
-    inscribed disc semantics of GWY_GRAIN_VALUE_INSCRIBED_DISC_R."""
+    inscribed disc semantics."""
     dmax = float(dist[grain].max())
     centre_y, centre_x = (float(v) for v in np.mean(np.argwhere(grain), axis=0))
     candidates = np.argwhere(np.isclose(dist, dmax))
@@ -160,8 +159,7 @@ class GrainSelectionShapes:
     DESCRIPTION = (
         "Create a selection image visualizing the largest disc that fits inside "
         "each grain (inscribed discs) or the smallest circle enclosing each grain "
-        "(circumscribed circles), mirroring Gwyddion's Select Inscribed Discs and "
-        "Select Circumscribed Circles. Grains are found as 4-connected components "
+        "(circumscribed circles). Grains are found as 4-connected components "
         "of the input mask; grains smaller than the minimum area are skipped."
     )
 

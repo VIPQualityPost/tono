@@ -1,6 +1,6 @@
 # Radial Smoothing
 
-Smooth an image in polar coordinates: the image is resampled around its centre into a polar (radius, angle) grid, Gaussian-smoothed along the radial and/or angular direction, and mapped back. Equivalent to Gwyddion's raveraging module.
+Smooth an image in polar coordinates: the image is resampled around its centre into a polar (radius, angle) grid, Gaussian-smoothed along the radial and/or angular direction, and mapped back.
 
 ## Inputs
 
@@ -26,6 +26,5 @@ Smooth an image in polar coordinates: the image is resampled around its centre i
 
 - The polar transform is centred on pixel (xres/2, yres/2) of the input. The angular coordinate covers one full revolution in `ares = round(pi*max(xres,yres))` (rounded to an even number) steps; the radial coordinate has `rres = trunc(sqrt(xres^2+yres^2)/2)` bins, one per pixel of radius. The angular direction is periodically wrapped so the smoothing does not create a seam at 0/360 degrees.
 - `sigma_r` blurs concentric circles (constant angle, values at different radii are averaged); `sigma_phi_deg` blurs along circles of constant radius (a rotational blur around the centre). Setting either sigma to 0 disables that component; both can be applied at once.
-- The Gaussian kernel is truncated at 5 sigma, exactly like Gwyddion's `gwy_data_field_row_gaussian`/`column_gaussian`.
+- The Gaussian kernel is truncated at 5 sigma, exactly like separable row/column Gaussian smoothing.
 - The workspace holds a polar array of about `2*ares*(rres+ares)` pixels, so memory use grows roughly linearly with image size times pi; very large images take correspondingly more memory.
-- Equals Gwyddion `raveraging.c` (`filter_radial`, `raverage_rphi_to_xy`, `raverage_xy_to_rphi`), ported to numpy/scipy.

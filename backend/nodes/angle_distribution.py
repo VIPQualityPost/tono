@@ -1,5 +1,4 @@
-"""Angle Distribution — two-dimensional distribution of angle projections (port of
-Gwyddion modules/process/angle_dist.c)."""
+"""Angle Distribution — two-dimensional distribution of angle projections."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from backend.execution_context import emit_table
 
 
 def _filter_slope(data: np.ndarray, dx: float, dy: float) -> tuple[np.ndarray, np.ndarray]:
-    """gwy_data_field_filter_slope(): symmetric differences, one-sided at edges,
+    """Symmetric differences, one-sided at edges,
     in physical units (divided by the pixel size)."""
     yres, xres = data.shape
     xder = np.zeros_like(data)
@@ -31,9 +30,8 @@ def _filter_slope(data: np.ndarray, dx: float, dy: float) -> tuple[np.ndarray, n
 
 def _fit_local_plane_slopes(data: np.ndarray, size: int,
                             dx: float, dy: float) -> tuple[np.ndarray, np.ndarray]:
-    """gwy_data_field_area_fit_local_planes() followed by the 1/dx, 1/dy scaling of
-    angle_dist.c compute_slopes(). Fits a plane z = c + bx*x + by*y through each
-    clamped neighbourhood and returns bx/dx, by/dy."""
+    """Local plane fit with the 1/dx, 1/dy slope scaling. Fits a plane z = c + bx*x
+    + by*y through each clamped neighbourhood and returns bx/dx, by/dy."""
     yres, xres = data.shape
     xder = np.zeros((yres, xres), dtype=np.float64)
     yder = np.zeros((yres, xres), dtype=np.float64)
@@ -163,8 +161,8 @@ class AngleDistribution:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Calculate the two-dimensional distribution of angle projections (Gwyddion "
-        "Angle Distribution): for every pixel the slope vector is projected onto a "
+        "Calculate the two-dimensional distribution of angle projections: for every "
+        "pixel the slope vector is projected onto a "
         "set of directions and accumulated into a polar histogram, giving the "
         "distribution of surface-angle projections. Slopes are computed with simple "
         "symmetric differences, or optionally by local plane fitting with a given "

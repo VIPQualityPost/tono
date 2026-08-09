@@ -1,6 +1,6 @@
 # Step Block Correction
 
-Correct vertical steps in scan lines block-by-block, without any line correction. Discontinuities between consecutive scan lines whose magnitude exceeds the threshold times the RMS vertical difference are located, blocks are built from the resulting marks, and each block's rows are shifted by the trimmed mean of the step. Ported from Gwyddion's blockstep module.
+Correct vertical steps in scan lines block-by-block, without any line correction. Discontinuities between consecutive scan lines whose magnitude exceeds the threshold times the RMS vertical difference are located, blocks are built from the resulting marks, and each block's rows are shifted by the trimmed mean of the step.
 
 ## Inputs
 

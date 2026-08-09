@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-Blind tip estimation following Gwyddion's morph_lib.c / tip.c.
+Blind tip estimation from morphological image analysis.
 
 Reference: J. S. Villarrubia, J. Res. Natl. Inst. Stand. Technol. 102 (1997) 425.
 
@@ -18,7 +18,7 @@ point.  The shape of the image near that peak therefore constrains the tip
 geometry.  Iterating over all such peaks and taking the intersection of all
 constraints converges to the sharpest tip consistent with the measured data.
 
-─── Integer quantisation (matches Gwyddion exactly) ────────────────────────
+─── Integer quantisation ───────────────────────────────────────────────
 
 All internal arithmetic uses int32 to avoid floating-point drift in
 comparisons.  The conversion is:
@@ -28,7 +28,7 @@ comparisons.  The conversion is:
   itip[y,x]  = floor( (tip[y,x]  - tip_max)  / step )   → values in [-10000, 0]
 
 Tips are stored max-zeroed: the apex pixel is always 0, all other pixels ≤ 0.
-This is the convention used by every function in morph_lib.c.
+This is the convention used throughout the estimation.
 
 ─── Tip initialisation ──────────────────────────────────────────────────────
 
@@ -40,11 +40,11 @@ Every iteration narrows the tip to fit the image data more tightly.
 
 ─── Two estimation modes ────────────────────────────────────────────────────
 
-partial  (_itip_estimate_partial / _gwy_morph_lib_itip_estimate0):
+partial  (_itip_estimate_partial):
   Collects local maxima in the image and iterates refinement over those
   peaks only.  Fast; works well for images with sharp, isolated features.
 
-full     (_itip_estimate_full / _gwy_morph_lib_itip_estimate):
+full     (_itip_estimate_full):
   Each iteration computes the morphological opening of the image (erosion
   then re-dilation with the current tip).  All pixels where the measured
   image exceeds the opening by more than the threshold are processed.
@@ -66,7 +66,7 @@ from scipy.ndimage import grey_erosion, grey_dilation
 from backend.node_registry import register_node
 from backend.data_types import DataField
 
-# Number of quantisation levels.  Gwyddion defines this as MORPH_LIB_N = 10000.
+# Number of quantisation levels, defined as MORPH_LIB_N = 10000.
 _MORPH_LIB_N = 10000.0
 
 # Sentinel for "no contribution yet" in the dilation accumulator.
@@ -81,7 +81,7 @@ def _quantize_surface(data: np.ndarray, surf_min: float, step: float) -> np.ndar
     """
     Convert a float surface to an integer array in [0, MORPH_LIB_N].
 
-    Matches Gwyddion's i_datafield_to_field(surface, maxzero=FALSE, min=surf_min, step).
+    Uses the maxzero=FALSE, min=surf_min, step quantisation.
     """
     return np.floor((data - surf_min) / step).astype(np.int32)
 
@@ -90,7 +90,7 @@ def _quantize_tip(tip_data: np.ndarray, tip_max: float, step: float) -> np.ndarr
     """
     Convert a float tip to a max-zeroed integer array (values ≤ 0).
 
-    Matches Gwyddion's i_datafield_to_field(tip, maxzero=TRUE, min=tip_min, step).
+    Uses the maxzero=TRUE, min=tip_min, step quantisation.
     With tip_min = 0 (our tips are always shifted so min = 0) this simplifies to:
       itip[y,x] = floor( (tip[y,x] - tip_max) / step )
     """
@@ -104,7 +104,6 @@ def _dequantize(idata: np.ndarray, offset: float, step: float) -> np.ndarray:
 
 # ---------------------------------------------------------------------------
 # _useit — is pixel (x, y) a local maximum suitable for tip refinement?
-# Matches Gwyddion's static useit() in morph_lib.c
 # ---------------------------------------------------------------------------
 
 def _useit(image: np.ndarray, x: int, y: int, delta: int) -> bool:
@@ -117,7 +116,7 @@ def _useit(image: np.ndarray, x: int, y: int, delta: int) -> bool:
          (to exclude flat plateaux, which give no tip shape information).
 
     delta = max(max(txres, tyres) // 10, 1) so larger tips use a wider
-    neighbourhood, matching Gwyddion's choice.
+    neighborhood.
     """
     yres, xres = image.shape
     xmin, xmax = max(x - delta, 0), min(x + delta, xres - 1)
@@ -132,7 +131,6 @@ def _useit(image: np.ndarray, x: int, y: int, delta: int) -> bool:
 
 # ---------------------------------------------------------------------------
 # _estimate_point_interior — refine tip from a single interior image pixel
-# Matches Gwyddion's itip_estimate_point() interior branch in morph_lib.c
 # ---------------------------------------------------------------------------
 
 def _estimate_point_interior(
@@ -242,7 +240,6 @@ def _estimate_point_interior(
 
 # ---------------------------------------------------------------------------
 # Partial estimation — iterate over local maxima only
-# Matches _gwy_morph_lib_itip_estimate0() in morph_lib.c
 # ---------------------------------------------------------------------------
 
 def _itip_estimate_partial(
@@ -263,7 +260,7 @@ def _itip_estimate_partial(
          the tip apex — they constrain the tip shape most tightly.
       2. Iterate _estimate_point_interior over every qualifying pixel until
          either no pixel produces a refinement, or fewer than 20 pixels do
-         (convergence criterion matching Gwyddion's maxcount = 20).
+         (convergence criterion maxcount = 20).
 
     Returns the total number of tip-pixel updates across all iterations.
     """
@@ -306,7 +303,6 @@ def _itip_estimate_partial(
 
 # ---------------------------------------------------------------------------
 # Full estimation — iterate over all points above the morphological opening
-# Matches _gwy_morph_lib_itip_estimate() in morph_lib.c
 # ---------------------------------------------------------------------------
 
 def _itip_estimate_full(
@@ -337,8 +333,8 @@ def _itip_estimate_full(
 
     while True:
         # Morphological opening with the current integer tip estimate.
-        # scipy grey_erosion/dilation treat the structure as centred at
-        # its middle pixel, matching Gwyddion's convention of apex at (yc, xc).
+        # scipy grey_erosion/dilation treat the structure as centered at
+        # its middle pixel, with the apex at (yc, xc).
         tip_float = tip0.astype(np.float64)
         eroded = grey_erosion(image.astype(np.float64), structure=tip_float)
         opened = grey_dilation(eroded, structure=tip_float)
@@ -362,8 +358,6 @@ def _itip_estimate_full(
 
 # ---------------------------------------------------------------------------
 # _certainty_map_fast — vectorised certainty map
-# Matches _gwy_morph_lib_icmap() in morph_lib.c and the floating-point
-# certainty_map() helper in tip.c (disabled #if 0 branch, which is cleaner).
 # ---------------------------------------------------------------------------
 
 def _certainty_map_fast(
@@ -511,9 +505,9 @@ class BlindTipEstimate:
         xc = yc = n // 2   # apex is at the centre pixel
 
         # ── Integer quantisation ──────────────────────────────────────────
-        # All estimation arithmetic is performed in integer units to match
-        # Gwyddion's morph_lib.c exactly.  step is chosen so the full surface
-        # height range maps to MORPH_LIB_N = 10 000 integer levels.
+        # All estimation arithmetic is performed in integer units.  step is
+        # chosen so the full surface height range maps to MORPH_LIB_N = 10 000
+        # integer levels.
         surf = field.data
         surf_min = float(surf.min())
         surf_max = float(surf.max())
@@ -534,7 +528,7 @@ class BlindTipEstimate:
         # ── Noise threshold in integer units ─────────────────────────────
         # A refinement is only accepted if the new constraint is more than
         # thresh_int quantisation levels below the current estimate.
-        # Gwyddion recommends starting at 0 and increasing if the result is
+        # The recommended start is 0; increase it if the result is
         # too sharp (noise is interpreted as sharp features).
         thresh_int = max(int(threshold / step), 0)
 
@@ -545,7 +539,6 @@ class BlindTipEstimate:
             _itip_estimate_full(isurf, txres, tyres, xc, yc, itip0, thresh_int, use_edges)
 
         # ── Dequantise tip back to physical units ─────────────────────────
-        # Matches Gwyddion's i_field_to_datafield then gwy_data_field_add(-min):
         #   tip_data[y,x] = itip0[y,x] * step  (offset = tipmin = 0 for flat start)
         # then shift so minimum = 0 (apex = maximum after shift).
         tip_data = itip0.astype(np.float64) * step
@@ -564,13 +557,13 @@ class BlindTipEstimate:
 
         # ── Certainty map ─────────────────────────────────────────────────
         # Reconstruct the surface by eroding the measured image with the
-        # estimated tip (this is gwy_tip_erosion / TipDeconvolution).
+        # estimated tip (this is the tip-erosion step used by Tip Deconvolution).
         # tip_max_zeroed converts back to the erosion convention (max = 0).
         tip_max_zeroed = tip_data - tip_data.max()   # values ≤ 0, apex = 0
         rsurf = grey_erosion(surf, structure=tip_max_zeroed)
 
         # cmap_thresh: tolerance for the "exact contact" comparison.
-        # Gwyddion uses 50 × step (the icmap integer branch uses equality,
+        # Uses 50 × step (the integer exact-contact branch uses equality,
         # which corresponds to ±0.5 step; 50 steps gives a looser float match).
         cmap_thresh = 50.0 * step
         cmap_data = _certainty_map_fast(surf, tip_data, rsurf, xc, yc, cmap_thresh)

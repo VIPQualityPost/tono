@@ -1,6 +1,6 @@
 # Neural Classification
 
-Classify surface pixels into two classes using a simple two-layer feedforward neural network with sigmoid activations. Features are extracted via multi-scale Gaussian filtering. Equivalent in purpose to Gwyddion's neural.c classifier.
+Classify surface pixels into two classes using a simple two-layer feedforward neural network with sigmoid activations. Features are extracted via multi-scale Gaussian filtering.
 
 ## Inputs
 

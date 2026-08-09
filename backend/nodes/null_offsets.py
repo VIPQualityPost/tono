@@ -6,7 +6,7 @@ from backend.node_registry import register_node
 
 @register_node(display_name="Null Offsets")
 class NullOffsets:
-    """Set a DATA_FIELD's x/y offsets to zero (Gwyddion `null_offsets`)."""
+    """Set a DATA_FIELD's x/y offsets to zero."""
 
     CATEGORY = "Level & Correct"
 
@@ -33,5 +33,5 @@ class NullOffsets:
     KEYWORDS = ("offset", "origin", "position", "xoff", "yoff", "null")
 
     def process(self, field: DataField) -> tuple:
-        # gwy_data_field_set_xoffset/set_yoffset(0.0)
+        # Set both offsets to zero.
         return (field.replace(data=field.data.copy(), xoff=0.0, yoff=0.0),)

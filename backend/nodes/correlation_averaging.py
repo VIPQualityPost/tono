@@ -8,17 +8,15 @@ from backend.data_types import DataField, RecordTable
 from backend.execution_context import emit_table
 from backend.node_registry import register_node
 
-# Gaussian smoothing sigma of the correlation score: FWHM of 2 px, exactly the
-# constant used in Gwyddion averaging.c:
-#   2.0 / (2.0 * sqrt(2.0 * ln 2)) ~= 0.8493
+# Gaussian smoothing sigma of the correlation score: FWHM of 2 px, i.e.
+# sigma = 2.0 / (2.0 * sqrt(2.0 * ln 2)) ~= 0.8493
 _SMOOTH_SIGMA = 2.0 / (2.0 * np.sqrt(2.0 * np.log(2.0)))
 
 
 def _gather_mean(a: np.ndarray, kx: int, ky: int) -> np.ndarray:
     """Clipped local-window arithmetic mean.
 
-    Port of `gwy_data_field_area_gather(..., average=TRUE)` (libprocess/filters.c):
-    the window centred on each sample covers [j-(kx-1)/2, j+kx/2] x
+    The window centred on each sample covers [j-(kx-1)/2, j+kx/2] x
     [i-(ky-1)/2, i+ky/2]; where it extends out of the field only the in-bounds
     samples are averaged.
     """
@@ -48,13 +46,11 @@ def _gather_mean(a: np.ndarray, kx: int, ky: int) -> np.ndarray:
 def _normalized_correlation_score(data: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """Normalised correlation score field.
 
-    Port of `gwy_data_field_correlate(..., GWY_CORRELATION_NORMAL)`
-    (libprocess/correlation.c): the score at pixel (j, i) is the mean of
-    (d - davg)*(k - kavg) over the kernel window centred on (j, i), divided by the
-    product of the local RMS of the data and the RMS of the kernel.  Positions
-    where the kernel does not fit completely keep the value -1.  The raw window
-    sum matches Gwyddion's alignment verified against the C definition for both
-    even and odd kernel sizes with scipy.signal.correlate2d(mode="same").
+    The score at pixel (j, i) is the mean of (d - davg)*(k - kavg) over the
+    kernel window centred on (j, i), divided by the product of the local RMS of
+    the data and the RMS of the kernel.  Positions where the kernel does not fit
+    completely keep the value -1.  The raw window sum matches
+    scipy.signal.correlate2d(mode="same") for both even and odd kernel sizes.
     """
     yres, xres = data.shape
     ky, kx = kernel.shape
@@ -83,9 +79,9 @@ def _normalized_correlation_score(data: np.ndarray, kernel: np.ndarray) -> np.nd
 def _find_local_maxima(score: np.ndarray, threshold_fraction: float = 0.75) -> list[tuple[int, int, float]]:
     """Local maxima of the smoothed score (4-neighbourhood, >= comparison).
 
-    Port of `find_local_maxima()` from Gwyddion averaging.c: pixel (i, j) is kept
-    when no strict 4-neighbour is larger and the value exceeds
-    threshold_fraction * max.  Returns (row, col, value) triples in scan order.
+    Pixel (i, j) is kept when no strict 4-neighbour is larger and the value
+    exceeds threshold_fraction * max.  Returns (row, col, value) triples in scan
+    order.
     """
     yres, xres = score.shape
     pad = np.pad(score, 1, mode="constant", constant_values=-np.inf)
@@ -125,8 +121,8 @@ class CorrelationAveraging:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Average repeats of a periodic structure to remove noise, as in Gwyddion's "
-        "Correlation Averaging. The rectangle (x, y, width, height in physical "
+        "Average repeats of a periodic structure to remove noise. The rectangle "
+        "(x, y, width, height in physical "
         "units) selects one representative repeat used as the template. The image "
         "is normalised-cross-correlated with the template, correlation maxima above "
         "75% of the peak are located, and the template-sized patches at those "
@@ -151,8 +147,7 @@ class CorrelationAveraging:
         if px <= 0.0 or py <= 0.0:
             raise ValueError("Field has invalid physical extents (xreal/xres must be positive)")
 
-        # Pixel conversion ported from gwy_data_field_rtoi()/rtoj(): truncation
-        # toward zero, offsets ignored (as in Gwyddion).
+        # Pixel conversion: truncation toward zero, offsets ignored.
         x0 = int(np.trunc(float(x) * px))
         y0 = int(np.trunc(float(y) * py))
         x1 = int(np.trunc((float(x) + float(width)) * px))
@@ -188,8 +183,7 @@ class CorrelationAveraging:
             xtop = col - kw // 2
             ytop = row - kh // 2
             if xtop < 0 or ytop < 0 or xtop + kw > xres or ytop + kh > yres:
-                # Defensive: skip patches that would extend out of the field
-                # (Gwyddion would extract out of bounds here).
+                # Defensive: skip patches that would extend out of the field.
                 continue
             patches.append((xtop, ytop, zvalue))
             res_kernel += zvalue * data[ytop:ytop + kh, xtop:xtop + kw]

@@ -8,7 +8,7 @@ from backend.node_registry import register_node
 
 @register_node(display_name="Limit Range")
 class LimitRange:
-    """Limit a DATA_FIELD to a value range (Gwyddion `threshold`/Limit Range)."""
+    """Limit a DATA_FIELD to a value range."""
 
     CATEGORY = "Level & Correct"
 
@@ -30,8 +30,8 @@ class LimitRange:
 
     DESCRIPTION = (
         "Limit a DATA_FIELD to a given value range. Clip mode clamps every value "
-        "into [min(low, high), max(low, high)] exactly like Gwyddion's Limit Range "
-        "process. Scale mode additionally compresses the clipped range linearly so "
+        "into [min(low, high), max(low, high)]. Scale mode additionally compresses "
+        "the clipped range linearly so "
         "low maps to 0 and high to 1. Physical extents and offsets are preserved."
     )
 
@@ -41,7 +41,6 @@ class LimitRange:
         bottom = float(min(low, high))
         top = float(max(low, high))
 
-        # gwy_data_field_clamp(bottom, top)
         clamped = np.clip(field.data, bottom, top)
 
         mode_name = str(mode).strip().lower()

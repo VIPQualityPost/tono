@@ -1,6 +1,6 @@
 # Trimmed Mean
 
-Apply a local trimmed-mean filter to a DATA_FIELD. Within each circular window, the lowest and highest fraction of pixel values are excluded before computing the mean. This provides smoothing that is more robust to outliers than a plain Gaussian or mean filter. Equivalent to Gwyddion's `trimmed-mean.c` module.
+Apply a local trimmed-mean filter to a DATA_FIELD. Within each circular window, the lowest and highest fraction of pixel values are excluded before computing the mean. This provides smoothing that is more robust to outliers than a plain Gaussian or mean filter.
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Angle Distribution
 
-Calculate the two-dimensional distribution of angle projections: for every pixel the local slope vector is projected onto a set of directions and the projections are accumulated into a polar histogram. This mirrors Gwyddion's Statistics &gt; Angle Distribution. The measurement table reports the mean, standard deviation and maximum of the local slope angle.
+Calculate the two-dimensional distribution of angle projections: for every pixel the local slope vector is projected onto a set of directions and the projections are accumulated into a polar histogram. This mirrors the Statistics &gt; Angle Distribution operation. The measurement table reports the mean, standard deviation and maximum of the local slope angle.
 
 ## Inputs
 
@@ -27,7 +27,7 @@ Calculate the two-dimensional distribution of angle projections: for every pixel
 
 ## Notes
 
-- With fit_plane off, slopes are computed with symmetric differences (one-sided at edges), exactly as Gwyddion's slope filter; the values are in physical units (height per metre).
-- With fit_plane on, a plane is least-squares fitted through each clamped neighbourhood. The fit is exact for centred windows; edge windows reproduce Gwyddion's own approximate edge behaviour.
+- With fit_plane off, slopes are computed with symmetric differences (one-sided at edges), exactly as with the slope filter; the values are in physical units (height per metre).
+- With fit_plane on, a plane is least-squares fitted through each clamped neighbourhood. The fit is exact for centred windows; edge windows reproduce the approximate edge behaviour.
 - Every pixel deposits one vote per direction step, so the total histogram mass equals pixels x steps (before logscale).
 - A perfectly flat image produces an all-zero distribution.

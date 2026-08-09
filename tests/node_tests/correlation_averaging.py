@@ -48,9 +48,7 @@ def test_correlation_averaging_output_arity_and_schema():
         assert {"quantity", "value", "unit"} <= set(row.keys())
 
 
-def test_correlation_averaging_score_matches_gwyddion():
-    """_normalized_correlation_score reproduces GWY_CORRELATION_NORMAL exactly,
-    including the -1 fill outside the valid region (brute-force port of the C)."""
+def test_correlation_averaging_score_matches_reference():
     from backend.nodes.correlation_averaging import _normalized_correlation_score
 
     rng = np.random.default_rng(11)

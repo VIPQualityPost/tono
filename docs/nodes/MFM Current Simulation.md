@@ -32,4 +32,3 @@ Computes the magnetic stray field from an infinite current-carrying strip and th
 - Hx is the in-plane field component; Hz is the out-of-plane component.
 - Force is calculated with the point-dipole approximation: Fz = mu_0 * m_tip * dHz/dz.
 - Useful for simulating MFM response to current-carrying traces/interconnects.
-- Equivalent to Gwyddion's mfm_current.c.

@@ -1,6 +1,6 @@
 # Grain Cross
 
-Correlate grain properties between two fields using a shared grain mask. Reports per-grain property pairs and the Pearson correlation coefficient. Equivalent to Gwyddion's grain_cross.c module.
+Correlate grain properties between two fields using a shared grain mask. Reports per-grain property pairs and the Pearson correlation coefficient.
 
 ## Inputs
 

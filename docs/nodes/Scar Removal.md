@@ -1,6 +1,6 @@
 # Scar Removal
 
-Detect and remove horizontal scan scars using Gwyddion-derived scar marking thresholds, then interpolate over the detected mask with a Laplace-style inpaint.
+Detect and remove horizontal scan scars using scar marking thresholds, then interpolate over the detected mask with a Laplace-style inpaint.
 
 ## Inputs
 

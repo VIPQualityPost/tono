@@ -7,7 +7,7 @@ import numpy as np
 from backend.node_registry import register_node
 from backend.data_types import DataField
 
-# Vacuum permeability (exact constant used by Gwyddion's libprocess/mfm.c), N/A^2.
+# Vacuum permeability (exact SI constant), N/A^2.
 MU_0 = 1.256637061435917295e-6
 
 _OPERATIONS = ("hx", "hz", "force", "force_dz", "force_ddz")
@@ -15,7 +15,7 @@ _PROBES = ("point_charge", "bar")
 
 
 def _gwy_sinc(x):
-    """Unnormalised cardinal sine used by Gwyddion: sin(x)/x, with 1 - x^2/6 near 0."""
+    """Unnormalised cardinal sine: sin(x)/x, with 1 - x^2/6 near 0."""
     x = np.asarray(x, dtype=np.float64)
     out = np.empty_like(x)
     big = np.abs(x) > 3e-4
@@ -26,8 +26,8 @@ def _gwy_sinc(x):
 
 def _parallel_medium_row(xres, xreal, height, size_a, size_b, size_c,
                          magnetisation, thickness, component):
-    """Port of gwy_data_field_mfm_parallel_medium (libprocess/mfm.c): one row of the
-    stray field above a medium of alternating left/right magnetised stripes.
+    """Compute one row of the stray field above a medium of alternating
+    left/right magnetised stripes.
 
     The C accumulates boundary contributions from 'oriented area walls': each
     stripe boundary at xlist[k] with direction dirlist[k] contributes an
@@ -83,10 +83,8 @@ def _parallel_medium_row(xres, xreal, height, size_a, size_b, size_c,
 
 
 def _mfm_perpendicular_force(hz_2d, xreal, yreal, probe, mtip, bx, by, length):
-    """Port of gwy_data_field_mfm_perpendicular_medium_force + the static
-    mfm_perpendicular_create_ftf (libprocess/mfm.c): force on a point-charge or
-    bar probe from the z-component of the stray field, via FFT multiplication
-    with the probe transfer function.
+    """Force on a point-charge or bar probe from the z-component of the stray
+    field, via FFT multiplication with the probe transfer function.
 
     Fz = ifft(fft(hz) * ftf)  with
     ftf = -mu0*mtip*bx*by * sinc(kx*bx/2) * sinc(ky*by/2) * (1 - exp(-|k|*length))
@@ -160,8 +158,7 @@ class MFMParallelMedia:
     DESCRIPTION = (
         "Simulates the stray field above an in-plane magnetised parallel medium: "
         "alternating stripes with left/right remanent magnetisation, separated by "
-        "gaps. Ports Gwyddion's mfm_parallel module (gwy_data_field_mfm_parallel_medium) "
-        "with its closed-form Biot-Savart wall contributions and optional probe "
+        "gaps. Uses closed-form Biot-Savart wall contributions and optional probe "
         "force calculation (point charge or bar). The field parameter only "
         "provides the lateral grid template; its values are ignored."
     )

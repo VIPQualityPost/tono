@@ -1,6 +1,6 @@
 # Straighten Path
 
-Extract a cross-section along an arbitrary curved path defined by control points. The path is interpolated between points and data is sampled along it using `scipy.ndimage.map_coordinates`. Equivalent to Gwyddion's straighten_path.c module.
+Extract a cross-section along an arbitrary curved path defined by control points. The path is interpolated between points and data is sampled along it using `scipy.ndimage.map_coordinates`.
 
 ## Inputs
 

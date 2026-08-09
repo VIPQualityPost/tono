@@ -1,4 +1,4 @@
-"""Radial smoothing — smooth images in polar coordinates (Gwyddion raveraging)."""
+"""Radial smoothing — smooth images in polar coordinates."""
 
 from __future__ import annotations
 
@@ -26,9 +26,9 @@ def _polar_dimensions(xres: int, yres: int) -> tuple[int, int]:
 def _to_polar(data: np.ndarray, rres: int, ares: int, order: int) -> np.ndarray:
     """Remap the image to polar (r, phi) coordinates, centre at pixel (xres/2, yres/2).
 
-    Mirrors raveraging.c's raverage_rphi_to_xy + gwy_data_field_distort with
-    linear interpolation and border-extension exterior.  Rows are the angle phi
-    (one full revolution in ``ares`` steps), columns are the radius in pixels.
+    Uses polar remapping with linear interpolation and border-extension
+    exterior.  Rows are the angle phi (one full revolution in ``ares`` steps),
+    columns are the radius in pixels.
     """
     yres, xres = data.shape
     phiscale = 2.0 * math.pi / ares
@@ -46,7 +46,6 @@ def _from_polar(polar: np.ndarray, rres: int, ares: int, order: int,
                 xres: int, yres: int) -> np.ndarray:
     """Remap the smoothed polar field back to the image.
 
-    Mirrors raveraging.c's raverage_xy_to_rphi + gwy_data_field_distort.
     The returned image pixel (j, i) samples the polar field at
     column sqrt((j - xres/2)^2 + (i - yres/2)^2) - 0.5 and
     row 1.5*ares + atan2(-ry, -rx)*ares/(2*pi), which lies in the second
@@ -92,8 +91,7 @@ class RadialSmoothing:
         "direction (concentric circles), sigma_phi_deg blurs along the angular "
         "direction (constant distance from the centre). The image is resampled "
         "to polar coordinates around its centre, Gaussian-filtered, and mapped "
-        "back. Any sigma set to zero disables that component. Equivalent to "
-        "Gwyddion's raveraging module."
+        "back. Any sigma set to zero disables that component."
     )
 
     KEYWORDS = ("smooth", "polar", "radial", "angular", "gaussian", "circular")
@@ -117,9 +115,8 @@ class RadialSmoothing:
         rres, ares = _polar_dimensions(xres, yres)
         polar = _to_polar(data, rres, ares, order)
 
-        # Extend periodically along the radius (like gwy_data_field_extend with
-        # GWY_EXTERIOR_PERIODIC) so the radial Gaussian at large radii uses real
-        # data instead of the field border.
+        # Extend periodically along the radius so the radial Gaussian at large
+        # radii uses real data instead of the field border.
         nrep = ares // rres + 1
         polar_c = np.concatenate([polar, np.tile(polar, (1, nrep))[:, :ares]], axis=1)
 

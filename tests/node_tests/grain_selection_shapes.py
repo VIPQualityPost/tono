@@ -1,5 +1,4 @@
-"""Tests for the Grain Selection Shapes node (port of Gwyddion grain_makesel.c
-with quantity algorithms from libprocess/grains-values.c)."""
+"""Tests for the Grain Selection Shapes node."""
 
 import numpy as np
 import pytest

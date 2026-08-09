@@ -1,6 +1,6 @@
 # Spot Removal
 
-Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The mask defines defect locations. Equivalent to Gwyddion spotremove.c.
+Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The mask defines defect locations.
 
 ## Inputs
 

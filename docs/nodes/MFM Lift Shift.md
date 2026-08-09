@@ -1,6 +1,6 @@
 # MFM Lift Shift
 
-Shifts a magnetic field image to a different lift height above the surface using the FFT-based transfer function exp(−2π|k|·Δz). Equivalent to Gwyddion's mfm_shift module (gwy_data_field_mfm_shift_z).
+Shifts a magnetic field image to a different lift height above the surface using the FFT-based transfer function exp(−2π|k|·Δz).
 
 ## Inputs
 
@@ -23,6 +23,6 @@ Shifts a magnetic field image to a different lift height above the surface using
 
 ## Notes
 
-- Each spatial frequency |k| (cycles per metre) is attenuated by exp(−2π|k|·Δz), exactly as in Gwyddion's non-humanized FFT arrangement. The DC component (transfer function 1) is preserved, so the mean value is unchanged.
+- Each spatial frequency |k| (cycles per metre) is attenuated by exp(−2π|k|·Δz), exactly as in the unshifted FFT arrangement. The DC component (transfer function 1) is preserved, so the mean value is unchanged.
 - Δz is equivalent to new_lift − old_lift. A positive shift produces the field at a larger lift height (blurred); a negative shift sharpens the field towards the surface and grows exponentially with |k|, so it is generally only useful for moderate values and smooth data.
 - The value unit of the input (e.g. A/m) is preserved; the result is the same physical quantity at a different height.

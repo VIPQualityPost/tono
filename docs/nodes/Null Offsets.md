@@ -1,6 +1,6 @@
 # Null Offsets
 
-Set the physical offsets (xoff, yoff) of a DATA_FIELD to zero. Equivalent to Gwyddion's `null_offsets` basic operation (module `basicops.c`), which calls `gwy_data_field_set_xoffset`/`set_yoffset` with 0.0.
+Set the physical offsets (xoff, yoff) of a DATA_FIELD to zero.
 
 ## Inputs
 

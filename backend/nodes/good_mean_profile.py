@@ -1,4 +1,4 @@
-"""Good Mean Profile — port of Gwyddion's good_profile.c.
+"""Good Mean Profile — robust average row profile.
 
 Calculates a good average row profile from one image (trimmed mean of each
 column over all scan rows) or from two images of repeated scanning of the
@@ -27,7 +27,7 @@ def _trimmed_mean(values: np.ndarray, ntrim: int) -> float:
 
 
 def _kth_ranks(values: np.ndarray, k0: int, k1: int) -> tuple[float, float]:
-    """Values at 0-based ranks k0 and k1, like gwy_math_kth_ranks()."""
+    """Values at 0-based ranks k0 and k1."""
     values = np.asarray(values, dtype=np.float64)
     n = values.size
     if n == 0:

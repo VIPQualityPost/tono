@@ -27,8 +27,8 @@ class PSDF:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Compute the two-dimensional power spectral density function with Gwyddion-style "
-        "window RMS compensation and centered zero frequency. Also reports the total RMS "
+        "Compute the two-dimensional power spectral density function with window "
+        "RMS compensation and centered zero frequency. Also reports the total RMS "
         "roughness recovered from the PSD."
     )
 

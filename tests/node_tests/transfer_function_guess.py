@@ -1,4 +1,4 @@
-"""Tests for the Transfer Function Guess node (port of Gwyddion psf.c)."""
+"""Tests for the Transfer Function Guess node."""
 
 import numpy as np
 import pytest
@@ -113,7 +113,7 @@ def test_integral_vs_discrete_normalisation():
     # (m^-2 * m^2 collapses to a dimensionless quantity).
     assert np.allclose(psf_d.data, psf_i.data * dx * dx)
     assert psf_d.si_unit_z == ""
-    # The TF width row scales with the values, exactly as the C's results do.
+    # The TF width row scales with the values.
     width_i = [r for r in table_i if r["quantity"] == "TF width"][0]["value"]
     width_d = [r for r in table_d if r["quantity"] == "TF width"][0]["value"]
     assert np.isclose(width_d, width_i * dx * dx, rtol=1e-9)

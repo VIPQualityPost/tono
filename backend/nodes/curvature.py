@@ -286,8 +286,8 @@ class Curvature:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Fit a quadratic surface and report the overall principal curvature radii and directions, matching "
-        "Gwyddion's curvature feature. The output annotation marks the principal cross-sections and the node "
+        "Fit a quadratic surface and report the overall principal curvature radii and directions. "
+        "The output annotation marks the principal cross-sections and the node "
         "also returns the two corresponding height profiles."
     )
 

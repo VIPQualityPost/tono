@@ -1,6 +1,6 @@
 # Median Background
 
-Extract background using a local median filter and subtract it. The radius controls the filter window — larger values capture broader background variations. More robust than polynomial leveling for surfaces with sparse tall features. Equivalent to Gwyddion's median-bg.c module.
+Extract background using a local median filter and subtract it. The radius controls the filter window — larger values capture broader background variations. More robust than polynomial leveling for surfaces with sparse tall features.
 
 ## Inputs
 

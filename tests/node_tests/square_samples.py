@@ -15,7 +15,7 @@ def test_outputs_arity():
 
 
 def test_y_axis_gains_pixels_to_match_x():
-    """Gwyddion square_samples: qx > qy -> yres becomes round(yreal*qx), dx == dy."""
+    """Square sampling: qx > qy -> yres becomes round(yreal*qx), dx == dy."""
     from backend.nodes.square_samples import SquareSamples
 
     # 32 rows x 64 cols over a square physical area: qx = 2*qy
@@ -34,7 +34,7 @@ def test_y_axis_gains_pixels_to_match_x():
 
 
 def test_x_axis_gains_pixels_to_match_y():
-    """Gwyddion square_samples: qx < qy -> xres becomes round(xreal*qy)."""
+    """Square sampling: qx < qy -> xres becomes round(xreal*qy)."""
     from backend.nodes.square_samples import SquareSamples
 
     # 64 rows x 32 cols over a square physical area: qx = qy/2

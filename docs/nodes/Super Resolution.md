@@ -1,6 +1,6 @@
 # Super Resolution
 
-Combine multiple aligned scans to produce a super-resolved image with higher spatial resolution. Sub-pixel shifts between inputs are estimated via FFT cross-correlation and used to reconstruct a finer grid. Equivalent to Gwyddion's superresolution.c.
+Combine multiple aligned scans to produce a super-resolved image with higher spatial resolution. Sub-pixel shifts between inputs are estimated via FFT cross-correlation and used to reconstruct a finer grid.
 
 ## Inputs
 

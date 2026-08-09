@@ -16,7 +16,7 @@ def test_convolve_output_arity():
 
 def test_convolve_same_matches_scipy():
     """'same' mode equals scipy convolve2d for odd kernels (their centres agree
-    with Gwyddion's kx//2)."""
+    with the node's centre at kx//2)."""
     from backend.nodes.convolve_two import ConvolveTwoImages
 
     rng = np.random.default_rng(4)
@@ -29,8 +29,8 @@ def test_convolve_same_matches_scipy():
     assert out.data.shape == a.shape
 
 
-def test_convolve_same_even_kernel_gwyddion_centre():
-    """Even kernels follow Gwyddion's centre convention (kx//2), not scipy's
+def test_convolve_same_even_kernel_centre():
+    """Even kernels use the kx//2 center convention, not scipy's
     (kx//2 - 1): the node output equals the zero-exterior full convolution
     sliced at (ky//2, kx//2), which scipy's 'same' mode does not reproduce."""
     from backend.nodes.convolve_two import ConvolveTwoImages
@@ -40,7 +40,7 @@ def test_convolve_same_even_kernel_gwyddion_centre():
     b = rng.standard_normal((4, 6))
     na, ma = a.shape
     ky, kx = b.shape
-    # Gwyddion out[j,i] = sum_{k,l} b[k,l] * a_ext[j + ky//2 - k, i + kx//2 - l]
+    # out[j,i] = sum_{k,l} b[k,l] * a_ext[j + ky//2 - k, i + kx//2 - l]
     # with a_ext the zero-exterior extension of a (data at rows [ky, ky+na)).
     a_ext = np.pad(a, ((ky, ky), (kx, kx)), constant_values=0.0)
     expected = np.zeros((na, ma))
@@ -82,7 +82,7 @@ def test_convolve_full_and_valid_shapes_and_extents():
 
 def test_convolve_identity_kernel():
     """A unit impulse at the kernel centre reproduces the field in 'same' mode
-    (kernel centred on the output pixel, Gwyddion alignment)."""
+    (kernel centred on the output pixel)."""
     from backend.nodes.convolve_two import ConvolveTwoImages
 
     rng = np.random.default_rng(6)
@@ -106,7 +106,7 @@ def test_convolve_identity_kernel():
 
 
 def test_convolve_units():
-    """Value units are the product of the two inputs' units (Gwyddion)."""
+    """Value units are the product of the two inputs' units."""
     from backend.nodes.convolve_two import ConvolveTwoImages
 
     field = make_field(data=np.ones((8, 8)))

@@ -27,8 +27,8 @@ class ACF2D:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Compute the two-dimensional autocorrelation function with Gwyddion-style "
-        "mean or plane levelling before correlation. The output is centered on zero shift "
+        "Compute the two-dimensional autocorrelation function with mean or plane "
+        "levelling before correlation. The output is centered on zero shift "
         "and uses the default half-range extents from acf2d. "
         "The measurement table reports the dominant period along each axis from the "
         "first positive peak of the center row and column."

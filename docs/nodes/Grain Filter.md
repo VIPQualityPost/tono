@@ -1,6 +1,6 @@
 # Grain Filter
 
-Remove grains from a binary mask based on size and border contact. Equivalent to Gwyddion's grain_filter module (grain_filter.c).
+Remove grains from a binary mask based on size and border contact.
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Zero Crossing
 
-Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma controls the Gaussian smoothing scale. Threshold filters out weak edges relative to the LoG range. Equivalent to Gwyddion's zero_crossing.c module.
+Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma controls the Gaussian smoothing scale. Threshold filters out weak edges relative to the LoG range.
 
 ## Inputs
 

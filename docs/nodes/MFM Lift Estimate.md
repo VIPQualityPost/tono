@@ -1,6 +1,6 @@
 # MFM Lift Estimate
 
-Estimates the lift height difference between two MFM images of the same area measured at different heights, from the frequency-dependent blur of the data. Equivalent to Gwyddion's mfm_findshift module (gwy_data_field_mfm_find_shift_z).
+Estimates the lift height difference between two MFM images of the same area measured at different heights, from the frequency-dependent blur of the data.
 
 ## Inputs
 
@@ -25,7 +25,7 @@ Estimates the lift height difference between two MFM images of the same area mea
 
 ## Notes
 
-- The estimate minimises ||shift_z(field, z) − shifted||² over z in [start, stop] using Gwyddion's 1-D minimiser (12-point scan plus parabolic/bisection refinement), with the transfer function exp(−2π|k|z).
-- Sign convention (same as gwy_data_field_mfm_shift_z): a positive estimate means the second image was measured at a larger lift height (blurrier) than the reference; negative means smaller. The estimate is generally only meaningful when the second image was measured at the larger lift height.
+- The estimate minimises ||shift_z(field, z) − shifted||² over z in [start, stop] using a 1-D minimiser (12-point scan plus parabolic/bisection refinement), with the transfer function exp(−2π|k|z).
+- Sign convention: a positive estimate means the second image was measured at a larger lift height (blurrier) than the reference; negative means smaller. The estimate is generally only meaningful when the second image was measured at the larger lift height.
 - The search range is ordered internally: start > stop is allowed.
 - Both images must have the same resolution; the lateral calibration of the reference image is used for the frequency grid.

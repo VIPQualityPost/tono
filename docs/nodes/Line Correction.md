@@ -1,6 +1,6 @@
 # Line Correction
 
-Correct scan-line mismatches using Gwyddion-derived row alignment methods. Supports median and trimmed row alignment, difference-based alignment, modus (most-common value) alignment, Gaussian-weighted row matching, polynomial row leveling, and step-line correction from Gwyddion's linecorrect/linematch modules.
+Correct scan-line mismatches using row alignment methods. Supports median and trimmed row alignment, difference-based alignment, modus (most-common value) alignment, Gaussian-weighted row matching, polynomial row leveling, and step-line correction.
 
 ## Inputs
 

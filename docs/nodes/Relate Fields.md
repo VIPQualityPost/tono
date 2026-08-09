@@ -1,6 +1,6 @@
 # Relate Fields
 
-Fit a functional relationship between two data fields: b = f(a). Outputs the predicted field_b from the fit and a table of fitted parameters with R-squared goodness-of-fit. Equivalent to Gwyddion's relate.c module.
+Fit a functional relationship between two data fields: b = f(a). Outputs the predicted field_b from the fit and a table of fitted parameters with R-squared goodness-of-fit.
 
 ## Inputs
 

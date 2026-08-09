@@ -1,4 +1,4 @@
-"""Rank transform — local contrast enhancement via a rank/presentation transform (Gwyddion rank)."""
+"""Rank transform — local contrast enhancement via a rank/presentation transform."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from backend.node_registry import register_node
 def _kernel_halfwidths(asize: int) -> np.ndarray:
     """Row half-widths of the inscribed ellipse of the (2*asize+1)^2 kernel.
 
-    Mirrors rank.c's xsize[] table: for each row offset k in [-asize, asize]
-    the window extends floor(sqrt(0.25*size^2 - k^2)) pixels to each side.
+    For each row offset k in [-asize, asize] the window extends
+    floor(sqrt(0.25*size^2 - k^2)) pixels to each side.
     """
     size = 2 * asize + 1
     k = np.arange(-asize, asize + 1, dtype=np.float64)
@@ -21,7 +21,7 @@ def _kernel_halfwidths(asize: int) -> np.ndarray:
 
 
 def _elliptic_footprint(asize: int) -> np.ndarray:
-    """Boolean support of the inscribed ellipse kernel (elliptic.c)."""
+    """Boolean support of the inscribed ellipse kernel."""
     halfwidths = _kernel_halfwidths(asize)
     size = 2 * asize + 1
     cols = np.arange(size) - asize
@@ -33,10 +33,10 @@ def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
                 chunk_rows: int = 64) -> np.ndarray:
     """Fraction of elliptic-window pixels not exceeding the centre pixel.
 
-    Conservative rank filter exactly matching rank.c's local_rank(): the window
-    is the ellipse inscribed in the (2*asize+1)^2 square, truncated at the data
-    edges, and tied values count with weight 1/2.  Computed in row chunks with
-    per-row-offset segment gathering and sorting.
+    Conservative rank filter whose window is the ellipse inscribed in the
+    (2*asize+1)^2 square, truncated at the data edges, and tied values count
+    with weight 1/2.  Computed in row chunks with per-row-offset segment
+    gathering and sorting.
     """
     yres, xres = data.shape
     window = 2 * asize + 1
@@ -87,7 +87,7 @@ def _local_rank(data: np.ndarray, asize: int, halfwidths: np.ndarray,
 def _normalize(data: np.ndarray) -> np.ndarray:
     """Min-max normalize to [0, 1]; a constant field becomes all zeros.
 
-    Mirrors gwy_data_field_normalize().
+    Mirrors the standard min-max normalization.
     """
     dmin = float(data.min())
     dmax = float(data.max())
@@ -121,7 +121,7 @@ class RankTransform:
         "in a (2*size+1)^2 square) whose values do not exceed it, 'range' by the "
         "local value range (max - min) and 'normalization' by the local "
         "normalization (v - min)/(max - min). The result is min-max normalized "
-        "to [0, 1] and unitless, exactly like Gwyddion's rank module."
+        "to [0, 1] and unitless."
     )
 
     KEYWORDS = ("rank", "contrast", "presentation", "local", "normalize", "range")

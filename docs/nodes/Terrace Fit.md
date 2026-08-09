@@ -1,6 +1,6 @@
 # Terrace Fit
 
-Segment a surface into flat terraces separated by atomic steps, fit a polynomial to each terrace, and extract step heights. Set n_terraces=0 for automatic detection via histogram clustering. Equivalent to Gwyddion's terracefit.c module.
+Segment a surface into flat terraces separated by atomic steps, fit a polynomial to each terrace, and extract step heights. Set n_terraces=0 for automatic detection via histogram clustering.
 
 ## Inputs
 

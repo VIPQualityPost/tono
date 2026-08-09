@@ -1,4 +1,4 @@
-"""Tests for the Angle Distribution node (port of Gwyddion angle_dist.c)."""
+"""Tests for the Angle Distribution node."""
 
 import numpy as np
 import pytest
@@ -33,8 +33,8 @@ def test_filter_slope_exact_for_plane():
 
 
 def test_local_plane_fit_exact_interior():
-    """The C's plane fitting is exact for centred windows; edge windows are
-    clamped and only approximately centred, exactly as in Gwyddion."""
+    """Plane fitting is exact for centred windows; edge windows are
+    clamped and only approximately centred."""
     field = _plane_field()
     xder, yder = _fit_local_plane_slopes(field.data, 5, field.dx, field.dy)
     interior = (slice(6, 58), slice(6, 58))

@@ -83,7 +83,7 @@ def test_tip_radial_symmetry(shape):
 # ── Parabola formula verification ────────────────────────────────────────────
 
 def test_parabola_apex_formula():
-    """Parabola apex height = (half_width)² / R (Gwyddion: z0 = 2a·x_half²)."""
+    """Parabola apex height = (half_width)² / R (z0 = 2a·x_half²)."""
     radius = 20e-9
     n = 65
     pixel_size = 1e-9
@@ -105,7 +105,7 @@ def test_parabola_decreases_monotonically_from_centre():
 
 
 def test_parabola_corner_value_is_zero():
-    """Gwyddion constructs z0 so that z at (±half, ±half) = 0 exactly."""
+    """z0 is constructed so that z at (±half, ±half) = 0 exactly."""
     n = 33
     tip = make_tip(shape="parabola", n_pixels=n)
     corner = tip.data[0, 0]

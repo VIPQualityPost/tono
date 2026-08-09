@@ -1,6 +1,6 @@
 # Rank
 
-Presentation transform that enhances local contrast by replacing each pixel with a statistic of its neighbourhood. The neighbourhood is the ellipse inscribed in a square kernel of side `2*size + 1`. The result is min-max normalized to [0, 1] and is unitless, exactly like Gwyddion's rank module.
+Presentation transform that enhances local contrast by replacing each pixel with a statistic of its neighbourhood. The neighbourhood is the ellipse inscribed in a square kernel of side `2*size + 1`. The result is min-max normalized to [0, 1] and is unitless.
 
 ## Inputs
 
@@ -24,6 +24,6 @@ Presentation transform that enhances local contrast by replacing each pixel with
 ## Notes
 
 - With `rank`, ties with the centre value count with weight 1/2, so the result is the fraction of the window strictly below the centre plus half the ties -- a local percentile. Near the field borders the window is truncated (fewer pixels are included), never padded.
-- `range` and `normalization` use the same elliptic support; for a window whose values are all equal the normalization output is 0.5 (Gwyddion's convention) before the final min-max normalization.
+- `range` and `normalization` use the same elliptic support; for a window whose values are all equal the normalization output is 0.5 (standard convention) before the final min-max normalization.
 - The final output is always scaled so the minimum is 0 and the maximum is 1; a constant input produces all zeros. The height unit of the input is dropped (`si_unit_z` becomes empty).
-- Equals Gwyddion `rank.c` (`local_rank`, `execute_minmax` with `GWY_MIN_MAX_FILTER_RANGE`/`NORMALIZATION`, `gwy_data_field_normalize`); the elliptic kernel matches `gwy_data_field_elliptic_area_fill`.
+- Implements the local rank computation with `range`/`normalization` output modes followed by min-max normalization; the elliptic kernel is filled via an elliptic-area routine.

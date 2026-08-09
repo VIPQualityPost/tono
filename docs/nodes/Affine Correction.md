@@ -1,6 +1,6 @@
 # Affine Correction
 
-Fix geometric distortions from scanner nonlinearity by applying an affine transformation. Corrects shear, anisotropic scaling, and rotation. Equivalent to Gwyddion's correct_affine.c module.
+Fix geometric distortions from scanner nonlinearity by applying an affine transformation. Corrects shear, anisotropic scaling, and rotation.
 
 ## Inputs
 

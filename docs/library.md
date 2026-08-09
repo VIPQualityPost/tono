@@ -157,7 +157,7 @@ f = tono.field(data, xreal=10e-6, yreal=10e-6, si_unit_z="V")
 
 #### `DataField`
 
-The core 2D data container, analogous to Gwyddion's `GwyDataField`.
+The core 2D data container, analogous to `GwyDataField`.
 
 | Attribute | Type | Description |
 |---|---|---|

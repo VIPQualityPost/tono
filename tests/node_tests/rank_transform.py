@@ -54,7 +54,7 @@ def test_rank_ramp_exact_values():
 
 
 def _reference_local_rank(data, asize):
-    """Direct per-pixel port of rank.c's local_rank() used as the expected
+    """Direct per-pixel reference implementation used as the expected
     value (clamped elliptical window, ties weighted 1/2)."""
     yres, xres = data.shape
     size = 2 * asize + 1
@@ -145,7 +145,7 @@ def test_output_unitless_and_metadata():
     node = _make_node()
     field = _spike_field()
     (out,) = node.process(field, size=1, filter_type="rank")
-    assert out.si_unit_z == ""            # Gwyddion clears the z unit
+    assert out.si_unit_z == ""
     assert out.si_unit_xy == field.si_unit_xy
     assert out.data.shape == field.data.shape
     assert out.xreal == field.xreal and out.yreal == field.yreal

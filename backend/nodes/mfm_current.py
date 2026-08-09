@@ -64,10 +64,10 @@ class MFMCurrentSimulation:
         xreal = field.xreal
 
         # Spatial grid centred on the field: current line sits at x = 0.
-        # Matches Gwyddion convention: x = j * xreal / xres - xreal / 2
+        # Grid convention: x = j * xreal / xres - xreal / 2
         x = np.linspace(0, xreal, xres, endpoint=False) - xreal / 2.0
 
-        # Pre-computed constants (following Gwyddion mfm.c notation)
+        # Pre-computed constants
         m = current / (2.0 * np.pi * width)   # I / (2 pi w)
         w2 = 0.5 * width                      # half-width
         hh = height * height                   # h^2
@@ -78,16 +78,13 @@ class MFMCurrentSimulation:
         xmw2h2 = xmw2**2 + hh  # (x - w/2)^2 + h^2
 
         # --- Hx (1-D) ---
-        # Gwyddion: m * atan(h * w / (h^2 + x^2 - w2^2))
         # Equivalent to (I / (2 pi w)) * [atan((x+w/2)/h) - atan((x-w/2)/h)]
         hx_1d = m * np.arctan2(height * width, hh + x**2 - w2**2)
 
         # --- Hz (1-D) ---
-        # Gwyddion: 0.5 * m * ln((x-w/2)^2 + h^2) / ((x+w/2)^2 + h^2))
         hz_1d = 0.5 * m * np.log(xmw2h2 / xpw2h2)
 
         # --- dHz/dz (1-D), analytical derivative ---
-        # Gwyddion: m * x * h * w / ((xmw2h2) * (xpw2h2))
         t = 1.0 / (xmw2h2 * xpw2h2)
         dhz_dz_1d = m * x * height * width * t
 

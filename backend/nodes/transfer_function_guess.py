@@ -1,6 +1,5 @@
 """Transfer Function Guess — estimate the point-spread / transfer function from a
-measured image and a known ideal response (port of Gwyddion modules/process/psf.c
-plus libprocess/filters-convdeconv.c deconvolution kernels)."""
+measured image and a known ideal response."""
 
 from __future__ import annotations
 
@@ -11,8 +10,6 @@ from scipy.ndimage import distance_transform_edt, label
 from backend.node_registry import register_node
 from backend.data_types import DataField, RecordTable
 from backend.execution_context import emit_table
-
-# --- FFT helpers matching FFTW semantics used by Gwyddion (unnormalised both ways) ---
 
 def _fft2(a: np.ndarray) -> np.ndarray:
     return np.fft.fft2(np.asarray(a, dtype=np.float64))
@@ -25,7 +22,7 @@ def _ifft2_unnorm(F: np.ndarray) -> np.ndarray:
 
 
 def _humanize(a: np.ndarray) -> np.ndarray:
-    """Gwyddion 2dfft humanize: move zero frequency to the centre (odd-size
+    """Humanized FFT: move zero frequency to the centre (odd-size
     convention keeps the DC block one item larger, same as fftshift)."""
     return np.fft.fftshift(a)
 
@@ -35,7 +32,7 @@ def _dehumanize(a: np.ndarray) -> np.ndarray:
 
 
 def _window_vector(size: int, windowing: str) -> np.ndarray:
-    """1-D window functions matching libprocess/simplefft.c gwy_fft_window_*."""
+    """1-D window functions for the FFT preprocessing."""
     t = (np.arange(size, dtype=np.float64) + 0.5) / float(size)
     if windowing == "none":
         return np.ones(size, dtype=np.float64)
@@ -52,7 +49,7 @@ def _window_vector(size: int, windowing: str) -> np.ndarray:
 
 
 def _prepare_field(data: np.ndarray, windowing: str) -> np.ndarray:
-    """Mirror psf.c prepare_field(): subtract mean and apply FFT window."""
+    """Prepare the field for the FFT: subtract the mean and apply the window."""
     yres, xres = data.shape
     prepared = np.asarray(data, dtype=np.float64) - float(np.mean(data))
     if windowing != "none":
@@ -104,11 +101,11 @@ def _combine_units(numerator: list[str], denominator: list[str]) -> str:
     return _format_unit(merged)
 
 
-# --- core deconvolution algorithms (ported from filters-convdeconv.c / psf.c) ---
+# --- core deconvolution algorithms ---
 
 def _deconvolve_regularized(meas: np.ndarray, ideal: np.ndarray, sigma: float,
                             dx: float, dy: float) -> np.ndarray:
-    """gwy_data_field_deconvolve_regularized(): simple Tikhonov regularisation."""
+    """Tikhonov regularisation."""
     yres, xres = meas.shape
     msq = float(np.mean(ideal * ideal))
     if not msq:
@@ -125,7 +122,7 @@ def _deconvolve_regularized(meas: np.ndarray, ideal: np.ndarray, sigma: float,
 
 def _deconvolve_wiener(meas: np.ndarray, ideal: np.ndarray, sigma: float,
                        dx: float, dy: float) -> np.ndarray:
-    """psf.c psf_deconvolve_wiener(): pseudo-Wiener filter with sigma^2/|P|^2 term."""
+    """Pseudo-Wiener filter with a sigma^2/|P|^2 term."""
     yres, xres = meas.shape
     orms = float(np.sqrt(np.mean(ideal * ideal)))
     frms = float(np.sqrt(np.mean(meas * meas)))
@@ -149,7 +146,7 @@ def _deconvolve_wiener(meas: np.ndarray, ideal: np.ndarray, sigma: float,
 
 def _copy_corners(source: np.ndarray, dest: np.ndarray, xlen: int, ylen: int) -> None:
     """Cut the central part of a dehumanised (dehumanized) field by copying the four
-    corners, as in filters-convdeconv.c copy_corners()."""
+    corners of the array."""
     sy, sx = source.shape
     dy, dx = dest.shape
     dest[:] = 0.0
@@ -161,7 +158,7 @@ def _copy_corners(source: np.ndarray, dest: np.ndarray, xlen: int, ylen: int) ->
 
 def _conjgrad_matrix_multiply(fmat: np.ndarray, vec: np.ndarray) -> np.ndarray:
     """FFT-based multiplication by the normal-equations matrix (symmetric, so only the
-    real part of the spectrum is used), port of conjgrad_matrix_multiply()."""
+    real part of the spectrum is used)."""
     vy, vx = vec.shape
     xsize = fmat.shape[1]
     ysize = fmat.shape[0]
@@ -178,11 +175,11 @@ def _conjgrad_matrix_multiply(fmat: np.ndarray, vec: np.ndarray) -> np.ndarray:
 def _deconvolve_psf_leastsq(meas: np.ndarray, ideal: np.ndarray,
                             txres: int, tyres: int, sigma: float, border: int,
                             dx: float, dy: float) -> np.ndarray:
-    """gwy_data_field_deconvolve_psf_leastsq(): least-squares transfer function
-    reconstruction solved with FFT-accelerated conjugate gradients."""
+    """Least-squares transfer function reconstruction solved with FFT-accelerated
+    conjugate gradients."""
     yres, xres = meas.shape
     q = dx * dy
-    txres |= 1  # force odd, as psf_least_squares_warn() does
+    txres |= 1  # force odd
     tyres |= 1
     xt = txres + 2 * border
     yt = tyres + 2 * border
@@ -248,8 +245,7 @@ def _deconvolve_psf_leastsq(meas: np.ndarray, ideal: np.ndarray,
 # --- sigma estimation / measurement helpers ---
 
 def _golden_section_min(func, a: float, b: float) -> float:
-    """1-D golden-section minimisation over [a, b] on a unimodal function,
-    used in place of gwy_math_find_minimum_1d()."""
+    """1-D golden-section minimisation over [a, b] on a unimodal function."""
     gr = (np.sqrt(5.0) - 1.0) / 2.0
     c = b - gr * (b - a)
     d = a + gr * (b - a)
@@ -277,8 +273,8 @@ def _region_dispersion(data: np.ndarray) -> float:
 
 def _find_regularization_sigma(meas: np.ndarray, ideal: np.ndarray, method: str,
                                dx: float, dy: float) -> float:
-    """gwy_data_field_find_regularization_sigma_for_psf() (regularised) and
-    psf.c find_regularization_sigma() wiener branch. Returns the linear sigma."""
+    """Find the regularisation sigma for the regularised and Wiener branches.
+    Returns the linear sigma."""
     yres, xres = meas.shape
     foper = _fft2(ideal)
     fmeas = _fft2(meas)
@@ -318,14 +314,14 @@ def _find_regularization_sigma(meas: np.ndarray, ideal: np.ndarray, method: str,
 
 
 def _ext_convolve(field: np.ndarray, kernel: np.ndarray, dx: float, dy: float) -> np.ndarray:
-    """gwy_data_field_area_ext_convolve() with GWY_EXTERIOR_BORDER_EXTEND exterior
-    and as_integral=TRUE: nearest-neighbour (edge-extended) correlation scaled by dx*dy."""
+    """Extend-convolve with border-extended exterior and as_integral=TRUE:
+    nearest-neighbour (edge-extended) correlation scaled by dx*dy."""
     return ndi_correlate(field, kernel, mode="nearest") * (dx * dy)
 
 
 def _measure_tf_width(psf: np.ndarray) -> float:
-    """psf.c measure_tf_width(): threshold the PSF, keep the central grain, grow it
-    by 0.5*log(xres*yres) and report the dispersion of |PSF| inside."""
+    """Measure the transfer function width: threshold the PSF, keep the central grain,
+    grow it by 0.5*log(xres*yres) and report the dispersion of |PSF| inside."""
     yres, xres = psf.shape
     thresh = 0.15 * float(np.max(psf))
     mask = np.asarray(psf > thresh, dtype=np.uint8)
@@ -342,7 +338,7 @@ def _measure_tf_width(psf: np.ndarray) -> float:
 
 
 def _l2_norm(data: np.ndarray, dx: float, dy: float, as_integral: bool) -> float:
-    """psf.c calculate_l2_norm(): integral or discrete L2 norm."""
+    """Integral or discrete L2 norm."""
     yres, xres = data.shape
     if as_integral:
         q = dx * xres * dy * yres
@@ -380,7 +376,7 @@ class TransferFunctionGuess:
 
     DESCRIPTION = (
         "Estimate the point spread / transfer function of an imaging system from a "
-        "measured image and a known ideal response (Gwyddion Transfer Function Guess). "
+        "measured image and a known ideal response. "
         "Three deconvolution methods are available: regularised filter (default), "
         "pseudo-Wiener filter and least squares on a small transfer-function support. "
         "The measurement table reports the transfer function width and norms, and the "
@@ -425,7 +421,7 @@ class TransferFunctionGuess:
         elif method == "least_squares":
             psf = _deconvolve_psf_leastsq(meas, ideal_arr, txres, tyres, sigma, border, dx, dy)
             crop = False
-            # The least-squares TF is centered on its own support (deconvolve_psf_leastsq).
+            # The least-squares TF is centered on its own support.
             yoff_out = -0.5 * tyres * dy
             xoff_out = -0.5 * txres * dx
         else:
@@ -443,7 +439,7 @@ class TransferFunctionGuess:
         if not as_integral:
             psf = psf * (dx * dy)
 
-        # --- measurement table (mirrors psf.c create_results) ---
+        # --- measurement table ---
         z_meas = field.si_unit_z
         z_ideal = ideal.si_unit_z
         xy = field.si_unit_xy
@@ -455,8 +451,8 @@ class TransferFunctionGuess:
         height = float(max(abs(psf.min()), abs(psf.max())))
 
         yres_out, xres_out = psf.shape
-        # Integral norm units: product of psf lateral and value units (mirrors
-        # psf.c calculate_l2_norm()); discrete norm keeps only the value unit.
+        # Integral norm units: product of PSF lateral and value units; discrete
+        # norm keeps only the value unit.
         norm_unit = _combine_units([xy, tf_z_unit], []) if as_integral else tf_z_unit
         l2norm = _l2_norm(psf, dx, dy, as_integral)
 

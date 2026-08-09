@@ -1,4 +1,4 @@
-"""Step Block Correction — port of Gwyddion's blockstep.c.
+"""Step Block Correction.
 
 Corrects vertical steps in scan lines block-by-block, without any line
 correction.  Discontinuities between consecutive scan lines that exceed a
@@ -17,10 +17,7 @@ from backend.node_registry import register_node
 
 
 def _trimmed_mean(values: np.ndarray, nlowest: int, nhighest: int) -> float:
-    """Trimmed mean discarding *nlowest* lowest and *nhighest* highest values.
-
-    Mirror of gwy_math_trimmed_mean() (gwymath-rank.c).
-    """
+    """Trimmed mean discarding *nlowest* lowest and *nhighest* highest values."""
     values = np.asarray(values, dtype=np.float64)
     n = values.size
     if n == 0:
@@ -34,10 +31,10 @@ def _trimmed_mean(values: np.ndarray, nlowest: int, nhighest: int) -> float:
 
 
 def _vertical_rms(data: np.ndarray, xreal: float, yreal: float) -> float:
-    """Typical vertical jump between adjacent rows, as in blockstep.c execute().
+    """Typical vertical jump between adjacent rows.
 
-    Computes the mean over rows of the RMS row slope (GWY_LINE_STAT_TAN_BETA0
-    in vertical orientation) and multiplies it by the pixel height dy.
+    Computes the mean over rows of the RMS row slope (in vertical orientation)
+    and multiplies it by the pixel height dy.
     """
     yres, xres = data.shape
     if xres < 2 or xreal <= 0.0:
@@ -55,9 +52,8 @@ def _mark_discontinuities(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Locate large vertical jumps and the best block split per scan row.
 
-    Port of mark_discontinuities() in blockstep.c.  Returns (pos, score)
-    arrays indexed by scan row: pos is the column where the scan line is
-    split, score the number of covered discontinuity marks.
+    Returns (pos, score) arrays indexed by scan row: pos is the column where
+    the scan line is split, score the number of covered discontinuity marks.
     """
     yres, xres = data.shape
     imask = np.zeros((yres, xres), dtype=bool)
@@ -95,9 +91,8 @@ def _construct_blocks(
 ) -> list[list]:
     """Select block starts from the scan-row splits.
 
-    Port of construct_blocks() in blockstep.c.  Returns (block_row,
-    fromleft, score) triples; block_row is the raw scan index used to
-    estimate the step (decremented afterwards, as in the C code).
+    Returns (block_row, fromleft, score) triples; block_row is the raw scan
+    index used to estimate the step (decremented afterwards).
     """
     yres, xres = data.shape
     minlength = int(3 * xres / 4)
@@ -157,9 +152,9 @@ def _estimate_block_shifts(
 def _apply_correction(data: np.ndarray, blocks: list[tuple], left_to_right: bool) -> np.ndarray:
     """Shift rows below each block by its (negated) step.
 
-    Port of apply_correction() in blockstep.c: at the block start row the
-    left part keeps the accumulated shift while the right part (from
-    *fromleft*) receives the new one; all rows below are shifted fully.
+    At the block start row the left part keeps the accumulated shift while
+    the right part (from *fromleft*) receives the new one; all rows below
+    are shifted fully.
     """
     result = data.copy()
     yres, xres = result.shape

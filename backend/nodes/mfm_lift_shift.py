@@ -10,13 +10,13 @@ from backend.execution_context import emit_table
 
 
 def _mfm_shift_z(data: np.ndarray, xreal: float, yreal: float, zdiff: float) -> np.ndarray:
-    """Port of gwy_data_field_mfm_shift_z (libprocess/mfm.c).
+    """Shift a field to a different lift height via the FFT transfer function.
 
     Each spatial frequency |k| (cycles per metre) is attenuated by the
     exponential transfer function exp(-2*pi*|k|*zdiff), which corresponds to
     propagating the field away from (zdiff > 0) or towards (zdiff < 0) the
-    surface.  The frequency magnitudes use Gwyddion's FFT (not humanized)
-    arrangement, i.e. |k| = sqrt((j/xreal)^2 + (i/yreal)^2).
+    surface.  The frequency magnitudes use the unshifted FFT arrangement,
+    i.e. |k| = sqrt((j/xreal)^2 + (i/yreal)^2).
     """
     yres, xres = data.shape
     kx = np.fft.fftfreq(xres, d=xreal / xres)
@@ -53,8 +53,7 @@ class MFMLiftShift:
         "surface using the FFT-based transfer function exp(-2*pi*|k|*dz). A "
         "positive shift moves away from the surface and blurs the data; a "
         "negative shift sharpens it (the result then grows exponentially and "
-        "is generally not very useful). Ports Gwyddion's mfm_shift module "
-        "(gwy_data_field_mfm_shift_z)."
+        "is generally not very useful)."
     )
 
     KEYWORDS = ("magnetic", "mfM", "lift", "shift", "height", "transfer function", "fft")

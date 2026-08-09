@@ -4,9 +4,8 @@ from tests.node_tests._shared import make_field
 
 
 def _reference_xy(x, y, do_average):
-    """Direct numpy port of Gwyddion xydenoise.c execute(): forward FFT of both
-    scans, shared modulus = min of the two amplitudes, phase from x (or averaged),
-    backward transform."""
+    """Direct numpy implementation: forward FFT of both scans, shared modulus
+    = min of the two amplitudes, phase from x (or averaged), backward transform."""
     tiny = np.finfo(np.float64).tiny
     fx = np.fft.fft2(x)
     fy = np.fft.fft2(y)

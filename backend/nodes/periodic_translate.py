@@ -1,4 +1,4 @@
-"""Periodic translate — move data in the XY plane treating it as periodic (Gwyddion ptranslate)."""
+"""Periodic translate — move data in the XY plane treating it as periodic."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from backend.node_registry import register_node
 
 
 def _update_offset(offset: float, res: int, real: float, pxshift: int) -> float:
-    """Mirror ptranslate.c's update_offset(): shift the coordinate offset so a
-    feature keeps its physical position after a periodic translation, wrapping
-    the result into the [-real/2, real/2) range Gwyddion stores offsets in.
+    """Mirror the periodic-translate offset update: shift the coordinate offset
+    so a feature keeps its physical position after a periodic translation,
+    wrapping the result into the [-real/2, real/2) range offsets are stored in.
     """
     d = real / res if res else 1.0
     val = math.fmod(offset + d * pxshift, real)
@@ -49,9 +49,8 @@ class PeriodicTranslate:
         "that leave one side of the image reappear on the opposite side (data "
         "wraps around). dx/dy are the move-by amounts in pixels; the data is "
         "shifted so the image content moves by (dx, dy). When update_offsets is "
-        "enabled the coordinate offsets are updated the same way Gwyddion's "
-        "periodic translation does, so features keep their physical positions. "
-        "Equivalent to Gwyddion's ptranslate module."
+        "enabled the coordinate offsets are updated the same way the periodic "
+        "translation does, so features keep their physical positions."
     )
 
     KEYWORDS = ("translate", "shift", "periodic", "wrap", "roll", "move")
@@ -70,8 +69,8 @@ class PeriodicTranslate:
 
         out = field.replace(data=shifted)
         if update_offsets:
-            # Fold the shift exactly like ptranslate.c folds it before applying
-            # the offset update.
+            # Fold the shift exactly like the periodic translate folds it
+            # before applying the offset update.
             sx = (-dx % xres + xres) % xres
             sy = (-dy % yres + yres) % yres
             out = out.replace(

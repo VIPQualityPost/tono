@@ -1,6 +1,6 @@
 # Mark Disconnected
 
-Mark topologically disconnected (isolated) surface regions. A morphological opening followed by closing builds a smooth defect-free reference surface; pixels whose deviation from that reference exceeds the sensitivity threshold are flagged. Equivalent to Gwyddion's mark_disconn.c module.
+Mark topologically disconnected (isolated) surface regions. A morphological opening followed by closing builds a smooth defect-free reference surface; pixels whose deviation from that reference exceeds the sensitivity threshold are flagged.
 
 ## Inputs
 

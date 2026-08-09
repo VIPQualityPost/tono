@@ -1,6 +1,6 @@
 # Hough Transform
 
-Detect lines or circles in images using the Hough transform. Returns an accumulator image and a table of detected features. Equivalent to Gwyddion's hough.c module.
+Detect lines or circles in images using the Hough transform. Returns an accumulator image and a table of detected features.
 
 ## Inputs
 

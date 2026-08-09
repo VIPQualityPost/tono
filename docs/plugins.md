@@ -184,7 +184,7 @@ OUTPUTS = (
 
 ### DataField
 
-The main SPM data container. Mirrors Gwyddion's `GwyDataField`.
+The main SPM data container. Designed similar to Gwyddion's `GwyDataField`.
 
 ```python
 @dataclass

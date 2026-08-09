@@ -1,6 +1,6 @@
 # PSF Estimation
 
-Estimate a point spread function (PSF) from a measured (blurred) image and an ideal (sharp) reference. The estimated PSF can be fed into the Deconvolution node to restore other images acquired under the same conditions. Equivalent to Gwyddion's psf.c / psf-fit.c modules.
+Estimate a point spread function (PSF) from a measured (blurred) image and an ideal (sharp) reference. The estimated PSF can be fed into the Deconvolution node to restore other images acquired under the same conditions.
 
 ## Inputs
 

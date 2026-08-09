@@ -61,7 +61,7 @@ class TipModel:
         r = np.sqrt(r2)
 
         if shape == "parabola":
-            # Gwyddion parabola(): a = 1/(2R), z0 = 2a·x_half²
+            # Parabola shape: a = 1/(2R), z0 = 2a·x_half²
             # z[y,x] = z0 - a·r²  →  min at corners is exactly 0
             a = 0.5 / radius
             x_half = ci * pixel_size        # half-width in physical units
@@ -70,7 +70,7 @@ class TipModel:
             data -= data.min()              # shift so min = 0
 
         elif shape == "cone":
-            # Gwyddion cone():
+            # Cone shape:
             #   angle = half-angle from horizontal = π/2 - half_angle_from_axis
             #   z0 = R/sin(angle)
             #   r_cross² = (R·cos(angle))²
@@ -86,7 +86,7 @@ class TipModel:
             data -= data.min()
 
         elif shape == "sphere":
-            # Gwyddion sphere(): cone with near-vertical sides (angle ≈ 0 from horizontal)
+            # Sphere shape: cone with near-vertical sides (angle ≈ 0 from horizontal)
             angle = 1e-5   # radians — essentially vertical cone
             z0 = radius / np.sin(angle)
             br2 = (radius * np.cos(angle))**2

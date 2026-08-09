@@ -1,6 +1,6 @@
 # MFM Parallel Media
 
-Simulates the stray field above an in-plane magnetised parallel medium: alternating stripes with left/right (in-plane) remanent magnetisation separated by gaps, the configuration of longitudinal magnetic recording media. Equivalent to Gwyddion's mfm_parallel module (gwy_data_field_mfm_parallel_medium).
+Simulates the stray field above an in-plane magnetised parallel medium: alternating stripes with left/right (in-plane) remanent magnetisation separated by gaps, the configuration of longitudinal magnetic recording media.
 
 ## Inputs
 

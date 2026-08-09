@@ -9,8 +9,8 @@ from backend.nodes.helpers import bool_to_mask, emit_mask_preview
 
 # Point-wise condition for each operation.  Relational operations produce the
 # binary comparison result directly; arithmetic operations follow the
-# mask-arithmetic convention of Gwyddion's mark_with.c (a value map becomes a
-# mask by marking non-zero samples).
+# mask-arithmetic convention, where a value map becomes a mask by marking
+# non-zero samples.
 _MARK_OPS = {
     "==": lambda a, b: a == b,
     "!=": lambda a, b: a != b,

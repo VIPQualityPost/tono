@@ -1,6 +1,6 @@
 # Presentation Ops
 
-Manage presentation overlays on data fields. Provides logarithmic scaling, normalisation extraction, overlay attachment, and linear blending. Equivalent to Gwyddion's `presentationops.c` module.
+Manage presentation overlays on data fields. Provides logarithmic scaling, normalisation extraction, overlay attachment, and linear blending.
 
 ## Inputs
 

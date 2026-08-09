@@ -1,6 +1,6 @@
 # Watershed Segmentation
 
-Segment a height field into grains using the two-stage Gwyddion watershed workflow: drop-based seed location followed by watershed growth. Supports hill or valley detection and optional union/intersection with an existing mask.
+Segment a height field into grains using the two-stage watershed workflow: drop-based seed location followed by watershed growth. Supports hill or valley detection and optional union/intersection with an existing mask.
 
 ## Inputs
 

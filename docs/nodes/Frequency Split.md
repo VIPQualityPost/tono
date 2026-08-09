@@ -1,6 +1,6 @@
 # Frequency Split
 
-Separate a DATA_FIELD into low-frequency and high-frequency components using an FFT-based Gaussian filter. The low-pass output contains smooth, large-scale variations while the high-pass output contains fine detail and noise. Equivalent to Gwyddion's `freq_split.c` module.
+Separate a DATA_FIELD into low-frequency and high-frequency components using an FFT-based Gaussian filter. The low-pass output contains smooth, large-scale variations while the high-pass output contains fine detail and noise.
 
 ## Inputs
 

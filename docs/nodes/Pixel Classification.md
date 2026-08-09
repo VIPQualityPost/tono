@@ -1,6 +1,6 @@
 # Pixel Classification
 
-Classify pixels into discrete classes based on height, slope, and/or curvature using threshold or clustering methods. Equivalent to Gwyddion's classify.c module.
+Classify pixels into discrete classes based on height, slope, and/or curvature using threshold or clustering methods.
 
 ## Inputs
 

@@ -117,7 +117,7 @@ def _find_row_shifts_trimmed_diff(
 
 
 def _kth_order_statistic(values: np.ndarray, k: int) -> float:
-    """Return the k-th smallest value (0-based), mirroring Gwyddion's kth-rank helpers."""
+    """Return the k-th smallest value (0-based)."""
     values = np.asarray(values, dtype=np.float64)
     if values.size == 0:
         return 0.0
@@ -157,7 +157,7 @@ def _find_row_shifts_modus(
         if count == 0:
             modus = total_median
         elif count < 9:
-            # gwy_math_median() is the k-th rank at n/2 (upper median for even counts).
+            # The median is the k-th rank at n/2 (upper median for even counts).
             modus = _kth_order_statistic(values, count // 2)
         else:
             sorted_values = np.sort(values, kind="mergesort")
@@ -411,10 +411,9 @@ class LineCorrection:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Correct scan-line mismatches using Gwyddion-derived row alignment methods. "
+        "Correct scan-line mismatches using row alignment methods. "
         "Supports median and trimmed row alignment, difference-based alignment, modus (most-common value) alignment, "
-        "Gaussian-weighted row matching, polynomial row leveling, and the step-line correction path "
-        "from Gwyddion's linecorrect/linematch modules."
+        "Gaussian-weighted row matching, polynomial row leveling, and the step-line correction path."
     )
 
     KEYWORDS = ("row", "linematch", "linecorrect", "destripe", "scanline", "align", "modus", "matching")

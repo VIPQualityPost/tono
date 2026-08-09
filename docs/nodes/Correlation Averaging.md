@@ -1,6 +1,6 @@
 # Correlation Averaging
 
-Average repeats of a periodic structure to remove noise, as in Gwyddion's Correlation Averaging module (modules/process/averaging.c). The rectangle (x, y, width, height, in the field's physical units) selects one representative repeat used as the template. The field is normalised-cross-correlated with the template, local maxima above 75% of the peak are located, the template-sized patches at those positions are averaged with the correlation score as weight and copied back into the result, replacing the originals.
+Average repeats of a periodic structure to remove noise. The rectangle (x, y, width, height, in the field's physical units) selects one representative repeat used as the template. The field is normalised-cross-correlated with the template, local maxima above 75% of the peak are located, the template-sized patches at those positions are averaged with the correlation score as weight and copied back into the result, replacing the originals.
 
 ## Inputs
 
@@ -30,8 +30,8 @@ Average repeats of a periodic structure to remove noise, as in Gwyddion's Correl
 
 ## Notes
 
-- The template rectangle is converted to pixels with Gwyddion's `rtoi()`/`rtoj()` mapping (truncation toward zero, offsets ignored): `x_px = x · xres / xreal`.
-- The normalised correlation score repeats Gwyddion's `GWY_CORRELATION_NORMAL`: each pixel holds the mean of `(d - davg)·(k - kavg)` over the kernel window, divided by the product of the local RMS and the kernel RMS; positions where the kernel does not fit are set to -1.
-- The score is smoothed with a Gaussian of 2 px FWHM (sigma = 2/(2·sqrt(2·ln 2))), exactly as in averaging.c, before local-maximum detection.
-- Patches whose top-left corner would place them out of the field are skipped (a defensive deviation: Gwyddion would read out of bounds there).
+- The template rectangle is converted to pixels with the `rtoi()`/`rtoj()` mapping (truncation toward zero, offsets ignored): `x_px = x · xres / xreal`.
+- The normalised correlation score follows the standard normalised-correlation scheme: each pixel holds the mean of `(d - davg)·(k - kavg)` over the kernel window, divided by the product of the local RMS and the kernel RMS; positions where the kernel does not fit are set to -1.
+- The score is smoothed with a Gaussian of 2 px FWHM (sigma = 2/(2·sqrt(2·ln 2))) before local-maximum detection.
+- Patches whose top-left corner would place them out of the field are skipped (a defensive deviation: the reference implementation would read out of bounds there).
 - The alignment table reports offsets in pixels; multiply by the pixel size for physical offsets.

@@ -1,6 +1,6 @@
 # Curvature
 
-Fit a quadratic surface and report the overall principal curvature radii and directions, matching Gwyddion's curvature feature. The output annotation marks the principal cross-sections and the node also returns the two corresponding height profiles.
+Fit a quadratic surface and report the overall principal curvature radii and directions, matching the standard curvature feature. The output annotation marks the principal cross-sections and the node also returns the two corresponding height profiles.
 
 ## Inputs
 

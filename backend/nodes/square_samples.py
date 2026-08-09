@@ -8,7 +8,7 @@ from backend.node_registry import register_node
 
 @register_node(display_name="Square Samples")
 class SquareSamples:
-    """Resample a DATA_FIELD so lateral pixel sizes dx == dy (Gwyddion `square_samples`)."""
+    """Resample a DATA_FIELD so lateral pixel sizes dx == dy."""
 
     CATEGORY = "Geometry"
 
@@ -51,7 +51,7 @@ class SquareSamples:
         qx = xres / xreal if xreal else 0.0
         qy = yres / yreal if yreal else 0.0
 
-        # Gwyddion square_samples(): resample the deficient axis unless the
+        # Resample the deficient axis unless the
         # densities are equal within 1/sqrt(xres^2 + yres^2).
         if abs(np.log(qx / qy)) > 1.0 / np.hypot(xres, yres):
             if qx < qy:

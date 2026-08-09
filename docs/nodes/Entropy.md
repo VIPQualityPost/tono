@@ -1,6 +1,6 @@
 # Entropy
 
-Compute the Shannon entropy of the height or slope distribution. H = -Σ p·ln(p). Equivalent to Gwyddion entropy.c.
+Compute the Shannon entropy of the height or slope distribution. H = -Σ p·ln(p).
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Mark With
 
-Create or modify a binary mask from the point-wise comparison of two data fields. Relational operations mark pixels where the condition between the two fields holds; arithmetic operations mark pixels where the combined value is non-zero. Equivalent to the mask-arithmetic semantics of Gwyddion's mark_with.c (data mapped to a mask via a value condition).
+Create or modify a binary mask from the point-wise comparison of two data fields. Relational operations mark pixels where the condition between the two fields holds; arithmetic operations mark pixels where the combined value is non-zero.
 
 ## Inputs
 
@@ -25,5 +25,5 @@ Create or modify a binary mask from the point-wise comparison of two data fields
 ## Notes
 
 - Both fields must have identical resolution; otherwise the node raises an error.
-- Comparisons are exact floating-point comparisons, matching Gwyddion's mask thresholding behaviour.
+- Comparisons are exact floating-point comparisons.
 - Division follows IEEE semantics (x/0 gives infinity, 0/0 gives NaN), which are non-zero and therefore marked.

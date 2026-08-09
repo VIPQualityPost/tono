@@ -1,6 +1,6 @@
 # XY Denoise
 
-Denoise a measurement acquired as two orthogonal scans (horizontal and vertical fast-scan directions), as in Gwyddion's XY Denoise module (modules/process/xydenoise.c). The two fields are Fourier transformed; at every frequency the shared modulus is taken as the smaller of the two moduli and the phase comes from the horizontal scan — or the average of both phases when averaging is enabled. The inverse transform keeps only the component the two scans agree on, suppressing scan-direction noise and artefacts.
+Denoise a measurement acquired as two orthogonal scans (horizontal and vertical fast-scan directions), as in a standard XY Denoise workflow. The two fields are Fourier transformed; at every frequency the shared modulus is taken as the smaller of the two moduli and the phase comes from the horizontal scan — or the average of both phases when averaging is enabled. The inverse transform keeps only the component the two scans agree on, suppressing scan-direction noise and artefacts.
 
 ## Inputs
 
@@ -24,6 +24,5 @@ Denoise a measurement acquired as two orthogonal scans (horizontal and vertical 
 
 ## Notes
 
-- Both scans must have the same resolution, physical extent and units; the node raises an error otherwise (Gwyddion requires the same compatibility).
-- The modulus floor uses Gwyddion's `fmax(modulus, G_MINDOUBLE)` so the phase is well defined even where the amplitude vanishes.
+- Both scans must have the same resolution, physical extent and units; the node raises an error otherwise (the same compatibility is required).
 - With two identical scans the result reproduces the input exactly; with `do_average` off the reconstruction uses only the x-scan phase.

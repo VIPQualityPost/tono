@@ -1,6 +1,6 @@
 # Scan Line Reorder
 
-Fix scan line ordering artifacts from meander (serpentine) scanning, interlacing, or inverted scan direction. Equivalent to Gwyddion's reorder.c module.
+Fix scan line ordering artifacts from meander (serpentine) scanning, interlacing, or inverted scan direction.
 
 ## Inputs
 

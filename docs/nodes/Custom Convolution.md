@@ -1,6 +1,6 @@
 # Custom Convolution
 
-Apply a user-defined convolution kernel to a DATA_FIELD. Enter rows of space-separated numbers. Equivalent to Gwyddion convolution_filter.c.
+Apply a user-defined convolution kernel to a DATA_FIELD. Enter rows of space-separated numbers.
 
 ## Inputs
 

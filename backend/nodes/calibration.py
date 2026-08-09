@@ -80,8 +80,7 @@ class Calibration:
         "Apply lateral and height calibration corrections to a DATA_FIELD. "
         "Lateral mode can set explicit physical size or scale uniformly. "
         "Height mode can rescale to a target range, multiply by a factor, "
-        "or add a constant offset. Optionally override the XY or Z unit strings. "
-        "Equivalent to Gwyddion's calibrate functionality."
+        "or add a constant offset. Optionally override the XY or Z unit strings."
     )
 
     KEYWORDS = ("units", "rescale", "dimensions")

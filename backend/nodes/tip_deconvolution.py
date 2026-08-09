@@ -35,7 +35,7 @@ class TipDeconvolution:
     KEYWORDS = ("erosion", "morphology", "villarrubia", "surface reconstruction", "apex", "deblur")
 
     def process(self, field: DataField, tip: DataField) -> tuple:
-        # Gwyddion gwy_tip_erosion:
+        # Tip erosion:
         #   mytip = flip(tip) - max(flip(tip))   (values ≤ 0, apex = 0)
         #   result[y,x] = min_{ty,tx}[surface[y+ty, x+tx] - mytip[ty,tx]]
         tip_flipped = np.flipud(np.fliplr(tip.data))

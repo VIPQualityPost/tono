@@ -1,6 +1,6 @@
 # Wrap Value
 
-Rewrap periodic values in a DATA_FIELD to a specified angular or custom range. Commonly used for phase images where values should lie within a well-defined interval. Equivalent to Gwyddion's `wrapvalue.c` module.
+Rewrap periodic values in a DATA_FIELD to a specified angular or custom range. Commonly used for phase images where values should lie within a well-defined interval.
 
 ## Inputs
 

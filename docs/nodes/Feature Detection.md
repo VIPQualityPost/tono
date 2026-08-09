@@ -1,6 +1,6 @@
 # Feature Detection
 
-Detect edges or corners in a surface using Canny edge detection or Harris corner detection. Outputs a feature map and a table of detected feature locations. Equivalent to Gwyddion's edge/corner detection in filters.c.
+Detect edges or corners in a surface using Canny edge detection or Harris corner detection. Outputs a feature map and a table of detected feature locations.
 
 ## Inputs
 

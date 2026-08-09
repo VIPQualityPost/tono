@@ -14,7 +14,7 @@ def test_outputs_arity():
 
 
 def test_clip_clamps_values():
-    """gwy_data_field_clamp: values outside [min(low,high), max(low,high)] are clamped."""
+    """Values outside [min(low,high), max(low,high)] are clamped."""
     from backend.nodes.limit_range import LimitRange
 
     data = np.array([[-2.0, -1.0], [0.5, 3.0]])
@@ -23,7 +23,7 @@ def test_clip_clamps_values():
 
 
 def test_clip_swaps_low_high():
-    """Low and high are interchangeable, as in Gwyddion's sanitise_params."""
+    """Low and high are interchangeable."""
     from backend.nodes.limit_range import LimitRange
 
     data = np.array([[-2.0, 0.0], [2.0, 5.0]])

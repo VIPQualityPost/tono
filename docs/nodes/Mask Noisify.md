@@ -1,6 +1,6 @@
 # Mask Noisify
 
-Add random noise to a binary mask by flipping pixels near boundaries. Equivalent to Gwyddion's mask_noisify.c.
+Add random noise to a binary mask by flipping pixels near boundaries.
 
 ## Inputs
 

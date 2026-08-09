@@ -56,9 +56,9 @@ def test_pixel_leaving_field_reappears_on_opposite_side():
     assert out2.data[0, 3] == 0.0
 
 
-def test_offsets_updated_like_gwyddion():
+def test_offsets_updated():
     """With update_offsets, shifting by +1 px moves the offset by -dx*dx_phys
-    (wrapped into the C's [-real/2, real/2) range), so features keep their
+    (wrapped into the [-real/2, real/2) range), so features keep their
     physical position."""
     node = _make_node()
     field = make_field(data=np.zeros((64, 64)), xreal=1e-6, yreal=2e-6)

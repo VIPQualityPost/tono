@@ -195,7 +195,7 @@ class ScarRemoval:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Detect and remove horizontal scan scars using Gwyddion-derived scar marking thresholds, "
+        "Detect and remove horizontal scan scars using scar marking thresholds, "
         "then interpolate over the detected mask with a Laplace-style inpaint. Also reports "
         "statistics for the detected scar mask."
     )

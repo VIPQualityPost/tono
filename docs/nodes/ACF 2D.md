@@ -1,6 +1,6 @@
 # ACF 2D
 
-Compute the two-dimensional autocorrelation function with Gwyddion-style mean or plane levelling before correlation. The output is centered on zero shift and uses default half-range extents.
+Compute the two-dimensional autocorrelation function with mean or plane levelling before correlation. The output is centered on zero shift and uses default half-range extents.
 
 ## Inputs
 

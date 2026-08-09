@@ -1,6 +1,6 @@
 # Grain Selection Shapes
 
-Create a selection image visualizing the largest disc that fits inside each grain (inscribed discs) or the smallest circle enclosing each grain (circumscribed circles). This mirrors Gwyddion's Grains &gt; Select Inscribed Discs and Grains &gt; Select Circumscribed Circles.
+Create a selection image visualizing the largest disc that fits inside each grain (inscribed discs) or the smallest circle enclosing each grain (circumscribed circles). This mirrors the standard Select Inscribed Discs and Select Circumscribed Circles operations.
 
 ## Inputs
 
@@ -23,6 +23,6 @@ Create a selection image visualizing the largest disc that fits inside each grai
 
 ## Notes
 
-- Inscribed discs are found with the Euclidean distance transform: the disc centre is the pixel of maximal distance from the grain boundary (ties resolved towards the grain centre of mass) and the radius is the distance converted to a continuous half-width. This matches the Gwyddion inscribed-disc quantity up to the half-pixel discretization that its upsampled algorithm resolves.
-- Circumscribed circles are computed over the convex hull of each grain's pixel corners, using Gwyddion's centroid start plus its greedy 12-direction refinement, so the circle is the smallest enclosing circle of the grain corners.
+- Inscribed discs are found with the Euclidean distance transform: the disc centre is the pixel of maximal distance from the grain boundary (ties resolved towards the grain centre of mass) and the radius is the distance converted to a continuous half-width. This matches the inscribed-disc quantity up to the half-pixel discretization that the upsampled algorithm resolves.
+- Circumscribed circles are computed over the convex hull of each grain's pixel corners, using a centroid start plus a greedy 12-direction refinement, so the circle is the smallest enclosing circle of the grain corners.
 - Circles are rasterized as filled discs in pixel space; no field is required, so non-square pixels are treated as isotropic.

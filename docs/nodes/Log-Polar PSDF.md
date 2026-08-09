@@ -1,6 +1,6 @@
 # Log-Polar PSDF
 
-Compute the power spectral density function in log-polar coordinates. The x-axis is the azimuthal angle (0-360 degrees) and the y-axis is log(frequency). Better than Cartesian PSDF for anisotropy analysis. Equivalent to Gwyddion's psdf_logphi.c module.
+Compute the power spectral density function in log-polar coordinates. The x-axis is the azimuthal angle (0-360 degrees) and the y-axis is log(frequency). Better than Cartesian PSDF for anisotropy analysis.
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Image Stitch
 
-Combine two overlapping scans into a single image. Uses cross-correlation to align the images and blends the overlap region. Equivalent to Gwyddion's merge.c / stitch.c modules.
+Combine two overlapping scans into a single image. Uses cross-correlation to align the images and blends the overlap region.
 
 ## Inputs
 

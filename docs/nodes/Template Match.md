@@ -1,6 +1,6 @@
 # Template Match
 
-Find a template pattern within a larger data field using normalised cross-correlation. The score output shows match quality (1 = perfect match). Equivalent to Gwyddion maskcor.c.
+Find a template pattern within a larger data field using normalised cross-correlation. The score output shows match quality (1 = perfect match).
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Synthetic Surface
 
-Generate synthetic test surfaces for development, calibration, and algorithm testing. 29 patterns covering noise, geometry, growth simulations, phase separation, reaction-diffusion, tiling, and line noise. Equivalent to Gwyddion's *_synth.c modules.
+Generate synthetic test surfaces for development, calibration, and algorithm testing. 29 patterns covering noise, geometry, growth simulations, phase separation, reaction-diffusion, tiling, and line noise.
 
 ## Outputs
 
@@ -60,7 +60,7 @@ All 29 patterns are normalised to the specified amplitude range after generation
 
 ### Random & Spectral
 
-**line_noise** -- Row-wise scanning artefacts (line noise) as found in AFM/STM images. Three structures are available, ported from Gwyddion's lno_synth.c:
+**line_noise** -- Row-wise scanning artefacts (line noise) as found in AFM/STM images. Three structures are available:
 
 - *steps* (default): horizontal scan-correction steps. `ln_density` sets the mean number of steps per row, `ln_lineprob` (0--1) spreads each step across its row (a step is crossed as the scan progresses within the row), `ln_scandir` selects the scanning direction and `ln_cumulative` makes step heights add up (residual drift) instead of replacing the previous level. Each step height is drawn from the selected `ln_distribution` with `ln_direction` giving symmetrical, one-sided positive or one-sided negative artefacts.
 - *scars*: short horizontal line segments (scratches) with a constant height offset. `ln_coverage` is the nominal covered area fraction, `ln_length` the scar length in pixels and `ln_length_noise` the relative length dispersion (0 = fixed length).

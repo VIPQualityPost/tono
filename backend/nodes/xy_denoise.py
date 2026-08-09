@@ -5,7 +5,7 @@ import numpy as np
 from backend.data_types import DataField
 from backend.node_registry import register_node
 
-# G_MINDOUBLE used by Gwyddion as the phase-normalisation floor.
+# Smallest positive double, used as the phase-normalisation floor.
 _TINY = np.finfo(np.float64).tiny
 
 
@@ -30,7 +30,7 @@ class XYDenoise:
 
     DESCRIPTION = (
         "Denoise a measurement acquired as two orthogonal scans (e.g. horizontal "
-        "and vertical fast-scan directions), as in Gwyddion's XY Denoise. The two "
+        "and vertical fast-scan directions). The two "
         "fields are Fourier transformed; at every frequency the shared modulus is "
         "taken as the smaller of the two moduli and the phase comes from the "
         "horizontal scan (or the average of both phases when averaging is enabled). "
@@ -69,7 +69,7 @@ class XYDenoise:
         fx = np.fft.fft2(x)
         fy = np.fft.fft2(y)
 
-        # Phase of each scan, with Gwyddion's fmax(modulus, G_MINDOUBLE) floor.
+        # Phase of each scan, with the fmax(modulus, smallest-double) floor.
         xmodulus = np.abs(fx)
         ymodulus = np.abs(fy)
         cosxphase = fx.real / np.maximum(xmodulus, _TINY)

@@ -1,6 +1,6 @@
 # Displacement Field
 
-Distort an image using synthetic displacement fields. Supports correlated Gaussian noise and tear-line distortion modes. Equivalent to Gwyddion's displfield.c module.
+Distort an image using synthetic displacement fields. Supports correlated Gaussian noise and tear-line distortion modes.
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Fix Zero
 
-Shift data so that the minimum, mean, or median value becomes zero. Equivalent to fix_zero in Gwyddion's level.c.
+Shift data so that the minimum, mean, or median value becomes zero.
 
 ## Inputs
 

@@ -1,6 +1,6 @@
 # Tilt
 
-Apply or remove a linear tilt (planar slope) from a DATA_FIELD. The tilt is defined by slope values in data units per physical unit along the x and y directions. Equivalent to Gwyddion's `tilt.c` module.
+Apply or remove a linear tilt (planar slope) from a DATA_FIELD. The tilt is defined by slope values in data units per physical unit along the x and y directions.
 
 ## Inputs
 

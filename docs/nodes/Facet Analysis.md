@@ -1,6 +1,6 @@
 # Facet Analysis
 
-Compute the facet orientation distribution of a surface. Outputs a 2D histogram (stereographic projection) where the x-axis is the azimuthal angle and y-axis is the inclination. Equivalent to Gwyddion's facet_analysis.c module.
+Compute the facet orientation distribution of a surface. Outputs a 2D histogram (stereographic projection) where the x-axis is the azimuthal angle and y-axis is the inclination.
 
 ## Inputs
 

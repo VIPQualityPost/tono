@@ -1,6 +1,6 @@
 # SEM Simulation
 
-Simulate Scanning Electron Microscopy (SEM) secondary electron yield from topography data. Surface slopes and edges appear bright, while flat areas appear dark. Equivalent to Gwyddion's `semsim.c` module.
+Simulate Scanning Electron Microscopy (SEM) secondary electron yield from topography data. Surface slopes and edges appear bright, while flat areas appear dark.
 
 ## Inputs
 
@@ -28,4 +28,3 @@ Simulate Scanning Electron Microscopy (SEM) secondary electron yield from topogr
 - The integration method evaluates yield analytically from local slopes, making it faster and fully deterministic. The Monte Carlo method samples random electron trajectories, introducing realistic statistical variation into the result.
 - Sigma controls the effective size of the beam interaction volume. Larger values blur fine detail and simulate a broader excitation region; smaller values preserve sharp features.
 - n_samples only affects the monte_carlo method. Higher values produce smoother, more converged images at the cost of longer computation time.
-- This node is equivalent to Gwyddion's `semsim.c` data processing module.

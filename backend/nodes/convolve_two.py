@@ -10,9 +10,7 @@ from backend.nodes.helpers import _square_unit
 def _product_unit(unit_a: str, unit_b: str) -> str:
     """Value units of a convolution sum: product of the two inputs' units.
 
-    Port of the unit multiplication in `gwy_data_field_area_ext_convolve()`
-    (libprocess/filters-convdeconv.c): the result's value unit is the product of
-    the field and kernel value units.
+    The result's value unit is the product of the field and kernel value units.
     """
     ua = str(unit_a or "").strip()
     ub = str(unit_b or "").strip()
@@ -47,8 +45,8 @@ class ConvolveTwoImages:
     DESCRIPTION = (
         "Convolve two images. The result value at each pixel is the sum of the "
         "product of field_a with the reversed field_b kernel, computed with FFT "
-        "convolution, mirroring Gwyddion's Convolve process with the kernel "
-        "centred on the output pixel (zero exterior). Mode selects the output "
+        "convolution, with the kernel centred on the output pixel (zero exterior). "
+        "Mode selects the output "
         "extent: full (Na+Nb-1), same (field_a size) or valid (overlap only, "
         "requires field_b smaller than field_a)."
     )

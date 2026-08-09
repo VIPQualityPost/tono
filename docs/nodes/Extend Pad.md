@@ -1,6 +1,6 @@
 # Extend Pad
 
-Add configurable borders around a DATA_FIELD using various padding methods. Useful for preparing data for FFT-based operations that suffer from edge artifacts, or for aligning fields of different sizes. Equivalent to Gwyddion's `extend.c` module.
+Add configurable borders around a DATA_FIELD using various padding methods. Useful for preparing data for FFT-based operations that suffer from edge artifacts, or for aligning fields of different sizes.
 
 ## Inputs
 

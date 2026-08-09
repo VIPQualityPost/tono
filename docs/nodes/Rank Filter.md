@@ -1,6 +1,6 @@
 # Rank Filter
 
-Apply a general rank-order (morphological) filter to a DATA_FIELD. Selects the k-th smallest value within a local window, encompassing erosion, dilation, median, and arbitrary percentile operations. Equivalent to Gwyddion's `rank-filter.c` module.
+Apply a general rank-order (morphological) filter to a DATA_FIELD. Selects the k-th smallest value within a local window, encompassing erosion, dilation, median, and arbitrary percentile operations.
 
 ## Inputs
 

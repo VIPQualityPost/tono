@@ -18,14 +18,12 @@ def _frequency_magnitudes(xres: int, yres: int, xreal: float, yreal: float) -> n
 
 
 def _mfm_shift_z(data: np.ndarray, xreal: float, yreal: float, zdiff: float) -> np.ndarray:
-    """Shared FFT lift-shift kernel (see gwy_data_field_mfm_shift_z in libprocess/mfm.c)."""
     K = _frequency_magnitudes(data.shape[1], data.shape[0], xreal, yreal)
     ztf = np.exp(-2.0 * np.pi * K * zdiff)
     return np.real(np.fft.ifft2(np.fft.fft2(data) * ztf))
 
 
 def _interpolate_parabolic(xy):
-    """Port of the static interpolate_parabolic() in libgwyddion/gwymath.c."""
     u1 = (xy[1][0] - xy[0][0]) * (xy[2][1] - xy[1][1])
     u2 = (xy[2][0] - xy[1][0]) * (xy[0][1] - xy[1][1])
     if abs(u2 + u1) <= 1e-12 * (abs(u1) + abs(u2)):
@@ -37,10 +35,10 @@ def _interpolate_parabolic(xy):
 
 
 def _min_in_array(xy, n):
-    """Port of find_min_in_array() in libgwyddion/gwymath.c: index of the minimum
-    value among points 1..n (point 0 excluded), plus a flag telling whether the
-    minimum is distinct from its neighbours.  As in the C code, the array has 13
-    slots and slot n may hold stale data from an earlier iteration."""
+    """Index of the minimumvalue among points 1..n (point 0 excluded)
+    , plus a flag telling whether the minimum is distinct from its neighbours.  
+    As in the C code, the array has 13 slots and slot n may hold stale data 
+    from an earlier iteration."""
     any_variation = False
     imin = n // 2
     for i in range(1, n + 1):
@@ -59,16 +57,16 @@ def _min_in_array(xy, n):
 
 
 def _find_minimum_1d(function, a, b):
-    """Port of gwy_math_find_minimum_1d (libgwyddion/gwymath.c): 12-point initial
-    scan followed by bisection/parabolic-interpolation bracket refinement (at most
-    50 iterations).  The edge flags are sticky, exactly as in the C code."""
+    """12-point initial scan followed by 
+    bisection/parabolic-interpolation bracket refinement (at most
+    50 iterations).  The edge flags are sticky."""
     initial_n = 12
     if a > b:
         a, b = b, a
     if b - a < 1.2e-16 * (abs(a) + abs(b)):
         return 0.5 * (a + b)
 
-    # 13-slot array, mirroring GwyXY xy[initial_n+1].
+    # 13-slot array, mirroring the xy window layout (initial_n+1 slots).
     xy = [(0.0, 0.0)] * (initial_n + 1)
     xy[0] = (a, function(a))
     for i in range(1, initial_n + 1):
@@ -133,13 +131,13 @@ def _find_minimum_1d(function, a, b):
 
 
 def _memmove_xy(xy, start):
-    """memmove(xy, xy + start, 3*sizeof(GwyXY)): shift the 3-point window to
-    xy[0..2], leaving the remaining slots (3..12 + the source slots) untouched."""
+    """Shift the 3-point window to xy[0..2], leaving the remaining slots
+    (3..12 + the source slots) untouched."""
     xy[0], xy[1], xy[2] = xy[start], xy[start + 1], xy[start + 2]
 
 
 def _mfm_find_shift_z(data1, data2, xreal, yreal, zdiffmin, zdiffmax):
-    """Port of gwy_data_field_mfm_find_shift_z (libprocess/mfm.c): minimise
+    """Find the lift shift minimising
     ||shift_z(field1, z) - field2||^2 over z in [zdiffmin, zdiffmax]."""
     K = _frequency_magnitudes(data1.shape[1], data1.shape[0], xreal, yreal)
     f1 = np.fft.fft2(data1)
@@ -186,8 +184,7 @@ class MFMLiftEstimate:
         "area measured at different heights. The estimate minimises the squared "
         "difference between the second image and the first image propagated with "
         "the FFT transfer function exp(-2*pi*|k|*z); a positive result means the "
-        "second image was measured at a larger lift height. Ports Gwyddion's "
-        "mfm_findshift module (gwy_data_field_mfm_find_shift_z). The output field "
+        "second image was measured at a larger lift height. The output field "
         "is the residual after applying the estimated shift."
     )
 

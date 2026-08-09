@@ -1,6 +1,6 @@
 # Mask Shift
 
-Translate a binary mask by an integer pixel offset. Choose how out-of-bounds regions are filled: zero (empty), wrap (periodic roll), or mirror (reflected padding). Equivalent to Gwyddion's mask_shift.c.
+Translate a binary mask by an integer pixel offset. Choose how out-of-bounds regions are filled: zero (empty), wrap (periodic roll), or mirror (reflected padding).
 
 ## Inputs
 

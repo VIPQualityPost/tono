@@ -1,6 +1,6 @@
 # Flatten Base
 
-Level the flat base of a surface that has raised features (particles, grains). Uses a height percentile threshold to identify base pixels, fits a polynomial to those pixels, and subtracts it. Unlike plane level, this ignores tall features that would bias the fit. Equivalent to Gwyddion's flatten_base.c module.
+Level the flat base of a surface that has raised features (particles, grains). Uses a height percentile threshold to identify base pixels, fits a polynomial to those pixels, and subtracts it. Unlike plane level, this ignores tall features that would bias the fit.
 
 ## Inputs
 

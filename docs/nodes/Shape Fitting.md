@@ -1,6 +1,6 @@
 # Shape Fitting
 
-Fit a geometric primitive (sphere, paraboloid, or cylinder) to the surface data. Outputs either the fitted surface or the residual. Reports fitted parameters including radius of curvature, centre position, etc. Equivalent to Gwyddion's fit-shape.c module.
+Fit a geometric primitive (sphere, paraboloid, or cylinder) to the surface data. Outputs either the fitted surface or the residual. Reports fitted parameters including radius of curvature, centre position, etc.
 
 ## Inputs
 

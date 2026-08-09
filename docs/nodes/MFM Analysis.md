@@ -1,6 +1,6 @@
 # MFM Analysis
 
-Magnetic Force Microscopy analysis: convert between MFM phase/force gradient and magnetic field quantities using Fourier-domain transfer functions. Equivalent to Gwyddion's mfm_*.c modules.
+Magnetic Force Microscopy analysis: convert between MFM phase/force gradient and magnetic field quantities using Fourier-domain transfer functions.
 
 ## Inputs
 
