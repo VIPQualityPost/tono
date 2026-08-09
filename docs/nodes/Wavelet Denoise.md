@@ -1,6 +1,6 @@
 # Wavelet Denoise
 
-Denoise a DATA_FIELD using wavelet coefficient thresholding. BayesShrink adapts the threshold per sub-band; VisuShrink uses a global threshold. Equivalent to applying DWT from Gwyddion dwt.c with coefficient thresholding.
+Denoise a DATA_FIELD using wavelet coefficient thresholding. BayesShrink adapts the threshold per sub-band; VisuShrink uses a global threshold. Equivalent to applying a DWT with coefficient thresholding.
 
 ## Inputs
 

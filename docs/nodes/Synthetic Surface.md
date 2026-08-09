@@ -1,6 +1,6 @@
 # Synthetic Surface
 
-Generate synthetic test surfaces for development, calibration, and algorithm testing. 28 patterns covering noise, geometry, growth simulations, phase separation, reaction-diffusion, and tiling. Equivalent to Gwyddion's *_synth.c modules.
+Generate synthetic test surfaces for development, calibration, and algorithm testing. 29 patterns covering noise, geometry, growth simulations, phase separation, reaction-diffusion, tiling, and line noise.
 
 ## Outputs
 
@@ -14,7 +14,7 @@ Generate synthetic test surfaces for development, calibration, and algorithm tes
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| pattern | dropdown | fbm | Synthesis pattern (28 options, see Notes below) |
+| pattern | dropdown | fbm | Synthesis pattern (29 options, see Notes below) |
 | xres | INT | 256 | Horizontal resolution in pixels (16--2048) |
 | yres | INT | 256 | Vertical resolution in pixels (16--2048) |
 | xreal | FLOAT | 1e-6 | Physical width in metres (1e-9--1.0) |
@@ -40,14 +40,35 @@ Generate synthetic test surfaces for development, calibration, and algorithm tes
 | periodic_type | dropdown | checker | checker, hex, stripe, diamond, staircase, rings | periodic |
 | spectral_exponent | FLOAT | 2.0 | 0.5--5.0 | spectral |
 | frequency | FLOAT | 5.0 | 0.5--50.0 | waves, dunes, periodic, wfr |
+| ln_type | dropdown | steps | steps, scars, ridges | line_noise |
+| ln_distribution | dropdown | gaussian | gaussian, exponential, uniform, triangular | line_noise |
+| ln_direction | dropdown | both | both, up, down | line_noise |
+| ln_density | FLOAT | 1.0 | 5e-4--200 | line_noise (steps, ridges) |
+| ln_lineprob | FLOAT | 0.0 | 0--1 | line_noise (steps, ridges) |
+| ln_scandir | dropdown | LTR | LTR, RTL | line_noise (steps, ridges) |
+| ln_cumulative | BOOLEAN | False | True/False | line_noise (steps) |
+| ln_coverage | FLOAT | 0.01 | 1e-4--20 | line_noise (scars) |
+| ln_length | FLOAT | 10.0 | 1--1e4 | line_noise (scars) |
+| ln_length_noise | FLOAT | 0.0 | 0--1 | line_noise (scars) |
+| ln_width | FLOAT | 0.01 | 1e-4--1 | line_noise (ridges) |
 
 ## Notes
 
-All 28 patterns are normalised to the specified amplitude range after generation and use the seed for reproducibility. Changing the seed produces a different random realisation of the same pattern type. Optional parameters that do not apply to the selected pattern are silently ignored.
+All 29 patterns are normalised to the specified amplitude range after generation and use the seed for reproducibility. Changing the seed produces a different random realisation of the same pattern type. Optional parameters that do not apply to the selected pattern are silently ignored.
 
 ---
 
 ### Random & Spectral
+
+**line_noise** -- Row-wise scanning artefacts (line noise) as found in AFM/STM images. Three structures are available:
+
+- *steps* (default): horizontal scan-correction steps. `ln_density` sets the mean number of steps per row, `ln_lineprob` (0--1) spreads each step across its row (a step is crossed as the scan progresses within the row), `ln_scandir` selects the scanning direction and `ln_cumulative` makes step heights add up (residual drift) instead of replacing the previous level. Each step height is drawn from the selected `ln_distribution` with `ln_direction` giving symmetrical, one-sided positive or one-sided negative artefacts.
+- *scars*: short horizontal line segments (scratches) with a constant height offset. `ln_coverage` is the nominal covered area fraction, `ln_length` the scar length in pixels and `ln_length_noise` the relative length dispersion (0 = fixed length).
+- *ridges*: ramps bounded by paired rising/falling events of random width `ln_width` (in scan-normalised units); the scan height accumulates between events, producing streak-like stripes.
+
+`ln_distribution` chooses the height statistics (gaussian, exponential, uniform, triangular, all zero-mean) and `ln_direction` whether artefacts are symmetrical, only positive or only negative. As with all patterns the result is min-max normalised to the `amplitude` range, so the relative RMS (the C source's sigma) has no visible effect and is not exposed. Patterns are deterministic for a given `seed`.
+
+- Controls: `ln_type`, `ln_distribution`, `ln_direction`, plus per-type controls listed above
 
 **fbm** -- Fractional Brownian motion via spectral synthesis. Generates a 2D FFT field whose power spectrum follows a power law controlled by the Hurst exponent. An exponent of 0 produces very rough, jagged surfaces; an exponent of 1 produces smooth, gently undulating terrain. This models naturally rough surfaces such as thin films, etched or polished substrates, and geological terrain. Use it whenever you need a statistically self-affine rough surface for testing roughness analysis or levelling algorithms.
 
@@ -138,7 +159,7 @@ Heights are randomised per object and the maximum-height rule applies. This mode
 - *stripe*: vertical stripes (binary, based on sine threshold).
 - *diamond*: diamond/rhombus tiling pattern.
 - *staircase*: stepped ramp repeating across x.
-- *rings*: concentric ring pattern centred on the field.
+- *rings*: concentric ring pattern centerd on the field.
 
 This models lithographic patterns, photonic crystal layouts, and periodic test structures. Use it for testing spatial frequency analysis, periodicity detection, and pattern recognition. The `frequency` parameter controls the spatial frequency (number of pattern repeats across the field).
 
@@ -174,7 +195,7 @@ This models lithographic patterns, photonic crystal layouts, and periodic test s
 
 - Controls: `n_particles` (number of deposited particles), `particle_radius_px` (particle radius)
 
-**ballistic** -- Ballistic deposition with neighbour adhesion. In each iteration, ~30% of randomly chosen sites receive a particle. The deposited height is one plus the maximum of the site's own height and its four nearest neighbours, producing lateral correlation and rough, porous growth fronts. This is a vectorised simulation of the classic ballistic deposition model. Models thin film growth with surface tension effects and produces surfaces with characteristic scaling exponents. Use it for testing roughness scaling analysis and growth exponent estimation.
+**ballistic** -- Ballistic deposition with neighbor adhesion. In each iteration, ~30% of randomly chosen sites receive a particle. The deposited height is one plus the maximum of the site's own height and its four nearest neighbors, producing lateral correlation and rough, porous growth fronts. This is a vectorised simulation of the classic ballistic deposition model. Models thin film growth with surface tension effects and produces surfaces with characteristic scaling exponents. Use it for testing roughness scaling analysis and growth exponent estimation.
 
 - Controls: `n_iterations` (10--5000)
 
@@ -198,7 +219,7 @@ This models lithographic patterns, photonic crystal layouts, and periodic test s
 
 - Controls: `n_iterations` (10--5000; recommend 500--2000 for fully developed patterns)
 
-**annealing** -- Simulated annealing surface relaxation. Starts with a random Gaussian noise surface and progressively smooths it by averaging with nearest neighbours while adding decreasing amounts of thermal noise. The temperature decreases linearly from 1.0 to 0.01 over the iteration count. This models thermal relaxation, surface diffusion at elevated temperature, and produces surfaces with controlled correlation lengths. More iterations yield smoother surfaces. Use it for testing smoothness quantification and correlation analysis.
+**annealing** -- Simulated annealing surface relaxation. Starts with a random Gaussian noise surface and progressively smooths it by averaging with nearest neighbors while adding decreasing amounts of thermal noise. The temperature decreases linearly from 1.0 to 0.01 over the iteration count. This models thermal relaxation, surface diffusion at elevated temperature, and produces surfaces with controlled correlation lengths. More iterations yield smoother surfaces. Use it for testing smoothness quantification and correlation analysis.
 
 - Controls: `n_iterations` (10--5000)
 

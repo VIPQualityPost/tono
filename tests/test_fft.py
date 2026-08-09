@@ -1,5 +1,5 @@
 """
-Test the FFT2D node against known inputs and Gwyddion-equivalent results.
+Test the FFT2D node against known inputs.
 
 Run from project root:
     python -m tests.test_fft

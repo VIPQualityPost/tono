@@ -1,6 +1,6 @@
 # Level Grains
 
-Shift individual grain regions so they all share a common baseline. Uses the selected reference statistic (mean, median, or minimum) per grain to compute the offset. Useful for consistent grain height comparisons. Equivalent to Gwyddion's level_grains.c module.
+Shift individual grain regions so they all share a common baseline. Uses the selected reference statistic (mean, median, or minimum) per grain to compute the offset. Useful for consistent grain height comparisons.
 
 ## Inputs
 

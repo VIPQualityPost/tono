@@ -1,5 +1,5 @@
 """
-Generate test images and their FFT outputs for visual comparison with Gwyddion.
+Generate test images and their FFT outputs.
 Saves PNG files to tests/output/.
 
 Run from project root: .venv/bin/python scripts/fft_visual.py

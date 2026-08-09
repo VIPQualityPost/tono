@@ -122,8 +122,7 @@ class NeuralClassification:
         "feedforward neural network with sigmoid activations. Features are "
         "extracted via multi-scale Gaussian filtering. When a training mask "
         "is provided the network learns from labelled pixels; otherwise it "
-        "uses unsupervised self-labelling from the initial random projection. "
-        "Equivalent in purpose to Gwyddion's neural.c classifier."
+        "uses unsupervised self-labelling from the initial random projection."
     )
 
     KEYWORDS = ("machine learning", "ml", "segment", "nn", "feedforward", "classifier")

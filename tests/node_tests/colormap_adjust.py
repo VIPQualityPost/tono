@@ -28,6 +28,20 @@ def test_colormap_adjust():
     assert auto_intensities[0] == 0
     assert auto_intensities[-1] == 255
 
+    # "auto" keeps the field's current colormap; a preset replaces it
+    kept, = node.process(field, colormap="auto", offset=0.0, scale=1.0)
+    assert kept.colormap == field.colormap
+    swapped, = node.process(field, colormap="hot", offset=0.0, scale=1.0)
+    assert swapped.colormap == "hot"
+    assert np.array_equal(swapped.data, field.data)
+    assert swapped.display_offset == 0.0 and swapped.display_scale == 1.0
+
+    # A connected Color Map socket overrides the dropdown
+    from backend.nodes.colormap import ColorMap
+    spec, = ColorMap().build(mode="preset", preset="magma")
+    socket, = node.process(field, colormap="hot", colormap_map=spec, offset=0.0, scale=1.0)
+    assert socket.colormap == spec
+
     try:
         node.process(field, offset=0.0, scale=0.0)
         raise AssertionError("Expected non-positive scale to raise ValueError")

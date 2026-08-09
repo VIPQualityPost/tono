@@ -1,6 +1,6 @@
 # Mask Morphology
 
-Apply morphological operations to a binary mask. Dilate expands regions, erode shrinks them, open (erode then dilate) removes small islands, and close (dilate then erode) fills small holes. Equivalent to Gwyddion's mask_morph.c.
+Apply morphological operations to a binary mask. Dilate expands regions, erode shrinks them, open (erode then dilate) removes small islands, and close (dilate then erode) fills small holes.
 
 ## Inputs
 

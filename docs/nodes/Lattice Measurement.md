@@ -1,6 +1,6 @@
 # Lattice Measurement
 
-Detect and measure periodic lattice structures from ACF or FFT peak positions. Reports lattice vectors and angles. Equivalent to Gwyddion's measure_lattice.c module.
+Detect and measure periodic lattice structures from ACF or FFT peak positions. Reports lattice vectors and angles.
 
 ## Inputs
 

@@ -37,8 +37,7 @@ class MarkDisconnected:
         "Mark topologically disconnected (isolated) surface regions. "
         "A morphological opening followed by closing builds a smooth "
         "defect-free reference surface; pixels whose deviation from that "
-        "reference exceeds the sensitivity threshold are flagged. "
-        "Equivalent to Gwyddion's mark_disconn module."
+        "reference exceeds the sensitivity threshold are flagged."
     )
 
     KEYWORDS = ("isolated", "defect", "morphology", "disconn", "outlier")

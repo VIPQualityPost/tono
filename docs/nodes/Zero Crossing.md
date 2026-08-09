@@ -1,6 +1,6 @@
 # Zero Crossing
 
-Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma controls the Gaussian smoothing scale. Threshold filters out weak edges relative to the LoG range. Equivalent to Gwyddion's zero_crossing.c module.
+Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma controls the Gaussian smoothing scale. Threshold filters out weak edges relative to the LoG range.
 
 ## Inputs
 
@@ -23,7 +23,7 @@ Detect edges by finding zero crossings of the Laplacian of Gaussian (LoG). Sigma
 
 ## Notes
 
-- The algorithm computes the Laplacian of Gaussian (via `scipy.ndimage.gaussian_laplace`), then marks pixels where adjacent values change sign (horizontal and vertical neighbours).
+- The algorithm computes the Laplacian of Gaussian (via `scipy.ndimage.gaussian_laplace`), then marks pixels where adjacent values change sign (horizontal and vertical neighbors).
 - Larger sigma values detect coarser features and suppress noise; smaller values pick up finer detail but are noisier.
 - Threshold = 0.0 keeps all zero crossings. Increasing it towards 1.0 retains only the strongest edges.
 - The output z-unit is cleared (dimensionless binary mask).

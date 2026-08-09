@@ -1,6 +1,6 @@
 # Radial Profile
 
-Compute an **azimuthally averaged** profile around a centre point on a DATA_FIELD. At each radius, every pixel in the full 360° ring around the centre is averaged together, so the profile is direction-independent — there is no clockwise/counter-clockwise traversal and no start or end point along the ring. The output is a single 1-D profile: value vs. radius.
+Compute an **azimuthally averaged** profile around a center point on a DATA_FIELD. At each radius, every pixel in the full 360° ring around the center is averaged together, so the profile is direction-independent — there is no clockwise/counter-clockwise traversal and no start or end point along the ring. The output is a single 1-D profile: value vs. radius.
 
 ## Inputs
 
@@ -22,9 +22,9 @@ Compute an **azimuthally averaged** profile around a centre point on a DATA_FIEL
 
 ## Interactive preview
 
-The dashed circle around the centre shows the outer radius used by the profile. Pixels beyond it are not included in the averaging.
+The dashed circle around the center shows the outer radius used by the profile. Pixels beyond it are not included in the averaging.
 
 ## Notes
 
-- Pixels are assigned to radial bins by Euclidean distance from the centre; inner bins contain fewer pixels and may be noisier.
+- Pixels are assigned to radial bins by Euclidean distance from the center; inner bins contain fewer pixels and may be noisier.
 - Physical x-axis units come from the field's si_unit_xy; uncalibrated fields produce pixel-unit radii.

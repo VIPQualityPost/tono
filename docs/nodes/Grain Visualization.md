@@ -1,6 +1,6 @@
 # Grain Visualization
 
-Visualize labeled grains as geometric shapes — inscribed discs, bounding boxes, centroid markers, or fitted ellipses. Produces a mask image with the chosen shapes and a labeled field where each grain has a unique integer value. Equivalent to Gwyddion's grain selection visualization (grain_makesel).
+Visualize labeled grains as geometric shapes — inscribed discs, bounding boxes, centroid markers, or fitted ellipses. Produces a mask image with the chosen shapes and a labeled field where each grain has a unique integer value.
 
 ## Inputs
 

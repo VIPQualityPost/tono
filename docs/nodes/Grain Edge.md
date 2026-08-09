@@ -1,6 +1,6 @@
 # Grain Edge
 
-Detect grain boundaries from a binary grain mask. Outputs a mask of pixels at grain/non-grain borders using 4-neighbour connectivity. Width controls the boundary thickness in pixels. Equivalent to Gwyddion's grain_edge.c module.
+Detect grain boundaries from a binary grain mask. Outputs a mask of pixels at grain/non-grain borders using 4-neighbor connectivity. Width controls the boundary thickness in pixels.
 
 ## Inputs
 
@@ -23,7 +23,7 @@ Detect grain boundaries from a binary grain mask. Outputs a mask of pixels at gr
 
 ## Notes
 
-- A grain pixel is on the boundary if at least one of its 4-connected neighbours (up, down, left, right) is not a grain pixel.
+- A grain pixel is on the boundary if at least one of its 4-connected neighbors (up, down, left, right) is not a grain pixel.
 - When width > 1, the boundary is expanded using binary dilation with a square structuring element of size (2*width - 1).
 - Dilation is masked to stay within the original grain region, so boundaries never extend into non-grain areas.
 - The field and mask must have the same pixel dimensions.

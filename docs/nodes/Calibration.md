@@ -1,6 +1,6 @@
 # Calibration
 
-Apply lateral and height calibration corrections to a DATA_FIELD. Equivalent to Gwyddion's calibrate.c functionality.
+Apply lateral and height calibration corrections to a DATA_FIELD.
 
 ## Inputs
 

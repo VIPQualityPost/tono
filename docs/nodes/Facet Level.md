@@ -1,6 +1,6 @@
 # Facet Level
 
-Level a field by iteratively finding the dominant local facet orientation and subtracting the corresponding plane. Matches Gwyddion's facet-level behaviour. Supports mask include/exclude selection.
+Level a field by iteratively finding the dominant local facet orientation and subtracting the corresponding plane. Implements the standard facet-level behaviour. Supports mask include/exclude selection.
 
 ## Inputs
 

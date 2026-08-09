@@ -1,6 +1,6 @@
 # Grain Distance Transform
 
-Compute the mask distance transform using Gwyddion-style interior, exterior, or signed output. Supports Euclidean, city-block, chessboard, and octagonal distance variants, with optional image-boundary handling matching mask_edt.
+Compute the mask distance transform using interior, exterior, or signed output. Supports Euclidean, city-block, chessboard, and octagonal distance variants, with optional image-boundary handling matching mask_edt.
 
 ## Inputs
 

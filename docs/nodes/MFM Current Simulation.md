@@ -27,9 +27,8 @@ Computes the magnetic stray field from an infinite current-carrying strip and th
 
 ## Notes
 
-- The current strip is infinite along y and centred at x = 0, so the field varies only in the x direction.
+- The current strip is infinite along y and centerd at x = 0, so the field varies only in the x direction.
 - Uses the Biot-Savart law for an infinite conducting strip of finite width to compute Hx and Hz.
 - Hx is the in-plane field component; Hz is the out-of-plane component.
 - Force is calculated with the point-dipole approximation: Fz = mu_0 * m_tip * dHz/dz.
 - Useful for simulating MFM response to current-carrying traces/interconnects.
-- Equivalent to Gwyddion's mfm_current.c.

@@ -1,6 +1,6 @@
 # PFM Analysis
 
-Compute polarization vectors from Piezoresponse Force Microscopy (PFM) data by combining vertical (VPFM) and lateral (LPFM) amplitude and phase channels into polarization magnitude, azimuth, and inclination maps. Equivalent to Gwyddion's `pfm.c` module.
+Compute polarization vectors from Piezoresponse Force Microscopy (PFM) data by combining vertical (VPFM) and lateral (LPFM) amplitude and phase channels into polarization magnitude, azimuth, and inclination maps.
 
 ## Inputs
 

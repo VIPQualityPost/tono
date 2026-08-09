@@ -1,6 +1,6 @@
 # Distribution Coercion
 
-Transform pixel values so their distribution matches a target shape (uniform, Gaussian, or discrete levels) using rank-based reassignment. Equivalent to Gwyddion's coerce.c module.
+Transform pixel values so their distribution matches a target shape (uniform, Gaussian, or discrete levels) using rank-based reassignment.
 
 ## Inputs
 

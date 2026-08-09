@@ -306,7 +306,7 @@ class FractalDimension:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Calculate the surface fractal dimension using Gwyddion's partitioning, cube counting, triangulation, "
+        "Calculate the surface fractal dimension using partitioning, cube counting, triangulation, "
         "power-spectrum, or HHCF methods. The in-node graph shows the log-log curve and lets you drag the fit range."
     )
 

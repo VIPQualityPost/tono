@@ -157,7 +157,7 @@ f = tono.field(data, xreal=10e-6, yreal=10e-6, si_unit_z="V")
 
 #### `DataField`
 
-The core 2D data container, analogous to Gwyddion's `GwyDataField`.
+The core 2D data container, analogous to `GwyDataField`.
 
 | Attribute | Type | Description |
 |---|---|---|
@@ -253,4 +253,5 @@ Use `tono.nodes()` to list all nodes. Major categories include:
 | **Mask** | ThresholdMask, GrainMark, DrawMask, MaskMorphology |
 | **Grains** | GrainAnalysis, WatershedSegmentation, GrainDistributions |
 | **Geometry** | CropResizeField, RotateField, Resample, AffineCorrection |
-| **Tip** | TipModel, TipDeconvolution, BlindTipEstimate |
+| **SPM** | MFMAnalysis, MFMDomainGeneration, MFMParallelMedia, SMMAnalysis, SEMSimulation |
+| **Probe** | TipModel, TipDeconvolution, BlindTipEstimate, TipShapeEstimate, PSFEstimation |

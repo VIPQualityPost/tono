@@ -29,11 +29,11 @@ class ColorMap:
     FUNCTION = "build"
 
     DESCRIPTION = (
-        "Build a reusable colormap. Choose a preset, or create a custom gradient with min/max colours "
+        "Build a reusable colormap. Choose a preset, or create a custom gradient with min/max colors "
         "and any number of intermediate stops."
     )
 
-    KEYWORDS = ("colour", "palette", "lut", "gradient")
+    KEYWORDS = ("color", "palette", "lut", "gradient")
 
     def build(self, mode: str, preset: str, stops: str | None = None, stops_json: str | None = None) -> tuple:
         if mode == "preset":
@@ -47,5 +47,5 @@ class ColorMap:
 
         spec = normalize_colormap_spec({"mode": "custom", "stops": stops_data}, fallback=None)
         if not (isinstance(spec, dict) and spec.get("mode") == "custom"):
-            raise ValueError("Custom colormap must include at least min and max colours.")
+            raise ValueError("Custom colormap must include at least min and max colors.")
         return (spec,)

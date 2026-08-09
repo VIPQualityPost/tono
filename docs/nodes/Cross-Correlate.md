@@ -1,6 +1,6 @@
 # Cross-Correlate
 
-Compute 2D cross-correlation between two fields. The correlation peak indicates the offset where the two fields best match. Useful for drift measurement and feature alignment. Equivalent to Gwyddion crosscor.c.
+Compute 2D cross-correlation between two fields. The correlation peak indicates the offset where the two fields best match. Useful for drift measurement and feature alignment.
 
 ## Inputs
 

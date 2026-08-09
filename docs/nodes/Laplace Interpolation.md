@@ -1,6 +1,6 @@
 # Laplace Interpolation
 
-Fill masked (missing) regions by solving the Laplace equation with Dirichlet boundary conditions from surrounding pixels. Produces a smooth, harmonic interpolation without overshooting. Equivalent to Gwyddion's laplace.c module.
+Fill masked (missing) regions by solving the Laplace equation with Dirichlet boundary conditions from surrounding pixels. Produces a smooth, harmonic interpolation without overshooting.
 
 ## Inputs
 

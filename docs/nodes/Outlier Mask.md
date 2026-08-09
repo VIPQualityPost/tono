@@ -1,6 +1,6 @@
 # Outlier Mask
 
-Create a mask marking pixels that deviate more than N standard deviations from the mean. Quick way to identify noise spikes and defects. Equivalent to Gwyddion's outliers.c module.
+Create a mask marking pixels that deviate more than N standard deviations from the mean. Quick way to identify noise spikes and defects.
 
 ## Inputs
 

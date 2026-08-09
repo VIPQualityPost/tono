@@ -1,6 +1,6 @@
 # Grain Distributions
 
-Compute a histogram distribution of a grain property from a labeled mask. Supported properties: area, equivalent diameter, mean height, max height, volume, and boundary length. Equivalent to Gwyddion's grain_dist.c module.
+Compute a histogram distribution of a grain property from a labeled mask. Supported properties: area, equivalent diameter, mean height, max height, volume, and boundary length.
 
 ## Inputs
 

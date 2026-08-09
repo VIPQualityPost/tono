@@ -1,6 +1,6 @@
 # Pixel Binning
 
-Downsample a DATA_FIELD by grouping pixels into NxN blocks and reducing each block to a single value. Supports mean, sum, and median reduction methods. Equivalent to Gwyddion's `binning.c` module.
+Downsample a DATA_FIELD by grouping pixels into NxN blocks and reducing each block to a single value. Supports mean, sum, and median reduction methods.
 
 ## Inputs
 

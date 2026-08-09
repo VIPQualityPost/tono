@@ -1,6 +1,6 @@
 # MFM Domain Generation
 
-Generate the stray field from a periodic pattern of parallel magnetic stripe domains with alternating up/down magnetization. Equivalent to Gwyddion's mfm_parallel.c.
+Generate the stray field from a periodic pattern of parallel magnetic stripe domains with alternating up/down magnetization.
 
 ## Inputs
 

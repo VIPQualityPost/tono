@@ -1,6 +1,6 @@
 # Shade
 
-Render a DATA_FIELD as a directional hillshade image using Lambertian reflectance. Surface normals are estimated from Sobel gradients, and shading intensity is computed from the dot product with a configurable light direction. Equivalent to Gwyddion's `shade.c` module.
+Render a DATA_FIELD as a directional hillshade image using Lambertian reflectance. Surface normals are estimated from Sobel gradients, and shading intensity is computed from the dot product with a configurable light direction.
 
 ## Inputs
 

@@ -108,7 +108,7 @@ def test_single_circle_area():
     data = np.zeros((N, N))
     mask = np.zeros((N, N), dtype=np.uint8)
 
-    # Draw a filled circle, radius 30 px, centred at (100, 100)
+    # Draw a filled circle, radius 30 px, centerd at (100, 100)
     yy, xx = np.mgrid[0:N, 0:N]
     r = 30
     circle = ((xx - 100) ** 2 + (yy - 100) ** 2) <= r ** 2

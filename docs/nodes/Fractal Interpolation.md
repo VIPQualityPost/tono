@@ -1,6 +1,6 @@
 # Fractal Interpolation
 
-Fill masked regions using fractal interpolation. Matches the spectral characteristics of the surrounding surface to produce natural-looking infill that preserves texture. Better than Laplace for rough surfaces. Equivalent to Gwyddion's fraccor.c module.
+Fill masked regions using fractal interpolation. Matches the spectral characteristics of the surrounding surface to produce natural-looking infill that preserves texture. Better than Laplace for rough surfaces.
 
 ## Inputs
 

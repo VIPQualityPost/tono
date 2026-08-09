@@ -1,6 +1,6 @@
 # FFT Filter
 
-Frequency-domain filtering of a line profile or 2D data field using a Butterworth transfer function. Connect a LINE for 1D filtering or a DATA_FIELD for 2D filtering; the output mirrors the input type. Equivalent to Gwyddion fft_filter_1d / fft_filter_2d.
+Frequency-domain filtering of a line profile or 2D data field using a Butterworth transfer function. Connect a LINE for 1D filtering or a DATA_FIELD for 2D filtering; the output mirrors the input type.
 
 ## Inputs
 

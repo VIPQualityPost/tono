@@ -1,6 +1,6 @@
 # Plane Level
 
-Fit and subtract a least-squares plane from the data. Supports include/exclude mask fitting for flattening around features, similar to masked plane fitting workflows in Gwyddion.
+Fit and subtract a least-squares plane from the data. Supports include/exclude mask fitting for flattening around features, similar to masked plane fitting workflows.
 
 ## Inputs
 

@@ -32,7 +32,7 @@ class AffineCorrection:
     DESCRIPTION = (
         "Apply an affine correction to fix geometric distortions from scanner "
         "nonlinearity. Parameters specify shear, scale, and rotation corrections. "
-        "The transform is applied about the centre of the field. "
+        "The transform is applied about the center of the field. "
     )
 
     KEYWORDS = ("shear", "scale", "distortion", "warp")
@@ -60,7 +60,7 @@ class AffineCorrection:
 
         matrix = scale @ shear @ rotation
 
-        # Offset so the transform is centred
+        # Offset so the transform is centerd
         offset = np.array([cy, cx]) - matrix @ np.array([cy, cx])
 
         corrected = affine_transform(data, matrix, offset=offset, order=3, mode="reflect")

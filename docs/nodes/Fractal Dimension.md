@@ -1,6 +1,6 @@
 # Fractal Dimension
 
-Calculate the surface fractal dimension using Gwyddion's partitioning, cube counting, triangulation, power-spectrum, or HHCF methods. The in-node graph shows the log-log curve and allows dragging the fit range.
+Calculate the surface fractal dimension using partitioning, cube counting, triangulation, power-spectrum, or HHCF methods. The in-node graph shows the log-log curve and allows dragging the fit range.
 
 ## Inputs
 

@@ -220,7 +220,6 @@ function GroupNode({ id, data }: { id: string; data: NodeData }) {
                           id={input.handleId}
                           className="typed-handle"
                           style={{ background: TYPE_COLORS[input.type] || 'var(--fallback-type)' }}
-                          isConnectableStart={false}
                         />
                         <span className="io-label">{formatUiLabel(input.label || input.name)}</span>
                       </>
@@ -1279,7 +1278,6 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                       id={`input::${socketName}::${socketType}`}
                       className="typed-handle"
                       style={{ background: TYPE_COLORS[socketType as string] || 'var(--fallback-type)' }}
-                      isConnectableStart={false}
                     />
                   )}
                   {(
@@ -1319,7 +1317,6 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                       id={`input::${inp.name}::${inp.type}`}
                       className="typed-handle"
                       style={{ background: TYPE_COLORS[inp.type as string] || 'var(--fallback-type)' }}
-                      isConnectableStart={false}
                     />
                     <span className="io-label">{inp.label || inp.name}</span>
                     {inlineWidgetsByInput.has(inp.name) && (
@@ -1393,7 +1390,6 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
                   id={`input::${socketName}::${socketType}`}
                   className="typed-handle"
                   style={{ background: TYPE_COLORS[socketType as string] || 'var(--fallback-type)' }}
-                  isConnectableStart={false}
                 />
               )}
               {(w.socketType && connectedInputs?.has(w.name))

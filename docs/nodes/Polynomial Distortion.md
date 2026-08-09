@@ -1,6 +1,6 @@
 # Polynomial Distortion
 
-Correct nonlinear scanner distortions by applying polynomial coordinate warping independently in the x and y directions. Each axis has three polynomial coefficients controlling linear, quadratic, and cubic distortion terms. Equivalent to Gwyddion's `polydistort.c` module.
+Correct nonlinear scanner distortions by applying polynomial coordinate warping independently in the x and y directions. Each axis has three polynomial coefficients controlling linear, quadratic, and cubic distortion terms.
 
 ## Inputs
 

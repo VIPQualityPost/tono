@@ -36,7 +36,7 @@ class HoughTransform:
         "First applies Canny edge detection, then accumulates votes in "
         "Hough parameter space. Reports detected features with their parameters. "
         "For lines: angle and distance from origin. "
-        "For circles: centre coordinates and radius. "
+        "For circles: center coordinates and radius. "
     )
 
     KEYWORDS = ("line detection", "circle detection", "shape detection")

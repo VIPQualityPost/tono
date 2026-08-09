@@ -87,7 +87,7 @@ class TipShapeEstimate:
         r_1d = np.linspace(0, ci, len(tip_profile_1d))
         tip_2d = np.interp(r_grid, r_1d, tip_profile_1d, right=0.0)
 
-        # Convention: apex (centre) is the maximum; minimum is 0.
+        # Convention: apex (center) is the maximum; minimum is 0.
         tip_2d -= tip_2d.min()
 
         xreal = n_tip * pixel_size
@@ -202,12 +202,12 @@ class TipShapeEstimate:
             elif i > 0:
                 radial_profile[i] = radial_profile[i - 1]
 
-        r_centres = 0.5 * (r_edges[:-1] + r_edges[1:])
+        r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
 
         # Ideal sphere profile: z_sphere(r) = sqrt(R^2 - r^2) for r < R, else 0.
         sphere_profile = np.where(
-            r_centres < radius,
-            np.sqrt(np.maximum(radius ** 2 - r_centres ** 2, 0.0)),
+            r_centers < radius,
+            np.sqrt(np.maximum(radius ** 2 - r_centers ** 2, 0.0)),
             0.0,
         )
 

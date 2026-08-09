@@ -1,6 +1,6 @@
 # Slope Distribution
 
-Compute the angular slope distribution of a DATA_FIELD surface. Equivalent to Gwyddion's slope_dist module (slope_dist.c).
+Compute the angular slope distribution of a DATA_FIELD surface.
 
 ## Inputs
 

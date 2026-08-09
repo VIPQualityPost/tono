@@ -32,7 +32,7 @@ class TipModel:
     DESCRIPTION = (
         "Generate a synthetic AFM tip model DATA_FIELD. "
         "The input field sets the pixel size for the tip. "
-        "The apex (centre pixel) is the maximum value; edges are shifted to zero. "
+        "The apex (center pixel) is the maximum value; edges are shifted to zero. "
         "Shapes: parabola — paraboloid with apex radius R; "
         "cone — sphere-capped cone (radius R, half_angle from tip axis in degrees); "
         "sphere — ball-on-stick (sphere cap only). "
@@ -50,18 +50,18 @@ class TipModel:
     ) -> tuple:
         pixel_size = (field.dx + field.dy) * 0.5
 
-        # Ensure odd size so the centre pixel is well-defined
+        # Ensure odd size so the center pixel is well-defined
         n = n_pixels if n_pixels % 2 == 1 else n_pixels + 1
         ci = n // 2
 
-        # Physical offsets from the centre pixel
+        # Physical offsets from the center pixel
         offsets = (np.arange(n) - ci) * pixel_size
         gx, gy = np.meshgrid(offsets, offsets)
         r2 = gx**2 + gy**2
         r = np.sqrt(r2)
 
         if shape == "parabola":
-            # Gwyddion parabola(): a = 1/(2R), z0 = 2a·x_half²
+            # Parabola shape: a = 1/(2R), z0 = 2a·x_half²
             # z[y,x] = z0 - a·r²  →  min at corners is exactly 0
             a = 0.5 / radius
             x_half = ci * pixel_size        # half-width in physical units
@@ -70,7 +70,7 @@ class TipModel:
             data -= data.min()              # shift so min = 0
 
         elif shape == "cone":
-            # Gwyddion cone():
+            # Cone shape:
             #   angle = half-angle from horizontal = π/2 - half_angle_from_axis
             #   z0 = R/sin(angle)
             #   r_cross² = (R·cos(angle))²
@@ -86,7 +86,7 @@ class TipModel:
             data -= data.min()
 
         elif shape == "sphere":
-            # Gwyddion sphere(): cone with near-vertical sides (angle ≈ 0 from horizontal)
+            # Sphere shape: cone with near-vertical sides (angle ≈ 0 from horizontal)
             angle = 1e-5   # radians — essentially vertical cone
             z0 = radius / np.sin(angle)
             br2 = (radius * np.cos(angle))**2

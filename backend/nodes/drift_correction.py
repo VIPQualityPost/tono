@@ -33,7 +33,7 @@ def _estimate_drift(data: np.ndarray, reference: str) -> np.ndarray:
     else:
         raise ValueError(f"Unknown reference: {reference!r}")
 
-    # Remove the overall mean to centre the correction
+    # Remove the overall mean to center the correction
     shifts -= shifts.mean()
     return shifts
 

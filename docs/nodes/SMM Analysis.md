@@ -1,6 +1,6 @@
 # SMM Analysis
 
-Scanning Microwave Microscopy analysis: perform 3-point calibration and de-embedding to convert raw S11 reflection coefficient measurements into quantitative tip-sample capacitance and impedance maps. Equivalent to Gwyddion's smm.c and smm_apply.c modules.
+Scanning Microwave Microscopy analysis: perform 3-point calibration and de-embedding to convert raw S11 reflection coefficient measurements into quantitative tip-sample capacitance and impedance maps.
 
 ## Inputs
 

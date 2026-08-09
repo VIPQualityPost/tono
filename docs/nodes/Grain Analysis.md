@@ -1,6 +1,6 @@
 # Grain Analysis
 
-Label connected grain regions in a binary mask and compute per-grain statistics: area, equivalent diameter, mean/max height, bounding box. Equivalent to Gwyddion's grain statistics tools.
+Label connected grain regions in a binary mask and compute per-grain statistics: area, equivalent diameter, mean/max height, bounding box.
 
 ## Inputs
 

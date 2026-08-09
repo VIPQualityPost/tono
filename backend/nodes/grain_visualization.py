@@ -177,8 +177,7 @@ class GrainVisualization:
     DESCRIPTION = (
         "Visualize labeled grains as geometric shapes — inscribed discs, bounding boxes, "
         "centroid markers, or fitted ellipses. Produces a mask image with the chosen shapes "
-        "and a labeled field where each grain has a unique integer value. "
-        "Equivalent to Gwyddion's grain selection visualization (grain_makesel)."
+        "and a labeled field where each grain has a unique integer value."
     )
 
     KEYWORDS = ("ellipse", "disc", "bounding box", "centroid", "inscribed", "label")

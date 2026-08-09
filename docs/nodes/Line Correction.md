@@ -1,6 +1,6 @@
 # Line Correction
 
-Correct scan-line mismatches using Gwyddion-derived row alignment methods. Supports median and trimmed row alignment, difference-based alignment, polynomial row leveling, and step-line correction from Gwyddion's linecorrect/linematch modules.
+Correct scan-line mismatches using row alignment methods. Supports median and trimmed row alignment, difference-based alignment, modus (most-common value) alignment, Gaussian-weighted row matching, polynomial row leveling, and step-line correction.
 
 ## Inputs
 
@@ -21,7 +21,7 @@ Correct scan-line mismatches using Gwyddion-derived row alignment methods. Suppo
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| method | dropdown | median | Alignment method: median, median_diff, trimmed_mean, trimmed_diff, polynomial, or step |
+| method | dropdown | median | Alignment method: median, median_diff, trimmed_mean, trimmed_diff, polynomial, modus, matching, or step |
 | direction | dropdown | horizontal | Direction of scan lines to correct: horizontal or vertical |
 | masking | dropdown | ignore | How to use the mask: ignore, include (correct using masked rows only), or exclude |
 | trim_fraction | FLOAT | 0.05 | Fraction of extreme values to trim; visible only for trimmed_mean and trimmed_diff methods (0-0.5) |
@@ -29,5 +29,12 @@ Correct scan-line mismatches using Gwyddion-derived row alignment methods. Suppo
 
 ## Notes
 
+- The modus method estimates each row's most common value from the densest
+  sample cluster and aligns rows to it; it suits data with dominant value
+  levels (terraces, plateaus).
+- The matching method (Gaussian-weighted, from linematch.c LINE_MATCH_MATCH)
+  aligns consecutive rows through their locally similar slopes and accumulates
+  the offsets; rows that are exact copies of their neighbors are left in
+  place by the C algorithm and are then not shifted.
 - The step method is designed for step-like scan artifacts and may over-correct smooth surfaces.
 - Mask shape must match the field shape if a mask is connected.

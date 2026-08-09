@@ -44,7 +44,7 @@ class PSFEstimation:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _crop_centre(arr: np.ndarray, size: int) -> np.ndarray:
+    def _crop_center(arr: np.ndarray, size: int) -> np.ndarray:
         """Crop the central *size x size* region from *arr*."""
         yc, xc = arr.shape[0] // 2, arr.shape[1] // 2
         half = size // 2
@@ -105,7 +105,7 @@ class PSFEstimation:
         F_psf = np.conj(F_ideal) * F_measured / (np.abs(F_ideal) ** 2 + regularization)
         psf = np.real(np.fft.ifft2(F_psf))
         psf = np.fft.fftshift(psf)
-        psf = self._crop_centre(psf, psf_size)
+        psf = self._crop_center(psf, psf_size)
         return self._normalise(psf)
 
     def _least_squares(
@@ -124,7 +124,7 @@ class PSFEstimation:
         )
         psf = np.real(np.fft.ifft2(F_psf))
         psf = np.fft.fftshift(psf)
-        psf = self._crop_centre(psf, psf_size)
+        psf = self._crop_center(psf, psf_size)
         return self._normalise(psf)
 
     # ------------------------------------------------------------------

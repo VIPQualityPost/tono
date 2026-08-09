@@ -136,3 +136,69 @@ def test_line_correction_with_mask():
                                       masking="include", trim_fraction=0.05,
                                       polynomial_degree=1, mask=mask)
     assert np.allclose(c_incl.data + b_incl.data, field.data)
+
+
+def test_line_correction_modus():
+    from backend.nodes.line_correction import LineCorrection
+    from tests.node_tests._shared import make_field
+
+    node = LineCorrection()
+
+    rows, cols = 64, 128
+    rng = np.random.default_rng(21)
+    x = np.linspace(-1.0, 1.0, cols)
+    # Flat plateau with a weak non-modal component: the modus of each row is
+    # the plateau value plus its offset.
+    base = 0.02 * np.sin(3.0 * np.pi * x) + rng.standard_normal((rows, cols)) * 0.01
+    row_offsets = np.array([-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5])[
+        np.arange(rows) % 7]
+    data = base + row_offsets[:, None]
+    field = make_field(data=data)
+
+    corrected, background, shifts = node.process(
+        field, method="modus", direction="horizontal",
+        masking="ignore", trim_fraction=0.05, polynomial_degree=1,
+    )
+    expected = row_offsets - row_offsets.mean()
+    assert corrected.data.shape == field.data.shape
+    assert np.allclose(corrected.data + background.data, field.data)
+    assert len(shifts) == rows
+    assert np.max(np.abs(shifts.data - expected)) < 0.05
+    assert corrected.data.mean(axis=1).std() < field.data.mean(axis=1).std() * 0.05
+
+
+def test_line_correction_matching():
+    from backend.nodes.line_correction import LineCorrection
+    from tests.node_tests._shared import make_field
+
+    node = LineCorrection()
+
+    rows, cols = 64, 128
+    rng = np.random.default_rng(33)
+    x = np.linspace(0.0, 1.0, cols)
+    # Rich row structure so local slopes vary; rows are identical up to an
+    # integer-valued offset (plus tiny noise so the weight denominator q > 0).
+    structure = (
+        0.6 * np.sin(7.0 * np.pi * x)
+        + 0.3 * np.cos(13.0 * np.pi * x)
+        + 0.15 * np.sin(31.0 * np.pi * x)
+    )
+    row_offsets = 0.5 * np.array([0, 1, 2, 3, 2, 1, 0, -1, -2, -3, -2, -1])[
+        np.arange(rows) % 12
+    ].astype(np.float64)
+    noise = rng.standard_normal((rows, cols)) * 1e-3
+    data = structure[None, :] + row_offsets[:, None] + noise
+    field = make_field(data=data)
+
+    corrected, background, shifts = node.process(
+        field, method="matching", direction="horizontal",
+        masking="ignore", trim_fraction=0.05, polynomial_degree=1,
+    )
+    expected = row_offsets - row_offsets.mean()
+    assert corrected.data.shape == field.data.shape
+    assert np.allclose(corrected.data + background.data, field.data)
+    assert len(shifts) == rows
+    assert shifts.x_unit == field.si_unit_xy
+    assert shifts.y_unit == field.si_unit_z
+    assert np.max(np.abs(shifts.data - expected)) < 0.05
+    assert corrected.data.mean(axis=1).std() < field.data.mean(axis=1).std() * 0.05

@@ -1,6 +1,6 @@
 # Grain Summary
 
-Compute aggregate statistics for all grains in a mask: count, density, coverage fraction, mean/median area, total volume, and height statistics. Equivalent to Gwyddion's grain_summary.c module.
+Compute aggregate statistics for all grains in a mask: count, density, coverage fraction, mean/median area, total volume, and height statistics.
 
 ## Inputs
 

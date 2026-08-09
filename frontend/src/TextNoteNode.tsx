@@ -102,7 +102,7 @@ function TextNoteNode({ id, data }: TextNoteNodeProps) {
           borderColor: palette.border,
         }}
       >
-        {/* Colour picker row */}
+        {/* color picker row */}
         <div className="text-note-toolbar nodrag nopan">
           <button
             className="text-note-fold-btn nodrag nopan"

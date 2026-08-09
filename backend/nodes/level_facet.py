@@ -124,7 +124,7 @@ class FacetLevelField:
 
     DESCRIPTION = (
         "Level a field by iteratively finding the dominant local facet orientation and subtracting the "
-        "corresponding plane, matching Gwyddion's facet-level behaviour. Supports mask include/exclude "
+        "corresponding plane in facet-level fashion. Supports mask include/exclude "
         "selection and expects topographic data with compatible XY and Z units."
     )
 

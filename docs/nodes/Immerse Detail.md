@@ -1,6 +1,6 @@
 # Immerse Detail
 
-Overlay a high-resolution detail scan onto a lower-resolution overview image. Uses sliding-window cross-correlation (coarse + fine search) to automatically locate the detail within the overview. Equivalent to Gwyddion's immerse.c module.
+Overlay a high-resolution detail scan onto a lower-resolution overview image. Uses sliding-window cross-correlation (coarse + fine search) to automatically locate the detail within the overview.
 
 ## Inputs
 

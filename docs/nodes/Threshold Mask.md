@@ -1,6 +1,6 @@
 # Threshold Mask
 
-Create a binary mask by thresholding data. Otsu automatically finds the optimal threshold. Equivalent to Gwyddion's threshold and otsu_threshold modules.
+Create a binary mask by thresholding data. Otsu automatically finds the optimal threshold.
 
 ## Inputs
 

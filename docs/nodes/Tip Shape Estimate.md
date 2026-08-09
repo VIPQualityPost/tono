@@ -1,6 +1,6 @@
 # Tip Shape Estimate
 
-Estimate SPM tip geometry from a known calibration feature. The image of a calibration feature (sharp edge, sphere, cylinder) is a dilation of the true feature shape with the tip. By subtracting the known feature contribution the tip shape can be recovered. The 2D tip is built by revolving the extracted 1D radial profile assuming axial symmetry. Equivalent to Gwyddion's tipshape.c analysis.
+Estimate SPM tip geometry from a known calibration feature. The image of a calibration feature (sharp edge, sphere, cylinder) is a dilation of the true feature shape with the tip. By subtracting the known feature contribution the tip shape can be recovered. The 2D tip is built by revolving the extracted 1D radial profile assuming axial symmetry.
 
 ## Inputs
 
@@ -30,4 +30,3 @@ Estimate SPM tip geometry from a known calibration feature. The image of a calib
 - **Axial symmetry assumption**: The 2D tip shape is built by revolving the 1D radial profile around the apex. This assumes the tip is rotationally symmetric, which is a reasonable first approximation for most SPM tips but may not capture asymmetric wear or contamination.
 - **Use with Tip Deconvolution**: The estimated tip can be fed directly into the Tip Deconvolution node to reconstruct the true surface from measured images. Ensure the pixel size of the tip matches the image pixel size.
 - **feature_radius** is only used for sphere and cylinder feature types; it is ignored for edge estimation.
-- Equivalent to Gwyddion's tipshape.c tip characterisation routines.

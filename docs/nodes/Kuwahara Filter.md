@@ -1,6 +1,6 @@
 # Kuwahara Filter
 
-Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method. Unlike Gaussian blur, sharp boundaries are preserved. Equivalent to Gwyddion's Kuwahara filter.
+Edge-preserving smoothing using Kuwahara's minimum-variance quadrant method. Unlike Gaussian blur, sharp boundaries are preserved.
 
 ## Inputs
 

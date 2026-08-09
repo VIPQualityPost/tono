@@ -41,12 +41,12 @@ class LaplaceInterpolation:
         if not hole.any():
             return (field.replace(data=data),)
 
-        # Initialize masked pixels to mean of unmasked neighbours or global mean
+        # Initialize masked pixels to mean of unmasked neighbors or global mean
         valid_mean = data[~hole].mean() if (~hole).any() else 0.0
         data[hole] = valid_mean
 
         # Iterative Jacobi relaxation: replace each masked pixel with
-        # the mean of its 4-connected neighbours
+        # the mean of its 4-connected neighbors
         padded = np.pad(data, 1, mode='edge')
         hole_padded = np.pad(hole, 1, mode='constant', constant_values=False)
 

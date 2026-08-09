@@ -229,13 +229,13 @@ class WatershedSegmentation:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Segment a height field into grains using the two-stage Gwyddion watershed workflow: "
+        "Segment a height field into grains using the two-stage watershed workflow: "
         "drop-based seed location followed by watershed growth. Supports hill or valley detection "
         "and optional union/intersection with an existing mask. Reports grain count and mask "
         "coverage for the final result."
     )
 
-    KEYWORDS = ("grain", "basin", "flood fill", "gwyddion", "peak", "valley", "hill", "marker")
+    KEYWORDS = ("grain", "basin", "flood fill", "peak", "valley", "hill", "marker")
 
     def process(
         self,

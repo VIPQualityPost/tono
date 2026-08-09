@@ -1,6 +1,6 @@
 # Preview
 
-Display an IMAGE or DATA_FIELD as a coloured thumbnail in the node panel.
+Display an IMAGE or DATA_FIELD as a colored thumbnail in the node panel.
 
 ## Inputs
 

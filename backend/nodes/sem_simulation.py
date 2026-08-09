@@ -38,7 +38,7 @@ class SEMSimulation:
         "The integration method computes the surface slope (gradient magnitude) "
         "and applies Gaussian smoothing to approximate the secondary electron "
         "yield, modelling the beam interaction volume. The Monte Carlo method "
-        "stochastically samples neighbour height differences weighted by a "
+        "stochastically samples neighbor height differences weighted by a "
         "Gaussian kernel to estimate the local surface visibility, producing "
         "edge-enhanced contrast similar to real SEM images."
     )

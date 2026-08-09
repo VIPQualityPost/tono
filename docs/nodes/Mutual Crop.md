@@ -1,6 +1,6 @@
 # Mutual Crop
 
-Align two images using FFT cross-correlation and crop both to their overlapping region. Useful for comparing images acquired at different times or with slight position offsets. Equivalent to Gwyddion's mcrop.c module.
+Align two images using FFT cross-correlation and crop both to their overlapping region. Useful for comparing images acquired at different times or with slight position offsets.
 
 ## Inputs
 

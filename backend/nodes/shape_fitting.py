@@ -78,7 +78,7 @@ class ShapeFitting:
         "Fit a geometric primitive (sphere, paraboloid, or cylinder) to the "
         "surface data. Outputs either the fitted surface or the residual "
         "(original minus fit). Reports fitted parameters including radius "
-        "of curvature, centre position, etc. "
+        "of curvature, center position, etc. "
     )
 
     KEYWORDS = ("sphere", "paraboloid", "cylinder", "fit", "primitive", "geometry", "residual")

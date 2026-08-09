@@ -1,6 +1,6 @@
 # Spot Removal
 
-Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The mask defines defect locations. Equivalent to Gwyddion spotremove.c.
+Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The mask defines defect locations.
 
 ## Inputs
 
@@ -27,4 +27,4 @@ Fill defect pixels (hot pixels, dropouts, scan artifacts) by interpolation. The 
 ## Notes
 
 - Large masked regions may not converge fully within max_iter iterations using the Laplace method.
-- The mean method uses a simple neighbourhood average and may leave visible discontinuities at large defect clusters.
+- The mean method uses a simple neighborhood average and may leave visible discontinuities at large defect clusters.

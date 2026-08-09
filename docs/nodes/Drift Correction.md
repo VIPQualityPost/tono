@@ -1,6 +1,6 @@
 # Drift Correction
 
-Compensate for thermal or piezo drift between scan lines. Estimates inter-row displacement via cross-correlation and shifts rows to align them. Equivalent to Gwyddion's drift.c module.
+Compensate for thermal or piezo drift between scan lines. Estimates inter-row displacement via cross-correlation and shifts rows to align them.
 
 ## Inputs
 

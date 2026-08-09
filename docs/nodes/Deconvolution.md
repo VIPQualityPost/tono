@@ -1,6 +1,6 @@
 # Deconvolution
 
-Restore an image via regularised deconvolution. Assumes the image was blurred by a Gaussian PSF with the given sigma. Equivalent to Gwyddion's deconvolve.c module.
+Restore an image via regularised deconvolution. Assumes the image was blurred by a Gaussian PSF with the given sigma.
 
 ## Inputs
 
