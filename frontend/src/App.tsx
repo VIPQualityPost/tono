@@ -2427,7 +2427,13 @@ function Flow() {
     if (event.button !== 2) return;
     if (!canStartCanvasRightDragZoom(event.target)) return;
 
-    event.preventDefault();
+    // Do NOT preventDefault() here: WKWebView (native macOS build) suppresses
+    // the contextmenu event entirely when the right-button pointerdown was
+    // default-prevented, so the node-add menu could never open. Chrome and
+    // Firefox fire contextmenu regardless, which is why the web app was fine.
+    // Do NOT pointer-capture either: capture retargets the contextmenu event
+    // to this container, bypassing React Flow's pane handler that opens the
+    // menu. The global pointermove/pointerup listeners track the drag anyway.
     event.stopPropagation();
     setContextMenu(null);
 
@@ -2439,12 +2445,6 @@ function Flow() {
       moved: false,
     };
     setIsCanvasRightZooming(true);
-
-    try {
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-    } catch {
-      // Ignore capture failures; global listeners still complete the interaction.
-    }
   }, [reactFlow]);
 
   const onFlowContainerContextMenuCapture = useCallback((event: React.SyntheticEvent) => {
@@ -2474,6 +2474,10 @@ function Flow() {
 
       event.preventDefault();
       zoomState.moved = true;
+
+      // WKWebView dispatches contextmenu at right-press (before any movement),
+      // so a drag that turns into a zoom must dismiss the menu it just opened.
+      setContextMenu(null);
 
       const container = flowContainerRef.current;
       if (!container) return;
@@ -2505,15 +2509,6 @@ function Flow() {
       }
       canvasRightZoomRef.current = null;
       setIsCanvasRightZooming(false);
-
-      const container = flowContainerRef.current;
-      if (container?.hasPointerCapture?.(event.pointerId)) {
-        try {
-          container.releasePointerCapture(event.pointerId);
-        } catch {
-          // Ignore capture release errors.
-        }
-      }
     };
 
     window.addEventListener('pointermove', handlePointerMove, true);
