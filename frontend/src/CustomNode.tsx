@@ -1,9 +1,6 @@
 import React, { useContext, useRef, useCallback, useState, useEffect, memo, lazy, Suspense } from 'react';
 import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
-import { marked } from 'marked';
 import LinePlotOverlay from './LinePlotOverlay';
-
-marked.use({ breaks: true, gfm: true });
 
 const SurfaceView = lazy(() => import('./SurfaceView'));
 const CrossSectionOverlay = lazy(() => import('./CrossSectionOverlay'));
