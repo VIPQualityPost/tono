@@ -382,7 +382,7 @@ class LineCorrection:
                     "matching",
                 ], {"default": "median"}),
                 "direction": (["horizontal", "vertical"], {"default": "horizontal"}),
-                "masking": (["ignore", "include", "exclude"], {"default": "ignore"}),
+                "masking": (["ignore", "include", "exclude"], {"default": "exclude"}),
                 "trim_fraction": ("FLOAT", {
                     "default": 0.05,
                     "min": 0.0,

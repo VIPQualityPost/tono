@@ -166,6 +166,29 @@ def test_load_file_ibw():
         assert item.xreal > 0
 
 
+def test_load_all_channels_exposed():
+    """Every channel of a multi-channel file gets its own output, in order."""
+    from backend.nodes.image import Image
+    from backend.nodes.helpers import list_channels
+    node = Image()
+
+    demo_bacteria = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "demo", "Bacteria.ibw"))
+    if not os.path.exists(demo_bacteria):
+        return
+
+    result = node.load(filename=demo_bacteria)
+    fields = result[1:]
+    assert isinstance(result[0], str)
+    # 4 channels → path output + 4 DataField outputs (no 3-channel cap).
+    assert len(fields) == 4
+    names = [entry["name"] for entry in list_channels(demo_bacteria)]
+    assert names == ["HeightTrace", "AmplitudeTrace", "PhaseTrace", "HeightTraceMod0"]
+    from backend.importers.ibw import load as ibw_load
+    expected = ibw_load(demo_bacteria)
+    for slot, field in enumerate(fields):
+        assert np.allclose(field.data, expected[slot].data)
+
+
 def test_load_empty_filename_raises():
     from backend.nodes.image import Image
     node = Image()

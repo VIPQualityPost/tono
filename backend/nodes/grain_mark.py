@@ -7,11 +7,13 @@ from scipy.ndimage import label, sobel
 
 from backend.node_registry import register_node
 from backend.data_types import DataField
-from backend.nodes.helpers import bool_to_mask
+from backend.nodes.helpers import bool_to_mask, emit_mask_preview
 
 
 @register_node(display_name="Grain Mark")
 class GrainMark:
+    _CUSTOM_PREVIEW = True
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -74,4 +76,7 @@ class GrainMark:
             if (labeled == gid).sum() < min_size:
                 binary[labeled == gid] = False
 
-        return (bool_to_mask(binary),)
+        mask = bool_to_mask(binary)
+        emit_mask_preview(field, mask)
+
+        return (mask,)

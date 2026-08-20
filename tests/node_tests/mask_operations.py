@@ -54,3 +54,21 @@ def test_mask_operations_unknown_operation():
         assert False, "Expected ValueError"
     except ValueError:
         pass
+
+
+def test_mask_operations_preview():
+    """Mask Operations always previews its result mask."""
+    from backend.nodes.mask_operations import MaskOperations
+    from backend.execution_context import active_node, execution_callbacks
+
+    a = np.zeros((16, 16), dtype=np.uint8)
+    a[4:12, 4:12] = 255
+    b = np.zeros((16, 16), dtype=np.uint8)
+    b[8:16, 8:16] = 255
+
+    previews = []
+    with execution_callbacks(preview=lambda nid, d: previews.append(d)), active_node("test"):
+        out, = MaskOperations().process(a, b, operation="or")
+    assert out[8:12, 8:12].all()
+    assert len(previews) == 1
+    assert previews[0].startswith("data:image/png;base64,")

@@ -792,12 +792,53 @@ def masked_values(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np
     raise ValueError(f"Unknown masking mode: {masking}")
 
 
+def align_rows_to_landings(leveled: np.ndarray, mask: np.ndarray | None, masking: str) -> np.ndarray:
+    """Re-offset each row so its usable (unmasked) pixels sit at the landing level.
+
+    After a plane subtraction, raw scan rows often keep independent DC offsets
+    (line noise / per-row scaling) that no single plane can represent. Aligning
+    each row's usable pixels to the landing rows — rows with no masked pixels —
+    removes that residue so all background areas share one level, reconstructing
+    the underlying structure (e.g. a grating) across rows.
+    """
+    valid = apply_masking(leveled, mask, masking)
+    row_levels: list[float] = []
+    landing_levels: list[float] = []
+    for j in range(leveled.shape[0]):
+        row_valid = valid[j, :]
+        if not row_valid.any():
+            continue
+        level = float(np.median(leveled[j, row_valid]))
+        row_levels.append(level)
+        if mask is not None and not np.any(mask[j, :]):
+            landing_levels.append(level)
+    if not row_levels:
+        return leveled
+
+    anchor = float(np.median(landing_levels)) if landing_levels else float(np.median(row_levels))
+    result = leveled.copy()
+    for j in range(leveled.shape[0]):
+        row_valid = valid[j, :]
+        if not row_valid.any():
+            continue
+        result[j, :] -= float(np.median(leveled[j, row_valid])) - anchor
+    return result
+
+
 def emit_mask_preview(field, mask_uint8: np.ndarray) -> None:
-    """Emit a standard mask-on-field preview if *field* is not None."""
-    if field is None:
-        return
+    """Emit a mask preview: the mask overlaid on *field* when one is connected,
+    otherwise the bare 0/255 mask itself. Mask nodes call this so their result
+    is always visible even without an optional DATA_FIELD input."""
     from backend.execution_context import emit_preview
     from backend.data_types import encode_preview
+    if field is None:
+        arr = np.asarray(mask_uint8)
+        if arr.dtype != np.uint8:
+            arr = bool_to_mask(mask_to_bool(arr))
+        elif arr.max() <= 1:
+            arr = (arr > 0).astype(np.uint8) * 255
+        emit_preview(encode_preview(arr))
+        return
     emit_preview(encode_preview(_mask_overlay(field, mask_uint8)))
 
 

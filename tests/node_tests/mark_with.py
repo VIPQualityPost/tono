@@ -110,3 +110,39 @@ def test_mark_with_unknown_operation_raises():
     b = make_field(data=np.zeros((8, 8)))
     with pytest.raises(ValueError):
         node.process(a, b, operation="bogus", invert_mask=False)
+
+
+def test_mark_with_preview_emitted_once():
+    """Mark With previews the field+mask overlay and the generic raw-mask
+    preview must not overwrite it (exactly one preview emission)."""
+    import backend.nodes  # noqa: F401
+    from backend.execution import ExecutionEngine
+    from backend.node_registry import register_node
+
+    @register_node(display_name="Test MarkWith Field Source")
+    class _TestMarkWithFieldSource:
+        @classmethod
+        def INPUT_TYPES(cls):
+            return {"required": {}}
+        OUTPUTS = (("DATA_FIELD", "field"),)
+        FUNCTION = "run"
+        def run(self):
+            data = np.zeros((16, 16), dtype=np.float64)
+            data[4:12, 4:12] = 1.0
+            return (make_field(data=data),)
+
+    engine = ExecutionEngine()
+    previews = []
+    engine.execute(
+        {
+            "1": {"class_type": "_TestMarkWithFieldSource", "inputs": {}},
+            "2": {"class_type": "_TestMarkWithFieldSource", "inputs": {}},
+            "3": {"class_type": "MarkWith", "inputs": {
+                "field_a": ["1", 0], "field_b": ["2", 0], "operation": "==", "invert_mask": False,
+            }},
+        },
+        on_preview=lambda node_id, payload: previews.append((node_id, payload)),
+    )
+    mark_previews = [payload for nid, payload in previews if nid == "3"]
+    assert len(mark_previews) == 1
+    assert mark_previews[0].startswith("data:image/png;base64,")

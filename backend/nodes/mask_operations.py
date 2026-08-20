@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from backend.node_registry import register_node
-from backend.nodes.helpers import mask_to_bool, bool_to_mask
+from backend.nodes.helpers import mask_to_bool, bool_to_mask, emit_mask_preview
 
 
 _MASK_BOOLEAN_OPERATIONS = {
@@ -65,5 +65,7 @@ class MaskOperations:
         result = op(a, b)
 
         out = bool_to_mask(result)
+
+        emit_mask_preview(None, out)
 
         return (out,)

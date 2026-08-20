@@ -29,6 +29,10 @@ _MARK_OPS = {
 
 @register_node(display_name="Mark With")
 class MarkWith:
+    # Emits its own field+mask preview; without this the generic IMAGE
+    # preview would overwrite it with the raw mask.
+    _CUSTOM_PREVIEW = True
+
     @classmethod
     def INPUT_TYPES(cls):
         return {

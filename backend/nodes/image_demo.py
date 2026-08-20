@@ -36,4 +36,4 @@ class ImageDemo:
         demo_path = DEMO_DIR / name
         if not demo_path.exists():
             raise FileNotFoundError(f"Demo file not found: {name}")
-        return loader.load(filename=str(demo_path), colormap=colormap, colormap_map=colormap_map)[1:][:3]
+        return loader.load(filename=str(demo_path), colormap=colormap, colormap_map=colormap_map)[1:]

@@ -52,3 +52,21 @@ def test_outlier_mask_low_only():
     binary = mask_to_bool(mask)
     assert not binary[10, 10]
     assert binary[50, 50]
+
+
+def test_outlier_mask_preview():
+    """Outlier Mask previews the mask overlaid on its field."""
+    from backend.nodes.outlier_mask import OutlierMask
+    from backend.execution_context import active_node, execution_callbacks
+
+    node = OutlierMask()
+    data = np.zeros((32, 32))
+    data[10, 10] = 100.0
+    field = make_field(data=data)
+
+    previews = []
+    with execution_callbacks(preview=lambda nid, d: previews.append(d)), active_node("test"):
+        mask, = node.process(field, 3.0, "high")
+    assert mask.dtype == np.uint8
+    assert len(previews) == 1
+    assert previews[0].startswith("data:image/png;base64,")
