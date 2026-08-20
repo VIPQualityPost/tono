@@ -53,12 +53,20 @@ class FFT2DInverse:
             data=spatial,
             xreal=xreal,
             yreal=yreal,
-            si_unit_xy="m",
+            si_unit_xy=self._spatial_unit_from_spectral(spectrum.si_unit_xy),
             si_unit_z=z_unit,
             domain="spatial",
             colormap=spectrum.colormap,
         )
         return (out_field,)
+
+    @staticmethod
+    def _spatial_unit_from_spectral(unit: str) -> str:
+        """Invert a spectral axis unit ('1/m' -> 'm', '1/µm' -> 'µm')."""
+        text = str(unit or "").strip()
+        if text.startswith("1/"):
+            return text[2:]
+        return text
 
     def _resolve_amplitude(self, spectrum: DataField, representation: str) -> np.ndarray:
         data = np.asarray(spectrum.data, dtype=np.float64)

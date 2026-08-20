@@ -343,8 +343,8 @@ class Curvature:
             {"quantity": "Center x position",   "value": results["x0"],     "unit": field.si_unit_xy},
             {"quantity": "Center y position",   "value": results["y0"],     "unit": field.si_unit_xy},
             {"quantity": "Center value",        "value": results["z0"],     "unit": field.si_unit_z},
-            {"quantity": "Direction 1",         "value": results["phi1"],   "unit": "deg"},
-            {"quantity": "Direction 2",         "value": results["phi2"],   "unit": "deg"},
+            {"quantity": "Direction 1",         "value": float(np.degrees(results["phi1"])), "unit": "deg"},
+            {"quantity": "Direction 2",         "value": float(np.degrees(results["phi2"])), "unit": "deg"},
         ])
 
         preview_base = render_datafield_preview(field, field.colormap)

@@ -47,6 +47,6 @@ class FFT2D:
         return (
             spatial_frequency_field(field, log_magnitude),
             spatial_frequency_field(field, magnitude),
-            spatial_frequency_field(field, phase),
+            spatial_frequency_field(field, phase, si_unit_z="rad"),
             psdf_field_from_data(field, data),
         )

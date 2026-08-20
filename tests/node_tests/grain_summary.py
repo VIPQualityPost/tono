@@ -21,7 +21,7 @@ def test_grain_summary_basic():
     quantities = [r["quantity"] for r in records]
     assert "Grain count" in quantities
     count_record = [r for r in records if r["quantity"] == "Grain count"][0]
-    assert count_record["value"] == "2"
+    assert count_record["value"] == 2
 
 
 def test_grain_summary_no_grains():
@@ -33,7 +33,7 @@ def test_grain_summary_no_grains():
     records, = node.process(field, mask, 5)
     assert isinstance(records, list)
     count_record = [r for r in records if r["quantity"] == "Grain count"][0]
-    assert count_record["value"] == "0"
+    assert count_record["value"] == 0
 
 
 def test_grain_summary_coverage():

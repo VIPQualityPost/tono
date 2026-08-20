@@ -15,7 +15,7 @@ class FrequencySplit:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-                "cutoff": ("FLOAT", {"default": 0.1, "min": 0.001, "max": 0.5, "step": 0.001}),
+                "cutoff": ("FLOAT", {"default": 0.2, "min": 0.001, "max": 1.0, "step": 0.001}),
             }
         }
 
@@ -27,8 +27,10 @@ class FrequencySplit:
 
     DESCRIPTION = (
         "Separate a field into low-frequency (background) and high-frequency "
-        "(detail) components using FFT. The cutoff is relative to the Nyquist "
-        "frequency (0.5 = no filtering, 0.001 = very aggressive). "
+        "(detail) components using an FFT Gaussian filter. The cutoff is the "
+        "Gaussian sigma as a fraction of the Nyquist frequency — the same "
+        "meaning as the FFTFilter slider: 1.0 leaves the spectrum effectively "
+        "untouched, smaller values cut progressively more."
     )
 
     KEYWORDS = ("lowpass", "highpass", "decompose", "background", "detail")
@@ -42,8 +44,13 @@ class FrequencySplit:
         KX, KY = np.meshgrid(kx, ky)
         K = np.sqrt(KX**2 + KY**2)
 
+        # cutoff is a fraction of Nyquist (0.5 cycles/pixel), matching the
+        # FFTFilter slider semantics; convert to cycles/pixel for the kernel.
+        sigma = cutoff * 0.5
+
         # Gaussian low-pass filter
-        lp_filter = np.exp(-0.5 * (K / cutoff)**2)
+        with np.errstate(divide="ignore"):
+            lp_filter = np.exp(-0.5 * (K / sigma) ** 2)
 
         fft_data = np.fft.fft2(data)
         low = np.real(np.fft.ifft2(fft_data * lp_filter))

@@ -17,7 +17,6 @@ MENU_LAYOUT: dict[str, list[str]] = {
         "ImageDemo",        
         "Folder",
         "SyntheticSurface",
-        "Note",
         "TextNote",
         "Number",
         "RangeSlider",
