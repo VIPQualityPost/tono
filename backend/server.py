@@ -336,19 +336,19 @@ def create_app(
             if not ws.closed:
                 asyncio.run_coroutine_threadsafe(ws.send_str(payload), loop)
 
-    def on_preview(session_id: str, node_id: str, data_uri: str) -> None:
-        broadcast(session_id, {"type": "preview", "data": {"node_id": node_id, "image": data_uri}})
+    def on_preview(session_id: str, node_id: str, data_uri: str, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "preview", "data": {"node_id": node_id, "image": data_uri, "prompt_id": prompt_id}})
 
-    def on_table(session_id: str, node_id: str, rows: list) -> None:
-        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": _sanitize_non_finite(rows)}})
+    def on_table(session_id: str, node_id: str, rows: list, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": _sanitize_non_finite(rows), "prompt_id": prompt_id}})
 
-    def on_mesh(session_id: str, node_id: str, mesh_data: dict) -> None:
-        broadcast(session_id, {"type": "mesh3d", "data": {"node_id": node_id, "mesh": mesh_data}})
+    def on_mesh(session_id: str, node_id: str, mesh_data: dict, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "mesh3d", "data": {"node_id": node_id, "mesh": mesh_data, "prompt_id": prompt_id}})
 
-    def on_overlay(session_id: str, node_id: str, overlay_data) -> None:
-        broadcast(session_id, {"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data}})
+    def on_overlay(session_id: str, node_id: str, overlay_data, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data, "prompt_id": prompt_id}})
 
-    def on_value(session_id: str, node_id: str, payload) -> None:
+    def on_value(session_id: str, node_id: str, payload, prompt_id: str | None = None) -> None:
         if isinstance(payload, dict):
             value = payload.get("value")
             unit = payload.get("unit", "")
@@ -360,15 +360,15 @@ def create_app(
         if isinstance(value, float) and not math.isfinite(value):
             value = "∞" if value > 0 else ("-∞" if math.isinf(value) else "NaN")
 
-        data = {"node_id": node_id, "value": value}
+        data = {"node_id": node_id, "value": value, "prompt_id": prompt_id}
         if isinstance(unit, str) and unit.strip():
             data["unit"] = unit.strip()
         broadcast(session_id, {"type": "scalar", "data": data})
 
-    def on_warning(session_id: str, node_id: str, message: str) -> None:
-        broadcast(session_id, {"type": "node_warning", "data": {"node_id": node_id, "message": message}})
+    def on_warning(session_id: str, node_id: str, message: str, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "node_warning", "data": {"node_id": node_id, "message": message, "prompt_id": prompt_id}})
 
-    def on_file_download(session_id: str, node_id: str, file_path: str) -> None:
+    def on_file_download(session_id: str, node_id: str, file_path: str, prompt_id: str | None = None) -> None:
         token = secrets.token_urlsafe(16)
         path = Path(file_path)
         # Evict the previous pending download for this session (limit one).
@@ -377,7 +377,7 @@ def create_app(
             pending_downloads.pop(prev_token, None)
         pending_downloads[token] = path
         _last_download_token[session_id] = token
-        broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name}})
+        broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name, "prompt_id": prompt_id}})
 
     async def index(request: web.Request) -> web.Response:
         if not getattr(sys, "frozen", False):
@@ -686,7 +686,7 @@ def create_app(
             def on_done(node_id: str, elapsed_ms: float) -> None:
                 broadcast(session_id, {
                     "type": "node_timing",
-                    "data": {"node_id": node_id, "elapsed_ms": elapsed_ms},
+                    "data": {"node_id": node_id, "elapsed_ms": elapsed_ms, "prompt_id": prompt_id},
                 })
                 class_type = normalized_prompt.get(node_id, {}).get("class_type")
                 if class_type:
@@ -699,13 +699,13 @@ def create_app(
                         normalized_prompt,
                         on_node_start=on_start,
                         on_node_done=on_done,
-                        on_preview=lambda node_id, payload: on_preview(session_id, node_id, payload),
-                        on_table=lambda node_id, rows: on_table(session_id, node_id, rows),
-                        on_mesh=lambda node_id, mesh_data: on_mesh(session_id, node_id, mesh_data),
-                        on_overlay=lambda node_id, overlay_data: on_overlay(session_id, node_id, overlay_data),
-                        on_value=lambda node_id, payload: on_value(session_id, node_id, payload),
-                        on_warning=lambda node_id, message: on_warning(session_id, node_id, message),
-                        on_file_download=lambda node_id, file_path: on_file_download(session_id, node_id, file_path),
+                        on_preview=lambda node_id, payload: on_preview(session_id, node_id, payload, prompt_id),
+                        on_table=lambda node_id, rows: on_table(session_id, node_id, rows, prompt_id),
+                        on_mesh=lambda node_id, mesh_data: on_mesh(session_id, node_id, mesh_data, prompt_id),
+                        on_overlay=lambda node_id, overlay_data: on_overlay(session_id, node_id, overlay_data, prompt_id),
+                        on_value=lambda node_id, payload: on_value(session_id, node_id, payload, prompt_id),
+                        on_warning=lambda node_id, message: on_warning(session_id, node_id, message, prompt_id),
+                        on_file_download=lambda node_id, file_path: on_file_download(session_id, node_id, file_path, prompt_id),
                     ),
                 )
                 broadcast(session_id, {"type": "execution_complete", "data": {"prompt_id": prompt_id}})
@@ -713,13 +713,13 @@ def create_app(
                 log.exception("Execution error on node %s", exc.node_id)
                 broadcast(session_id, {
                     "type": "execution_error",
-                    "data": {"node_id": exc.node_id, "message": str(exc)},
+                    "data": {"node_id": exc.node_id, "message": str(exc), "prompt_id": prompt_id},
                 })
             except Exception as exc:
                 log.exception("Execution error")
                 broadcast(session_id, {
                     "type": "execution_error",
-                    "data": {"node_id": "", "message": str(exc)},
+                    "data": {"node_id": "", "message": str(exc), "prompt_id": prompt_id},
                 })
 
         asyncio.ensure_future(run())

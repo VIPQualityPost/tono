@@ -11,6 +11,7 @@ let _sessionId: string | null = null;
 let _ws: WebSocket | null = null;
 let _handler: ((msg: any) => void) | null = null;
 let _reconnectTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+let _manualClose = false;
 
 function generateSessionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -139,7 +140,9 @@ export async function uploadPlugin(
   const fd = new FormData();
   fd.append('file', file);
   const { status, text } = await xhrRequest('POST', '/upload-plugin', fd, { onProgress });
-  if (status === 404) {
+  // The server returns 403 when plugins are disabled in this build and 404
+  // when the endpoint is absent entirely — same user-facing situation.
+  if (status === 403 || status === 404) {
     throw new Error('Plugin upload is not available in this build.');
   }
   if (status < 200 || status >= 300) {
@@ -150,7 +153,10 @@ export async function uploadPlugin(
 
 export async function getChannels(filepath: string) {
   const r = await sessionFetch(`/channels?file=${encodeURIComponent(filepath)}`);
-  if (!r.ok) return [{ name: 'field', type: 'DATA_FIELD' }];
+  // The single-'field' fallback is only for a missing file; real failures
+  // (5xx, permissions) must surface instead of faking a channel list.
+  if (r.status === 404) return [{ name: 'field', type: 'DATA_FIELD' }];
+  if (!r.ok) throw new Error(`Failed to load channels (${r.status})`);
   return r.json();
 }
 
@@ -194,6 +200,7 @@ export function setMessageHandler(fn: ((msg: any) => void) | null) {
 }
 
 export function initWS() {
+  _manualClose = false;
   if (_ws && _ws.readyState < 2) return;
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -205,6 +212,7 @@ export function initWS() {
   };
 
   _ws.onclose = () => {
+    if (_manualClose) return;
     console.log('[tono] WebSocket closed, reconnecting in 3s…');
     clearTimeout(_reconnectTimer);
     _reconnectTimer = setTimeout(() => initWS(), 3000);
@@ -225,6 +233,13 @@ export function initWS() {
 }
 
 export function closeWS() {
+  _manualClose = true;
   clearTimeout(_reconnectTimer);
-  if (_ws) _ws.close();
+  if (_ws) {
+    // Drop the close handler so the async close event cannot re-schedule a
+    // fresh socket after an intentional shutdown.
+    _ws.onclose = null;
+    _ws.close();
+    _ws = null;
+  }
 }

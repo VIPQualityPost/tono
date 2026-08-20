@@ -641,6 +641,16 @@ function Flow() {
   useEffect(() => {
     api.setMessageHandler((msg) => {
       console.log('[tono] WS:', msg.type, msg.data?.node_id || msg.data?.node || '');
+      const wsData = msg.data as any;
+      if (
+        wsData
+        && typeof wsData.prompt_id === 'string'
+        && currentPromptIdRef.current !== null
+        && wsData.prompt_id !== currentPromptIdRef.current
+      ) {
+        // Result from an earlier (slower) run — the user has already moved on.
+        return;
+      }
       switch (msg.type) {
         case 'execution_start':
           setNodes((ns) => ns.map((n) => ({
@@ -664,9 +674,9 @@ function Flow() {
           if (msg.data.node_id) {
             updateNodeData(msg.data.node_id, { error: msg.data.message });
           }
-          if (!msg.data.node_id) {
-            setStatus({ text: 'Error: ' + msg.data.message, level: 'error' });
-          }
+          // Always reach a terminal status: without this the toast stays on
+          // 'Executing node X…' forever after a node-scoped failure.
+          setStatus({ text: 'Error: ' + (msg.data.message || 'Node execution failed'), level: 'error' });
           console.error('[tono] execution error', msg.data);
           break;
         case 'preview':
@@ -1103,6 +1113,17 @@ function Flow() {
 
   // ── Node context value (stable) ─────────────────────────────────────
 
+  // Identity of the most recent /prompt submission. WS messages tagged with
+  // a different prompt_id come from an earlier (possibly slower or errored)
+  // run and must not clobber fresher results.
+  const currentPromptIdRef = useRef<string | null>(null);
+
+  const runPromptWithId = useCallback(async (prompt: Record<string, unknown>) => {
+    const res = await api.runPrompt(prompt);
+    if (res && typeof res.prompt_id === 'string') currentPromptIdRef.current = res.prompt_id;
+    return res;
+  }, []);
+
   const onManualTrigger = useCallback(async (nodeId: string) => {
     const currentNodes = (reactFlow.getNodes() as TonoNode[]);
     const currentEdges = (reactFlow.getEdges() as TonoEdge[]);
@@ -1112,11 +1133,11 @@ function Flow() {
     setStatus({ text: 'Saving…', level: 'info' });
     try {
       await uploadPendingFiles(prompt);
-      await api.runPrompt(prompt);
+      await runPromptWithId(prompt);
     } catch (err: any) {
       setStatus({ text: 'Save failed: ' + err.message, level: 'error' });
     }
-  }, [reactFlow, uploadPendingFiles]);
+  }, [reactFlow, uploadPendingFiles, runPromptWithId]);
 
   const openJournalTab = useCallback(() => {
     setHelpTabs((prev) => {
@@ -1250,11 +1271,11 @@ function Flow() {
     setStatus({ text: 'Running…', level: 'info' });
     try {
       await uploadPendingFiles(prompt);
-      await api.runPrompt(prompt);
+      await runPromptWithId(prompt);
     } catch (err: any) {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     }
-  }, [reactFlow, uploadPendingFiles]);
+  }, [reactFlow, uploadPendingFiles, runPromptWithId]);
 
   // Debounced auto-run via ref to avoid dependency chains
   autoRunRef.current = () => {
@@ -1271,7 +1292,7 @@ function Flow() {
     const prompt = serializeExecutionGraph(currentNodes, currentEdges, { excludeManualTrigger: true });
     if (!prompt || Object.keys(prompt).length === 0) return;
     setStatus({ text: 'Running…', level: 'info' });
-    uploadPendingFiles(prompt).then(() => api.runPrompt(prompt)).catch((err) => {
+    uploadPendingFiles(prompt).then(() => runPromptWithId(prompt)).catch((err) => {
       setStatus({ text: 'Failed: ' + err.message, level: 'error' });
     });
   };
