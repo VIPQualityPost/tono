@@ -160,11 +160,27 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     return new ArrayType(bytes.buffer) as InstanceType<T>;
   }, []);
 
+  // Above this dimension, viewport snapshots are downscaled before encoding:
+  // full devicePixelRatio PNGs dominated multi-megabyte run payloads.
+  const MAX_SNAPSHOT_DIM = 512;
+
   const captureViewportSnapshot = useCallback(() => {
     const canvas = threeRef.current?.renderer?.domElement;
     if (!canvas) return null;
     try {
-      return canvas.toDataURL('image/png');
+      const w = canvas.width;
+      const h = canvas.height;
+      if (w <= MAX_SNAPSHOT_DIM && h <= MAX_SNAPSHOT_DIM) {
+        return canvas.toDataURL('image/png');
+      }
+      const scale = MAX_SNAPSHOT_DIM / Math.max(w, h);
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.round(w * scale));
+      off.height = Math.max(1, Math.round(h * scale));
+      const ctx = off.getContext('2d');
+      if (!ctx) return canvas.toDataURL('image/png');
+      ctx.drawImage(canvas, 0, 0, off.width, off.height);
+      return off.toDataURL('image/png');
     } catch (error: unknown) {
       console.warn('[tono] Failed to capture View3D viewport snapshot', error);
       updateDiagnostics({
@@ -240,6 +256,17 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     });
     scheduleViewportSync(0, true);
   }, [applyCameraState, scheduleViewportSync]);
+
+  // Restore the orbit saved on the node when one is available (live camera
+  // state lives in runtimeValues); absent fields fall back to defaults.
+  const savedCameraState = useCallback((): Record<string, unknown> => {
+    const src = (runtimeValues && typeof runtimeValues === 'object' ? runtimeValues : {}) as Record<string, unknown>;
+    return {
+      azimuth: src.camera_azimuth,
+      polar: src.camera_polar,
+      distance: src.camera_distance,
+    };
+  }, [runtimeValues]);
 
   scheduleViewportSyncRef.current = scheduleViewportSync;
   updateDiagnosticsRef.current = updateDiagnostics;
@@ -331,10 +358,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
     animate();
 
     threeRef.current = { renderer, scene, camera, controls, mesh: null, animId } as ThreeState;
-    applyCameraState({
-      azimuth: DEFAULT_CAMERA_STATE.azimuth,
-      polar: DEFAULT_CAMERA_STATE.polar,
-    });
+    applyCameraState(savedCameraState());
 
     // Resize observer to maintain 1:1 aspect when node width changes
     const ro = new ResizeObserver((entries) => {
@@ -405,6 +429,24 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
       const indexArr = indices ? decode(indices, Uint32Array) : null;
       const vertexColorArr = vertex_colors ? decode(vertex_colors, Uint8Array) : null;
 
+      // Color-only updates (colormap / map_field changes) re-upload just the
+      // color attribute instead of rebuilding geometry, normals and the whole
+      // position buffer on every meshData change.
+      if (!geometryChanged && threeRef.current.mesh) {
+        const colorSource = vertexColorArr ?? colArr;
+        if (colorSource) {
+          const attr = threeRef.current.mesh.geometry.getAttribute('color') as THREE.BufferAttribute | null;
+          if (attr) {
+            for (let i = 0; i < colorSource.length && i < attr.array.length; i += 1) {
+              attr.array[i] = colorSource[i] / 255;
+            }
+            attr.needsUpdate = true;
+          }
+        }
+        scheduleViewportSync(0, false);
+        return;
+      }
+
       // Remove old mesh
       if (threeRef.current.mesh) {
         scene.remove(threeRef.current.mesh);
@@ -431,7 +473,11 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
             const idx = iy * nx + ix;
             const px = (ix / Math.max(nx - 1, 1) - 0.5) * surfaceExtentX;
             const py = (iy / Math.max(ny - 1, 1) - 0.5) * surfaceExtentY;
-            const pz = ((zArr![idx] - z_min) / zRange - 0.5) * z_scale;
+            const zv = zArr![idx];
+            // A single NaN poisons positions, vertex normals and the bounding
+            // box, typically blanking the whole surface; render non-finite
+            // samples flat at the base instead.
+            const pz = Number.isFinite(zv) ? ((zv - z_min) / zRange - 0.5) * z_scale : 0;
 
             positionsArray[idx * 3] = px;
             positionsArray[idx * 3 + 1] = pz;
@@ -512,10 +558,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
         error: '',
       });
       if (geometryChanged) {
-        applyCameraState({
-          azimuth: DEFAULT_CAMERA_STATE.azimuth,
-          polar: DEFAULT_CAMERA_STATE.polar,
-        });
+        applyCameraState(savedCameraState());
         lastGeometrySignatureRef.current = geometrySignature;
       }
       scheduleViewportSync(0, false);
@@ -526,7 +569,7 @@ export default function SurfaceView({ meshData, nodeId, widgetValues, runtimeVal
         error: error instanceof Error ? error.message : String(error),
       });
     }
-  }, [applyCameraState, decode, meshData, scheduleViewportSync, updateDiagnostics]);
+  }, [applyCameraState, decode, meshData, savedCameraState, scheduleViewportSync, updateDiagnostics]);
 
   // Gesture-aware wheel handling: only capture scroll when it started inside the view.
   // Uses capture phase to disable OrbitControls zoom before it fires when gesture started outside.

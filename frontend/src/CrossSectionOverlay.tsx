@@ -39,8 +39,14 @@ export default function CrossSectionOverlay({
   }, []);
 
   const onPointerDown = useCallback((point: string) => (e: React.PointerEvent<Element>) => {
-    if (point === 'p1' && aLocked) return;
-    if (point === 'p2' && bLocked) return;
+    const locked = (point === 'p1' && aLocked) || (point === 'p2' && bLocked);
+    if (locked) {
+      // Inert, not transparent: grabbing a locked marker must not pan the
+      // canvas underneath.
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);

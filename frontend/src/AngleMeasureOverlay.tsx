@@ -149,9 +149,11 @@ export default function AngleMeasureOverlay({
       updateWidgets({ x2: round3(fx), y2: round3(fy) });
     } else if (dragging.handle === 'label') {
       const base = getAngleLabelBasePosition(x1, y1, xm, ym, x2, y2);
+      // Persist the same clamped range the display applies; unbounded offsets
+      // accumulate junk in the saved widget values.
       updateWidgets({
-        label_dx: round3(fx - base.x),
-        label_dy: round3(fy - base.y),
+        label_dx: round3(Math.max(-0.5, Math.min(0.5, fx - base.x))),
+        label_dy: round3(Math.max(-0.5, Math.min(0.5, fy - base.y))),
       });
     }
   }, [dragging, getCoords, updateWidgets, x1, y1, xm, ym, x2, y2]);

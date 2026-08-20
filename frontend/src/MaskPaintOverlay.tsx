@@ -282,6 +282,16 @@ export default function MaskPaintOverlay({
     commitStroke(draftStrokeRef.current);
   }, [commitStroke, drawing]);
 
+  const handlePointerCancel = useCallback(() => {
+    // Interrupted stroke (pointer capture lost to a gesture): drop the draft
+    // so the next interaction starts clean instead of committing a stale
+    // partial stroke.
+    if (!drawing) return;
+    setDrawing(false);
+    draftStrokeRef.current = null;
+    setDraftStroke(null);
+  }, [drawing]);
+
   const handlePointerLeave = useCallback(() => {
     if (!drawing) {
       setCursorPoint(null);
@@ -296,6 +306,7 @@ export default function MaskPaintOverlay({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onLostPointerCapture={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onPointerLeave={handlePointerLeave}
     >
       <img

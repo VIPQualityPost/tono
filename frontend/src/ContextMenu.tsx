@@ -38,6 +38,9 @@ export default function ContextMenu({
   const [menuPos, setMenuPos] = useState({ x, y });
   const subMenuRef = useRef<HTMLDivElement | null>(null);
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
+  // The submenu starts at (0,0) and is repositioned post-paint; keep it
+  // invisible for that first frame instead of flashing at the corner.
+  const [subVisible, setSubVisible] = useState(false);
   const catRowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
@@ -208,7 +211,17 @@ export default function ContextMenu({
     if (sy < 4) sy = 4;
 
     setSubPos({ x: sx, y: sy });
+    setSubVisible(true);
   }, [openCat]);
+
+  // Close the menu with Escape (the only other close path is outside-click).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [onClose]);
 
   const handleCatEnter = useCallback((cat: string) => {
     setOpenCat(cat);
@@ -333,7 +346,7 @@ export default function ContextMenu({
         <div
           className="context-menu ctx-submenu"
           ref={subMenuRef}
-          style={{ left: subPos.x, top: subPos.y }}
+          style={{ left: subPos.x, top: subPos.y, visibility: subVisible ? 'visible' : 'hidden' }}
           onClick={(e) => e.stopPropagation()}
           onMouseLeave={(e) => {
             const related = e.relatedTarget;

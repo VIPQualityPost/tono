@@ -22,7 +22,13 @@ export default function MultiProfileOverlay({
   const pendingCommitRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (pendingCommitRef.current !== null && row === pendingCommitRef.current) {
+    if (pendingCommitRef.current !== null && row !== pendingCommitRef.current) {
+      // The backend clamped/rounded the committed row, so the emitted value
+      // never equals the draft; accept any fresh backend row as ground truth
+      // so the stale draft cannot linger forever.
+      pendingCommitRef.current = null;
+      setDraftRow(null);
+    } else if (pendingCommitRef.current !== null && row === pendingCommitRef.current) {
       pendingCommitRef.current = null;
       setDraftRow(null);
     }
