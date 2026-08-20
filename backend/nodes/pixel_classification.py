@@ -23,7 +23,7 @@ def _compute_curvature(data: np.ndarray) -> np.ndarray:
 
 
 def _feature_maps(data: np.ndarray, feature: str) -> list[np.ndarray]:
-    """Return a list of 2-D feature arrays based on the feature selector."""
+    """Return a list of 2D feature arrays based on the feature selector."""
     height = data.astype(np.float64)
     if feature == "height":
         return [height]

@@ -11,7 +11,7 @@ _MAX_KERNEL_DIM = 51
 
 
 def _parse_kernel(kernel_str: str) -> np.ndarray | None:
-    """Parse a multi-line kernel string into a 2-D float64 array.
+    """Parse a multi-line kernel string into a 2D float64 array.
 
     Returns *None* and issues a warning via emit_warning if the string is
     invalid.  The returned array is always at least 1×1 and at most

@@ -784,7 +784,7 @@ def apply_masking(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np
 
 
 def masked_values(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np.ndarray:
-    """Return the 1-D subset of *data* selected by the masking mode."""
+    """Return the 1D subset of *data* selected by the masking mode."""
     if mask is None or masking == "ignore":
         return data
     # Fancy-indexing with a raw uint8 0/255 mask produces IndexError or

@@ -1,6 +1,6 @@
 # Radial Profile
 
-Compute an **azimuthally averaged** profile around a center point on a DATA_FIELD. At each radius, every pixel in the full 360° ring around the center is averaged together, so the profile is direction-independent — there is no clockwise/counter-clockwise traversal and no start or end point along the ring. The output is a single 1-D profile: value vs. radius.
+Compute an **azimuthally averaged** profile around a center point on a DATA_FIELD. At each radius, every pixel in the full 360° ring around the center is averaged together, so the profile is direction-independent — there is no clockwise/counter-clockwise traversal and no start or end point along the ring. The output is a single 1D profile: value vs. radius.
 
 ## Inputs
 

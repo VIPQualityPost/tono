@@ -96,7 +96,7 @@ def _fit_local_plane_slopes(data: np.ndarray, size: int,
 def _angle_distribution(data: np.ndarray, size: int, steps: int,
                         logscale: bool, fit_plane: bool, kernel_size: int,
                         dx: float, dy: float) -> tuple[np.ndarray, dict]:
-    """Port of angle_dist.c count_angles()/make_datafield(). Returns the 2-D count
+    """Port of angle_dist.c count_angles()/make_datafield(). Returns the 2D count
     histogram and measurement statistics (slope magnitude statistics in radians)."""
     if fit_plane:
         xder, yder = _fit_local_plane_slopes(data, kernel_size, dx, dy)

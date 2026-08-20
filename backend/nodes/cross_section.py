@@ -8,7 +8,7 @@ from backend.nodes.helpers import _extend_to_edges
 
 @register_node(display_name="Cross Section")
 class CrossSection:
-    """Extract a 1-D height profile along an arbitrary line across the image."""
+    """Extract a 1D height profile along an arbitrary line across the image."""
 
     @classmethod
     def INPUT_TYPES(cls):

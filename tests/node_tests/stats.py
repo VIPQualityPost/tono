@@ -85,7 +85,7 @@ def test_stats_empty_inputs():
     except ValueError:
         pass
 
-    # empty LINE (1-D array)
+    # empty LINE (1D array)
     try:
         node.process(np.array([], dtype=np.float64), operation="Rq", column="value")
         assert False, "Expected ValueError for empty LINE"

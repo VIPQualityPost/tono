@@ -32,7 +32,7 @@ def _dehumanize(a: np.ndarray) -> np.ndarray:
 
 
 def _window_vector(size: int, windowing: str) -> np.ndarray:
-    """1-D window functions for the FFT preprocessing."""
+    """1D window functions for the FFT preprocessing."""
     t = (np.arange(size, dtype=np.float64) + 0.5) / float(size)
     if windowing == "none":
         return np.ones(size, dtype=np.float64)
@@ -245,7 +245,7 @@ def _deconvolve_psf_leastsq(meas: np.ndarray, ideal: np.ndarray,
 # --- sigma estimation / measurement helpers ---
 
 def _golden_section_min(func, a: float, b: float) -> float:
-    """1-D golden-section minimisation over [a, b] on a unimodal function."""
+    """1D golden-section minimisation over [a, b] on a unimodal function."""
     gr = (np.sqrt(5.0) - 1.0) / 2.0
     c = b - gr * (b - a)
     d = a + gr * (b - a)

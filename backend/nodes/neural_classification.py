@@ -20,7 +20,7 @@ def _sigmoid(x: np.ndarray) -> np.ndarray:
 
 
 def _extract_features(data: np.ndarray, n_gaussians: int) -> np.ndarray:
-    """Build multi-scale Gaussian feature matrix from 2-D data.
+    """Build multi-scale Gaussian feature matrix from 2D data.
 
     For each scale sigma = 2^i (i = 0 .. n_gaussians-1), compute
     gaussian_filter(data, sigma) and stack as feature columns.

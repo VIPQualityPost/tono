@@ -220,7 +220,7 @@ class TestHDF5Importer:
             path = Path(tmp) / "empty.h5"
             with h5py.File(path, "w") as f:
                 f.create_dataset("vec", data=np.zeros((10,)))
-            with pytest.raises(ValueError, match="No 2-D"):
+            with pytest.raises(ValueError, match="No 2D"):
                 self.mod.load(path)
 
     def test_channel_names_top_level(self):
@@ -323,8 +323,8 @@ class TestErgoHDF5Importer:
             path = Path(tmp) / "mixed.h5"
             with h5py.File(path, "w") as f:
                 f.create_dataset("topo", data=np.zeros((16, 16)))
-                f.create_dataset("vector", data=np.zeros((10,)))    # 1-D, ignored
-                f.create_dataset("volume", data=np.zeros((4, 4, 4)))  # 3-D, ignored
+                f.create_dataset("vector", data=np.zeros((10,)))    # 1D, ignored
+                f.create_dataset("volume", data=np.zeros((4, 4, 4)))  # 3D, ignored
             fields = self.mod.load(path)
             assert len(fields) == 1
 
@@ -334,7 +334,7 @@ class TestErgoHDF5Importer:
             path = Path(tmp) / "empty.h5"
             with h5py.File(path, "w") as f:
                 f.create_dataset("vec", data=np.zeros((10,)))
-            with pytest.raises(ValueError, match="No 2-D"):
+            with pytest.raises(ValueError, match="No 2D"):
                 self.mod.load(path)
 
     def test_channel_names_top_level(self):

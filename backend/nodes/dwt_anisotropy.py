@@ -38,7 +38,7 @@ def _pad_to_pow2(data: np.ndarray) -> np.ndarray:
 
 def _haar_decompose_2d(data: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    One level of 2-D Haar wavelet decomposition.
+    One level of 2D Haar wavelet decomposition.
 
     Returns (LL, LH, HL, HH) each of shape (rows//2, cols//2).
     LL = (a+b+c+d)/2   approximation
@@ -64,7 +64,7 @@ def _compute_dwt_anisotropy(
     n_levels: int,
 ) -> tuple[list[float], list[float], list[float], list[np.ndarray]]:
     """
-    Multi-level 2-D Haar decomposition with per-level energy ratios.
+    Multi-level 2D Haar decomposition with per-level energy ratios.
 
     Returns
     -------
@@ -161,7 +161,7 @@ class DWTAnisotropy:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Quantify surface anisotropy using a multi-level 2-D Haar wavelet decomposition. "
+        "Quantify surface anisotropy using a multi-level 2D Haar wavelet decomposition. "
         "At each level, horizontal (HL) and vertical (LH) detail energies are compared to "
         "produce an X/Y energy ratio. Ratio > 1 indicates more horizontal features; "
         "ratio < 1 indicates more vertical features."

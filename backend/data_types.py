@@ -50,14 +50,14 @@ class LineData:
         data = np.asarray(self.data, dtype=np.float64)
         if data.ndim != 1:
             raise ValueError(
-                f"LineData requires 1-D data, got shape {data.shape}. "
+                f"LineData requires 1D data, got shape {data.shape}. "
                 "Silently flattening would corrupt the plot — fix the producing node instead."
             )
         self.data = data
         if self.x_axis is not None:
             axis = np.asarray(self.x_axis, dtype=np.float64)
             if axis.ndim != 1:
-                raise ValueError(f"LineData x_axis must be 1-D, got shape {axis.shape}")
+                raise ValueError(f"LineData x_axis must be 1D, got shape {axis.shape}")
             if len(axis) != len(self.data):
                 raise ValueError(
                     f"LineData x_axis length {len(axis)} does not match data length {len(self.data)}"
@@ -274,7 +274,7 @@ class DataField:
     def __post_init__(self) -> None:
         self.data = np.asarray(self.data, dtype=np.float64)
         if self.data.ndim != 2:
-            raise ValueError(f"DataField.data must be 2-D, got shape {self.data.shape}")
+            raise ValueError(f"DataField.data must be 2D, got shape {self.data.shape}")
         self.yres, self.xres = self.data.shape
         self.overlays = deepcopy(self.overlays) if isinstance(self.overlays, list) else []
 
@@ -1098,7 +1098,7 @@ def render_datafield_preview(df: DataField, colormap: Any = "gray") -> np.ndarra
 
 def image_to_uint8(image: np.ndarray) -> np.ndarray:
     """
-    Convert an IMAGE (float or uint8, 2-D or 3-D) to uint8 (H,W,3) or (H,W) for PIL.
+    Convert an IMAGE (float or uint8, 2D or 3D) to uint8 (H,W,3) or (H,W) for PIL.
     """
     if image.dtype == np.uint8:
         return image

@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 
 
 def _iter_2d_datasets(h5file):
-    """Yield (name, dataset) for every 2-D numeric dataset in the file.
+    """Yield (name, dataset) for every 2D numeric dataset in the file.
 
     Thumbnail datasets and oversized datasets are skipped so that
     ``channel_names()`` and ``load()`` stay parallel and loading cannot
@@ -190,7 +190,7 @@ def load(path: Path) -> list[DataField]:
     with h5py.File(str(path), "r") as f:
         datasets = _ordered_datasets(f)
         if not datasets:
-            raise ValueError(f"No 2-D numeric datasets found in {path.name}")
+            raise ValueError(f"No 2D numeric datasets found in {path.name}")
 
         fields = []
         for name, ds in datasets:

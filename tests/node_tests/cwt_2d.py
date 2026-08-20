@@ -4,7 +4,7 @@ from tests.node_tests._shared import make_field
 
 
 def _sinusoid(cycles=4, size=64, amplitude=2.0):
-    """2-D sinusoid along x: pure frequency at |k| = cycles with the 2π·cycles
+    """2D sinusoid along x: pure frequency at |k| = cycles with the 2π·cycles
     phase gradient over the row, broadcast to a (size, size) field."""
     j = np.arange(size)[np.newaxis, :]
     return amplitude * np.sin(2.0 * np.pi * cycles * j / size)

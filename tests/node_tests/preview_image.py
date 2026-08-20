@@ -85,7 +85,7 @@ def test_preview_float_grayscale():
     node = PreviewImage()
     captured = []
     with execution_callbacks(preview=lambda nid, d: captured.append(d)), active_node("test"):
-        # float32 2-D array — covers the float normalization branch
+        # float32 2D array — covers the float normalization branch
         float_arr = np.random.default_rng(7).random((16, 16)).astype(np.float32)
         node.preview(colormap="viridis", input=float_arr)
         assert len(captured) == 1

@@ -1,5 +1,5 @@
 """
-Exporter for LINE values (1-D profiles as LineData or bare ndarrays).
+Exporter for LINE values (1D profiles as LineData or bare ndarrays).
 
 PNG / TIFF render a plot image via Pillow; CSV / JSON / NPZ save the raw
 (x, y, unit) arrays. The plot renderer is self-contained (no matplotlib

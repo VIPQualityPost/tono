@@ -114,7 +114,7 @@ def test_step_block_correction_errors():
     with pytest.raises(ValueError, match="scan direction"):
         node.process(field, threshold=2.0, scan_direction="bogus")
 
-    with pytest.raises(ValueError, match="2-D"):
+    with pytest.raises(ValueError, match="2D"):
         bad = field.replace(data=np.zeros(5))
         node.process(bad, threshold=2.0, scan_direction="left_to_right")
 

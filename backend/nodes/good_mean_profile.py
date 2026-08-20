@@ -73,7 +73,7 @@ def _good_profile_multiple(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Mean image, outlier mask and per-column good profile for two images.
 
-    Port of good_profile_do_multiple(): pixels whose |d1-d2| exceeds the
+    Port of good_profile_do_multiple(): pixels whose |d1D2| exceeds the
     (100*(1-trim_fraction))-th percentile (midpoint interpolation) of all
     absolute differences are rejected; the profile is then the column mean
     of the mean image over the remaining pixels.
@@ -142,7 +142,7 @@ class GoodMeanProfile:
     ) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         if data.ndim != 2:
-            raise ValueError("Good Mean Profile requires a 2-D data field.")
+            raise ValueError("Good Mean Profile requires a 2D data field.")
 
         if mode == "single":
             profile_array, low, high = _good_profile_single(data, float(trim_fraction))

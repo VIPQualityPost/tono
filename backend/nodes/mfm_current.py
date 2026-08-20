@@ -77,18 +77,18 @@ class MFMCurrentSimulation:
         xpw2h2 = xpw2**2 + hh  # (x + w/2)^2 + h^2
         xmw2h2 = xmw2**2 + hh  # (x - w/2)^2 + h^2
 
-        # --- Hx (1-D) ---
+        # --- Hx (1D) ---
         # Equivalent to (I / (2 pi w)) * [atan((x+w/2)/h) - atan((x-w/2)/h)]
         hx_1d = m * np.arctan2(height * width, hh + x**2 - w2**2)
 
-        # --- Hz (1-D) ---
+        # --- Hz (1D) ---
         hz_1d = 0.5 * m * np.log(xmw2h2 / xpw2h2)
 
-        # --- dHz/dz (1-D), analytical derivative ---
+        # --- dHz/dz (1D), analytical derivative ---
         t = 1.0 / (xmw2h2 * xpw2h2)
         dhz_dz_1d = m * x * height * width * t
 
-        # Tile 1-D rows into 2-D arrays (field is constant along y).
+        # Tile 1D rows into 2D arrays (field is constant along y).
         hx_2d = np.tile(hx_1d, (yres, 1))
         hz_2d = np.tile(hz_1d, (yres, 1))
 

@@ -18,7 +18,7 @@ Format choices:
   its own title, producing a true multi-channel .gwy file.
 * **HDF5** — generic HDF5 with one ``data`` dataset per layer and physical
   dimensions as dataset attrs. Round-trips via the HDF5 importer (plain
-  datasets without the Ergo sidecar group), which picks up every 2-D numeric
+  datasets without the Ergo sidecar group), which picks up every 2D numeric
   dataset.
 * **HDF5 (Ergo)** — Asylum Research / Ergo layout, one dataset per layer under
   ``Image/DataSet/Resolution 0/Frame 0/<title>/Image`` plus a matching sidecar

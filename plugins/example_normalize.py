@@ -10,8 +10,8 @@ via POST /upload-plugin) — the node will appear in the Add Node menu immediate
   from backend.data_types import DataField           ← the main SPM data type
 
 Other available types (import from backend.data_types as needed):
-  LineData    - 1-D profile data (data, x_axis arrays + units)
-  MeshModel   - 3-D triangle mesh (vertices, faces, colors arrays)
+  LineData    - 1D profile data (data, x_axis arrays + units)
+  MeshModel   - 3D triangle mesh (vertices, faces, colors arrays)
   RecordTable - measurement table (list of dicts with schema)
   IMAGE       - uint8 numpy array (masks, greyscale, RGB images)
 
@@ -19,7 +19,7 @@ Other available types (import from backend.data_types as needed):
 
   ("DATA_FIELD",)              - SPM height/signal field
   ("IMAGE",)                   - mask or image (uint8 ndarray)
-  ("LINE",)                    - 1-D line/profile data
+  ("LINE",)                    - 1D line/profile data
   ("FLOAT", {...options...})   - float number widget
   ("INT",   {...options...})   - integer number widget
   (["choice_a", "choice_b"],)  - dropdown menu
@@ -29,7 +29,7 @@ Other available types (import from backend.data_types as needed):
 
   ("DATA_FIELD", "name")    - SPM field
   ("IMAGE",      "name")    - mask / image
-  ("LINE",       "name")    - 1-D data
+  ("LINE",       "name")    - 1D data
   ("FLOAT",      "name")    - scalar number
   ("RECORD_TABLE","name")   - measurement table
 

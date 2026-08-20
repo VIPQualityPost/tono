@@ -7,7 +7,7 @@ from backend.nodes.helpers import _cached_1d_transfer, _cached_2d_transfer
 
 @register_node(display_name="FFT Filter")
 class FFTFilter:
-    """Frequency-domain filtering of a line profile or 2-D data field.
+    """Frequency-domain filtering of a line profile or 2D data field.
 
     Accepts either a LINE or DATA_FIELD and returns a filtered output of the
     same type.  Uses a Butterworth transfer function with configurable order
@@ -39,8 +39,8 @@ class FFTFilter:
     FUNCTION = "process"
 
     DESCRIPTION = (
-        "Frequency-domain filtering of a line profile or 2-D data field. "
-        "Connect a LINE for 1-D filtering or a DATA_FIELD for 2-D filtering — "
+        "Frequency-domain filtering of a line profile or 2D data field. "
+        "Connect a LINE for 1D filtering or a DATA_FIELD for 2D filtering — "
         "the output mirrors the input type. "
         "Supports lowpass, highpass, bandpass, and notch (band-reject) modes "
         "with a Butterworth roll-off. Cutoffs are fractions of the Nyquist frequency."
