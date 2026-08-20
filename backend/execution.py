@@ -45,6 +45,67 @@ def _is_link(value: Any) -> bool:
     )
 
 
+# Input kinds that resolve to filesystem paths. Nodes consuming these are
+# excluded from the engine result cache — the file loaders keep their own
+# (path, mtime, size) cache, so identical re-runs stay fast while replaced
+# files or changed folder contents always produce fresh results.
+_PATH_INPUT_KINDS = frozenset({"FILE_PICKER", "FILE_PATH", "FOLDER_PICKER", "DIRECTORY"})
+
+
+def get_cacheability(cls: type) -> bool:
+    """Return whether a node class may be served from the persistent result cache."""
+    if getattr(cls, "MANUAL_TRIGGER", False):
+        # Manual triggers (e.g. Save) must re-run on every identical submission;
+        # caching them turned repeated clicks into silent no-ops.
+        return False
+    try:
+        input_types = cls.INPUT_TYPES()
+    except Exception:
+        return True
+    specs: dict[str, Any] = {}
+    if isinstance(input_types, dict):
+        specs.update(input_types.get("required", {}) or {})
+        specs.update(input_types.get("optional", {}) or {})
+    for spec in specs.values():
+        kind = spec[0] if isinstance(spec, (list, tuple)) and spec else None
+        if isinstance(kind, str) and kind in _PATH_INPUT_KINDS:
+            return False
+    return True
+
+
+def coerce_input_value(value: Any, spec: Any, name: str = "value") -> Any:
+    """Coerce a raw widget value into the declared input type.
+
+    INT/FLOAT inputs become int/float and non-finite numerics are rejected;
+    on garbage we raise naming the input instead of passing it through to the
+    node, where the failure would be deep and hard to attribute.
+    """
+    if spec is None:
+        return value
+
+    input_type = spec[0] if isinstance(spec, (list, tuple)) and spec else spec
+    if isinstance(input_type, list):
+        return value
+
+    if input_type in ("INT", "FLOAT"):
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"Expected a numeric value for {input_type} input '{name}', got {value!r}"
+            ) from None
+        if not isfinite(numeric):
+            raise ValueError(
+                f"Expected a finite numeric value for {input_type} input '{name}', got {value!r}"
+            )
+        if input_type == "INT":
+            rounded = int(abs(numeric) + 0.5)
+            return rounded if numeric >= 0 else -rounded
+        return numeric
+
+    return value
+
+
 class NodeExecutionError(Exception):
     """Wraps an error that occurred while executing a specific node."""
     def __init__(self, node_id: str, original: Exception):
@@ -221,52 +282,24 @@ class ExecutionEngine:
                 src_id, slot = value[0], int(value[1])
                 if src_id not in node_outputs:
                     raise KeyError(
-                        f"Node '{src_id}' has no output yet — dependency ordering bug?"
+                        f"Input '{key}' references node '{src_id}', which produced no "
+                        f"output (missing from the workflow, deleted, or failed upstream)."
                     )
                 outputs = node_outputs[src_id]
-                if slot >= len(outputs):
+                if slot < 0 or slot >= len(outputs):
                     raise IndexError(
                         f"Node '{src_id}' only has {len(outputs)} outputs, "
-                        f"but slot {slot} was requested."
+                        f"but slot {slot} was requested by input '{key}'."
                     )
                 resolved_value = outputs[slot]
             else:
                 resolved_value = value
 
-            resolved[key] = self._coerce_input_value(resolved_value, specs.get(key))
+            resolved[key] = coerce_input_value(resolved_value, specs.get(key), name=key)
         return resolved
 
-    def _coerce_input_value(self, value: Any, spec: Any) -> Any:
-        if spec is None:
-            return value
-
-        input_type = spec[0] if isinstance(spec, (list, tuple)) and spec else spec
-        if isinstance(input_type, list):
-            return value
-
-        if input_type == "INT":
-            try:
-                numeric = float(value)
-            except (TypeError, ValueError):
-                return value
-            if not isfinite(numeric):
-                raise ValueError(f"Expected a finite numeric value for INT input, got {value!r}")
-            rounded = int(abs(numeric) + 0.5)
-            return rounded if numeric >= 0 else -rounded
-
-        if input_type == "FLOAT":
-            try:
-                numeric = float(value)
-            except (TypeError, ValueError):
-                return value
-            if not isfinite(numeric):
-                raise ValueError(f"Expected a finite numeric value for FLOAT input, got {value!r}")
-            return numeric
-
-        return value
-
     def _node_cacheable(self, cls: type) -> bool:
-        return not bool(getattr(cls, "manual_trigger", False))
+        return get_cacheability(cls)
 
     def _get_cached_entry(self, node_id: str, class_name: str, input_signature: str) -> dict[str, Any] | None:
         if not self._node_cacheable(NODE_CLASS_MAPPINGS[class_name]):
@@ -327,7 +360,7 @@ class ExecutionEngine:
                 source_signatures = node_output_signatures.get(src_id)
                 if source_signatures is None:
                     raise KeyError(f"Node '{src_id}' has no output signature yet — dependency ordering bug?")
-                if slot >= len(source_signatures):
+                if slot < 0 or slot >= len(source_signatures):
                     raise IndexError(
                         f"Node '{src_id}' only has {len(source_signatures)} output signatures, "
                         f"but slot {slot} was requested."

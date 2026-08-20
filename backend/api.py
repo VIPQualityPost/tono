@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from backend.data_types import DataField, LineData, RecordTable, DataTable, MeshModel
+from backend.execution import coerce_input_value
 
 
 def _ensure_registry() -> None:
@@ -232,6 +233,15 @@ def apply(class_name: str, *args: Any, **kwargs: Any) -> Any:
                 kwargs[name] = meta["default"]
 
     func = getattr(instance, cls.FUNCTION)
+
+    # Normalize declared INT/FLOAT inputs the same way the server-side executor
+    # does, so tono.apply() and the HTTP /prompt engine accept identical input
+    # shapes and reject identical garbage.
+    all_specs: dict[str, Any] = {}
+    all_specs.update(input_types.get("required", {}) or {})
+    all_specs.update(input_types.get("optional", {}) or {})
+    for name, value in list(kwargs.items()):
+        kwargs[name] = coerce_input_value(value, all_specs.get(name), name=name)
 
     # Run inside an execution context so emit_* calls are no-ops
     with execution_callbacks(), active_node("api"):

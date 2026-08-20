@@ -47,10 +47,22 @@ class LineData:
     y_unit: str = ""
 
     def __post_init__(self) -> None:
-        self.data = np.asarray(self.data, dtype=np.float64).ravel()
+        data = np.asarray(self.data, dtype=np.float64)
+        if data.ndim != 1:
+            raise ValueError(
+                f"LineData requires 1-D data, got shape {data.shape}. "
+                "Silently flattening would corrupt the plot — fix the producing node instead."
+            )
+        self.data = data
         if self.x_axis is not None:
-            axis = np.asarray(self.x_axis, dtype=np.float64).ravel()
-            self.x_axis = axis[: len(self.data)]
+            axis = np.asarray(self.x_axis, dtype=np.float64)
+            if axis.ndim != 1:
+                raise ValueError(f"LineData x_axis must be 1-D, got shape {axis.shape}")
+            if len(axis) != len(self.data):
+                raise ValueError(
+                    f"LineData x_axis length {len(axis)} does not match data length {len(self.data)}"
+                )
+            self.x_axis = axis
         else:
             self.x_axis = None
 
