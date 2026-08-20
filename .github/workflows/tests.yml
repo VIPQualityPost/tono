@@ -39,5 +39,5 @@ jobs:
       - name: Run backend tests
         run: python -m pytest -q
 
-      - name: Run frontend lint
-        run: cd frontend && npm run lint && npm run test
+      - name: Run frontend lint and tests
+        run: cd frontend && npm test

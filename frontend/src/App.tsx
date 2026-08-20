@@ -236,6 +236,10 @@ function Flow() {
   const loadNodeOutputRequestVersionsRef = useRef(new Map<string, number>());
   const journalContentRef = useRef('');
   const pendingUndoSnapshotRef = useRef<{ nodes: TonoNode[]; edges: TonoEdge[]; nextId: number } | null>(null);
+  // Identity of the most recent /prompt submission. WS messages tagged with
+  // a different prompt_id come from an earlier (possibly slower or errored)
+  // run and must not clobber fresher results.
+  const currentPromptIdRef = useRef<string | null>(null);
   const reactFlow = useReactFlow<TonoNode, TonoEdge>();
   const updateNodeInternals = useUpdateNodeInternals();
   const undoRedo = useUndoRedo();
@@ -1144,11 +1148,6 @@ function Flow() {
   }, []);
 
   // ── Node context value (stable) ─────────────────────────────────────
-
-  // Identity of the most recent /prompt submission. WS messages tagged with
-  // a different prompt_id come from an earlier (possibly slower or errored)
-  // run and must not clobber fresher results.
-  const currentPromptIdRef = useRef<string | null>(null);
 
   const runPromptWithId = useCallback(async (prompt: Record<string, unknown>) => {
     const res = await api.runPrompt(prompt);
