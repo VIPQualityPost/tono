@@ -321,6 +321,12 @@ function DraggableNumber({ value, step, min, max, precision, onChange }: {
 
   const display = precision != null ? formatSI(Number(value), precision) : String(value);
 
+  // precision===0 means "integer" — rounding must still apply. Only a
+  // positive precision disables rounding (the formatter handles digits).
+  const roundForPrecision = useCallback((raw: number) => (
+    precision != null && precision > 0 ? raw : Math.round(raw)
+  ), [precision]);
+
   const clamp = useCallback((v: number) => {
     let clamped = v;
     if (min != null && clamped < min) clamped = min;
@@ -340,9 +346,9 @@ function DraggableNumber({ value, step, min, max, precision, onChange }: {
     const dx = e.clientX - dragState.current.startX;
     const delta = dx * (step || 0.01);
     const raw = dragState.current.startVal + delta;
-    const rounded = precision != null ? raw : Math.round(raw);
+    const rounded = roundForPrecision(raw);
     onChange(clamp(rounded));
-  }, [step, precision, clamp, onChange]);
+  }, [step, roundForPrecision, clamp, onChange]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragState.current) return;
@@ -364,15 +370,15 @@ function DraggableNumber({ value, step, min, max, precision, onChange }: {
     const delta = (e.deltaY < 0 ? 1 : -1) * baseStep * multiplier;
     const startVal = Number(value);
     const raw = (Number.isFinite(startVal) ? startVal : 0) + delta;
-    const rounded = precision != null ? raw : Math.round(raw);
+    const rounded = roundForPrecision(raw);
     onChange(clamp(rounded));
-  }, [editing, step, value, precision, onChange, clamp]);
+  }, [editing, step, value, roundForPrecision, clamp, onChange]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
     const parsed = parseSI(editText);
-    if (!isNaN(parsed)) onChange(clamp(precision != null ? parsed : Math.round(parsed)));
-  }, [editText, precision, clamp, onChange]);
+    if (!isNaN(parsed)) onChange(clamp(roundForPrecision(parsed)));
+  }, [editText, roundForPrecision, clamp, onChange]);
 
   if (editing) {
     return (
@@ -1107,6 +1113,21 @@ function CustomNode({ id, data }: { id: string; data: NodeData }) {
   }
   if (data.className === 'TextNote') {
     return <TextNoteNode id={id} data={data} />;
+  }
+  if (!def) {
+    // Class missing from the registry (uninstalled plugin, workflow from a
+    // newer build): render a degraded node instead of dereferencing def! and
+    // unmounting the whole canvas.
+    return (
+      <div className="custom-node degraded-node">
+        <div className="node-title drag-handle">
+          <span className="node-title-main">{data.label || String(data.className ?? 'Unknown')}</span>
+        </div>
+        <div className="custom-node-body degraded-note">
+          This node type is not available in the current list of nodes.
+        </div>
+      </div>
+    );
   }
 
   for (const [name, spec] of Object.entries(optional)) {

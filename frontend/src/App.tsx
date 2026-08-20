@@ -217,6 +217,8 @@ function Flow() {
   const reactFlow = useReactFlow<TonoNode, TonoEdge>();
   const updateNodeInternals = useUpdateNodeInternals();
   const undoRedo = useUndoRedo();
+  // Stable callback handles (useUndoRedo returns a fresh object each render).
+  const pushCoalesced = undoRedo.pushCoalesced;
 
   // ── Build version / git info (web and native) ──────────────────────
   useEffect(() => {
@@ -951,6 +953,9 @@ function Flow() {
   // ── Widget change callback ──────────────────────────────────────────
 
   const onWidgetChange = useCallback((nodeId: string, name: string, value: unknown) => {
+    // Record the pre-edit state so widget and overlay edits are undoable;
+    // coalescing collapses a single drag gesture into one history entry.
+    pushCoalesced((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     setNodes((ns) => ns.map((n) => {
       if (n.id !== nodeId) return n;
       return {
@@ -974,7 +979,7 @@ function Flow() {
     }
 
     scheduleAutoRun();
-  }, [reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes]); // scheduleAutoRun is stable (no deps)
+  }, [pushCoalesced, reactFlow, refreshFolderNodeOutputs, refreshLoadNodeOutputs, setNodes]); // scheduleAutoRun is stable (no deps)
 
   // ── File browser ────────────────────────────────────────────────────
 
@@ -1360,6 +1365,7 @@ function Flow() {
 
     if (pasted.nodes.length === 0) return false;
 
+    undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     nextIdRef.current = pasted.nextNodeId;
 
     setNodes((existing) => sortNodesForParentOrder([
@@ -1492,11 +1498,12 @@ function Flow() {
   }), [onRuntimeValuesChange, onWidgetChange, openFileBrowser, onManualTrigger, renameGroup, resizeGroup, toggleGroupCollapse, ungroupGroup, executingNodeId, openHelp]);
 
   const clearGraph = useCallback(() => {
+    undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     setNodes([]);
     setEdges([]);
     nextIdRef.current = 1;
     setStatus({ text: 'Graph cleared.', level: 'info' });
-  }, [setNodes, setEdges]);
+  }, [reactFlow, setNodes, setEdges]);
 
   const applyWorkflowData = useCallback((data: any, { preservedPaths }: { preservedPaths?: Set<unknown> } = {}) => {
     const hydrated = hydrateWorkflowState(data, nodeDefsRef.current, { preservedPaths });
@@ -1958,6 +1965,7 @@ function Flow() {
     );
     if (duplicated.nodes.length === 0) return;
 
+    undoRedo.pushSnapshot((reactFlow.getNodes() as TonoNode[]), (reactFlow.getEdges() as TonoEdge[]), nextIdRef.current);
     nextIdRef.current = duplicated.nextNodeId;
 
     const originPositions = Object.fromEntries(
@@ -2137,6 +2145,14 @@ function Flow() {
   const onNodeDragStop = useCallback((event: any, node: any) => {
     if (String(node.id) !== activeDragNodeIdRef.current) return;
     activeDragNodeIdRef.current = null;
+
+    // A drag can end without a terminating position change (cancel paths);
+    // commit the stashed pre-drag snapshot so the gesture stays undoable.
+    if (pendingUndoSnapshotRef.current) {
+      const s = pendingUndoSnapshotRef.current;
+      undoRedo.pushSnapshot(s.nodes, s.edges, s.nextId);
+      pendingUndoSnapshotRef.current = null;
+    }
 
     const dragState = dragStateRef.current;
     dragStateRef.current = null;
