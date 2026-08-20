@@ -20,7 +20,7 @@ Fit and subtract a least-squares plane from the data. Supports include/exclude m
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| masking | dropdown | ignore | How to use the mask: ignore (use all pixels), include (fit plane to masked pixels only), or exclude (exclude masked pixels from fit) |
+| masking | dropdown | exclude | How to use the mask: ignore (use all pixels), include (fit plane to masked pixels only), or exclude (exclude masked pixels from fit) |
 
 ## Notes
 

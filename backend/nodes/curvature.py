@@ -270,7 +270,7 @@ class Curvature:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-                "masking": (["ignore", "include", "exclude"], {"default": "ignore"}),
+                "masking": (["ignore", "include", "exclude"], {"default": "exclude"}),
             },
             "optional": {
                 "mask": ("IMAGE",),

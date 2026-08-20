@@ -39,7 +39,7 @@ class PlaneLevelField:
         return {
             "required": {
                 "field": ("DATA_FIELD",),
-                "masking": (["ignore", "include", "exclude"], {"default": "ignore"}),
+                "masking": (["ignore", "include", "exclude"], {"default": "exclude"}),
             },
             "optional": {
                 "mask": ("IMAGE",),
@@ -62,7 +62,7 @@ class PlaneLevelField:
     def process(
         self,
         field: DataField,
-        masking: str = "ignore",
+        masking: str = "exclude",
         mask: np.ndarray | None = None,
     ) -> tuple:
         data = field.data.copy()

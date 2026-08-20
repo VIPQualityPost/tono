@@ -22,7 +22,7 @@ Fit a quadratic surface and report the overall principal curvature radii and dir
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| masking | dropdown | ignore | How to use the mask: ignore (fit all pixels), include (fit only masked pixels), or exclude (fit unmasked pixels) |
+| masking | dropdown | exclude | How to use the mask: ignore (fit all pixels), include (fit only masked pixels), or exclude (fit unmasked pixels) |
 
 ## Notes
 
