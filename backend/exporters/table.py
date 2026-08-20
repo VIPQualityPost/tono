@@ -13,7 +13,7 @@ import csv
 import json
 from pathlib import Path
 
-from backend.exporters._base import FormatSpec
+from backend.exporters._base import FormatSpec, sanitize_for_json
 
 accepted_types: tuple[str, ...] = ("RECORD_TABLE", "DATA_TABLE")
 
@@ -26,7 +26,9 @@ FORMATS: dict[str, FormatSpec] = {
 def save(path: Path, value: list, format_name: str, **_opts) -> None:
     rows = list(value)
     if format_name == "JSON":
-        path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+        # Non-finite floats (e.g. inf radii on flat fields) must not produce
+        # bare Infinity/NaN tokens, which are invalid JSON.
+        path.write_text(json.dumps(sanitize_for_json(rows), indent=2), encoding="utf-8")
         return
     if format_name == "CSV":
         columns: list[str] = []

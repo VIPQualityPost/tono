@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from backend.exporters._base import FormatSpec
+from backend.exporters._base import FormatSpec, sanitize_for_json
 
 accepted_types: tuple[str, ...] = ("FLOAT",)
 
@@ -23,6 +23,6 @@ def save(path: Path, value: float, format_name: str, **_opts) -> None:
         path.write_text(f"{numeric}\n", encoding="utf-8")
         return
     if format_name == "JSON":
-        path.write_text(json.dumps({"value": numeric}, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(sanitize_for_json({"value": numeric}), indent=2), encoding="utf-8")
         return
     raise ValueError(f"Format {format_name!r} is not supported for scalar values.")

@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from backend.data_types import LineData, _PREFIXABLE_UNITS, _SI_PREFIXES
-from backend.exporters._base import FormatSpec
+from backend.exporters._base import FormatSpec, sanitize_for_json
 
 accepted_types: tuple[str, ...] = ("LINE",)
 
@@ -52,12 +52,12 @@ def save(path: Path, value, format_name: str, *, plot_title: str = "", **_opts) 
         return
     if format_name == "JSON":
         path.write_text(
-            json.dumps({
+            json.dumps(sanitize_for_json({
                 "x": x.tolist(),
                 "y": y.tolist(),
                 "x_unit": line.x_unit,
                 "y_unit": line.y_unit,
-            }, indent=2),
+            }), indent=2),
             encoding="utf-8",
         )
         return

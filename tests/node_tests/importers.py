@@ -170,7 +170,7 @@ class TestIBWImporter:
 class TestHDF5Importer:
     def setup_method(self):
         pytest.importorskip("h5py")
-        import backend.importers.hdf5 as mod
+        import backend.importers.ergo_hdf5 as mod
         self.mod = mod
 
     def test_calibrated(self):

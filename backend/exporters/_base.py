@@ -34,6 +34,28 @@ class FormatSpec:
     label: str = ""
 
 
+def sanitize_for_json(obj: Any) -> Any:
+    """Recursively replace non-finite floats so json.dumps stays valid JSON.
+
+    json.dumps emits bare ``NaN`` / ``Infinity`` tokens by default, which are
+    not valid JSON and break every strict consumer. Non-finite values become
+    the strings ``"NaN"`` / ``"∞"`` / ``"-∞"``.
+    """
+    import math
+
+    if isinstance(obj, float):
+        if math.isnan(obj):
+            return "NaN"
+        if math.isinf(obj):
+            return "∞" if obj > 0 else "-∞"
+        return obj
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(v) for v in obj]
+    return obj
+
+
 @runtime_checkable
 class Exporter(Protocol):
     """Structural protocol satisfied by every module in backend.exporters."""
@@ -57,4 +79,4 @@ class Exporter(Protocol):
 
 
 # Re-exported so modules can write `from backend.exporters._base import FormatSpec`.
-__all__ = ["FormatSpec", "Exporter"]
+__all__ = ["FormatSpec", "Exporter", "sanitize_for_json"]
