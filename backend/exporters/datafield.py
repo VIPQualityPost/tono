@@ -17,12 +17,13 @@ Format choices:
   save writes one channel per layer (``/0/data``, ``/1/data``, …), each with
   its own title, producing a true multi-channel .gwy file.
 * **HDF5** — generic HDF5 with one ``data`` dataset per layer and physical
-  dimensions as dataset attrs. Round-trips via our generic ``hdf5`` importer,
-  which picks up every 2-D numeric dataset.
+  dimensions as dataset attrs. Round-trips via the HDF5 importer (plain
+  datasets without the Ergo sidecar group), which picks up every 2D numeric
+  dataset.
 * **HDF5 (Ergo)** — Asylum Research / Ergo layout, one dataset per layer under
   ``Image/DataSet/Resolution 0/Frame 0/<title>/Image`` plus a matching sidecar
   group ``Image/DataSetInfo/Global/Channels/<title>/ImageDims``. Round-trips
-  via our ``ergo_hdf5`` importer and opens in Ergo / Igor.
+  via the Ergo layout importer and opens in Ergo / Igor.
 
 Mixed layer stacks (DataField + Image) are supported for TIFF (data) and NPZ
 only; the physics-carrying formats (GWY, HDF5, HDF5 Ergo) require every layer

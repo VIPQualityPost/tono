@@ -32,15 +32,26 @@ function pickWithInput({ directory = false } = {}): Promise<File[]> {
       input.accept = FILE_ACCEPT;
     }
 
-    const cleanup = () => {
+    let settled = false;
+    let onFocus: (() => void) | null = null;
+    const settle = (files: File[]) => {
+      if (settled) return;
+      settled = true;
+      if (onFocus) window.removeEventListener('focus', onFocus);
       input.remove();
+      resolve(files);
     };
 
+    // Cancel has no 'change' event; the window regains focus when the native
+    // dialog closes without a selection (with a selection, 'change' fires
+    // first and settles the promise before focus returns).
+    onFocus = () => settle([]);
+    window.addEventListener('focus', onFocus);
+
     input.addEventListener('change', () => {
-      const files = Array.from(input.files || []);
-      cleanup();
-      resolve(files);
+      settle(Array.from(input.files || []));
     }, { once: true });
+    input.addEventListener('cancel', () => settle([]), { once: true });
 
     document.body.appendChild(input);
     input.click();

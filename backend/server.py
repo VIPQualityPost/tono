@@ -38,6 +38,7 @@ import secrets
 import shutil
 import sys
 import time
+import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
@@ -52,10 +53,12 @@ from backend.session_runtime import (
     SESSION_HEADER,
     SESSION_QUERY,
     ensure_session_runtime_dirs,
+    is_path_within,
     normalize_relative_upload_path,
     resolve_client_path,
     server_path_to_client_path,
     session_input_dir,
+    session_output_dir,
     session_root_dir,
     session_upload_uri,
     validate_session_id,
@@ -173,7 +176,10 @@ class _SafeEncoder(json.JSONEncoder):
         if isinstance(obj, (np.integer,)):
             return int(obj)
         if isinstance(obj, (np.floating,)):
-            return float(obj)
+            value = float(obj)
+            if not math.isfinite(value):
+                return "NaN" if math.isnan(value) else ("∞" if value > 0 else "-∞")
+            return value
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super().default(obj)
@@ -309,6 +315,16 @@ def create_app(
                 if not isinstance(input_type, str):
                     continue
                 if input_type not in PATH_INPUT_TYPES:
+                    # Browser sessions cannot write outside the sandbox;
+                    # absolute Save filenames would be written verbatim by the
+                    # exporters, so reduce them to a plain name (relative paths
+                    # already land in the session download dir).
+                    if (
+                        not allow_local_filesystem
+                        and input_name == "filename"
+                        and Path(raw_value).is_absolute()
+                    ):
+                        inputs[input_name] = Path(raw_value).name
                     continue
 
                 inputs[input_name] = str(resolve_request_path(session_id, raw_value))
@@ -320,19 +336,19 @@ def create_app(
             if not ws.closed:
                 asyncio.run_coroutine_threadsafe(ws.send_str(payload), loop)
 
-    def on_preview(session_id: str, node_id: str, data_uri: str) -> None:
-        broadcast(session_id, {"type": "preview", "data": {"node_id": node_id, "image": data_uri}})
+    def on_preview(session_id: str, node_id: str, data_uri: str, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "preview", "data": {"node_id": node_id, "image": data_uri, "prompt_id": prompt_id}})
 
-    def on_table(session_id: str, node_id: str, rows: list) -> None:
-        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": _sanitize_non_finite(rows)}})
+    def on_table(session_id: str, node_id: str, rows: list, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "table", "data": {"node_id": node_id, "rows": _sanitize_non_finite(rows), "prompt_id": prompt_id}})
 
-    def on_mesh(session_id: str, node_id: str, mesh_data: dict) -> None:
-        broadcast(session_id, {"type": "mesh3d", "data": {"node_id": node_id, "mesh": mesh_data}})
+    def on_mesh(session_id: str, node_id: str, mesh_data: dict, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "mesh3d", "data": {"node_id": node_id, "mesh": mesh_data, "prompt_id": prompt_id}})
 
-    def on_overlay(session_id: str, node_id: str, overlay_data) -> None:
-        broadcast(session_id, {"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data}})
+    def on_overlay(session_id: str, node_id: str, overlay_data, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "overlay", "data": {"node_id": node_id, "overlay": overlay_data, "prompt_id": prompt_id}})
 
-    def on_value(session_id: str, node_id: str, payload) -> None:
+    def on_value(session_id: str, node_id: str, payload, prompt_id: str | None = None) -> None:
         if isinstance(payload, dict):
             value = payload.get("value")
             unit = payload.get("unit", "")
@@ -344,15 +360,15 @@ def create_app(
         if isinstance(value, float) and not math.isfinite(value):
             value = "∞" if value > 0 else ("-∞" if math.isinf(value) else "NaN")
 
-        data = {"node_id": node_id, "value": value}
+        data = {"node_id": node_id, "value": value, "prompt_id": prompt_id}
         if isinstance(unit, str) and unit.strip():
             data["unit"] = unit.strip()
         broadcast(session_id, {"type": "scalar", "data": data})
 
-    def on_warning(session_id: str, node_id: str, message: str) -> None:
-        broadcast(session_id, {"type": "node_warning", "data": {"node_id": node_id, "message": message}})
+    def on_warning(session_id: str, node_id: str, message: str, prompt_id: str | None = None) -> None:
+        broadcast(session_id, {"type": "node_warning", "data": {"node_id": node_id, "message": message, "prompt_id": prompt_id}})
 
-    def on_file_download(session_id: str, node_id: str, file_path: str) -> None:
+    def on_file_download(session_id: str, node_id: str, file_path: str, prompt_id: str | None = None) -> None:
         token = secrets.token_urlsafe(16)
         path = Path(file_path)
         # Evict the previous pending download for this session (limit one).
@@ -361,7 +377,7 @@ def create_app(
             pending_downloads.pop(prev_token, None)
         pending_downloads[token] = path
         _last_download_token[session_id] = token
-        broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name}})
+        broadcast(session_id, {"type": "file_download", "data": {"node_id": node_id, "token": token, "filename": path.name, "prompt_id": prompt_id}})
 
     async def index(request: web.Request) -> web.Response:
         if not getattr(sys, "frozen", False):
@@ -375,7 +391,7 @@ def create_app(
                         logger=log,
                     ),
                 )
-            except FrontendBuildError as exc:
+            except (FrontendBuildError, FileNotFoundError) as exc:
                 log.error("Unable to refresh frontend build: %s", exc)
                 return web.Response(status=500, text=str(exc), content_type="text/plain")
 
@@ -422,11 +438,12 @@ def create_app(
         name = request.rel_url.query.get("name", "").strip()
         if not name:
             raise web.HTTPBadRequest(reason="Missing 'name' query parameter")
-        docs_dir = project_root() / "docs" / "nodes"
+        docs_dir = (project_root() / "docs" / "nodes").resolve()
         # Try exact match first, then fall back to replacing " / " with "-"
-        candidates = [docs_dir / f"{name}.md", docs_dir / f"{name.replace(' / ', '-')}.md"]
-        for path in candidates:
-            if path.exists() and path.is_file():
+        candidates = [f"{name}.md", f"{name.replace(' / ', '-')}.md"]
+        for raw in candidates:
+            path = (docs_dir / raw).resolve(strict=False)
+            if is_path_within(docs_dir, path) and path.is_file():
                 return web.Response(text=path.read_text(encoding="utf-8"), content_type="text/plain")
         raise web.HTTPNotFound(reason=f"No documentation found for '{name}'")
 
@@ -590,8 +607,12 @@ def create_app(
         )
 
     async def download_saved_file(request: web.Request) -> web.Response:
+        session_id = require_session_id(request)
         token = request.match_info["token"]
+        if _last_download_token.get(session_id) != token:
+            raise web.HTTPNotFound(reason="File not found")
         path = pending_downloads.pop(token, None)
+        _last_download_token.pop(session_id, None)
         if path is None or not path.is_file():
             raise web.HTTPNotFound(reason="File not found")
         filename = _sanitize_filename(path.name, "download")
@@ -601,12 +622,19 @@ def create_app(
         )
 
     async def save_workflow_png(request: web.Request) -> web.Response:
+        session_id = require_session_id(request)
         body = await request.read()
         target_path = request.query.get("path", "")
         if not target_path:
             raise web.HTTPBadRequest(reason="Missing path")
         try:
-            saved_path = save_png_bytes(target_path, body)
+            if allow_local_filesystem:
+                saved_path = save_png_bytes(target_path, body)
+            else:
+                # Browser sessions may only write inside the session workspace.
+                relative = normalize_relative_upload_path(target_path)
+                dest = session_output_dir(session_id) / Path(relative.as_posix())
+                saved_path = save_png_bytes(str(dest), body)
         except ValueError as exc:
             raise web.HTTPBadRequest(reason=str(exc)) from exc
         return web.Response(
@@ -658,7 +686,7 @@ def create_app(
             def on_done(node_id: str, elapsed_ms: float) -> None:
                 broadcast(session_id, {
                     "type": "node_timing",
-                    "data": {"node_id": node_id, "elapsed_ms": elapsed_ms},
+                    "data": {"node_id": node_id, "elapsed_ms": elapsed_ms, "prompt_id": prompt_id},
                 })
                 class_type = normalized_prompt.get(node_id, {}).get("class_type")
                 if class_type:
@@ -671,13 +699,13 @@ def create_app(
                         normalized_prompt,
                         on_node_start=on_start,
                         on_node_done=on_done,
-                        on_preview=lambda node_id, payload: on_preview(session_id, node_id, payload),
-                        on_table=lambda node_id, rows: on_table(session_id, node_id, rows),
-                        on_mesh=lambda node_id, mesh_data: on_mesh(session_id, node_id, mesh_data),
-                        on_overlay=lambda node_id, overlay_data: on_overlay(session_id, node_id, overlay_data),
-                        on_value=lambda node_id, payload: on_value(session_id, node_id, payload),
-                        on_warning=lambda node_id, message: on_warning(session_id, node_id, message),
-                        on_file_download=lambda node_id, file_path: on_file_download(session_id, node_id, file_path),
+                        on_preview=lambda node_id, payload: on_preview(session_id, node_id, payload, prompt_id),
+                        on_table=lambda node_id, rows: on_table(session_id, node_id, rows, prompt_id),
+                        on_mesh=lambda node_id, mesh_data: on_mesh(session_id, node_id, mesh_data, prompt_id),
+                        on_overlay=lambda node_id, overlay_data: on_overlay(session_id, node_id, overlay_data, prompt_id),
+                        on_value=lambda node_id, payload: on_value(session_id, node_id, payload, prompt_id),
+                        on_warning=lambda node_id, message: on_warning(session_id, node_id, message, prompt_id),
+                        on_file_download=lambda node_id, file_path: on_file_download(session_id, node_id, file_path, prompt_id),
                     ),
                 )
                 broadcast(session_id, {"type": "execution_complete", "data": {"prompt_id": prompt_id}})
@@ -685,13 +713,13 @@ def create_app(
                 log.exception("Execution error on node %s", exc.node_id)
                 broadcast(session_id, {
                     "type": "execution_error",
-                    "data": {"node_id": exc.node_id, "message": str(exc)},
+                    "data": {"node_id": exc.node_id, "message": str(exc), "prompt_id": prompt_id},
                 })
             except Exception as exc:
                 log.exception("Execution error")
                 broadcast(session_id, {
                     "type": "execution_error",
-                    "data": {"node_id": "", "message": str(exc)},
+                    "data": {"node_id": "", "message": str(exc), "prompt_id": prompt_id},
                 })
 
         asyncio.ensure_future(run())
@@ -835,16 +863,35 @@ def create_app(
         app.router.add_static("/static", FRONTEND_DIR)
     app.router.add_get("/{filename}", dist_file)
 
+    def _is_same_origin(request: web.Request, origin: str) -> bool:
+        """True when *origin* is this server's own scheme://host:port."""
+        if not origin:
+            return False
+        try:
+            parts = urllib.parse.urlsplit(origin)
+        except ValueError:
+            return False
+        if parts.scheme not in ("http", "https"):
+            return False
+        return parts.netloc == request.headers.get("Host", "")
+
     async def _cors_middleware(app_, handler):
         async def middleware(request):
+            origin = request.headers.get("Origin", "")
             if request.method == "OPTIONS":
-                return web.Response(headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                    "Access-Control-Allow-Headers": f"Content-Type, {SESSION_HEADER}",
-                })
+                response = web.Response()
+                if _is_same_origin(request, origin):
+                    response.headers["Access-Control-Allow-Origin"] = origin
+                    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+                    response.headers["Access-Control-Allow-Headers"] = f"Content-Type, {SESSION_HEADER}"
+                return response
             response = await handler(request)
-            response.headers["Access-Control-Allow-Origin"] = "*"
+            # Same-origin responses get an explicit echo; everything else
+            # (cross-site pages, LAN peers) is served without CORS headers so
+            # browsers refuse to expose the response to foreign origins.
+            # WebSocket responses cannot be mutated after prepare().
+            if _is_same_origin(request, origin) and not isinstance(response, web.WebSocketResponse):
+                response.headers["Access-Control-Allow-Origin"] = origin
             return response
 
         return middleware

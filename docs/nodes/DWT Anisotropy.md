@@ -1,6 +1,6 @@
 # DWT Anisotropy
 
-Quantify surface anisotropy using a multi-level 2-D Haar wavelet decomposition. At each decomposition level, horizontal and vertical detail energies are compared to produce an X/Y energy ratio.
+Quantify surface anisotropy using a multi-level 2D Haar wavelet decomposition. At each decomposition level, horizontal and vertical detail energies are compared to produce an X/Y energy ratio.
 
 ## Inputs
 

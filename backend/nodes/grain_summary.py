@@ -62,19 +62,19 @@ class GrainSummary:
 
         records = RecordTable()
         n_valid = len(areas)
-        records.append({"quantity": "Grain count", "value": str(n_valid), "unit": ""})
-        records.append({"quantity": "Grain density", "value": f"{n_valid / total_area:.4g}" if total_area > 0 else "0", "unit": f"1/{_square_unit(xy_unit)}"})
+        records.append({"quantity": "Grain count", "value": n_valid, "unit": ""})
+        records.append({"quantity": "Grain density", "value": float(n_valid / total_area) if total_area > 0 else 0.0, "unit": f"1/{_square_unit(xy_unit)}"})
 
         coverage = sum(areas) / total_area if total_area > 0 else 0.0
-        records.append({"quantity": "Coverage fraction", "value": f"{coverage:.4f}", "unit": ""})
+        records.append({"quantity": "Coverage fraction", "value": float(coverage), "unit": ""})
 
         if n_valid > 0:
-            records.append({"quantity": "Mean area", "value": f"{np.mean(areas):.4g}", "unit": _square_unit(xy_unit)})
-            records.append({"quantity": "Median area", "value": f"{np.median(areas):.4g}", "unit": _square_unit(xy_unit)})
-            records.append({"quantity": "Total volume", "value": f"{sum(volumes):.4g}", "unit": f"{_square_unit(xy_unit)}·{z_unit}"})
-            records.append({"quantity": "Mean height", "value": f"{np.mean(heights):.4g}", "unit": z_unit})
-            records.append({"quantity": "Median height", "value": f"{np.median(heights):.4g}", "unit": z_unit})
-            records.append({"quantity": "Max area", "value": f"{max(areas):.4g}", "unit": _square_unit(xy_unit)})
-            records.append({"quantity": "Min area", "value": f"{min(areas):.4g}", "unit": _square_unit(xy_unit)})
+            records.append({"quantity": "Mean area", "value": float(np.mean(areas)), "unit": _square_unit(xy_unit)})
+            records.append({"quantity": "Median area", "value": float(np.median(areas)), "unit": _square_unit(xy_unit)})
+            records.append({"quantity": "Total volume", "value": float(sum(volumes)), "unit": f"{_square_unit(xy_unit)}·{z_unit}"})
+            records.append({"quantity": "Mean height", "value": float(np.mean(heights)), "unit": z_unit})
+            records.append({"quantity": "Median height", "value": float(np.median(heights)), "unit": z_unit})
+            records.append({"quantity": "Max area", "value": float(max(areas)), "unit": _square_unit(xy_unit)})
+            records.append({"quantity": "Min area", "value": float(min(areas)), "unit": _square_unit(xy_unit)})
 
         return (records,)

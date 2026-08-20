@@ -84,7 +84,7 @@ def _product_unit(*units: str) -> str:
     return " ".join(parts)
 
 
-def spatial_frequency_field(field: DataField, data: np.ndarray) -> DataField:
+def spatial_frequency_field(field: DataField, data: np.ndarray, *, si_unit_z: str | None = None) -> DataField:
     return DataField(
         data=np.asarray(data, dtype=np.float64),
         xreal=float(field.xres / field.xreal),
@@ -92,7 +92,7 @@ def spatial_frequency_field(field: DataField, data: np.ndarray) -> DataField:
         xoff=float(-0.5 * field.xres / field.xreal),
         yoff=float(-0.5 * field.yres / field.yreal),
         si_unit_xy=_inverse_unit(field.si_unit_xy),
-        si_unit_z=field.si_unit_z,
+        si_unit_z=field.si_unit_z if si_unit_z is None else si_unit_z,
         domain="frequency",
         colormap=field.colormap,
     )

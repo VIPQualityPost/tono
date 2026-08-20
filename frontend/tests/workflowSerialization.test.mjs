@@ -136,7 +136,9 @@ test('hydrateWorkflowState clears shared path widgets and uses registry definiti
   const hydrated = hydrateWorkflowState(saved, defs);
 
   assert.equal(hydrated.nextNodeId, 13);
-  assert.deepEqual(hydrated.edges, saved.edges);
+  // The saved edge targets node '3', which is not in the payload — hydration
+  // must drop dangling edges instead of rendering phantom connections.
+  assert.deepEqual(hydrated.edges, []);
   assert.equal(hydrated.nodes[0].type, 'custom');
   assert.equal(hydrated.nodes[0].dragHandle, '.drag-handle');
   assert.equal(hydrated.nodes[0].data.label, 'Image');
@@ -191,7 +193,8 @@ test('serializeWorkflowState and hydrateWorkflowState clear path-like widgets wi
   assert.deepEqual(hydrated.nodes[0].data.widgetValues, { filename: '', colormap: 'gray' });
   assert.deepEqual(hydrated.nodes[0].data.definition.output, ['DATA_FIELD']);
   assert.deepEqual(hydrated.nodes[0].data.definition.output_name, ['field']);
-  assert.deepEqual(hydrated.edges, edges);
+  // Edge e7-9 points at node '9', which is not in the payload — pruned.
+  assert.deepEqual(hydrated.edges, []);
 });
 
 test('hydrateWorkflowState clears saved folder selections on shared workflows', () => {

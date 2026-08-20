@@ -550,7 +550,9 @@ def _butterworth_hp(freq, cutoff, order):
 
 
 def _build_1d_transfer(n, filter_type, cutoff, cutoff_high, order):
-    freq = np.linspace(0, 1, n // 2 + 1)
+    # rfft bins sit at fftfreq(n)/0.5 (normalized so 1.0 == Nyquist).
+    # linspace(0, 1, n//2+1) mis-samples every bin for odd n.
+    freq = np.fft.rfftfreq(n) / 0.5
 
     if filter_type == "lowpass":
         H = _butterworth_lp(freq, cutoff, order)
@@ -782,9 +784,12 @@ def apply_masking(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np
 
 
 def masked_values(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np.ndarray:
-    """Return the 1-D subset of *data* selected by the masking mode."""
+    """Return the 1D subset of *data* selected by the masking mode."""
     if mask is None or masking == "ignore":
         return data
+    # Fancy-indexing with a raw uint8 0/255 mask produces IndexError or
+    # silently wrong rows; a boolean mask is the only safe contract.
+    mask = np.asarray(mask, dtype=bool)
     if masking == "include":
         return data[mask]
     if masking == "exclude":

@@ -76,7 +76,9 @@ export function hydrateWorkflowState(data: SerializedWorkflow | null | undefined
     };
   }));
 
-  const edges = loadedEdges.map((edge) => ({ ...edge }));
+  const edges = loadedEdges
+    .filter((edge) => nodes.some((n) => n.id === edge.source) && nodes.some((n) => n.id === edge.target))
+    .map((edge) => ({ ...edge }));
 
   const nextNodeId = Math.max(0, ...loadedNodes.map((node) => parseInt(node.id, 10) || 0)) + 1;
 

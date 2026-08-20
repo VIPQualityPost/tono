@@ -1,6 +1,6 @@
 # Flatten
 
-Fit and subtract a least-squares plane, then re-offset every row so its usable (unmasked) pixels share one level. The row alignment removes per-row scan DC offsets that no single plane can represent, which recovers a flat grating from raw unleveled rows.
+Fit and subtract a least-squares plane, then re-offset every row so its usable (unmasked) pixels share one level.
 
 ## Inputs
 
@@ -25,5 +25,5 @@ Fit and subtract a least-squares plane, then re-offset every row so its usable (
 ## Notes
 
 - Mask the pits (exclude is the default) so they do not bias the background fit; everything unmasked is treated as background.
-- Rows are always re-offset after the plane subtraction: each row's usable pixels are brought to the landing level (rows without masked pixels, or the global usable level when no mask is used). Flat rows and the areas between pits end up on one level, reconstructing a flat grating from uncorrected rows.
+- Rows are always re-offset after the plane subtraction: each row's usable pixels are brought to the landing level (rows without masked pixels, or the global usable level when no mask is used).
 - When masking is include or exclude, the background region must contain at least three non-collinear pixels to fit a plane.

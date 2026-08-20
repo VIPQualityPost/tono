@@ -13,7 +13,7 @@ from backend.nodes.helpers import mask_to_bool
 def _normalize_mask(mask: np.ndarray) -> np.ndarray:
     data = np.asarray(mask)
     if data.ndim != 2:
-        raise ValueError("Grain Distance Transform requires a 2-D mask.")
+        raise ValueError("Grain Distance Transform requires a 2D mask.")
     return mask_to_bool(data)
 
 

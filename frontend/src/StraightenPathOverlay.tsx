@@ -24,7 +24,7 @@ function pointsToStrings(points: Point[]) {
   };
 }
 
-// Solve a 1-D natural cubic spline (matches scipy.interpolate.CubicSpline with
+// Solve a 1D natural cubic spline (matches scipy.interpolate.CubicSpline with
 // bc_type="natural") and return a function that evaluates it at any t.
 function naturalCubicSpline(t: number[], y: number[]): (tq: number) => number {
   const n = t.length;

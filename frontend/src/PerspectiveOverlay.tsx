@@ -72,7 +72,20 @@ export default function PerspectiveOverlay({
     setDraft((prev) => {
       if (!prev) return prev;
       const next = [...prev];
-      next[idx] = { x: cx, y: cy };
+      // Keep a minimum separation from the adjacent corners so the quad
+      // cannot degenerate — the backend solves the homography with lstsq and
+      // silently emits garbage when two corners coincide.
+      const MIN_SEP = 0.02;
+      const clampBetween = (v: number, lo: number, hi: number) => (
+        hi >= lo ? Math.min(Math.max(v, lo), hi) : (lo + hi) / 2
+      );
+      const nextX = clampBetween(cx,
+        Math.max(next[(idx + 1) % 4].x, next[(idx + 3) % 4].x) + MIN_SEP,
+        Math.min(next[(idx + 1) % 4].x, next[(idx + 3) % 4].x) - MIN_SEP);
+      const nextY = clampBetween(cy,
+        Math.max(next[(idx + 1) % 4].y, next[(idx + 3) % 4].y) + MIN_SEP,
+        Math.min(next[(idx + 1) % 4].y, next[(idx + 3) % 4].y) - MIN_SEP);
+      next[idx] = { x: nextX, y: nextY };
       return next;
     });
   }, []);

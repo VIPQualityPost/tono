@@ -85,13 +85,22 @@ def ensure_frontend_dist_ready(
         if logger is not None:
             logger.info("Frontend sources changed; rebuilding frontend/dist before serving the web app.")
 
-        result = subprocess.run(
-            [_npm_executable(), "run", "build"],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                [_npm_executable(), "run", "build"],
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=900,
+            )
+        except FileNotFoundError as exc:
+            raise FrontendBuildError(
+                "npm was not found — install Node.js, then run `npm --prefix frontend install` "
+                "and open this page again."
+            ) from exc
+        except subprocess.TimeoutExpired as exc:
+            raise FrontendBuildError("Frontend build timed out after 15 minutes.") from exc
         if result.returncode != 0:
             detail = _format_build_output(result.stdout, result.stderr)
             message = (

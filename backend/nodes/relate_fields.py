@@ -37,30 +37,33 @@ class RelateFields:
 
     def process(self, field_a: DataField, field_b: DataField,
                 function: str) -> tuple:
+        if field_a.data.shape != field_b.data.shape:
+            raise ValueError(
+                "Relate Fields requires equally shaped fields; "
+                f"got {field_a.data.shape} and {field_b.data.shape}."
+            )
         a = np.asarray(field_a.data, dtype=np.float64).ravel()
         b = np.asarray(field_b.data, dtype=np.float64).ravel()
-        n = min(len(a), len(b))
-        a, b = a[:n], b[:n]
 
         records = RecordTable()
 
         if function == "linear":
             coeffs = np.polyfit(a, b, 1)
             predicted = np.polyval(coeffs, a)
-            records.append({"quantity": "slope", "value": f"{coeffs[0]:.6g}", "unit": ""})
-            records.append({"quantity": "intercept", "value": f"{coeffs[1]:.6g}", "unit": ""})
+            records.append({"quantity": "slope", "value": float(coeffs[0]), "unit": ""})
+            records.append({"quantity": "intercept", "value": float(coeffs[1]), "unit": ""})
 
         elif function == "quadratic":
             coeffs = np.polyfit(a, b, 2)
             predicted = np.polyval(coeffs, a)
             for i, name in enumerate(["a2", "a1", "a0"]):
-                records.append({"quantity": name, "value": f"{coeffs[i]:.6g}", "unit": ""})
+                records.append({"quantity": name, "value": float(coeffs[i]), "unit": ""})
 
         elif function == "cubic":
             coeffs = np.polyfit(a, b, 3)
             predicted = np.polyval(coeffs, a)
             for i, name in enumerate(["a3", "a2", "a1", "a0"]):
-                records.append({"quantity": name, "value": f"{coeffs[i]:.6g}", "unit": ""})
+                records.append({"quantity": name, "value": float(coeffs[i]), "unit": ""})
 
         elif function == "power":
             # b = c * a^n  →  log(b) = log(c) + n*log(a)
@@ -73,8 +76,8 @@ class RelateFields:
                 n_exp = log_coeffs[0]
                 c = np.exp(log_coeffs[1])
                 predicted = np.where(a > 0, c * np.power(a, n_exp), 0)
-                records.append({"quantity": "exponent", "value": f"{n_exp:.6g}", "unit": ""})
-                records.append({"quantity": "coefficient", "value": f"{c:.6g}", "unit": ""})
+                records.append({"quantity": "exponent", "value": float(n_exp), "unit": ""})
+                records.append({"quantity": "coefficient", "value": float(c), "unit": ""})
 
         elif function == "logarithmic":
             # b = a0 + a1 * log(a)
@@ -85,8 +88,8 @@ class RelateFields:
             else:
                 coeffs = np.polyfit(np.log(a[valid]), b[valid], 1)
                 predicted = np.where(a > 0, np.polyval(coeffs, np.log(a)), 0)
-                records.append({"quantity": "log_coeff", "value": f"{coeffs[0]:.6g}", "unit": ""})
-                records.append({"quantity": "intercept", "value": f"{coeffs[1]:.6g}", "unit": ""})
+                records.append({"quantity": "log_coeff", "value": float(coeffs[0]), "unit": ""})
+                records.append({"quantity": "intercept", "value": float(coeffs[1]), "unit": ""})
         else:
             predicted = np.zeros_like(a)
 
@@ -94,7 +97,7 @@ class RelateFields:
         ss_res = np.sum((b - predicted)**2)
         ss_tot = np.sum((b - b.mean())**2)
         r2 = 1.0 - ss_res / max(ss_tot, 1e-30)
-        records.append({"quantity": "R²", "value": f"{r2:.6f}", "unit": ""})
+        records.append({"quantity": "R²", "value": float(r2), "unit": ""})
 
         pred_field = field_b.replace(data=predicted.reshape(field_b.data.shape))
         return (pred_field, records)

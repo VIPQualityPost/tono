@@ -30,7 +30,7 @@ export function sanitizeMarkupShape(
   const y1 = clampFraction(shape.y1);
   const x2 = clampFraction(shape.x2);
   const y2 = clampFraction(shape.y2);
-  const width = Math.max(1, Math.min(64, Math.round(Number(shape.width) || fallbackWidth || 1)));
+  const width = Math.max(1, Math.min(128, Math.round(Number(shape.width) || fallbackWidth || 1)));
   return {
     kind,
     x1: Number(x1.toFixed(4)),

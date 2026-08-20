@@ -60,7 +60,7 @@ class PSFEstimation:
 
     @staticmethod
     def _fit_gaussian_2d(psf: np.ndarray):
-        """Fit a 2-D Gaussian to *psf* using moment analysis.
+        """Fit a 2D Gaussian to *psf* using moment analysis.
 
         Returns (gaussian_array, sigma_x, sigma_y, amplitude).
         """

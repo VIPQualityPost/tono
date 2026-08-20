@@ -12,7 +12,7 @@ Calculate the two-dimensional distribution of angle projections: for every pixel
 
 | Name | Type | Description |
 |------|------|-------------|
-| distribution | DATA_FIELD | 2-D histogram of slope-vector projections, axes from -pi to pi radians |
+| distribution | DATA_FIELD | 2D histogram of slope-vector projections, axes from -pi to pi radians |
 | measurement | RECORD_TABLE | Mean slope angle, standard deviation of the slope angle, and maximum slope angle (all in rad) |
 
 ## Controls

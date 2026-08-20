@@ -108,6 +108,14 @@ def _import_plugin(name: str, path: Path) -> None:
     """
     module_name = f"tono_plugins.{name}"
 
+    from backend.node_registry import module_registered_names, unregister_node
+
+    # Drop everything this module registered on a previous load: the fresh
+    # exec below re-registers surviving classes, while renamed or deleted
+    # ones must not linger in the registry.
+    for stale in module_registered_names(module_name):
+        unregister_node(stale)
+
     # Remove stale module to support hot-reload after /upload-plugin.
     if module_name in sys.modules:
         del sys.modules[module_name]

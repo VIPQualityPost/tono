@@ -11,7 +11,7 @@ from backend.data_types import DataField
 
 
 def _coerce_block(data: np.ndarray, distribution: str, n_levels: int) -> np.ndarray:
-    """Coerce a flat or 2-D block to the target distribution, returning same shape."""
+    """Coerce a flat or 2D block to the target distribution, returning same shape."""
     shape = data.shape
     flat = data.ravel().astype(np.float64)
     n_pixels = flat.size

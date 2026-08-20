@@ -204,7 +204,7 @@ def test_datafield_tiff_data_round_trip():
 
 def test_datafield_hdf5_generic_round_trip():
     """HDF5 (generic) writes /data + attrs that our hdf5 importer reads back."""
-    from backend.importers import hdf5 as hdf5_importer
+    from backend.importers import ergo_hdf5 as hdf5_importer
     from backend.nodes.save import Save
 
     rng = np.random.default_rng(23)
@@ -443,7 +443,7 @@ def test_save_multi_channel_gwy_round_trip():
 
 def test_save_multi_channel_hdf5_round_trip():
     """Multi-channel generic HDF5 round-trips via the hdf5 importer."""
-    from backend.importers import hdf5 as hdf5_importer
+    from backend.importers import ergo_hdf5 as hdf5_importer
     from backend.nodes.save import Save
 
     rng = np.random.default_rng(59)

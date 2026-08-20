@@ -25,6 +25,7 @@ Requires:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -35,18 +36,54 @@ from backend.data_types import DataField
 extensions = frozenset({".h5", ".hdf5", ".he5"})
 calibrated = True   # we attempt to read physical metadata
 
+# Datasets above this many elements are skipped (float64 materialization of a
+# 134M-element dataset is ~1 GiB; larger files likely contain tiled images).
+_MAX_DATASET_ELEMENTS = 1 << 27
+
+log = logging.getLogger(__name__)
+
 
 def _iter_2d_datasets(h5file):
-    """Yield (name, dataset) for every 2-D numeric dataset in the file."""
+    """Yield (name, dataset) for every 2D numeric dataset in the file.
+
+    Thumbnail datasets and oversized datasets are skipped so that
+    ``channel_names()`` and ``load()`` stay parallel and loading cannot
+    exhaust memory on pathological files.
+    """
     import h5py
 
     def _visit(name, obj):
         if isinstance(obj, h5py.Dataset) and obj.ndim == 2 and np.issubdtype(obj.dtype, np.number):
+            if name.split("/")[-1].lower() == "thumbnail":
+                return
+            if obj.size > _MAX_DATASET_ELEMENTS:
+                log.warning(
+                    "Skipping oversized HDF5 dataset '%s' (%d elements)", name, obj.size,
+                )
+                return
             results.append((name, obj))
 
     results: list = []
     h5file.visititems(_visit)
     return results
+
+
+def _ordered_datasets(h5file):
+    """(name, dataset) pairs in channel-display order.
+
+    Channel order matches ``channel_names()``: 'global' channels first, then
+    alphabetical by channel name — globals are the physical channels and
+    thumbnails never appear.
+    """
+    names_ds = _iter_2d_datasets(h5file)
+
+    def _sort_key(item):
+        parts = item[0].split("/")
+        second_last = parts[-2].lower() if len(parts) >= 2 else parts[-1].lower()
+        return (0 if second_last == "global" else 1, second_last)
+
+    names_ds.sort(key=_sort_key)
+    return names_ds
 
 
 def _attr_str(attrs, key: str, default: str) -> str:
@@ -151,9 +188,9 @@ def load(path: Path) -> list[DataField]:
         raise ImportError("Install 'h5py' to load HDF5 files:  pip install h5py")
 
     with h5py.File(str(path), "r") as f:
-        datasets = _iter_2d_datasets(f)
+        datasets = _ordered_datasets(f)
         if not datasets:
-            raise ValueError(f"No 2-D numeric datasets found in {path.name}")
+            raise ValueError(f"No 2D numeric datasets found in {path.name}")
 
         fields = []
         for name, ds in datasets:
@@ -195,7 +232,9 @@ def _display_names(full_names: list[str]) -> list[str]:
       4. If two kept datasets share the same second-to-last name, the leaf is
          appended to disambiguate.
 
-    Returns a list in sorted order (not parallel to full_names).
+    Returns one short name per input name, in the input order (feed it the
+    channels in display order — see ``_ordered_datasets`` — to keep it
+    parallel with ``load()``).
     """
     from collections import Counter
 
@@ -235,8 +274,7 @@ def channel_names(path: Path) -> list[str]:
         return []
     try:
         with h5py.File(str(path), "r") as f:
-            datasets = _iter_2d_datasets(f)
-            full_names = [name for name, _ in datasets]
+            full_names = [name for name, _ in _ordered_datasets(f)]
         return [n for n in _display_names(full_names) if n is not None]
     except Exception:
         return []

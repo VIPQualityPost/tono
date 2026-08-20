@@ -53,9 +53,15 @@ export default function CropBoxOverlay({
   }, []);
 
   const onPointerDown = useCallback((point: string) => (e: React.PointerEvent<Element>) => {
-    if (point === 'p1' && aLocked) return;
-    if (point === 'p2' && bLocked) return;
-    if (point === 'rect' && (aLocked || bLocked)) return;
+    const locked = (point === 'p1' && aLocked) || (point === 'p2' && bLocked)
+      || (point === 'rect' && (aLocked || bLocked));
+    if (locked) {
+      // Inert, not transparent: a locked marker/rect must not pass the press
+      // through to the canvas pan.
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -103,12 +109,15 @@ export default function CropBoxOverlay({
     }
     const vxR = parseFloat(vx.toFixed(3));
     const vyR = parseFloat(vy.toFixed(3));
+    // Keep a minimum span so the committed crop can never be zero-area —
+    // the backend rejects degenerate crops and fails the run.
+    const MIN_SPAN = 0.005;
     if (dragging === 'p1') {
-      onWidgetChange(nodeId, 'x1', vxR);
-      onWidgetChange(nodeId, 'y1', vyR);
+      onWidgetChange(nodeId, 'x1', Math.min(vxR, x2 - MIN_SPAN));
+      onWidgetChange(nodeId, 'y1', Math.min(vyR, y2 - MIN_SPAN));
     } else {
-      onWidgetChange(nodeId, 'x2', vxR);
-      onWidgetChange(nodeId, 'y2', vyR);
+      onWidgetChange(nodeId, 'x2', Math.max(vxR, x1 + MIN_SPAN));
+      onWidgetChange(nodeId, 'y2', Math.max(vyR, y1 + MIN_SPAN));
     }
   }, [dragging, getCoords, nodeId, onWidgetChange, square, xreal, yreal, x1, y1, x2, y2]);
 

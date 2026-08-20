@@ -35,8 +35,18 @@ interface HelpTab {
 function parseHeadings(md: string): Heading[] {
   if (!md) return [];
   const headings: Heading[] = [];
+  // '# …' inside fenced code blocks and raw HTML lines render as code/HTML,
+  // not headings — matching them would shift every later TOC anchor.
+  let inFence = false;
   const lines = md.split('\n');
   for (const line of lines) {
+    const fence = line.match(/^\s*(```+|~~~+)/);
+    if (fence) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^\s*<[^>]*>\s*$/.test(line)) continue;
     const m = line.match(/^(#{1,6})\s+(.+)/);
     if (m) {
       const text = m[2].replace(/[*_`~[\]]/g, '').trim();

@@ -139,7 +139,7 @@ def test_save_generic():
         except ValueError:
             pass
 
-        # 1-D ndarray → _save_line path
+        # 1D ndarray → _save_line path
         arr_1d = np.array([1.0, 2.0, 3.0])
         node.save(filename=_path("line_1d"), format="CSV", value=arr_1d)
         assert Path(tmpdir, "line_1d.csv").exists()

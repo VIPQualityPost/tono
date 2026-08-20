@@ -226,7 +226,7 @@ class StepBlockCorrection:
     ) -> tuple:
         data = np.asarray(field.data, dtype=np.float64)
         if data.ndim != 2:
-            raise ValueError("Step Block Correction requires a 2-D data field.")
+            raise ValueError("Step Block Correction requires a 2D data field.")
 
         if scan_direction == "left_to_right":
             left_to_right = True

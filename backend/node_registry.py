@@ -13,6 +13,8 @@ from backend.node_menu import get_menu_metadata
 
 NODE_CLASS_MAPPINGS: dict[str, type] = {}
 NODE_DISPLAY_NAME_MAPPINGS: dict[str, str] = {}
+# class name -> defining module, for collision detection and plugin reloads
+NODE_CLASS_SOURCES: dict[str, str] = {}
 
 
 def get_node_output_specs(cls: type) -> tuple[tuple[str, str, dict], ...]:
@@ -61,10 +63,44 @@ def register_node(display_name: str | None = None):
     def decorator(cls: type) -> type:
         get_node_output_specs(cls)
         name = cls.__name__
+        owner = cls.__module__
+        existing = NODE_CLASS_MAPPINGS.get(name)
+        if existing is not None and existing is not cls:
+            current_owner = NODE_CLASS_SOURCES.get(name, "?")
+            if current_owner != owner:
+                raise ValueError(
+                    f"Node class name '{name}' is already registered by module "
+                    f"'{current_owner}' — refusing to silently overwrite it "
+                    f"(new source '{owner}')."
+                )
         NODE_CLASS_MAPPINGS[name] = cls
         NODE_DISPLAY_NAME_MAPPINGS[name] = display_name or name
+        NODE_CLASS_SOURCES[name] = owner
         return cls
     return decorator
+
+
+def module_registered_names(module_name: str) -> set[str]:
+    """Node class names currently registered by *module_name*.
+
+    Used by the plugin loader to diff registrations before/after a hot reload
+    and drop nodes a plugin no longer defines. Package plugins register their
+    sub-module classes under ``tono_plugins.<name>.<sub>``, so everything under
+    the plugin namespace counts.
+    """
+    prefix = f"{module_name}."
+    return {
+        name for name, owner in NODE_CLASS_SOURCES.items()
+        if owner == module_name or owner.startswith(prefix)
+    }
+
+
+def unregister_node(class_name: str) -> None:
+    """Remove a node from the registry (plugin dropped the class on reload)."""
+    owner = NODE_CLASS_SOURCES.pop(class_name, None)
+    if owner is not None:
+        NODE_CLASS_MAPPINGS.pop(class_name, None)
+        NODE_DISPLAY_NAME_MAPPINGS.pop(class_name, None)
 
 
 def get_node_info(class_name: str) -> dict[str, Any]:
