@@ -68,6 +68,7 @@ MENU_LAYOUT: dict[str, list[str]] = {
     "Level & Correct": [
         "FixZero",
         "PlaneLevelField",
+        "FlattenField",
         "PolyLevelField",
         "FacetLevelField",
         "FlattenBase",
