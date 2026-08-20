@@ -16,29 +16,41 @@ extensions = frozenset({".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".npy"
 calibrated = False
 
 
+def _as_gray_field(arr: np.ndarray) -> DataField:
+    arr = np.asarray(arr)
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.float64)
+    if arr.ndim == 3:
+        # Drop the alpha plane: RGB(A) should average color channels only;
+        # including alpha washes the grey conversion out.
+        gray = np.mean(arr[..., :3].astype(np.float64), axis=2)
+    else:
+        gray = np.asarray(arr, dtype=np.float64)
+    return DataField(data=gray)
+
+
 def load(path: Path) -> list[DataField]:
     ext = path.suffix.lower()
 
     if ext == ".npy":
-        arr = np.load(str(path)).astype(np.float64)
-    elif ext == ".npz":
-        npz = np.load(str(path))
-        key = list(npz.files)[0]
-        arr = npz[key].astype(np.float64)
-    else:
-        from PIL import Image as PILImage
-        img = PILImage.open(str(path))
-        arr = np.array(img)
-        if arr.dtype != np.uint8:
-            arr = arr.astype(np.float64)
+        return [_as_gray_field(np.load(str(path)))]
+    if ext == ".npz":
+        with np.load(str(path)) as npz:
+            fields = [_as_gray_field(npz[key]) for key in npz.files]
+        if not fields:
+            raise ValueError(f"No arrays found in {path.name}")
+        return fields
 
-    if arr.ndim == 3:
-        gray = np.mean(arr.astype(np.float64), axis=2)
-    else:
-        gray = arr.astype(np.float64)
-
-    return [DataField(data=gray)]
+    from PIL import Image as PILImage
+    img = PILImage.open(str(path))
+    return [_as_gray_field(np.array(img))]
 
 
 def channel_names(path: Path) -> list[str]:
+    if path.suffix.lower() == ".npz":
+        try:
+            with np.load(str(path)) as npz:
+                return sorted(npz.files)
+        except Exception:
+            pass
     return ["field"]
