@@ -29,10 +29,7 @@ class FlattenField:
 
     DESCRIPTION = (
         "Fit and subtract a least-squares plane, then re-offset every row so its "
-        "usable (unmasked) pixels share one level. The row alignment removes "
-        "per-row scan DC offsets that no single plane can represent, recovering "
-        "a flat grating from raw unleveled rows. Mask the pits (exclude) so they "
-        "do not bias the background fit."
+        "usable (unmasked) pixels share one level."
     )
 
     KEYWORDS = ("flatten", "plane", "level", "rows", "grating", "tilt", "background")
