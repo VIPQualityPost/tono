@@ -61,8 +61,9 @@ function sessionRelativePath(path: string) {
  * @returns {object} workflowData with packedFiles added
  */
 export async function packWorkflow(workflowData: SerializedWorkflow, nodeDefs: NodeDefsRegistry, onProgress?: (packed: number, total: number) => void) {
-  // 1. Collect FILE_PICKER paths only (skip FOLDER_PICKER)
+  // 1. Collect FILE_PICKER paths and FOLDER_PICKER folders.
   const filePaths = new Set<string>();
+  const folderPaths = new Set<string>();
 
   for (const node of workflowData.nodes) {
     const className = node.data?.className;
@@ -77,9 +78,25 @@ export async function packWorkflow(workflowData: SerializedWorkflow, nodeDefs: N
       const value = String(widgetValues[name] || '').trim();
       if (!value) continue;
 
-      if (type === 'FILE_PICKER') {
+      if (type === 'FOLDER_PICKER') {
+        folderPaths.add(value);
+      } else if (type === 'FILE_PICKER') {
         filePaths.add(value);
       }
+    }
+  }
+
+  // Folder contents travel with the workflow: embed every file the folder
+  // currently lists so Folder-fed graphs reopen with real data.
+  for (const folder of folderPaths) {
+    try {
+      const entries = await api.getFolderFiles(folder);
+      for (const entry of entries) {
+        const fileUri = (entry as Record<string, unknown>)?.path;
+        if (typeof fileUri === 'string' && fileUri.trim()) filePaths.add(fileUri);
+      }
+    } catch {
+      // Folder listing failed (e.g. cleared or stale path) — skip it.
     }
   }
 
@@ -124,6 +141,7 @@ export async function packWorkflow(workflowData: SerializedWorkflow, nodeDefs: N
     ...workflowData,
     packed: true,
     packedFiles,
+    packedFolders: [...folderPaths],
   };
 }
 
@@ -160,7 +178,13 @@ export async function unpackWorkflow(workflowData: SerializedWorkflow) {
     }
   }
 
-  // 2. Remap widget values in nodes
+  // 2. Folder picks are preserved verbatim: the embedded files above recreate
+  // the directory, so a FOLDER_PICKER widget pointing at it stays valid.
+  for (const folder of workflowData.packedFolders || []) {
+    restoredPaths.add(String(folder));
+  }
+
+  // 3. Remap widget values in nodes
   const updatedNodes = workflowData.nodes.map((node) => {
     const wv = node.data?.widgetValues;
     if (!wv) return node;
@@ -179,7 +203,7 @@ export async function unpackWorkflow(workflowData: SerializedWorkflow) {
   });
 
   // Strip packed data from the workflow to avoid storing it again on re-save
-  const { packedFiles: _, packed: __, ...cleanWorkflow } = workflowData;
+  const { packedFiles: _, packed: __, packedFolders: ___, ...cleanWorkflow } = workflowData;
 
   return {
     workflow: { ...cleanWorkflow, nodes: updatedNodes },

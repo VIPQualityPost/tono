@@ -214,6 +214,8 @@ export interface SerializedWorkflow {
   edges: SerializedEdge[];
   packed?: boolean;
   packedFiles?: Record<string, { filename: string; data: string }>;
+  /** FOLDER_PICKER URIs packed with the workflow (directory recreated on unpack). */
+  packedFolders?: string[];
 }
 
 // ── WebSocket Messages ───────────────────────────────────────────────

@@ -147,22 +147,44 @@ function restoreGroupEdges(edges: any[], groupId: string) {
         data: Object.keys(nextData).length > 0 ? nextData : undefined,
       };
     }
-    if (edge.data?.groupProxyOwner === groupId) {
-      const nextData: any = { ...(edge.data || {}) };
-      const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
-      delete nextData.groupProxyOwner;
-      delete nextData.groupProxyOriginal;
-      return {
-        ...edge,
-        source: original.source || edge.source,
-        sourceHandle: original.sourceHandle || edge.sourceHandle,
-        target: original.target || edge.target,
-        targetHandle: original.targetHandle || edge.targetHandle,
-        hidden: false,
-        data: Object.keys(nextData).length > 0 ? nextData : undefined,
-      };
+    if (edge.data?.groupProxyOwner !== groupId) return edge;
+    const nextData: any = { ...(edge.data || {}) };
+    const original = (nextData.groupProxyOriginal || {}) as Record<string, any>;
+    delete nextData.groupProxyOwner;
+    delete nextData.groupProxyOriginal;
+
+    const next = {
+      ...edge,
+      source: edge.source,
+      sourceHandle: edge.sourceHandle,
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+      hidden: false,
+      data: Object.keys(nextData).length > 0 ? nextData : undefined,
+    };
+
+    // Restore only the half this group proxies. When two groups are collapsed
+    // on the same edge, each keeps its own half; expanding one must not touch
+    // the other group's still-live proxy.
+    if (edge.source === groupId && original.source) {
+      next.source = original.source;
+      next.sourceHandle = original.sourceHandle;
     }
-    return edge;
+    if (edge.target === groupId && original.target) {
+      next.target = original.target;
+      next.targetHandle = original.targetHandle;
+    }
+
+    const sourceProxied = typeof next.sourceHandle === 'string' && next.sourceHandle.startsWith('group-proxy::');
+    const targetProxied = typeof next.targetHandle === 'string' && next.targetHandle.startsWith('group-proxy::');
+    if (sourceProxied || targetProxied) {
+      // The other end is still proxied by another collapsed group: keep the
+      // merged original + ownership so expanding that group restores it.
+      const kept = { ...(next.data || {}), groupProxyOriginal: original };
+      kept.groupProxyOwner = sourceProxied ? String(next.source) : String(next.target);
+      next.data = Object.keys(kept).length > 0 ? kept : undefined;
+    }
+    return next;
   });
 }
 
@@ -350,6 +372,10 @@ function Flow() {
               ...(edge.data || {}),
               groupProxyOwner: groupId,
               groupProxyOriginal: {
+                // Merge, don't replace: the source half may already be
+                // recorded by another collapsed group — overwriting it loses
+                // the real source endpoint and corrupts execution.
+                ...(edge.data?.groupProxyOriginal || {}),
                 target: edge.target,
                 targetHandle: edge.targetHandle,
               },
@@ -365,6 +391,7 @@ function Flow() {
               ...(edge.data || {}),
               groupProxyOwner: groupId,
               groupProxyOriginal: {
+                ...(edge.data?.groupProxyOriginal || {}),
                 source: edge.source,
                 sourceHandle: edge.sourceHandle,
               },
@@ -1546,6 +1573,28 @@ function Flow() {
     requestAnimationFrame(() => requestAnimationFrame(() => frameWorkflowViewport()));
   }, [frameWorkflowViewport]);
 
+  // Paths (files and their parent directories) that still exist in the
+  // current session — used to keep FILE_PICKER/FOLDER_PICKER values when a
+  // workflow is loaded, instead of wiping them wholesale.
+  const buildPreservedSessionPaths = useCallback(async (): Promise<Set<string>> => {
+    const set = new Set<string>();
+    try {
+      const files = await api.getFiles();
+      for (const raw of files) {
+        if (typeof raw !== 'string' || !raw.startsWith('session://')) continue;
+        set.add(raw);
+        let slash = raw.indexOf('/', 'session://'.length);
+        while (slash !== -1) {
+          set.add(raw.slice(0, slash));
+          slash = raw.indexOf('/', slash + 1);
+        }
+      }
+    } catch {
+      // Listing failed — fall back to clearing values on load.
+    }
+    return set;
+  }, []);
+
   const applyMaybePackedWorkflow = useCallback(async (data: any) => {
     if (data.packed && data.packedFiles) {
       setStatus({ text: 'Unpacking files…', level: 'info' });
@@ -1558,16 +1607,20 @@ function Flow() {
       } catch {
         // Unpack failed (e.g. stale session) — load the workflow without file restoration
         const { packedFiles: _, packed: __, ...cleanWorkflow } = data;
-        applyWorkflowData(cleanWorkflow);
+        const preserved = await buildPreservedSessionPaths();
+        applyWorkflowData(cleanWorkflow, { preservedPaths: preserved });
         scheduleFrameWorkflowViewport();
         setStatus({ text: 'Workflow loaded but packed files could not be restored. Re-browse your input files.', level: 'error' });
         return;
       }
     } else {
-      applyWorkflowData(data);
+      // Non-packed load: keep file/folder picks that still resolve in the
+      // current session instead of wiping every picker value on every load.
+      const preserved = await buildPreservedSessionPaths();
+      applyWorkflowData(data, { preservedPaths: preserved });
       scheduleFrameWorkflowViewport();
     }
-  }, [applyWorkflowData, scheduleAutoRun, scheduleFrameWorkflowViewport]);
+  }, [applyWorkflowData, buildPreservedSessionPaths, scheduleAutoRun, scheduleFrameWorkflowViewport]);
 
   const loadDefaultWorkflow = useCallback(async () => {
     if (defaultWorkflowLoadAttemptedRef.current) return;
@@ -2393,6 +2446,23 @@ function Flow() {
     return () => window.removeEventListener('keydown', handler);
   }, [runWorkflow]);
 
+  // Undo/redo only restores nodes+edges; dynamic outputs (load-node channel
+  // lists, folder/annotation sockets, group proxies) must be re-derived so
+  // the canvas and the next execution agree with the restored graph.
+  const refreshAfterUndoRedo = useCallback(() => {
+    const nodes = reactFlow.getNodes() as TonoNode[];
+    for (const node of nodes) {
+      const cls = node.data?.className;
+      if (cls === 'Image' || cls === 'ImageDemo') {
+        refreshLoadNodeOutputs(String(node.id));
+      } else if (cls === 'Annotations' || cls === 'Markup') {
+        refreshAnnotationNodeOutputs(String(node.id));
+      }
+    }
+    refreshAllGroups();
+    updateNodeInternals(nodes.map((n) => String(n.id)));
+  }, [reactFlow, refreshAllGroups, refreshAnnotationNodeOutputs, refreshLoadNodeOutputs, updateNodeInternals]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.key !== 'z') return;
@@ -2401,16 +2471,18 @@ function Flow() {
       if (e.shiftKey) {
         if (undoRedo.redo(setNodes as (n: TonoNode[]) => void, setEdges as (e: TonoEdge[]) => void, nextIdRef, () => (reactFlow.getNodes() as TonoNode[]), () => (reactFlow.getEdges() as TonoEdge[]))) {
           setStatus({ text: 'Redo.', level: 'info' });
+          setTimeout(refreshAfterUndoRedo, 0);
         }
       } else {
         if (undoRedo.undo(setNodes as (n: TonoNode[]) => void, setEdges as (e: TonoEdge[]) => void, nextIdRef, () => (reactFlow.getNodes() as TonoNode[]), () => (reactFlow.getEdges() as TonoEdge[]))) {
           setStatus({ text: 'Undo.', level: 'info' });
+          setTimeout(refreshAfterUndoRedo, 0);
         }
       }
     };
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [reactFlow, setNodes, setEdges, undoRedo]);
+  }, [reactFlow, setNodes, setEdges, undoRedo, refreshAfterUndoRedo]);
 
   useEffect(() => {
     const handleCopy = (event: ClipboardEvent) => {
