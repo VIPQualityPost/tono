@@ -24,23 +24,31 @@ def test_load_npy():
     with patch("backend.nodes.image_demo.DEMO_DIR", FIXTURES):
         result = ImageDemo().load(name="nanoparticles.npy")
 
-    # result[0] is the FILE_PATH string, fields follow
-    assert len(result) >= 2
-    assert isinstance(result[0], str)
-    assert isinstance(result[1], DataField)
-    assert result[1].data.ndim == 2
+    # ImageDemo exposes only the data channels (no FILE_PATH prefix)
+    assert len(result) == 1
+    assert isinstance(result[0], DataField)
+    assert result[0].data.ndim == 2
 
 
 def test_load_ibw_multi_channel():
     from backend.nodes.image_demo import ImageDemo
+    from backend.nodes.helpers import list_channels
 
     with patch("backend.nodes.image_demo.DEMO_DIR", FIXTURES):
         result = ImageDemo().load(name="Bacteria.ibw")
 
     fields = [v for v in result if isinstance(v, DataField)]
-    assert len(fields) == 4
+    # More than 3 channels are capped at 3 — the first three, in channel order.
+    assert len(fields) == 3
     for field in fields:
         assert field.data.ndim == 2
+    names = [entry["name"] for entry in list_channels(str(FIXTURES / "Bacteria.ibw"))]
+    assert names[:3] == ["HeightTrace", "AmplitudeTrace", "PhaseTrace"]
+    
+    from backend.importers.ibw import load as ibw_load
+    expected = ibw_load(FIXTURES / "Bacteria.ibw")
+    for slot in range(3):
+        assert np.allclose(fields[slot].data, expected[slot].data)
 
 
 def test_load_not_found():
@@ -64,15 +72,15 @@ def test_load_cache():
     with patch("backend.nodes.image_demo.DEMO_DIR", FIXTURES):
         import backend.importers.array_image as _ai
         with patch.object(_ai, "load", wraps=_ai.load) as loader:
-            _, first = node.load(name="nanoparticles.npy")
-            _, second = node.load(name="nanoparticles.npy")
+            (first,) = node.load(name="nanoparticles.npy")
+            (second,) = node.load(name="nanoparticles.npy")
             assert loader.call_count == 1
 
         assert np.allclose(first.data, second.data)
         assert first is not second
         first.data[0, 0] = -999.0
 
-        _, third = node.load(name="nanoparticles.npy")
+        (third,) = node.load(name="nanoparticles.npy")
         assert third.data[0, 0] != -999.0
 
     Image._load_fields_cached.cache_clear()
