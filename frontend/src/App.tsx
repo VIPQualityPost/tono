@@ -703,8 +703,7 @@ function Flow() {
         case 'file_download': {
           const dlToken = msg.data.token;
           const dlFilename = msg.data.filename || 'download';
-          fetch(`/download-save/${encodeURIComponent(dlToken)}`)
-            .then((r) => r.ok ? r.blob() : Promise.reject(new Error(`Download failed: ${r.status}`)))
+          api.downloadSavedFile(dlToken)
             .then((blob) => {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');

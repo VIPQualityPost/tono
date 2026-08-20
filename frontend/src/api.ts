@@ -182,6 +182,13 @@ export async function runPrompt(prompt: Record<string, unknown>) {
   return r.json();
 }
 
+/** Fetch a saved node output via its one-shot, session-bound download token. */
+export async function downloadSavedFile(token: string) {
+  const r = await sessionFetch(`/download-save/${encodeURIComponent(token)}`);
+  if (!r.ok) throw new Error(`Download failed: ${r.status}`);
+  return r.blob();
+}
+
 export function setMessageHandler(fn: ((msg: any) => void) | null) {
   _handler = fn;
 }
