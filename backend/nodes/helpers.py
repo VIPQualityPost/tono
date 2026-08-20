@@ -793,11 +793,19 @@ def masked_values(data: np.ndarray, mask: np.ndarray | None, masking: str) -> np
 
 
 def emit_mask_preview(field, mask_uint8: np.ndarray) -> None:
-    """Emit a standard mask-on-field preview if *field* is not None."""
-    if field is None:
-        return
+    """Emit a mask preview: the mask overlaid on *field* when one is connected,
+    otherwise the bare 0/255 mask itself. Mask nodes call this so their result
+    is always visible even without an optional DATA_FIELD input."""
     from backend.execution_context import emit_preview
     from backend.data_types import encode_preview
+    if field is None:
+        arr = np.asarray(mask_uint8)
+        if arr.dtype != np.uint8:
+            arr = bool_to_mask(mask_to_bool(arr))
+        elif arr.max() <= 1:
+            arr = (arr > 0).astype(np.uint8) * 255
+        emit_preview(encode_preview(arr))
+        return
     emit_preview(encode_preview(_mask_overlay(field, mask_uint8)))
 
 

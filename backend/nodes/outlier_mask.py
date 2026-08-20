@@ -6,11 +6,13 @@ import numpy as np
 
 from backend.node_registry import register_node
 from backend.data_types import DataField
-from backend.nodes.helpers import bool_to_mask
+from backend.nodes.helpers import bool_to_mask, emit_mask_preview
 
 
 @register_node(display_name="Outlier Mask")
 class OutlierMask:
+    _CUSTOM_PREVIEW = True
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -40,7 +42,9 @@ class OutlierMask:
         std = data.std()
 
         if std < 1e-30:
-            return (bool_to_mask(np.zeros(data.shape, dtype=bool)),)
+            mask = bool_to_mask(np.zeros(data.shape, dtype=bool))
+            emit_mask_preview(field, mask)
+            return (mask,)
 
         z = (data - mean) / std
 
@@ -53,4 +57,7 @@ class OutlierMask:
         else:
             raise ValueError(f"Unknown mode: {mode!r}")
 
-        return (bool_to_mask(outliers),)
+        mask = bool_to_mask(outliers)
+        emit_mask_preview(field, mask)
+
+        return (mask,)
