@@ -44,6 +44,7 @@ import {
 } from './executionGraph';
 import {
   beginTrackedNodeRequest,
+  buildLoadNodeOutputs,
   isTrackedNodeRequestCurrent,
   resolveLoadNodeChannelPath,
 } from './loadNodeOutputs';
@@ -551,7 +552,8 @@ function Flow() {
       if (!isTrackedNodeRequestCurrent(loadNodeOutputRequestVersionsRef.current, nodeId, requestVersion)) {
         return;
       }
-      setNodeOutputs(nodeId, ['FILE_PATH', 'DATA_FIELD'], ['path', 'field'], { output_paths: [] });
+      const built = buildLoadNodeOutputs(node?.data?.className, [{ name: 'field', type: 'DATA_FIELD' }]);
+      setNodeOutputs(nodeId, built.output, built.outputName, { output_paths: [] });
       return;
     }
 
@@ -559,10 +561,11 @@ function Flow() {
     if (!isTrackedNodeRequestCurrent(loadNodeOutputRequestVersionsRef.current, nodeId, requestVersion)) {
       return;
     }
+    const built = buildLoadNodeOutputs(node?.data?.className, channels);
     setNodeOutputs(
       nodeId,
-      ['FILE_PATH', ...channels.map((channel: any) => channel.type)],
-      ['path', ...channels.map((channel: any) => channel.name)],
+      built.output,
+      built.outputName,
       { output_paths: [] },
     );
   }, [getResolvedPathInput, reactFlow, setNodeOutputs]);

@@ -14,6 +14,8 @@ None.
 | channel_2 | DATA_FIELD | Second channel, when the demo file has two or more channels |
 | channel_3 | DATA_FIELD | Third channel, when the demo file has three or more channels |
 
+Every channel in the demo file is exposed as its own output; the list above shows the declared names of the first three, and additional channels appear dynamically with names from the file.
+
 ## Controls
 
 | Name | Type | Default | Description |

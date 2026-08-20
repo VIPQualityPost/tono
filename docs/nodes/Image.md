@@ -1,6 +1,6 @@
 # Image
 
-Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) provide calibrated dimensions; up to three channels are exposed as separate outputs. Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields.
+Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) provide calibrated dimensions; each channel gets its own output. Images (.png, .tiff, .jpg) and arrays (.npy, .npz) are loaded as uncalibrated fields.
 
 ## Inputs
 
@@ -27,4 +27,4 @@ Load any supported file. SPM formats (.gwy, .sxm, .ibw) and HDF5 (.h5, .hdf5) pr
 ## Notes
 
 - Uncalibrated formats (images, arrays) emit a warning and produce fields without physical dimensions.
-- Multi-channel files (e.g. .gwy with multiple data channels) expose up to three channels on the channel_2/channel_3 outputs; further channels are dropped with a warning.
+- Multi-channel files (e.g. .gwy with multiple data channels) expose every channel as its own output, named after the channel; the first three are labelled field / channel_2 / channel_3.
