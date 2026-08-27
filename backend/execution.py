@@ -73,12 +73,47 @@ def get_cacheability(cls: type) -> bool:
     return True
 
 
+_SOCKET_TYPE_CHECKS: dict[str, type | tuple[type, ...]] = {}
+
+
+def _socket_type_matches(type_name: str, value: Any) -> bool:
+    """Return whether *value* is a runtime instance of the type a socket name denotes."""
+    check = _SOCKET_TYPE_CHECKS.get(type_name)
+    if check is None:
+        from backend.data_types import (
+            DataField, DataTable, ImageData, LineData, MeshModel, RecordTable,
+        )
+        import numpy as np
+
+        if type_name == "DATA_FIELD":
+            check = DataField
+        elif type_name == "RECORD_TABLE":
+            check = RecordTable
+        elif type_name == "DATA_TABLE":
+            check = DataTable
+        elif type_name == "LINE":
+            check = LineData
+        elif type_name == "IMAGE":
+            check = (ImageData, np.ndarray)
+        elif type_name == "ANNOTATION_SOURCE":
+            check = (DataField, ImageData, np.ndarray)
+        elif type_name == "MESH_MODEL":
+            check = MeshModel
+        else:
+            return False
+        _SOCKET_TYPE_CHECKS[type_name] = check
+    return isinstance(value, check)
+
+
 def coerce_input_value(value: Any, spec: Any, name: str = "value") -> Any:
     """Coerce a raw widget value into the declared input type.
 
     INT/FLOAT inputs become int/float and non-finite numerics are rejected;
     on garbage we raise naming the input instead of passing it through to the
-    node, where the failure would be deep and hard to attribute.
+    node, where the failure would be deep and hard to attribute. Inputs that
+    declare ``accepted_types`` (polymorphic sockets) still receive values of a
+    matching socket type unchanged — e.g. a FLOAT socket that also accepts
+    RECORD_TABLE is handed the linked table, not rejected.
     """
     if spec is None:
         return value
@@ -88,9 +123,16 @@ def coerce_input_value(value: Any, spec: Any, name: str = "value") -> Any:
         return value
 
     if input_type in ("INT", "FLOAT"):
+        accepted_types = (
+            spec[1].get("accepted_types") or []
+            if isinstance(spec, (list, tuple)) and len(spec) > 1 and isinstance(spec[1], dict)
+            else []
+        )
         try:
             numeric = float(value)
         except (TypeError, ValueError):
+            if any(_socket_type_matches(accepted, value) for accepted in accepted_types):
+                return value
             raise ValueError(
                 f"Expected a numeric value for {input_type} input '{name}', got {value!r}"
             ) from None

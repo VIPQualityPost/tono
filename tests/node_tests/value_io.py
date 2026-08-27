@@ -59,3 +59,39 @@ def test_value_display_table_emits_table():
     assert result == (0.42,)
     assert len(tables) == 1
     assert tables[0][0]["quantity"] == "Rq"
+
+
+def test_value_display_linked_table_passes_executor_coercion():
+    """A RECORD_TABLE linked into the FLOAT 'value' socket must reach the node.
+
+    Regression: strict input coercion rejected non-numeric values on FLOAT
+    inputs even when the spec's ``accepted_types`` declare the socket
+    polymorphic (e.g. ValueIO.display 'value' accepts RECORD_TABLE).
+    """
+    from backend.execution import ExecutionEngine, coerce_input_value
+    from backend.nodes.value_io import ValueIO
+
+    measurements = RecordTable([
+        {"quantity": "Peak period", "value": 1.7e-7, "unit": "m"},
+    ])
+    value_spec = ValueIO.INPUT_TYPES()["optional"]["value"]
+
+    # Linked table is passed through unchanged, ready for the node's own
+    # measurement handling.
+    assert coerce_input_value(measurements, value_spec, name="value") is measurements
+
+    # Numeric widgets on the same polymorphic socket still coerce normally.
+    assert coerce_input_value("2.5", value_spec, name="value") == 2.5
+
+    # Engine link resolution (the executor code path for links).
+    engine = ExecutionEngine()
+    resolved = engine._resolve_inputs(
+        {"value": ["upstream", 1]},
+        {"upstream": (None, measurements)},
+        input_types=ValueIO.INPUT_TYPES(),
+    )
+    assert resolved["value"] is measurements
+
+    # Bare FLOAT inputs keep rejecting non-numeric garbage.
+    with __import__("pytest").raises(ValueError, match="Expected a numeric value"):
+        coerce_input_value(measurements, ("FLOAT", {"default": 0.0}), name="value")
